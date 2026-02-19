@@ -1,26 +1,51 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-background: #ffffff; /* light */
+  --color-foreground: #171717; /* light */
+  --color-primary: #000000; /* black */
+  --color-accent: #fb923c; /* orange-400 */
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: var(--color-background);
+  --color-foreground: var(--color-foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --color-background: #0a0a0a;
+    --color-foreground: #ededed;
+    --color-primary: #ffffff;
+    --color-accent: #a78bfa; /* purple-400 */
   }
 }
 
+/* explicit theme overrides via data-theme on <html> */
+[data-theme="dark"] {
+  --color-background: #000000;
+  --color-foreground: #ffffff;
+  --color-primary: #ffffff;
+  --color-accent: #a78bfa; /* purple-400 */
+}
+
+[data-theme="light"] {
+  --color-background: #ffffff;
+  --color-foreground: #171717;
+  --color-primary: #000000;
+  --color-accent: #fb923c; /* orange-400 */
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--color-background);
+  color: var(--color-foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* small utility tokens used by components */
+.btn-primary { background: var(--color-primary); color: var(--color-background); }
+.accent { color: var(--color-accent); }
