@@ -1,14 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useLoginForm } from '@/hooks/useAuth';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
 import ProgressBar from '@/components/ui/ProgressBar';
-import { StaggerContainer, StaggerItem } from '@/components/common/FormFieldAnimation';
 import { Mail, Lock } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 
@@ -42,43 +40,32 @@ export default function LoginForm() {
   }, [user, isLoading, router]);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 20 }}
-      transition={{ duration: 0.3, ease: 'easeOut' }}
-    >
+    <div className="w-full">
       {isLoading && <ProgressBar className="mb-4" />}
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-8">
         {error && <Alert variant="error" message={error} onDismiss={clearError} />}
 
-        <StaggerContainer className="space-y-5">
-          <StaggerItem>
-            <Input
-              label="Email"
-              type="email"
-              placeholder="you@example.com"
-              icon={<Mail size={18} />}
-              error={errors.email?.message}
-              registration={register('email')}
-            />
-          </StaggerItem>
+        <div className="space-y-6">
+          <Input
+            label="Email"
+            type="email"
+            icon={<Mail size={18} />}
+            error={errors.email?.message}
+            registration={register('email')}
+          />
 
-          <StaggerItem>
-            <Input
-              label="Password"
-              type="password"
-              placeholder="••••••••"
-              icon={<Lock size={18} />}
-              error={errors.password?.message}
-              registration={register('password')}
-            />
-          </StaggerItem>
-        </StaggerContainer>
+          <Input
+            label="Password"
+            type="password"
+            icon={<Lock size={18} />}
+            error={errors.password?.message}
+            registration={register('password')}
+          />
+        </div>
 
-        <div className="text-right">
-          <a href="/forgot-password" className="text-sm text-accent hover:underline transition">
+        <div className="text-left">
+          <a href="/forgot-password" className="text-xs text-accent hover:underline transition">
             Forgot password?
           </a>
         </div>
@@ -87,6 +74,6 @@ export default function LoginForm() {
           {isLoading ? 'Signing in...' : 'Sign in'}
         </Button>
       </form>
-    </motion.div>
+    </div>
   );
 }

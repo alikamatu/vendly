@@ -1,3 +1,3 @@
-export default function clsx(...inputs: Array<string | false | null | undefined>) {
+export function clsx(...inputs: Array<string | false | null | undefined>): string {
   return inputs.filter(Boolean).join(" ");
 }

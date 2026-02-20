@@ -1,3 +1,5 @@
+"use client";
+
 import { Container } from '@/components';
 import AuthTabs from '@/components/auth/auth-tabs';
 import { ShoppingBag } from 'lucide-react';

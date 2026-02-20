@@ -1,50 +1,35 @@
+'use client';
+
 import { Container } from '@/components';
 import AuthTabs from '@/components/auth/auth-tabs';
-import { ShoppingBag } from 'lucide-react';
-import Image from 'next/image';
+import { motion } from 'framer-motion';
 
 export default function LoginPage() {
   return (
-    <Container className="flex min-h-screen items-center justify-center py-8">
-      <div className="grid w-full max-w-5xl grid-cols-1 gap-8 md:grid-cols-2 md:gap-12">
-        {/* Left column: forms */}
-        <div className="flex flex-col justify-center">
-          <div className="mb-8 text-center md:text-left">
-            <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
-              Welcome to <span className="text-accent">Vendly</span>
-            </h1>
-            <p className="mt-2 text-foreground/60">
-              Discover trusted campus sellers, all in one place.
-            </p>
-          </div>
-
-          <AuthTabs />
+    <div className="flex min-h-[90vh] items-center justify-center p-4">
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        className="w-full max-w-md p-8 sm:p-12 md:p-14 rounded-3xl bg-background shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.1)] border border-transparent"
+      >
+        <div className="mb-10 text-center">
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Sign in
+          </h1>
+          <p className="mt-2 text-sm text-foreground/60">
+            Continue to <span className="font-medium text-accent">Vendly</span>
+          </p>
         </div>
 
-        {/* Right column: image / illustration (hidden on mobile) */}
-        <div className="relative hidden md:block">
-          <div className="sticky top-8 h-[700px] w-full overflow-hidden rounded-3xl bg-gradient-to-br from-accent/20 to-accent/5">
-            <div className="relative h-full w-full overflow-hidden rounded-2xl">
-              {/* Background glow */}
-              <div className="absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent/30 blur-3xl" />
-
-              {/* Image */}
-              <Image
-                src="/images/36121.jpg"
-                alt="Vendly marketplace illustration"
-                fill
-                priority
-                className="object-cover object-center"
-              />
-
-              {/* Overlay icon */}
-              <div className="absolute bottom-6 right-6 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-white shadow-xl">
-                <ShoppingBag size={26} />
-              </div>
-            </div>
-          </div>
+        <AuthTabs />
+        
+        <div className="mt-12 text-center">
+          <p className="text-xs text-foreground/30">
+            &copy; {new Date().getFullYear()} Vendly. Built for campus life.
+          </p>
         </div>
-      </div>
-    </Container>
+      </motion.div>
+    </div>
   );
 }

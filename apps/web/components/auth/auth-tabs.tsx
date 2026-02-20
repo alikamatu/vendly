@@ -1,10 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import LoginForm from './login-form';
 import RegisterForm from './register-form';
-import Button from '@/components/ui/Button';
 
 interface AuthTabsProps {
   defaultTab?: 'login' | 'register';
@@ -15,25 +14,49 @@ export default function AuthTabs({ defaultTab = 'login' }: AuthTabsProps) {
 
   return (
     <div className="w-full">
-      <div className="mb-8 flex gap-1 rounded-xl bg-foreground/5 p-1">
-        <Button
-          variant={mode === 'login' ? 'primary' : 'ghost'}
-          className="flex-1 rounded-lg"
+      <div className="mb-8 flex justify-center border-b border-foreground/5 p-0">
+        <button
+          className={`relative px-6 py-3 text-sm font-medium transition-colors ${
+            mode === 'login' ? 'text-accent' : 'text-foreground/40 hover:text-foreground/70'
+          }`}
           onClick={() => setMode('login')}
         >
           Sign in
-        </Button>
-        <Button
-          variant={mode === 'register' ? 'primary' : 'ghost'}
-          className="flex-1 rounded-lg"
+          {mode === 'login' && (
+            <motion.div
+              layoutId="activeTab"
+              className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent"
+              transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+            />
+          )}
+        </button>
+        <button
+          className={`relative px-6 py-3 text-sm font-medium transition-colors ${
+            mode === 'register' ? 'text-accent' : 'text-foreground/40 hover:text-foreground/70'
+          }`}
           onClick={() => setMode('register')}
         >
           Create account
-        </Button>
+          {mode === 'register' && (
+            <motion.div
+              layoutId="activeTab"
+              className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent"
+              transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+            />
+          )}
+        </button>
       </div>
 
       <AnimatePresence mode="wait">
-        {mode === 'login' ? <LoginForm key="login" /> : <RegisterForm key="register" />}
+        <motion.div
+          key={mode}
+          initial={{ opacity: 0, x: mode === 'login' ? -10 : 10 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: mode === 'login' ? 10 : -10 }}
+          transition={{ duration: 0.2 }}
+        >
+          {mode === 'login' ? <LoginForm /> : <RegisterForm />}
+        </motion.div>
       </AnimatePresence>
     </div>
   );

@@ -1,6 +1,16 @@
-import { Controller, Get, Patch, Param, Body, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Patch,
+  Param,
+  Body,
+  Query,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { ApproveVerificationDto } from './dto/approve-verification.dto';
+import { AdminQueryDto } from './dto/admin-query.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { Roles } from './guards/roles.decorator';
@@ -11,9 +21,14 @@ import { Roles } from './guards/roles.decorator';
 export class AdminController {
   constructor(private adminService: AdminService) {}
 
-  @Get('pending-approvals')
-  async getPendingApprovals() {
-    return this.adminService.getPendingApprovals();
+  @Get('approvals')
+  async getApprovals(@Query() query: AdminQueryDto) {
+    return this.adminService.getApprovals(query);
+  }
+
+  @Get('stats')
+  async getStats() {
+    return this.adminService.getStats();
   }
 
   @Patch('approve/:id')

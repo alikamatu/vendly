@@ -1,2 +1,2 @@
-export type ButtonVariant = "primary" | "ghost";
-export type ButtonSize = "sm" | "md";
+export type ButtonVariant = "primary" | "ghost" | "danger";
+export type ButtonSize = "sm" | "md" | "lg";

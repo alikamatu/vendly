@@ -6,10 +6,8 @@ import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
 import ProgressBar from '@/components/ui/ProgressBar';
-import { StaggerContainer, StaggerItem } from '@/components/common/FormFieldAnimation';
-import { Mail, Lock, User, School } from 'lucide-react';
+import { Mail, Lock, User as UserIcon, School, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { CheckCircle } from 'lucide-react';
 
 export default function RegisterForm() {
   const { form, onSubmit, isLoading, error, clearError } = useRegisterForm();
@@ -31,102 +29,81 @@ export default function RegisterForm() {
 
   if (success) {
     return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="flex flex-col items-center gap-4 py-8 text-center"
-      >
+      <div className="flex flex-col items-center gap-6 py-8 text-center">
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
-          className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400"
+          className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 text-emerald-500 dark:bg-emerald-900/10 dark:text-emerald-400"
         >
-          <CheckCircle size={32} />
+          <CheckCircle size={40} />
         </motion.div>
-        <h3 className="text-xl font-semibold">Check your email!</h3>
-        <p className="max-w-sm text-sm text-foreground/60">
-          We&apos;ve sent a verification link to your email address. Please click the link to verify your account before
-          signing in.
-        </p>
-        <a href="/login" className="mt-2 text-sm font-medium text-accent hover:underline">
+        <div>
+          <h3 className="text-xl font-semibold">Check your email</h3>
+          <p className="mt-2 text-sm text-foreground/60 leading-relaxed">
+            We&apos;ve sent a verification link to your email address. Please verify your account before signing in.
+          </p>
+        </div>
+        <a href="/login" className="text-sm font-medium text-accent hover:underline">
           Back to sign in
         </a>
-      </motion.div>
+      </div>
     );
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      transition={{ duration: 0.3, ease: 'easeOut' }}
-    >
+    <div className="w-full">
       {isLoading && <ProgressBar className="mb-4" />}
 
-      <form onSubmit={handleSubmit} className="w-full space-y-5">
+      <form onSubmit={handleSubmit} className="w-full space-y-8">
         {error && <Alert variant="error" message={error} onDismiss={clearError} />}
 
-        <StaggerContainer className="space-y-5">
-          <StaggerItem>
-            <Input
-              label="Full name"
-              placeholder="John Doe"
-              icon={<User size={18} />}
-              error={errors.full_name?.message}
-              registration={register('full_name')}
-            />
-          </StaggerItem>
+        <div className="space-y-6">
+          <Input
+            label="Full name"
+            icon={<UserIcon size={18} />}
+            error={errors.full_name?.message}
+            registration={register('full_name')}
+          />
 
-          <StaggerItem>
-            <Input
-              label="Email"
-              type="email"
-              placeholder="you@example.com"
-              icon={<Mail size={18} />}
-              error={errors.email?.message}
-              registration={register('email')}
-            />
-          </StaggerItem>
+          <Input
+            label="Email"
+            type="email"
+            icon={<Mail size={18} />}
+            error={errors.email?.message}
+            registration={register('email')}
+          />
 
-          <StaggerItem>
-            <Input
-              label="School"
-              placeholder="University of Example"
-              icon={<School size={18} />}
-              error={errors.school?.message}
-              registration={register('school')}
-            />
-          </StaggerItem>
+          <Input
+            label="School"
+            icon={<School size={18} />}
+            error={errors.school?.message}
+            registration={register('school')}
+          />
 
-          <StaggerItem>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             <Input
               label="Password"
               type="password"
-              placeholder="••••••••"
               icon={<Lock size={18} />}
               error={errors.password?.message}
               registration={register('password')}
             />
-          </StaggerItem>
 
-          <StaggerItem>
             <Input
-              label="Confirm password"
+              label="Confirm"
               type="password"
-              placeholder="••••••••"
               icon={<Lock size={18} />}
               error={errors.confirmPassword?.message}
               registration={register('confirmPassword')}
             />
-          </StaggerItem>
-        </StaggerContainer>
+          </div>
+        </div>
 
         <Button type="submit" variant="primary" className="w-full" isLoading={isLoading}>
           {isLoading ? 'Creating account...' : 'Create account'}
         </Button>
       </form>
-    </motion.div>
+    </div>
   );
 }

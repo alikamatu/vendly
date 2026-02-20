@@ -5,15 +5,19 @@
   --color-foreground: #171717; /* light */
   --color-primary: #000000; /* black */
   --color-accent: #fb923c; /* orange-400 */
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-surface: #ffffff;
+  --color-surface-hover: #f3f4f6;   /* gray-100 */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
 }
 
 @theme inline {
   --color-background: var(--color-background);
   --color-foreground: var(--color-foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-surface: #111827;          /* gray-900 */
+  --color-surface-hover: #1f2937;    /* gray-800 */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -43,9 +47,18 @@
 body {
   background: var(--color-background);
   color: var(--color-foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter);
+  font-weight: normal;
 }
 
 /* small utility tokens used by components */
 .btn-primary { background: var(--color-primary); color: var(--color-background); }
+
 .accent { color: var(--color-accent); }
+
+.bg-\[--color-surface\] {
+  box-shadow: var(--shadow-sm);
+}
+.shadow-md {
+  box-shadow: var(--shadow-md);
+}

@@ -1,7 +1,7 @@
 export const LIGHT = {
   background: "#ffffff",
   foreground: "#171717",
-  primary: "#000000",
+  primary: "#cea205",
   accent: "#fb923c", // orange-400
 };
 
