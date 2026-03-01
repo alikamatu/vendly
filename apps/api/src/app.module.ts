@@ -4,6 +4,9 @@ import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AuthModule } from './auth/auth.module';
+import { StoreModule } from './store/store.module';
+import { ProductModule } from './product/product.module';
+import { CloudinaryModule } from './common/cloudinary.module';
 
 @Module({
   imports: [
@@ -14,6 +17,9 @@ import { AuthModule } from './auth/auth.module';
       throttlers: [{ ttl: 60000, limit: 10 }], // ttl in milliseconds
     }),
     AuthModule,
+    StoreModule,
+    ProductModule,
+    CloudinaryModule,
   ],
   controllers: [AppController],
   providers: [AppService],

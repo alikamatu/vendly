@@ -32,7 +32,7 @@ export default function SellerVerificationPage() {
   // Redirect if not logged in
   useEffect(() => {
     if (!authLoading && !token) {
-      router.replace('/login');
+      router.replace('/register');
     }
   }, [authLoading, token, router]);
 

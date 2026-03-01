@@ -42,7 +42,7 @@ export default function ForgotPasswordPage() {
       <PageTransition>
         <div className="mx-auto w-full max-w-md">
           <a
-            href="/login"
+            href="/register"
             className="mb-6 inline-flex items-center gap-1 text-sm text-foreground/50 hover:text-foreground transition"
           >
             <ArrowLeft size={16} /> Back to sign in
@@ -67,7 +67,7 @@ export default function ForgotPasswordPage() {
                 If an account exists with that email address, we&apos;ve sent a password reset link. Please check your
                 inbox and spam folder.
               </p>
-              <a href="/login" className="mt-2 text-sm font-medium text-accent hover:underline">
+              <a href="/register" className="mt-2 text-sm font-medium text-accent hover:underline">
                 Back to sign in
               </a>
             </motion.div>

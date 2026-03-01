@@ -19,6 +19,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
       message = exception.message;
     }
 
+    if (status === HttpStatus.INTERNAL_SERVER_ERROR) {
+      console.error('Unhandled Exception:', exception);
+    }
+
     response.status(status).json({
       statusCode: status,
       timestamp: new Date().toISOString(),

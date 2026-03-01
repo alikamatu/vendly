@@ -57,6 +57,7 @@ async login(dto: LoginDto) {
   const user = await this.prisma.user.findUnique({
     where: { email: dto.email },
     include: {
+      seller_profile: true,
       admin_approvals: {
         orderBy: { created_at: 'desc' },
         take: 1,
@@ -89,6 +90,15 @@ async login(dto: LoginDto) {
       is_verified: user.is_verified,
       approval_status: latestApproval?.status || null,
       has_verification_doc: !!user.verification_doc,
+      seller_profile: user.seller_profile
+        ? {
+            id: user.seller_profile.id.toString(),
+            store_name: user.seller_profile.store_name,
+            store_link: user.seller_profile.store_link,
+            bio: user.seller_profile.bio,
+            logo_url: user.seller_profile.logo_url,
+          }
+        : null,
     },
   };
 }
@@ -126,6 +136,7 @@ async login(dto: LoginDto) {
             store_name: user.seller_profile.store_name,
             store_link: user.seller_profile.store_link,
             bio: user.seller_profile.bio,
+            logo_url: user.seller_profile.logo_url,
           }
         : null,
       created_at: user.created_at,
@@ -266,6 +277,47 @@ async login(dto: LoginDto) {
   async logout(token: string) {
     this.tokenBlacklist.add(token);
     return { message: 'Logged out successfully' };
+  }
+
+  async updateProfile(userId: bigint, dto: any) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const data: any = {};
+    if (dto.full_name) data.full_name = dto.full_name;
+    if (dto.email && dto.email !== user.email) {
+      const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
+      if (existing) throw new ConflictException('Email already in use');
+      data.email = dto.email;
+    }
+
+    if (dto.new_password) {
+      if (!dto.current_password) {
+        throw new BadRequestException('Current password is required to set a new one');
+      }
+      const isMatch = await bcrypt.compare(dto.current_password, user.password_hash);
+      if (!isMatch) throw new UnauthorizedException('Invalid current password');
+      data.password_hash = await bcrypt.hash(dto.new_password, 10);
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data,
+    });
+
+    return {
+      message: 'Profile updated successfully',
+      user: {
+        id: updated.id.toString(),
+        full_name: updated.full_name,
+        email: updated.email,
+      },
+    };
   }
 
   isTokenBlacklisted(token: string): boolean {

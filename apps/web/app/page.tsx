@@ -1,33 +1,85 @@
 "use client";
 
-import { useTheme } from "@/lib/theme";
-import { motion } from "framer-motion";
-import { Moon, Sun } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { ShoppingBag, Search, Filter, Sparkles } from "lucide-react";
+import { productApi } from "@/lib/api/product";
+import ProductCard from "@/components/products/ProductCard";
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import Loading from "./loading";
 
-export default function Home () {
+export default function HomePage() {
+  const [products, setProducts] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const { theme, setTheme } = useTheme();
-  const isDark = theme === "dark";
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const data = await productApi.getProducts();
+        setProducts(data);
+      } catch (err) {
+        console.error("Failed to fetch products", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
+
+  if (isLoading) return <Loading />;
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-between p-24">
-          <button
-      aria-label="Toggle theme"
-      onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800"
-    >
-      <motion.div
-        key={isDark ? "moon" : "sun"}
-        initial={{ rotate: -20, opacity: 0 }}
-        animate={{ rotate: 0, opacity: 1 }}
-        exit={{ rotate: 20, opacity: 0 }}
-        transition={{ type: "spring", stiffness: 300, damping: 20 }}
-      >
-        {isDark ? <Moon size={18} /> : <Sun size={18} />}
-      </motion.div>
-    </button>
-      <h1 className="text-4xl font-bold">Welcome to Vendly!</h1>
-      <p className="mt-4 text-lg text-gray-600">Your all-in-one e-commerce solution.</p>
+    <div className="min-h-screen bg-background">
+      <DashboardHeader title="Home" />
+
+      <main className="max-w-7xl mx-auto px-4 md:px-8 pt-24 pb-20 space-y-8">
+        {/* Hero / Hero Title */}
+        <section className="space-y-4">
+           <div className="flex items-center gap-2 text-primary font-black uppercase tracking-[0.2em] text-[10px]">
+             <Sparkles className="w-3 h-3" /> Discover Best Deals
+           </div>
+           <h1 className="text-3xl md:text-4xl font-black tracking-tighter max-w-2xl leading-tight">
+             Find unique treasures from campus <span className="text-primary italic">sellers.</span>
+           </h1>
+        </section>
+
+        {/* Search & Filter Bar */}
+        <section className="flex flex-col md:flex-row md:items-center gap-4">
+           <div className="relative flex-1 group">
+             <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-muted group-focus-within:text-primary transition-colors" />
+             <input 
+               type="text"
+               placeholder="Search for products, stores, categories..."
+               className="w-full h-16 pl-14 pr-6 bg-surface border border-border/50 rounded-[2rem] text-xs font-bold outline-none focus:border-primary/50 shadow-sm transition-all"
+               value={searchQuery}
+               onChange={(e) => setSearchQuery(e.target.value)}
+             />
+           </div>
+           <button className="h-16 px-8 bg-surface border border-border/50 rounded-[2rem] flex items-center justify-center gap-3 hover:border-primary/30 transition-all active:scale-95 group">
+             <Filter className="w-4 h-4 text-muted group-hover:text-primary transition-colors" />
+             <span className="text-xs font-bold">Filters</span>
+           </button>
+        </section>
+
+        {/* Masonry Grid */}
+        <section className="columns-2 md:columns-3 lg:columns-4 gap-6 space-y-6">
+           {products.length > 0 ? (
+             products.map((product, idx) => (
+               <ProductCard key={product.id} product={product} index={idx} />
+             ))
+           ) : (
+             <div className="col-span-full py-20 text-center space-y-4 border-2 border-dashed border-border rounded-[3rem] bg-surface/50">
+               <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto text-primary">
+                 <ShoppingBag className="w-8 h-8" />
+               </div>
+               <div>
+                  <h3 className="text-md font-black uppercase">No products found</h3>
+                  <p className="text-xs text-muted font-medium mt-1">Be the first to list something amazing!</p>
+               </div>
+             </div>
+           )}
+        </section>
+      </main>
     </div>
   );
 }

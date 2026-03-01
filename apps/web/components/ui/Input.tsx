@@ -90,7 +90,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
                 top: (isFocused || hasContent) ? -16 : 8,
                 left: icon ? (isFocused || hasContent ? 0 : 32) : 0,
                 scale: (isFocused || hasContent) ? 0.85 : 1,
-                color: error ? '#ef4444' : (isFocused ? 'var(--color-accent)' : 'rgba(var(--color-foreground-rgb), 0.6)')
+                color: error ? '#ef4444' : (isFocused ? 'var(--color-accent)' : 'rgba(var(--color-foreground-rgb))')
               }}
               className="pointer-events-none absolute left-0 origin-left text-base transition-colors duration-200"
             >

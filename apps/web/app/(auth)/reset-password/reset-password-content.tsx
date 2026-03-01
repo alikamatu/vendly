@@ -83,7 +83,7 @@ export default function ResetPasswordContent() {
               <p className="max-w-sm text-sm text-foreground/60">
                 Your password has been reset successfully. You can now sign in with your new password.
               </p>
-              <a href="/login">
+              <a href="/register">
                 <Button variant="primary" size="lg" className="mt-2">
                   Sign in
                 </Button>

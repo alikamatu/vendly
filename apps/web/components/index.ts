@@ -5,5 +5,6 @@ export { default as ProgressBar } from "./ui/ProgressBar";
 export { default as Textarea } from "./ui/Textarea";
 export { default as Container } from "./common/Container";
 export { default as PageTransition } from "./common/PageTransition";
+export { default as Card } from "./ui/Card";
 export { default as Header } from "./layout/Header";
 export { default as Footer } from "./layout/Footer";

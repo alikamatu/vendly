@@ -3,6 +3,11 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 
+// BigInt serialization support
+(BigInt.prototype as any).toJSON = function () {
+  return this.toString();
+};
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.useGlobalPipes(new ValidationPipe({
@@ -14,7 +19,7 @@ async function bootstrap() {
   app.useGlobalFilters(new AllExceptionsFilter());
   // Enable CORS
   app.enableCors({
-    origin: process.env.FRONTEND_URL,
+    origin: ['http://localhost:3000', 'http://localhost:3001'],
     credentials: true,
   });
   await app.listen(1000);

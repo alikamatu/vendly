@@ -8,7 +8,7 @@ export interface User {
   full_name: string;
   email: string;
   school?: string;
-  role: 'USER' | 'ADMIN';
+  role: 'USER' | 'ADMIN' | 'SELLER';
   is_verified: boolean;
   has_verification_doc: boolean;
   approval_status: 'PENDING' | 'APPROVED' | 'REJECTED' | null;
@@ -17,6 +17,7 @@ export interface User {
     store_name: string;
     store_link: string;
     bio: string | null;
+    logo_url: string | null;
   } | null;
 }
 

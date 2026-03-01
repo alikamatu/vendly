@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Role, ApprovalStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ApproveVerificationDto } from './dto/approve-verification.dto';
 import { AdminQueryDto, ApprovalStatusFilter } from './dto/admin-query.dto';
@@ -88,9 +89,9 @@ export class AdminService {
   async getStats() {
     const [total, pending, approved, rejected] = await Promise.all([
       this.prisma.adminApproval.count(),
-      this.prisma.adminApproval.count({ where: { status: 'PENDING' } }),
-      this.prisma.adminApproval.count({ where: { status: 'APPROVED' } }),
-      this.prisma.adminApproval.count({ where: { status: 'REJECTED' } }),
+      this.prisma.adminApproval.count({ where: { status: ApprovalStatus.PENDING } }),
+      this.prisma.adminApproval.count({ where: { status: ApprovalStatus.APPROVED } }),
+      this.prisma.adminApproval.count({ where: { status: ApprovalStatus.REJECTED } }),
     ]);
 
     return { total, pending, approved, rejected };
@@ -109,7 +110,7 @@ export class AdminService {
       throw new NotFoundException('Approval request not found');
     }
 
-    if (approval.status !== 'PENDING') {
+    if (approval.status !== ApprovalStatus.PENDING) {
       throw new BadRequestException(
         'This verification has already been reviewed',
       );
@@ -125,12 +126,12 @@ export class AdminService {
           reviewed_at: new Date(),
         },
       }),
-      // If approved, grant the user full access
+      // If approved, grant the user full access and assign SELLER role
       ...(dto.status === 'APPROVED'
         ? [
             this.prisma.user.update({
               where: { id: approval.user_id },
-              data: { is_verified: true },
+              data: { is_verified: true, role: Role.SELLER },
             }),
           ]
         : []),

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Home, Users, ShieldCheck } from "lucide-react";
+import { Home, Users, ShieldCheck, BarChart3, ReceiptIcon } from "lucide-react";
 import BottomTabs from "@/components/dashboard/BottomTabs";
 import DashboardTab from "@/components/dashboard/DashboardTab";
 import UsersTab from "@/components/dashboard/UsersTab";
@@ -12,6 +12,8 @@ const tabs = [
   { id: "dashboard", label: "Home", icon: Home, component: <DashboardTab /> },
   { id: "users", label: "Users", icon: Users, component: <UsersTab /> },
   { id: "approvals", label: "Approvals", icon: ShieldCheck, component: <ApprovalsTab /> },
+  { id: "analytics", label: "Analytics", icon: BarChart3, component: <div className="p-8 font-black uppercase">Analytics Module (Coming Soon)</div> },
+  { id: "logs", label: "Logs", icon: ReceiptIcon, component: <div className="p-8 font-black uppercase">Activity Logs (Coming Soon)</div> },
 ];
 
 export default function DashboardPage() {

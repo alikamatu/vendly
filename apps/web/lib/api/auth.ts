@@ -116,4 +116,13 @@ export const authApi = {
     });
     return handleResponse<{ message: string }>(res);
   },
+
+  async updateProfile(token: string, data: any) {
+    const res = await fetch(`${API_URL}/auth/profile`, {
+      method: 'PATCH',
+      headers: authHeaders(token),
+      body: JSON.stringify(data),
+    });
+    return handleResponse<{ message: string; user: any }>(res);
+  },
 };

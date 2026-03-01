@@ -11,6 +11,7 @@ datasource db {
 enum Role {
   USER
   ADMIN
+  SELLER
 }
 
 enum ApprovalStatus {
@@ -38,6 +39,7 @@ model User {
   seller_profile    SellerProfile?
   admin_approvals   AdminApproval[]
   reviewed_approvals AdminApproval[] @relation("ReviewedBy")
+  @@map("users")
 }
 
 model SellerProfile {
@@ -45,6 +47,7 @@ model SellerProfile {
   user_id           BigInt      @unique
   store_name        String
   store_link        String      @unique
+  logo_url          String?
   bio               String?
   whatsapp_number   String?     // added for WhatsApp contact
   created_at        DateTime    @default(now())
@@ -52,6 +55,7 @@ model SellerProfile {
 
   user              User        @relation(fields: [user_id], references: [id])
   products          Product[]
+  @@map("seller_profiles")
 }
 
 model Product {
@@ -61,13 +65,15 @@ model Product {
   description       String?
   price             Decimal     @db.Decimal(10,2)
   category          String      // indexed for search
-  image_url         String?
+  image_urls        String[]    @default([])
+  tags              String[]    @default([])
   created_at        DateTime    @default(now())
   updated_at        DateTime    @updatedAt
 
   seller            SellerProfile @relation(fields: [seller_id], references: [id])
 
   @@index([category])
+  @@map("products")
 }
 
 model Category {
@@ -76,6 +82,7 @@ model Category {
   description       String?
   created_at        DateTime    @default(now())
   updated_at        DateTime    @updatedAt
+  @@map("categories")
 }
 
 model AdminApproval {
@@ -88,4 +95,5 @@ model AdminApproval {
 
   user              User        @relation(fields: [user_id], references: [id])
   reviewer          User?       @relation("ReviewedBy", fields: [reviewed_by], references: [id])
+  @@map("admin_approvals")
 }
