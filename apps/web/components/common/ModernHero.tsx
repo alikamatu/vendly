@@ -6,6 +6,7 @@ import { CheckCircle2, ArrowRight, MessageSquare, ShoppingBag } from "lucide-rea
 import Link from "next/link";
 import Button from "../ui/Button";
 import { useAuth } from "@/lib/auth-context";
+import clsx from "@/utils/clsx";
 
 export default function ModernHero() {
   const { user } = useAuth();
