@@ -6,7 +6,6 @@ import { CheckCircle2, ArrowRight, MessageSquare, ShoppingBag } from "lucide-rea
 import Link from "next/link";
 import Button from "../ui/Button";
 import { useAuth } from "@/lib/auth-context";
-import clsx from "@/utils/clsx";
 
 export default function ModernHero() {
   const { user } = useAuth();
@@ -15,9 +14,9 @@ export default function ModernHero() {
   if (user?.role === "SELLER") return null;
 
   const bubbles = [
-    { text: "I want a vintage bag", color: "bg-primary text-white", x: -20, y: -40, delay: 0 },
-    { text: "Check my shop link!", color: "bg-surface border border-border text-foreground", x: 40, y: 20, delay: 0.5 },
-    { text: "Available for delivery?", color: "bg-primary text-white", x: -30, y: 80, delay: 1 },
+    { text: "I want a vintage bag", color: "bg-red-500 text-white shadow-xl shadow-red-500/20", x: -20, y: -40, delay: 0, align: "right" },
+    { text: "Check my shop link!", color: "bg-blue-600 text-white shadow-xl shadow-blue-600/20", x: 40, y: 20, delay: 0.5, align: "left" },
+    { text: "Available for delivery?", color: "bg-red-500 text-white shadow-xl shadow-red-500/20", x: -30, y: 80, delay: 1, align: "right" },
   ];
 
   return (
@@ -102,22 +101,20 @@ export default function ModernHero() {
                   scale: { duration: 0.5, delay: bubble.delay + 0.5 },
                   y: { duration: 4, repeat: Infinity, ease: "easeInOut" }
                 }}
-                className={`absolute p-4 rounded-2xl shadow-xl text-[11px] font-black uppercase tracking-wider relative ${bubble.color}`}
+                className={`absolute p-4 rounded-3xl text-[11px] font-black uppercase tracking-wider ${bubble.color}`}
                 style={{ 
                   left: `50%`, 
                   top: `calc(50% + ${bubble.y}px)`,
                   transform: 'translate(-50%, -50%)'
                 }}
               >
-                <div className="flex items-center gap-2 relative z-10">
+                <div className="flex items-center gap-2 relative">
                   {i % 2 === 0 ? <MessageSquare className="w-3 h-3" /> : <ShoppingBag className="w-3 h-3" />}
                   {bubble.text}
+                  
+                  {/* Chat Pointer */}
+                  <div className={`absolute -bottom-6 ${bubble.align === 'right' ? 'right-2' : 'left-2'} w-4 h-4 ${bubble.color.split(' ')[0]} rotate-45 transform pointer-events-none -z-10`} />
                 </div>
-                {/* Chat Bubble Tail */}
-                <div className={clsx(
-                  "absolute bottom-[-6px] w-3 h-3 rotate-45 z-0",
-                  i % 2 === 0 ? "bg-primary left-4" : "bg-surface border-r border-b border-border right-4"
-                )} />
               </motion.div>
             ))}
           </div>
