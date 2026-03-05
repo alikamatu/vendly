@@ -61,10 +61,6 @@ export class ProductService {
         throw err;
       }
 
-      const duration = videoResult.duration;
-      if (typeof duration === 'number' && duration > 5.1) {
-        throw new BadRequestException('Product video must be 5 seconds or less.');
-      }
       video_url = videoResult.secure_url;
     }
 
