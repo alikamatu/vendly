@@ -56,7 +56,7 @@ export default function HomePage() {
         </section>
 
         {/* Masonry Grid */}
-        <section className="columns-2 md:columns-3 lg:columns-4 gap-6 space-y-6">
+        <section className="columns-2 md:columns-3 lg:columns-4 gap-2">
            {products.length > 0 ? (
              products.map((product, idx) => (
                <ProductCard key={product.id} product={product} index={idx} />

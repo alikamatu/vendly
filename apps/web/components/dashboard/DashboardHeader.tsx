@@ -41,60 +41,42 @@ export default function DashboardHeader({ title, onMenuToggle }: DashboardHeader
       </div>
 
       <div className="flex items-center gap-2 md:gap-4">
-        {/* Role Specific Nav Items */}
+        {/* Common Nav Items (Favorites for Auth Users) */}
         <div className="hidden sm:flex items-center gap-1 md:gap-2 mr-2">
-          {isUser && (
-            <>
-              <Link href="/favorites" className="p-2.5 text-muted hover:text-red-500 hover:bg-red-500/5 rounded-2xl transition-all group" title="Favorites">
-                <Heart className="w-5 h-5 group-active:scale-90 transition-transform" />
-              </Link>
-              <Link href="/cart" className="p-2.5 text-muted hover:text-primary hover:bg-primary/5 rounded-2xl transition-all group relative" title="Cart">
-                <ShoppingBag className="w-5 h-5 group-active:scale-90 transition-transform" />
-                {itemCount > 0 && (
-                  <motion.span
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="absolute -top-0.5 -right-0.5 min-w-[1.25rem] h-5 px-1 flex items-center justify-center bg-primary text-background text-[10px] font-black rounded-full border-2 border-background"
-                  >
-                    {itemCount > 99 ? "99+" : itemCount}
-                  </motion.span>
-                )}
-              </Link>
-              {user?.approval_status !== "APPROVED" && (
-                <Link href="/dashboard/settings/profile">
-                  <button className="ml-2 px-4 py-2 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
-                    Become a Seller
-                  </button>
-                </Link>
-              )}
-            </>
-          )}
-          {/* Cart link when cart has items (e.g. guest added from product page) */}
-          {!isUser && itemCount > 0 && (
-            <Link href="/cart" className="p-2.5 text-muted hover:text-primary hover:bg-primary/5 rounded-2xl transition-all group relative" title="Cart">
-              <ShoppingBag className="w-5 h-5 group-active:scale-90 transition-transform" />
-              <motion.span
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="absolute -top-0.5 -right-0.5 min-w-[1.25rem] h-5 px-1 flex items-center justify-center bg-primary text-background text-[10px] font-black rounded-full border-2 border-background"
-              >
-                {itemCount > 99 ? "99+" : itemCount}
-              </motion.span>
+          {user && (
+            <Link href="/favorites" className="p-2.5 text-muted hover:text-red-500 hover:bg-red-500/5 rounded-2xl transition-all group" title="Favorites">
+              <Heart className="w-5 h-5 group-active:scale-90 transition-transform" />
             </Link>
           )}
 
-          {isSeller && (
-            <>
-              <Link href="/dashboard" className="p-2.5 text-muted hover:text-primary hover:bg-primary/5 rounded-2xl transition-all group" title="Dashboard">
-                <LayoutDashboard className="w-5 h-5 group-active:scale-90 transition-transform" />
-              </Link>
-              <Link href="/dashboard/orders" className="p-2.5 text-muted hover:text-primary hover:bg-primary/5 rounded-2xl transition-all group" title="Orders">
-                <ShoppingBag className="w-5 h-5 group-active:scale-90 transition-transform" />
-              </Link>
-              <Link href="/dashboard/settings" className="p-2.5 text-muted hover:text-primary hover:bg-primary/5 rounded-2xl transition-all group" title="Settings">
-                <Settings className="w-5 h-5 group-active:scale-90 transition-transform" />
-              </Link>
-            </>
+          {/* Unified Cart Link */}
+          <Link href="/cart" className="p-2.5 text-muted hover:text-primary hover:bg-primary/5 rounded-2xl transition-all group relative" title="Cart">
+            <ShoppingBag className="w-5 h-5 group-active:scale-90 transition-transform" />
+            {itemCount > 0 && (
+              <motion.span
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="absolute -top-0.5 -right-0.5 min-w-[1.25rem] h-5 px-1 flex items-center justify-center bg-red-500 text-white text-[10px] font-black rounded-full border-2 border-background shadow-lg"
+              >
+                {itemCount > 99 ? "99+" : itemCount}
+              </motion.span>
+            )}
+          </Link>
+
+          {/* Dashboard/Seller Links - Restricted to SELLER/ADMIN */}
+          {(isSeller || user?.role === "ADMIN") && (
+            <Link href="/dashboard" className="p-2.5 text-muted hover:text-primary hover:bg-primary/5 rounded-2xl transition-all group" title="Dashboard">
+              <LayoutDashboard className="w-5 h-5 group-active:scale-90 transition-transform" />
+            </Link>
+          )}
+
+          {/* Special "Become a Seller" for regular Users */}
+          {user && !isSeller && user.role !== "ADMIN" && user?.approval_status !== "APPROVED" && (
+            <Link href="/dashboard/settings/profile">
+              <button className="ml-2 px-4 py-2 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
+                Become a Seller
+              </button>
+            </Link>
           )}
         </div>
 
@@ -121,37 +103,51 @@ export default function DashboardHeader({ title, onMenuToggle }: DashboardHeader
 
         <div className="h-8 w-[1px] bg-border mx-1"></div>
 
-        {/* User Profile */}
+        {/* User Profile or Login */}
         <div className="flex items-center gap-3 pl-1">
-          <div className="hidden text-right md:block">
-            <p className="text-[11px] font-bold text-foreground leading-none">{user?.full_name}</p>
-            <p className={clsx(
-              "text-[9px] font-black mt-1 uppercase tracking-widest",
-              isSeller ? "text-primary" : "text-muted"
-            )}>
-              {user?.role || "GUEST"}
-            </p>
-          </div>
-          <Link href="/dashboard/settings/profile">
-            <div className="h-10 w-10 overflow-hidden rounded-2xl bg-surface border border-border flex items-center justify-center text-primary shadow-sm hover:border-primary/30 transition-colors">
-              {user?.seller_profile?.logo_url ? (
-                 <img src={user.seller_profile.logo_url} alt="Profile" className="w-full h-full object-cover" />
-              ) : (
-                 <span className="text-xs font-black uppercase tracking-tighter">
-                   {user?.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2) || <User className="w-4 h-4" />}
-                 </span>
-              )}
+          {user ? (
+            <>
+              <div className="hidden text-right md:block">
+                <p className="text-[11px] font-bold text-foreground leading-none">{user.full_name}</p>
+                <p className={clsx(
+                  "text-[9px] font-black mt-1 uppercase tracking-widest",
+                  isSeller ? "text-primary" : "text-muted"
+                )}>
+                  {user.role}
+                </p>
+              </div>
+              <Link href="/dashboard/settings/profile">
+                <div className="h-10 w-10 overflow-hidden rounded-2xl bg-surface border border-border flex items-center justify-center text-primary shadow-sm hover:border-primary/30 transition-colors">
+                  {user.seller_profile?.logo_url ? (
+                     <img src={user.seller_profile.logo_url} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                     <span className="text-xs font-black uppercase tracking-tighter">
+                       {user.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2) || <User className="w-4 h-4" />}
+                     </span>
+                  )}
+                </div>
+              </Link>
+              <button 
+                onClick={logout}
+                className="p-2.5 text-muted hover:text-red-500 hover:bg-red-500/5 rounded-2xl transition-all"
+                title="Sign Out"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
+            </>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Link href="/login">
+                <button className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-muted hover:text-foreground transition-colors">
+                  Login
+                </button>
+              </Link>
+              <Link href="/register">
+                <button className="px-4 py-2 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
+                  Sign Up
+                </button>
+              </Link>
             </div>
-          </Link>
-          
-          {user && (
-            <button 
-              onClick={logout}
-              className="p-2.5 text-muted hover:text-red-500 hover:bg-red-500/5 rounded-2xl transition-all"
-              title="Sign Out"
-            >
-              <LogOut className="w-5 h-5" />
-            </button>
           )}
         </div>
       </div>

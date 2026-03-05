@@ -68,7 +68,7 @@ export default function ProductCard({ product, index }: ProductCardProps) {
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.4, delay: index * 0.05 }}
-      className="break-inside-avoid mb-6"
+      className="break-inside-avoid mb-2"
     >
       <Card
         className="group border-none shadow-none rounded-[2rem] overflow-hidden p-0 bg-transparent"
@@ -136,7 +136,7 @@ export default function ProductCard({ product, index }: ProductCardProps) {
         {/* Content */}
         <div className="p-5 space-y-3">
           <div className="flex items-start justify-between gap-4">
-            <h3 className="text-xs font-black text-foreground line-clamp-1 flex-1 uppercase tracking-tight">
+            <h3 className="text-xs font-black text-foreground line-clamp-1 flex-1 capitalize tracking-tight">
               {product.title}
             </h3>
             <span className="text-xs text-red-500 font-bold text-primary">
