@@ -84,9 +84,11 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                 <video
                   ref={videoRef}
                   src={product.video_url}
+                  autoPlay
                   muted
                   loop
                   playsInline
+                  preload="auto"
                   className="w-full h-auto object-cover"
                 />
               ) : (
