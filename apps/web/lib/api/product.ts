@@ -78,5 +78,10 @@ export const productApi = {
   async getCategories() {
     const res = await fetch(`${API_URL}/products/categories`);
     return handleResponse<{ id: string; name: string; fields: any[] }[]>(res);
+  },
+
+  async getProductsByStoreSlug(slug: string) {
+    const res = await fetch(`${API_URL}/products/store/${slug}`);
+    return handleResponse<any[]>(res);
   }
 };

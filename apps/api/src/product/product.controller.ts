@@ -59,4 +59,9 @@ export class ProductController {
   async getProductById(@Param('id') id: string) {
     return this.productService.getProductById(BigInt(id));
   }
+
+  @Get('store/:link')
+  async getProductsByStore(@Param('link') link: string) {
+    return this.productService.getProductsByStoreLink(link);
+  }
 }

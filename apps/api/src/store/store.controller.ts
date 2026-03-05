@@ -11,6 +11,7 @@ import {
   Request,
   Patch,
   Get,
+  Param,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { StoreService } from './store.service';
@@ -21,11 +22,11 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/guards/roles.decorator';
 
 @Controller('stores')
-@UseGuards(JwtAuthGuard, RolesGuard)
 export class StoreController {
   constructor(private readonly storeService: StoreService) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SELLER')
   @UseInterceptors(FileInterceptor('logo'))
   async createStore(
@@ -46,6 +47,7 @@ export class StoreController {
   }
 
   @Patch()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SELLER')
   @UseInterceptors(FileInterceptor('logo'))
   async updateStore(
@@ -66,8 +68,15 @@ export class StoreController {
   }
 
   @Get('stats')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SELLER')
   async getStoreStats(@Request() req) {
     return this.storeService.getStoreStats(BigInt(req.user.id));
+  }
+
+  @Get('link/:link')
+  // Public endpoint
+  async getStoreByLink(@Param('link') link: string) {
+    return this.storeService.getStoreByLink(link);
   }
 }

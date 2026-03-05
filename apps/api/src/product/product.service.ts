@@ -147,6 +147,30 @@ export class ProductService {
     return product;
   }
 
+
+
+  async getProductsByStoreLink(link: string) {
+    return (this.prisma.product as any).findMany({
+      where: {
+        seller: {
+          store_link: link,
+        },
+      },
+      include: {
+        seller: {
+          select: {
+            store_name: true,
+            logo_url: true,
+            store_link: true,
+          }
+        }
+      },
+      orderBy: {
+        created_at: 'desc',
+      }
+    });
+  }
+
   async getCategories() {
     return this.prisma.category.findMany({
       select: {

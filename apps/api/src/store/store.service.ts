@@ -195,4 +195,27 @@ export class StoreService {
       recentOrders,
     };
   }
+
+  async getStoreByLink(link: string) {
+    const store = await this.prisma.sellerProfile.findUnique({
+      where: { store_link: link },
+    });
+
+    if (!store) {
+      throw new NotFoundException('Store not found');
+    }
+
+    return {
+      id: store.id.toString(),
+      store_name: store.store_name,
+      store_link: store.store_link,
+      logo_url: store.logo_url,
+      bio: store.bio,
+      whatsapp_number: store.whatsapp_number,
+      location: store.location,
+      delivery_policies: store.delivery_policies,
+      business_hours: store.business_hours,
+      social_links: store.social_links,
+    };
+  }
 }

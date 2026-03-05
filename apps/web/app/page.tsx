@@ -6,6 +6,7 @@ import { productApi } from "@/lib/api/product";
 import ProductCard from "@/components/products/ProductCard";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import Loading from "./loading";
+import ModernHero from "@/components/common/ModernHero";
 
 export default function HomePage() {
   const [products, setProducts] = useState<any[]>([]);
@@ -31,20 +32,13 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-background">
       <DashboardHeader title="Home" />
+      
+      {/* Modern Hero Section */}
+      <ModernHero />
 
-      <main className="max-w-7xl mx-auto px-4 md:px-8 pt-24 pb-20 space-y-8">
-        {/* Hero / Hero Title */}
-        <section className="space-y-4">
-           <div className="flex items-center gap-2 text-primary font-black uppercase tracking-[0.2em] text-[10px]">
-             <Sparkles className="w-3 h-3" /> Discover Best Deals
-           </div>
-           <h1 className="text-3xl md:text-4xl font-black tracking-tighter max-w-2xl leading-tight">
-             Find unique treasures from campus <span className="text-primary italic">sellers.</span>
-           </h1>
-        </section>
-
+      <main className="max-w-7xl mx-auto px-6 md:px-8 pb-32 space-y-12 relative z-10 -mt-20">
         {/* Search & Filter Bar */}
-        <section className="flex flex-col md:flex-row md:items-center gap-4">
+        <section className="flex flex-col md:flex-row md:items-center gap-4 bg-surface/50 backdrop-blur-xl p-4 rounded-[2.5rem] border border-border/50 shadow-2xl shadow-primary/5">
            <div className="relative flex-1 group">
              <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-muted group-focus-within:text-primary transition-colors" />
              <input 

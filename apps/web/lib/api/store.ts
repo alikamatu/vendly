@@ -9,13 +9,6 @@ async function handleResponse<T>(response: Response): Promise<T> {
   return response.json();
 }
 
-function authHeaders(token: string) {
-  return {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${token}`,
-  };
-}
-
 export interface CreateStoreInput {
   store_name: string;
   store_link: string;
@@ -25,38 +18,6 @@ export interface CreateStoreInput {
 }
 
 export const storeApi = {
-  async createStore(token: string, data: CreateStoreInput) {
-    // We send as JSON because we upload the image to Cloudinary first on the frontend
-    // then send the logo_url to the backend. Alternatively, we could send as FormData
-    // if we wanted the backend to handle the upload. 
-    // Given the backend implementation uses Multer, let's stick to FormData for consistency 
-    // with the backend's FileInterceptor('logo').
-
-    const formData = new FormData();
-    formData.append('store_name', data.store_name);
-    formData.append('store_link', data.store_link);
-    if (data.bio) formData.append('bio', data.bio);
-    if (data.whatsapp_number) formData.append('whatsapp_number', data.whatsapp_number);
-    
-    // If we have a file to upload from the frontend, we'd handle it here.
-    // However, the plan was to integrate Cloudinary. 
-    // Let's refine the approach: Frontend uploads to Cloudinary, sends URL to backend.
-    // Wait, the backend implementation I just wrote uses FileInterceptor('logo').
-    // So better to send the File object from frontend directly to backend.
-
-    const res = await fetch(`${API_URL}/stores`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        // Note: Don't set Content-Type for FormData, the browser will set it with the boundary
-      },
-      body: data as any instanceof FormData ? (data as any) : JSON.stringify(data),
-    });
-
-    // Re-evaluating: The backend controller is expecting FileInterceptor('logo').
-    // Let's make a dedicated method for that.
-  },
-
   async createStoreWithFile(token: string, data: CreateStoreInput, logoFile?: File) {
     const formData = new FormData();
     formData.append('store_name', data.store_name);
@@ -101,5 +62,15 @@ export const storeApi = {
       },
     });
     return handleResponse<{ stats: any[]; recentOrders: any[] }>(res);
+  },
+
+  async getStoreBySlug(slug: string) {
+    const res = await fetch(`${API_URL}/stores/link/${slug}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse<any>(res);
   }
 };
