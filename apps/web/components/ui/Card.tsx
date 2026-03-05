@@ -4,7 +4,9 @@ import React from "react";
 import clsx from "@/utils/clsx";
 import { motion, HTMLMotionProps } from "framer-motion";
 
-interface CardProps extends HTMLMotionProps<"div"> {
+import { HTMLAttributes } from "react";
+
+interface CardProps extends HTMLAttributes<HTMLDivElement> {
   hoverEffect?: boolean;
 }
 

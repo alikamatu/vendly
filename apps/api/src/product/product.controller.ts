@@ -12,7 +12,7 @@ import {
   Request,
   Param
 } from '@nestjs/common';
-import { FilesInterceptor } from '@nestjs/platform-express';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -26,13 +26,28 @@ export class ProductController {
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SELLER')
-  @UseInterceptors(FilesInterceptor('images', 3))
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'images', maxCount: 3 },
+      { name: 'video', maxCount: 1 },
+    ]),
+  )
   async createProduct(
     @Request() req,
     @Body() dto: CreateProductDto,
-    @UploadedFiles() files: Express.Multer.File[],
+    @UploadedFiles() files: { images?: Express.Multer.File[]; video?: Express.Multer.File[] },
   ) {
-    return this.productService.createProduct(BigInt(req.user.id), dto, files);
+    return this.productService.createProduct(
+      BigInt(req.user.id),
+      dto,
+      files.images || [],
+      files.video?.[0],
+    );
+  }
+
+  @Get('categories')
+  async getCategories() {
+    return this.productService.getCategories();
   }
 
   @Get()
@@ -43,10 +58,5 @@ export class ProductController {
   @Get(':id')
   async getProductById(@Param('id') id: string) {
     return this.productService.getProductById(BigInt(id));
-  }
-
-  @Get('categories')
-  async getCategories() {
-    return this.productService.getCategories();
   }
 }

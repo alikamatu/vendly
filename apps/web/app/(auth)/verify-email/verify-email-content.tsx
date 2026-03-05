@@ -63,7 +63,7 @@ export default function VerifyEmailContent() {
               </motion.div>
               <h1 className="text-2xl font-bold">Email Verified!</h1>
               <Alert variant="success" message={message} />
-              <a href="/register">
+              <a href="/register?mode=login">
                 <Button variant="primary" size="lg" className="mt-4">
                   Sign in to your account
                 </Button>

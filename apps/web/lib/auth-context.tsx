@@ -18,6 +18,11 @@ export interface User {
     store_link: string;
     bio: string | null;
     logo_url: string | null;
+    location: string | null;
+    delivery_policies: string | null;
+    business_hours: string | null;
+    whatsapp_number: string | null;
+    social_links: any | null;
   } | null;
 }
 

@@ -9,6 +9,22 @@ export class CreateProductDto {
   @IsOptional()
   description?: string;
 
+  @IsString()
+  @IsOptional()
+  currency?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  condition: string;
+
+  @IsNumberString()
+  @IsOptional()
+  quantity_available?: string;
+
+  @IsString()
+  @IsOptional()
+  status?: string;
+
   @IsNumberString()
   @IsNotEmpty()
   price: string;
@@ -21,4 +37,7 @@ export class CreateProductDto {
   @IsOptional()
   @IsString({ each: true })
   tags?: string[];
+
+  @IsOptional()
+  attributes?: string; // Will be parsed in service if sent as string
 }

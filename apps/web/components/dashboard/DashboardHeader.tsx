@@ -3,8 +3,11 @@
 import React from "react";
 import { useTheme } from "@/lib/theme";
 import { useAuth } from "@/lib/auth-context";
-import { Moon, Sun, Bell, User, LayoutDashboard } from "lucide-react";
+import { useCart } from "@/lib/cart-context";
+import { Moon, Sun, User, LayoutDashboard, ShoppingBag, Heart, Settings, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
+import clsx from "@/utils/clsx";
 
 interface DashboardHeaderProps {
   title: string;
@@ -13,22 +16,90 @@ interface DashboardHeaderProps {
 
 export default function DashboardHeader({ title, onMenuToggle }: DashboardHeaderProps) {
   const { theme, setTheme } = useTheme();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const { itemCount } = useCart();
   const isDark = theme === "dark";
+
+  const isSeller = user?.role === "SELLER";
+  const isUser = user?.role === "USER";
 
   return (
     <header className="sticky top-0 z-30 flex h-20 items-center justify-between border-b border-border bg-background/80 px-4 md:px-8 backdrop-blur-md">
       <div className="flex items-center gap-4">
-        <button 
-          onClick={onMenuToggle}
-          className="lg:hidden p-2.5 bg-surface border border-border rounded-xl text-muted hover:text-foreground transition-all"
-        >
-           <LayoutDashboard className="w-5 h-5" />
-        </button>
-        <h1 className="text-md font-bold tracking-tight text-foreground truncate max-w-[150px] md:max-w-none">{title}</h1>
+        {isSeller && (
+          <button 
+            onClick={onMenuToggle}
+            className="lg:hidden p-2.5 bg-surface border border-border rounded-xl text-muted hover:text-foreground transition-all"
+          >
+             <LayoutDashboard className="w-5 h-5" />
+          </button>
+        )}
+        <Link href="/" className="flex items-center gap-2 group">
+          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-black text-xs shadow-lg shadow-primary/20 transition-transform group-hover:scale-105">V</div>
+          <h1 className="text-md font-bold tracking-tight text-foreground truncate max-w-[100px] md:max-w-none">{title}</h1>
+        </Link>
       </div>
 
       <div className="flex items-center gap-2 md:gap-4">
+        {/* Role Specific Nav Items */}
+        <div className="hidden sm:flex items-center gap-1 md:gap-2 mr-2">
+          {isUser && (
+            <>
+              <Link href="/favorites" className="p-2.5 text-muted hover:text-red-500 hover:bg-red-500/5 rounded-2xl transition-all group" title="Favorites">
+                <Heart className="w-5 h-5 group-active:scale-90 transition-transform" />
+              </Link>
+              <Link href="/cart" className="p-2.5 text-muted hover:text-primary hover:bg-primary/5 rounded-2xl transition-all group relative" title="Cart">
+                <ShoppingBag className="w-5 h-5 group-active:scale-90 transition-transform" />
+                {itemCount > 0 && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="absolute -top-0.5 -right-0.5 min-w-[1.25rem] h-5 px-1 flex items-center justify-center bg-primary text-background text-[10px] font-black rounded-full border-2 border-background"
+                  >
+                    {itemCount > 99 ? "99+" : itemCount}
+                  </motion.span>
+                )}
+              </Link>
+              {user?.approval_status !== "APPROVED" && (
+                <Link href="/dashboard/settings/profile">
+                  <button className="ml-2 px-4 py-2 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
+                    Become a Seller
+                  </button>
+                </Link>
+              )}
+            </>
+          )}
+          {/* Cart link when cart has items (e.g. guest added from product page) */}
+          {!isUser && itemCount > 0 && (
+            <Link href="/cart" className="p-2.5 text-muted hover:text-primary hover:bg-primary/5 rounded-2xl transition-all group relative" title="Cart">
+              <ShoppingBag className="w-5 h-5 group-active:scale-90 transition-transform" />
+              <motion.span
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="absolute -top-0.5 -right-0.5 min-w-[1.25rem] h-5 px-1 flex items-center justify-center bg-primary text-background text-[10px] font-black rounded-full border-2 border-background"
+              >
+                {itemCount > 99 ? "99+" : itemCount}
+              </motion.span>
+            </Link>
+          )}
+
+          {isSeller && (
+            <>
+              <Link href="/dashboard" className="p-2.5 text-muted hover:text-primary hover:bg-primary/5 rounded-2xl transition-all group" title="Dashboard">
+                <LayoutDashboard className="w-5 h-5 group-active:scale-90 transition-transform" />
+              </Link>
+              <Link href="/dashboard/orders" className="p-2.5 text-muted hover:text-primary hover:bg-primary/5 rounded-2xl transition-all group" title="Orders">
+                <ShoppingBag className="w-5 h-5 group-active:scale-90 transition-transform" />
+              </Link>
+              <Link href="/dashboard/settings" className="p-2.5 text-muted hover:text-primary hover:bg-primary/5 rounded-2xl transition-all group" title="Settings">
+                <Settings className="w-5 h-5 group-active:scale-90 transition-transform" />
+              </Link>
+            </>
+          )}
+        </div>
+
+        <div className="h-8 w-[1px] bg-border mx-1 hidden sm:block"></div>
+
         {/* Theme Toggle */}
         <button
           onClick={() => setTheme(isDark ? "light" : "dark")}
@@ -51,18 +122,37 @@ export default function DashboardHeader({ title, onMenuToggle }: DashboardHeader
         <div className="h-8 w-[1px] bg-border mx-1"></div>
 
         {/* User Profile */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 pl-1">
           <div className="hidden text-right md:block">
-            <p className="text-xs font-bold text-foreground leading-none">{user?.full_name}</p>
-            <p className="text-[10px] font-bold text-muted mt-1 uppercase tracking-widest">SELLER</p>
+            <p className="text-[11px] font-bold text-foreground leading-none">{user?.full_name}</p>
+            <p className={clsx(
+              "text-[9px] font-black mt-1 uppercase tracking-widest",
+              isSeller ? "text-primary" : "text-muted"
+            )}>
+              {user?.role || "GUEST"}
+            </p>
           </div>
-          <div className="h-10 w-10 overflow-hidden rounded-2xl bg-surface border border-border flex items-center justify-center text-primary shadow-sm">
-            {user?.seller_profile?.logo_url ? (
-               <img src={user.seller_profile.logo_url} alt="Profile" className="w-full h-full object-cover" />
-            ) : (
-               <span className="text-xs font-bold uppercase">{user?.full_name?.charAt(0) || <User className="w-4 h-4" />}</span>
-            )}
-          </div>
+          <Link href="/dashboard/settings/profile">
+            <div className="h-10 w-10 overflow-hidden rounded-2xl bg-surface border border-border flex items-center justify-center text-primary shadow-sm hover:border-primary/30 transition-colors">
+              {user?.seller_profile?.logo_url ? (
+                 <img src={user.seller_profile.logo_url} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                 <span className="text-xs font-black uppercase tracking-tighter">
+                   {user?.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2) || <User className="w-4 h-4" />}
+                 </span>
+              )}
+            </div>
+          </Link>
+          
+          {user && (
+            <button 
+              onClick={logout}
+              className="p-2.5 text-muted hover:text-red-500 hover:bg-red-500/5 rounded-2xl transition-all"
+              title="Sign Out"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
+          )}
         </div>
       </div>
     </header>

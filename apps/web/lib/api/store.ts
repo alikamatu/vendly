@@ -90,5 +90,16 @@ export const storeApi = {
       body: formData,
     });
     return handleResponse<{ message: string; store: any }>(res);
+  },
+
+  async getStoreStats(token: string) {
+    const res = await fetch(`${API_URL}/stores/stats`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse<{ stats: any[]; recentOrders: any[] }>(res);
   }
 };

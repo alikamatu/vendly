@@ -4,8 +4,14 @@ import { Container } from '@/components';
 import AuthTabs from '@/components/auth/auth-tabs';
 import { ShoppingBag } from 'lucide-react';
 import Image from 'next/image';
+import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 
-export default function RegisterPage() {
+function RegisterContent() {
+  const searchParams = useSearchParams();
+  const mode = searchParams.get('mode') as 'login' | 'register' | null;
+  const defaultTab = mode || 'register';
+
   return (
     <Container className="flex min-h-screen items-center justify-center py-8">
       <div className="grid w-full max-w-5xl grid-cols-1 gap-8 md:grid-cols-2 md:gap-12">
@@ -20,7 +26,7 @@ export default function RegisterPage() {
             </p>
           </div>
 
-          <AuthTabs defaultTab="register" />
+          <AuthTabs defaultTab={defaultTab} />
         </div>
 
         {/* Right column: image */}
@@ -43,5 +49,13 @@ export default function RegisterPage() {
         </div>
       </div>
     </Container>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={null}>
+      <RegisterContent />
+    </Suspense>
   );
 }

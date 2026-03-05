@@ -23,4 +23,19 @@ export class UpdateStoreDto {
   @IsUrl()
   @IsOptional()
   logo_url?: string;
+
+  @IsString()
+  @IsOptional()
+  location?: string;
+
+  @IsString()
+  @IsOptional()
+  delivery_policies?: string;
+
+  @IsString()
+  @IsOptional()
+  business_hours?: string;
+
+  @IsOptional()
+  social_links?: any;
 }

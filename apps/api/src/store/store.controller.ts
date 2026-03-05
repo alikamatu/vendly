@@ -10,6 +10,7 @@ import {
   FileTypeValidator,
   Request,
   Patch,
+  Get,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { StoreService } from './store.service';
@@ -62,5 +63,11 @@ export class StoreController {
     logo?: Express.Multer.File,
   ) {
     return this.storeService.updateStore(BigInt(req.user.id), dto, logo);
+  }
+
+  @Get('stats')
+  @Roles('SELLER')
+  async getStoreStats(@Request() req) {
+    return this.storeService.getStoreStats(BigInt(req.user.id));
   }
 }

@@ -39,6 +39,7 @@ model User {
   seller_profile    SellerProfile?
   admin_approvals   AdminApproval[]
   reviewed_approvals AdminApproval[] @relation("ReviewedBy")
+  orders            Order[]         @relation("BuyerOrders")
   @@map("users")
 }
 
@@ -50,6 +51,10 @@ model SellerProfile {
   logo_url          String?
   bio               String?
   whatsapp_number   String?     // added for WhatsApp contact
+  location          String?
+  delivery_policies String?
+  business_hours    String?
+  social_links      Json?       @default("{}")
   created_at        DateTime    @default(now())
   updated_at        DateTime    @updatedAt
 
@@ -64,22 +69,60 @@ model Product {
   title             String
   description       String?
   price             Decimal     @db.Decimal(10,2)
+  currency          String      @default("GHS") @db.VarChar(3)
+  condition         String      @default("new") @db.VarChar(20)
+  quantity_available Int        @default(1)
+  status            String      @default("draft") @db.VarChar(20)
+  is_featured       Boolean     @default(false)
+  views_count       Int         @default(0)
   category          String      // indexed for search
+  attributes        Json?       @default("{}")
   image_urls        String[]    @default([])
+  video_url         String?
   tags              String[]    @default([])
   created_at        DateTime    @default(now())
   updated_at        DateTime    @updatedAt
 
   seller            SellerProfile @relation(fields: [seller_id], references: [id])
+  order_items       OrderItem[]
 
   @@index([category])
+  @@index([attributes(ops: JsonbPathOps)], type: Gin)
   @@map("products")
+}
+
+model Order {
+  id                BigInt      @id @default(autoincrement())
+  buyer_id          BigInt
+  total_amount      Decimal     @db.Decimal(10,2)
+  status            String      @default("PENDING") // PENDING, COMPLETED, CANCELLED
+  created_at        DateTime    @default(now())
+  updated_at        DateTime    @updatedAt
+
+  buyer             User        @relation("BuyerOrders", fields: [buyer_id], references: [id])
+  items             OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id                BigInt      @id @default(autoincrement())
+  order_id          BigInt
+  product_id        BigInt
+  quantity          Int
+  price             Decimal     @db.Decimal(10,2)
+
+  order             Order       @relation(fields: [order_id], references: [id])
+  product           Product     @relation(fields: [product_id], references: [id])
+
+  @@map("order_items")
 }
 
 model Category {
   id                BigInt      @id @default(autoincrement())
   name              String      @unique
   description       String?
+  fields            Json?       @default("[]") // Dynamic fields configuration
   created_at        DateTime    @default(now())
   updated_at        DateTime    @updatedAt
   @@map("categories")

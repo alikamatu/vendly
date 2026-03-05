@@ -120,6 +120,48 @@ export default function ProfileSettingsPage() {
           {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Update Profile"}
         </Button>
       </form>
+
+      {user?.role === "USER" && (
+        <Card className="p-6 md:p-8 space-y-6 border-accent/20 bg-accent/5" hoverEffect={true}>
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-12 h-12 rounded-xl bg-accent text-white flex items-center justify-center">
+              <Shield className="w-6 h-6" />
+            </div>
+            <div className="flex-1">
+              <p className="text-xs font-black uppercase">Sell on Vendly</p>
+              <p className="text-[10px] text-muted font-medium italic">Start your business on campus</p>
+            </div>
+            {user.approval_status === "PENDING" && (
+              <div className="px-3 py-1 rounded-full bg-amber-500/10 text-amber-500 text-[10px] font-bold uppercase">
+                Pending Approval
+              </div>
+            )}
+            {user.approval_status === "REJECTED" && (
+              <div className="px-3 py-1 rounded-full bg-red-500/10 text-red-500 text-[10px] font-bold uppercase">
+                Verification Rejected
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-4">
+            <p className="text-xs font-medium text-foreground/80 leading-relaxed">
+              {user.approval_status === "PENDING" 
+                ? "Your verification request is currently being reviewed by our team. You will be notified once it's approved."
+                : user.approval_status === "REJECTED"
+                ? "Your previous verification request was rejected. Please review our policies and try again with correct documents."
+                : "Become a seller and reach thousands of students. You'll need to provide a student ID or business registration for verification."}
+            </p>
+            
+            {(user.approval_status === null || user.approval_status === "REJECTED") && (
+              <Link href="/seller-verification">
+                <Button variant="secondary" className="w-full h-12 border-accent text-accent hover:bg-accent hover:text-white font-black uppercase text-[10px] tracking-widest">
+                  Start Verification
+                </Button>
+              </Link>
+            )}
+          </div>
+        </Card>
+      )}
     </div>
   );
 }

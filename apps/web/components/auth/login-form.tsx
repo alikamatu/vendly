@@ -31,11 +31,7 @@ export default function LoginForm() {
   // Redirect after successful login
   React.useEffect(() => {
     if (user && !isLoading) {
-      if (user.approval_status === 'APPROVED') {
-        router.push('/');
-      } else {
-        router.push('/seller-verification');
-      }
+      router.push('/');
     }
   }, [user, isLoading, router]);
 

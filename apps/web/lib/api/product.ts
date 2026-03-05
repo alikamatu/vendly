@@ -19,25 +19,42 @@ export interface CreateProductInput {
   title: string;
   description?: string;
   price: string;
+  currency?: string;
+  condition: string;
+  quantity_available?: string;
+  status?: string;
   category: string;
   tags?: string[];
+  attributes?: Record<string, any>;
 }
 
 export const productApi = {
-  async createProduct(token: string, data: CreateProductInput, images: File[]) {
+  async createProduct(token: string, data: CreateProductInput, images: File[], video?: File | null) {
     const formData = new FormData();
     formData.append('title', data.title);
     if (data.description) formData.append('description', data.description);
     formData.append('price', data.price);
+    if (data.currency) formData.append('currency', data.currency);
+    formData.append('condition', data.condition);
+    if (data.quantity_available) formData.append('quantity_available', data.quantity_available);
+    if (data.status) formData.append('status', data.status);
     formData.append('category', data.category);
     
     if (data.tags) {
       data.tags.forEach(tag => formData.append('tags[]', tag));
     }
 
+    if (data.attributes) {
+      formData.append('attributes', JSON.stringify(data.attributes));
+    }
+
     images.forEach(image => {
       formData.append('images', image);
     });
+
+    if (video) {
+      formData.append('video', video);
+    }
 
     const res = await fetch(`${API_URL}/products`, {
       method: 'POST',
@@ -60,6 +77,6 @@ export const productApi = {
 
   async getCategories() {
     const res = await fetch(`${API_URL}/products/categories`);
-    return handleResponse<{ id: string; name: string }[]>(res);
+    return handleResponse<{ id: string; name: string; fields: any[] }[]>(res);
   }
 };

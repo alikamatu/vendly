@@ -14,7 +14,12 @@ export class ProductService {
     private cloudinaryService: CloudinaryService,
   ) {}
 
-  async createProduct(userId: bigint, dto: CreateProductDto, files: Express.Multer.File[]) {
+  async createProduct(
+    userId: bigint,
+    dto: CreateProductDto,
+    images: Express.Multer.File[],
+    video?: Express.Multer.File,
+  ) {
     // 1. Get seller profile
     const seller = await this.prisma.sellerProfile.findUnique({
       where: { user_id: userId },
@@ -25,26 +30,70 @@ export class ProductService {
     }
 
     // 2. Upload images to Cloudinary (Max 3)
-    if (files.length > 3) {
+    if (images.length > 3) {
       throw new BadRequestException('Maximum 3 images allowed');
     }
 
     const image_urls: string[] = [];
-    for (const file of files) {
-      const uploadResult = await this.cloudinaryService.uploadImage(file, 'products');
+    for (const file of images) {
+      const uploadResult = await this.cloudinaryService.uploadImage(file, 'products', { quality: 'auto' });
       image_urls.push(uploadResult.secure_url);
     }
 
-    // 3. Create product
+    // 3. Optional short video upload (max ~5 seconds)
+    let video_url: string | undefined;
+    if (video) {
+      // Hard size guard so very long/high-res videos are rejected before upload work
+      const MAX_VIDEO_BYTES = 15 * 1024 * 1024; // ~15 MB
+      if (video.size > MAX_VIDEO_BYTES) {
+        throw new BadRequestException('Product video is too large. Please upload a short clip (max ~5 seconds).');
+      }
+
+      let videoResult: any;
+      try {
+        videoResult = await this.cloudinaryService.uploadVideo(video, 'products');
+      } catch (err: any) {
+        // Normalize common upload failures into a user-facing validation error
+        const message = (err && err.message) || '';
+        if (message.toLowerCase().includes('file size too large') || message.toLowerCase().includes('timeout')) {
+          throw new BadRequestException('Product video is too long or too large. Please upload a clip up to 5 seconds.');
+        }
+        throw err;
+      }
+
+      const duration = videoResult.duration;
+      if (typeof duration === 'number' && duration > 5.1) {
+        throw new BadRequestException('Product video must be 5 seconds or less.');
+      }
+      video_url = videoResult.secure_url;
+    }
+
+    // 5. Parse attributes if provided
+    let parsedAttributes = {};
+    if (dto.attributes) {
+      try {
+        parsedAttributes = typeof dto.attributes === 'string' ? JSON.parse(dto.attributes) : dto.attributes;
+      } catch (err) {
+        console.warn('Failed to parse product attributes', err);
+      }
+    }
+
+    // 6. Create product
     const product = await this.prisma.product.create({
       data: {
         seller_id: seller.id,
         title: dto.title,
         description: dto.description,
         price: new Decimal(dto.price) as any,
+        currency: dto.currency || 'GHS',
+        condition: dto.condition || 'new',
+        quantity_available: dto.quantity_available ? parseInt(dto.quantity_available, 10) : 1,
+        status: dto.status || 'draft',
         category: dto.category,
         image_urls,
+        video_url,
         tags: dto.tags || [],
+        attributes: parsedAttributes,
       } as any,
     });
 
@@ -103,6 +152,7 @@ export class ProductService {
       select: {
         id: true,
         name: true,
+        fields: true,
       },
     });
   }
