@@ -7,8 +7,9 @@ import { useRouter } from "next/navigation";
 import { productApi } from "@/lib/api/product";
 import Portal from "../common/Portal";
 
-// alias used to bypass strict framer-motion prop typings
+// aliases used to bypass strict framer-motion prop typings
 const MotionDiv: any = motion.div;
+const MotionButton: any = motion.button;
 
 interface GlobalSearchProps {
   isOpen: boolean;
@@ -167,7 +168,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                            {suggestions.length > 0 ? (
                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                {suggestions.map((item, idx) => (
-                                 <motion.button
+                                  <MotionButton
                                    key={item.id}
                                    initial={{ opacity: 0, y: 10 }}
                                    animate={{ opacity: 1, y: 0 }}
@@ -208,7 +209,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                                 Array.from({ length: 8 }).map((_, i) => <div key={i} className="h-14 bg-surface rounded-2xl animate-pulse" />)
                               ) : (
                                 categories.map((cat, idx) => (
-                                  <motion.button
+                                  <MotionButton
                                     key={cat.id}
                                     initial={{ opacity: 0, scale: 0.9 }}
                                     animate={{ opacity: 1, scale: 1 }}
