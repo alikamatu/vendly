@@ -187,7 +187,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                                        </div>
                                     </div>
                                     <ArrowRight className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-all" />
-                                 </motion.button>
+                                 </MotionButton>
                                ))}
                              </div>
                            ) : !isLoading && (
