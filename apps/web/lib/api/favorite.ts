@@ -8,7 +8,7 @@ export const favoriteApi = {
 
   getFavorites: async (): Promise<any[]> => {
     const response = await api.get('/favorites');
-    return response.data;
+    return response.data as any[];
   },
 
   getFavoriteIds: async () => {
