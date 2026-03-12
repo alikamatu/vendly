@@ -31,7 +31,8 @@ export function FavoriteProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoading(true);
       const ids = await favoriteApi.getFavoriteIds();
-      setFavorites(ids.map(String));
+      setFavorites(ids.map(id => String(id)));
+
     } catch (err) {
       console.error("Failed to load favorites", err);
     } finally {

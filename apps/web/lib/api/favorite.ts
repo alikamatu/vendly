@@ -11,8 +11,8 @@ export const favoriteApi = {
     return response.data as any[];
   },
 
-  getFavoriteIds: async () => {
+  getFavoriteIds: async (): Promise<string[]> => {
     const response = await api.get('/favorites/ids');
-    return response.data;
+    return response.data as string[];
   },
 };
