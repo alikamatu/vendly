@@ -12,7 +12,8 @@ import {
   Info,
   Tag,
   LayoutGrid,
-  ShoppingBag
+  ShoppingBag,
+  AlertCircle
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -32,6 +33,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   const [isFetching, setIsFetching] = useState(true);
   const [isCompressing, setIsCompressing] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error" | "info"; text: string } | null>(null);
+  const [error, setError] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     title: "",
@@ -97,6 +99,20 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     
     if (token) fetchData();
   }, [id, token]);
+
+  // optionally render error message on screen
+  if (error) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 mt-20 text-center">
+        <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4 opacity-20" />
+        <h2 className="text-xl font-black uppercase tracking-tight mb-2">Error Loading Product</h2>
+        <p className="text-[10px] text-muted font-bold uppercase tracking-widest mb-8">{error}</p>
+        <Link href="/dashboard/products">
+           <Button variant="secondary" className="rounded-2xl px-8">Back to products</Button>
+        </Link>
+      </div>
+    );
+  }
 
   const handleCategoryChange = (catName: string) => {
     const selectedCat = categories.find(c => c.name === catName);
