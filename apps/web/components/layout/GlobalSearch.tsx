@@ -7,6 +7,9 @@ import { useRouter } from "next/navigation";
 import { productApi } from "@/lib/api/product";
 import Portal from "../common/Portal";
 
+// alias used to bypass strict framer-motion prop typings
+const MotionDiv: any = motion.div;
+
 interface GlobalSearchProps {
   isOpen: boolean;
   onClose: () => void;
@@ -98,8 +101,9 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
         {isOpen && (
           <div className="fixed inset-0 z-[10000] flex items-end">
              {/* Backdrop */}
-             {/* backdrop; specify div generic so onClick prop is included */}
-             <motion.div<HTMLDivElement>
+{/* backdrop; cast to any to sidestep motion typing limits */}
+              {/* Note: we create a local alias at top of file */}
+              <MotionDiv
                initial={{ opacity: 0 }}
                animate={{ opacity: 1 }}
                exit={{ opacity: 0 }}
