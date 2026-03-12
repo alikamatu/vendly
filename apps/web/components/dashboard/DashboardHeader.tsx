@@ -4,10 +4,12 @@ import React from "react";
 import { useTheme } from "@/lib/theme";
 import { useAuth } from "@/lib/auth-context";
 import { useCart } from "@/lib/cart-context";
-import { Moon, Sun, User, LayoutDashboard, ShoppingBag, Heart, Settings, LogOut } from "lucide-react";
+import { Moon, Sun, User, LayoutDashboard, ShoppingBag, Heart, LogOut, Search } from "lucide-react";
+import GlobalSearch from "../layout/GlobalSearch";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import clsx from "@/utils/clsx";
+import Image from "next/image";
 
 interface DashboardHeaderProps {
   title: string;
@@ -15,13 +17,13 @@ interface DashboardHeaderProps {
 }
 
 export default function DashboardHeader({ title, onMenuToggle }: DashboardHeaderProps) {
+  const [isSearchOpen, setIsSearchOpen] = React.useState(false);
   const { theme, setTheme } = useTheme();
   const { user, logout } = useAuth();
   const { itemCount } = useCart();
   const isDark = theme === "dark";
 
   const isSeller = user?.role === "SELLER";
-  const isUser = user?.role === "USER";
 
   return (
     <header className="sticky top-0 z-30 flex h-20 items-center justify-between border-b border-border bg-background/80 px-4 md:px-8 backdrop-blur-md">
@@ -35,7 +37,9 @@ export default function DashboardHeader({ title, onMenuToggle }: DashboardHeader
           </button>
         )}
         <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-black text-xs shadow-lg shadow-primary/20 transition-transform group-hover:scale-105">V</div>
+          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-black text-xs shadow-lg shadow-primary/20 transition-transform group-hover:scale-105">
+          <img src="/logos/vendly.png" alt="Ventry Logo" className="w-full h-full" />
+          </div>
           <h1 className="text-md font-bold tracking-tight text-foreground truncate max-w-[100px] md:max-w-none">{title}</h1>
         </Link>
       </div>
@@ -81,6 +85,15 @@ export default function DashboardHeader({ title, onMenuToggle }: DashboardHeader
         </div>
 
         <div className="h-8 w-[1px] bg-border mx-1 hidden sm:block"></div>
+
+        {/* Search Toggle */}
+        <button
+          onClick={() => setIsSearchOpen(true)}
+          className="p-2.5 text-muted hover:text-primary hover:bg-primary/5 rounded-2xl transition-all group"
+          aria-label="Search"
+        >
+          <Search className="w-5 h-5 group-active:scale-90 transition-transform" />
+        </button>
 
         {/* Theme Toggle */}
         <button
@@ -137,13 +150,8 @@ export default function DashboardHeader({ title, onMenuToggle }: DashboardHeader
             </>
           ) : (
             <div className="flex items-center gap-2">
-              <Link href="/login">
-                <button className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-muted hover:text-foreground transition-colors">
-                  Login
-                </button>
-              </Link>
               <Link href="/register">
-                <button className="px-4 py-2 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
+                <button className="px-4 py-2 bg-primary  text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
                   Sign Up
                 </button>
               </Link>
@@ -151,6 +159,7 @@ export default function DashboardHeader({ title, onMenuToggle }: DashboardHeader
           )}
         </div>
       </div>
+      <GlobalSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
     </header>
   );
 }

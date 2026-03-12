@@ -21,6 +21,8 @@ export const metadata: Metadata = {
   description: "Discover trusted campus sellers, all in one place.",
 };
 
+import { FavoriteProvider } from "../lib/favorite-context";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -33,11 +35,13 @@ export default function RootLayout({
       >
         <ThemeProvider>
           <AuthProvider>
-            <CartProvider>
-              <StoreGuard>
-                <main>{children}</main>
-              </StoreGuard>
-            </CartProvider>
+            <FavoriteProvider>
+              <CartProvider>
+                <StoreGuard>
+                  {children}
+                </StoreGuard>
+              </CartProvider>
+            </FavoriteProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

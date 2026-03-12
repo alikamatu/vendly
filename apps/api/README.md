@@ -1,98 +1,178 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+<![CDATA[# 🔧 Vendly API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+> NestJS 11 REST API powering the Vendly campus marketplace.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
+## Quick Start
 
 ```bash
-$ npm install
+npm install
+npx prisma generate
+npx prisma db push
+npm run start:dev          # http://localhost:1000
 ```
 
-## Compile and run the project
+---
 
-```bash
-# development
-$ npm run start
+## Architecture
 
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+```
+src/
+├── auth/                  # Authentication & authorization
+│   ├── auth.controller.ts       # /auth endpoints
+│   ├── auth.service.ts          # Register, login, verify, reset
+│   ├── admin.controller.ts      # /admin endpoints
+│   ├── admin.service.ts         # Approval workflow, stats
+│   ├── dto/                     # Request validation DTOs
+│   ├── guards/                  # JwtAuthGuard, RolesGuard
+│   └── strategies/              # Passport JWT strategy
+│
+├── product/               # Product management
+│   ├── product.controller.ts    # /products endpoints
+│   ├── product.service.ts       # CRUD, search, categories
+│   └── dto/                     # CreateProductDto, UpdateProductDto
+│
+├── store/                 # Seller store management
+│   ├── store.controller.ts      # /stores endpoints
+│   ├── store.service.ts         # Create, update, stats, public lookup
+│   └── dto/                     # CreateStoreDto, UpdateStoreDto
+│
+├── order/                 # Order lifecycle
+│   ├── order.controller.ts      # /orders endpoints
+│   ├── order.service.ts         # Create, buyer/seller views, status
+│   └── dto/                     # CreateOrderDto
+│
+├── favorite/              # Wishlist / favorites
+│   ├── favorite.controller.ts   # /favorites endpoints
+│   ├── favorite.service.ts      # Toggle, list, IDs
+│   └── favorite.module.ts
+│
+├── email/                 # Transactional emails
+│   ├── email.service.ts         # Resend integration
+│   └── email.module.ts
+│
+├── common/                # Shared utilities
+│   ├── cloudinary.service.ts    # Image/video upload
+│   ├── cloudinary.module.ts
+│   └── filters/                 # Global exception filter
+│
+├── prisma/                # Database client
+│   ├── prisma.service.ts        # PrismaClient with PG adapter
+│   └── prisma.module.ts
+│
+├── app.module.ts          # Root module
+├── app.controller.ts      # Health check
+└── main.ts                # Bootstrap & CORS config
 ```
 
-## Run tests
+---
 
-```bash
-# unit tests
-$ npm run test
+## Modules
 
-# e2e tests
-$ npm run test:e2e
+| Module | Prefix | Description |
+|---|---|---|
+| **AuthModule** | `/auth` | JWT authentication, email verification, password reset, profile management |
+| **AdminModule** | `/admin` | Seller verification approvals, platform statistics (ADMIN role only) |
+| **StoreModule** | `/stores` | Seller store CRUD with Cloudinary logo uploads |
+| **ProductModule** | `/products` | Product CRUD with multi-image/video upload, search, categories |
+| **OrderModule** | `/orders` | Order creation with transactions, buyer/seller views, status updates |
+| **FavoriteModule** | `/favorites` | Toggle favorites, list user favorites, get favorite product IDs |
+| **EmailModule** | — | Transactional emails via Resend (verification, password reset) |
+| **CloudinaryModule** | — | Image upload service shared across modules |
+| **PrismaModule** | — | Database client with PostgreSQL driver adapter |
 
-# test coverage
-$ npm run test:cov
+---
+
+## Authentication
+
+- **Strategy:** JWT (Bearer token) via `@nestjs/passport`
+- **Token Storage:** Client-side (`localStorage` key: `vendly_token`)
+- **Guards:**
+  - `JwtAuthGuard` — Validates JWT on protected routes
+  - `RolesGuard` + `@Roles()` — Role-based access control (USER, SELLER, ADMIN)
+- **Rate Limiting:** Login endpoint throttled to 5 requests per minute via `@nestjs/throttler`
+- **Logout:** In-memory token blacklist (use Redis in production)
+
+---
+
+## Database
+
+### Prisma 7 Configuration
+
+Prisma 7 moved database URLs from `schema.prisma` to `prisma.config.js`:
+
+```js
+// prisma.config.js
+module.exports = defineConfig({
+  schema: "prisma/schema.prisma",
+  datasource: {
+    url: process.env.DIRECT_URL,  // Direct connection for migrations
+  },
+});
 ```
 
-## Deployment
+> **Supabase Note:** Use port `5432` (direct) for `prisma db push` / migrations, and port `6543` (pooled via PgBouncer) for runtime queries in `PrismaService`.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+### Models
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+| Model | Table | Key Relations |
+|---|---|---|
+| `User` | `users` | → SellerProfile, Orders, Favorites, AdminApprovals |
+| `SellerProfile` | `seller_profiles` | → User, Products |
+| `Product` | `products` | → SellerProfile, OrderItems, Favorites |
+| `Order` | `orders` | → User (buyer), OrderItems |
+| `OrderItem` | `order_items` | → Order, Product |
+| `Category` | `categories` | Standalone |
+| `AdminApproval` | `admin_approvals` | → User (applicant), User (reviewer) |
+| `Favorite` | `favorites` | → User, Product (unique constraint) |
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+---
+
+## Scripts
+
+| Script | Description |
+|---|---|
+| `npm run start:dev` | Start with hot-reload (watch mode) |
+| `npm run build` | Compile TypeScript to `dist/` |
+| `npm run start:prod` | Run compiled production build |
+| `npm run lint` | Run ESLint with auto-fix |
+| `npm test` | Run Jest unit tests |
+
+---
+
+## CORS
+
+Configured in `main.ts` to allow:
+- `FRONTEND_URL` (default: `http://localhost:3000`)
+- `ADMIN_URL` (default: `http://localhost:3001`)
+
+Both with `credentials: true` for cookie/header-based auth.
+
+---
+
+## Error Handling
+
+A global `AllExceptionsFilter` catches all exceptions and returns consistent JSON:
+
+```json
+{
+  "statusCode": 500,
+  "timestamp": "2026-03-12T12:00:00.000Z",
+  "path": "/some/endpoint",
+  "message": ["Error description"]
+}
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+---
 
-## Resources
+## BigInt Serialization
 
-Check out a few resources that may come in handy when working with NestJS:
+BigInt values (used for IDs) are automatically serialized to strings via a global prototype patch in `main.ts`:
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+```ts
+(BigInt.prototype as any).toJSON = function () {
+  return this.toString();
+};
+```
+]]>

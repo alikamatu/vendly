@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
 import { CloudinaryService } from '../common/cloudinary.service';
 import { Prisma } from '@prisma/client';
 
@@ -174,6 +175,172 @@ export class ProductService {
         name: true,
         fields: true,
       },
+    });
+  }
+
+  async getProductsBySeller(userId: bigint) {
+    return (this.prisma.product as any).findMany({
+      where: {
+        seller: {
+          user_id: userId,
+        },
+      },
+      include: {
+        seller: {
+          select: {
+            store_name: true,
+            logo_url: true,
+            store_link: true,
+          }
+        }
+      },
+      orderBy: {
+        created_at: 'desc',
+      }
+    });
+  }
+
+  async updateProduct(
+    userId: bigint,
+    id: bigint,
+    dto: UpdateProductDto,
+    images: Express.Multer.File[],
+    video?: Express.Multer.File,
+  ) {
+    // 1. Get product and check ownership
+    const product = await (this.prisma.product as any).findUnique({
+      where: { id },
+      include: { seller: true },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    if (product.seller.user_id !== userId) {
+      throw new BadRequestException('You do not have permission to update this product');
+    }
+
+    // 2. Handle images
+    let image_urls = dto.existing_images || product.image_urls || [];
+    
+    if (images && images.length > 0) {
+      if (image_urls.length + images.length > 3) {
+        throw new BadRequestException('Maximum 3 images allowed');
+      }
+
+      for (const file of images) {
+        const uploadResult = await this.cloudinaryService.uploadImage(file, 'products', { quality: 'auto' });
+        image_urls.push(uploadResult.secure_url);
+      }
+    }
+
+    // 3. Handle video
+    let video_url = product.video_url;
+    if (video) {
+      const MAX_VIDEO_BYTES = 15 * 1024 * 1024;
+      if (video.size > MAX_VIDEO_BYTES) {
+        throw new BadRequestException('Product video is too large.');
+      }
+
+      try {
+        const videoResult = await this.cloudinaryService.uploadVideo(video, 'products');
+        video_url = videoResult.secure_url;
+      } catch (err: any) {
+        throw new BadRequestException('Failed to upload product video.');
+      }
+    }
+
+    // 4. Parse attributes
+    let parsedAttributes = product.attributes;
+    if (dto.attributes) {
+      try {
+        parsedAttributes = typeof dto.attributes === 'string' ? JSON.parse(dto.attributes) : dto.attributes;
+      } catch (err) {
+        console.warn('Failed to parse product attributes', err);
+      }
+    }
+
+    // 5. Update product
+    const updatedProduct = await (this.prisma.product as any).update({
+      where: { id },
+      data: {
+        title: dto.title,
+        description: dto.description,
+        price: dto.price ? new Decimal(dto.price) : undefined,
+        currency: dto.currency,
+        condition: dto.condition,
+        quantity_available: dto.quantity_available ? parseInt(dto.quantity_available, 10) : undefined,
+        status: dto.status,
+        category: dto.category,
+        image_urls,
+        video_url,
+        tags: dto.tags,
+        attributes: parsedAttributes,
+      } as any,
+    });
+
+    return {
+      message: 'Product updated successfully',
+      product: {
+        id: (updatedProduct as any).id.toString(),
+        title: (updatedProduct as any).title,
+        price: (updatedProduct as any).price.toString(),
+      },
+    };
+  }
+
+  async deleteProduct(userId: bigint, id: bigint) {
+    // 1. Get product and check ownership
+    const product = await (this.prisma.product as any).findUnique({
+      where: { id },
+      include: { seller: true },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    if (product.seller.user_id !== userId) {
+      throw new BadRequestException('You do not have permission to delete this product');
+    }
+
+    // 2. Delete product
+    await (this.prisma.product as any).delete({
+      where: { id },
+    });
+
+    return { message: 'Product deleted successfully' };
+  }
+
+  async searchProducts(query: string) {
+    if (!query || query.trim().length === 0) {
+      return [];
+    }
+
+    const searchLower = query.toLowerCase();
+
+    // Simple autocomplete/suggestion search
+    return (this.prisma.product as any).findMany({
+      where: {
+        OR: [
+          { title: { contains: searchLower, mode: 'insensitive' } },
+          { description: { contains: searchLower, mode: 'insensitive' } },
+          { category: { contains: searchLower, mode: 'insensitive' } },
+          { seller: { store_name: { contains: searchLower, mode: 'insensitive' } } },
+          { tags: { has: searchLower } },
+        ],
+        status: { in: ['published', 'active', 'draft'] }, // Include drafts for testing/flexibility
+      },
+      include: {
+        seller: {
+          select: {
+            store_name: true,
+            store_link: true,
+          }
+        }
+      },
+      take: 20, // Limit suggestions
     });
   }
 }

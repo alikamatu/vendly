@@ -1,31 +1,68 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { ShoppingBag, Search, Filter, Sparkles } from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ShoppingBag, FilterX, Sparkles, Compass } from "lucide-react";
 import { productApi } from "@/lib/api/product";
 import ProductCard from "@/components/products/ProductCard";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import ProductFilters from "@/components/products/ProductFilters";
 import Loading from "./loading";
 import ModernHero from "@/components/common/ModernHero";
+import Container from "@/components/common/Container";
 
 export default function HomePage() {
   const [products, setProducts] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
+  
+  // Filtering states
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 100000]);
+  const [sortBy, setSortBy] = useState("newest");
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchData = async () => {
       try {
-        const data = await productApi.getProducts();
-        setProducts(data);
+        const [productsData, categoriesData] = await Promise.all([
+          productApi.getProducts(),
+          productApi.getCategories()
+        ]);
+        setProducts(productsData);
+        setCategories(categoriesData);
       } catch (err) {
-        console.error("Failed to fetch products", err);
+        console.error("Failed to fetch products/categories", err);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchProducts();
+    fetchData();
   }, []);
+
+  // Filter and Sort Logic
+  const filteredProducts = useMemo(() => {
+    let result = [...products];
+
+    if (activeCategory) {
+      result = result.filter(p => p.category === activeCategory);
+    }
+
+    result = result.filter(p => {
+      const price = parseFloat(p.price);
+      return price >= priceRange[0] && price <= priceRange[1];
+    });
+
+    // Sort
+    result.sort((a, b) => {
+      if (sortBy === "price_asc") return parseFloat(a.price) - parseFloat(b.price);
+      if (sortBy === "price_desc") return parseFloat(b.price) - parseFloat(a.price);
+      if (sortBy === "alpha") return a.title.localeCompare(b.title);
+      // Newest (Default)
+      return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+    });
+
+    return result;
+  }, [products, activeCategory, priceRange, sortBy]);
 
   if (isLoading) return <Loading />;
 
@@ -36,42 +73,68 @@ export default function HomePage() {
       {/* Modern Hero Section */}
       <ModernHero />
 
-      <main className="max-w-7xl mx-auto px-6 md:px-8 pb-32 space-y-12 relative z-10 -mt-20">
-        {/* Search & Filter Bar */}
-        <section className="flex flex-col md:flex-row md:items-center gap-4 bg-surface/50 backdrop-blur-xl p-4 rounded-[2.5rem] border border-border/50 shadow-2xl shadow-primary/5">
-           <div className="relative flex-1 group">
-             <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-muted group-focus-within:text-primary transition-colors" />
-             <input 
-               type="text"
-               placeholder="Search for products, stores, categories..."
-               className="w-full h-16 pl-14 pr-6 bg-surface border border-border/50 rounded-[2rem] text-xs font-bold outline-none focus:border-primary/50 shadow-sm transition-all"
-               value={searchQuery}
-               onChange={(e) => setSearchQuery(e.target.value)}
-             />
-           </div>
-           <button className="h-16 px-8 bg-surface border border-border/50 rounded-[2rem] flex items-center justify-center gap-3 hover:border-primary/30 transition-all active:scale-95 group">
-             <Filter className="w-4 h-4 text-muted group-hover:text-primary transition-colors" />
-             <span className="text-xs font-bold">Filters</span>
-           </button>
-        </section>
+      {/* Descriptive Marketplace Section */}
+      <section className="relative py-12 overflow-hidden bg-surface/30">
+      </section>
 
-        {/* Masonry Grid */}
+      <main className="max-w-7xl mx-auto px-4 md:px-8 pb-32 space-y-12 relative z-10">
+        {/* Filters Component */}
+        <div className="bg-background/80 backdrop-blur-xl sticky top-20 z-30 py-6 -mx-4 px-4 border-b border-border/50 md:rounded-[2.5rem] md:border md:static md:bg-transparent md:backdrop-blur-none md:p-0 md:border-none">
+          <ProductFilters 
+            categories={categories}
+            currentCategory={activeCategory}
+            onCategoryChange={setActiveCategory}
+            priceRange={priceRange}
+            onPriceChange={setPriceRange}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
+            resultsCount={filteredProducts.length}
+          />
+        </div>
+
+        {/* Product Grid */}
         <section className="columns-2 md:columns-3 lg:columns-4 gap-2">
-           {products.length > 0 ? (
-             products.map((product, idx) => (
-               <ProductCard key={product.id} product={product} index={idx} />
-             ))
-           ) : (
-             <div className="col-span-full py-20 text-center space-y-4 border-2 border-dashed border-border rounded-[3rem] bg-surface/50">
-               <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto text-primary">
-                 <ShoppingBag className="w-8 h-8" />
-               </div>
-               <div>
-                  <h3 className="text-md font-black uppercase">No products found</h3>
-                  <p className="text-xs text-muted font-medium mt-1">Be the first to list something amazing!</p>
-               </div>
-             </div>
-           )}
+           <AnimatePresence mode="popLayout">
+            {filteredProducts.length > 0 ? (
+              filteredProducts.map((product, idx) => (
+                <motion.div
+                  key={product.id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <ProductCard product={product} index={idx} />
+                </motion.div>
+              ))
+            ) : (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="col-span-full py-32 text-center space-y-6 border-2 border-dashed border-border rounded-[3rem] bg-surface/30"
+              >
+                <div className="w-20 h-20 bg-surface rounded-full flex items-center justify-center mx-auto shadow-sm">
+                  <FilterX size={32} className="text-muted opacity-30" />
+                </div>
+                <div>
+                   <h3 className="text-xl font-black uppercase tracking-tight">No items match your filters</h3>
+                   <p className="text-sm text-muted font-bold mt-2 max-w-xs mx-auto">
+                     Try adjusting your price range or category to find more amazing campus deals.
+                   </p>
+                </div>
+                <button 
+                  onClick={() => {
+                    setActiveCategory(null);
+                    setPriceRange([0, 100000]);
+                  }}
+                  className="text-[10px] font-black uppercase tracking-[0.2em] text-primary hover:underline"
+                >
+                  Clear all filters
+                </button>
+              </motion.div>
+            )}
+           </AnimatePresence>
         </section>
       </main>
     </div>

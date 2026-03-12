@@ -39,6 +39,7 @@ model User {
   admin_approvals   AdminApproval[]
   reviewed_approvals AdminApproval[] @relation("ReviewedBy")
   orders            Order[]         @relation("BuyerOrders")
+  favorites         Favorite[]
   @@map("users")
 }
 
@@ -84,6 +85,7 @@ model Product {
 
   seller            SellerProfile @relation(fields: [seller_id], references: [id])
   order_items       OrderItem[]
+  favorited_by      Favorite[]
 
   @@index([category])
   @@index([attributes(ops: JsonbPathOps)], type: Gin)
@@ -95,6 +97,14 @@ model Order {
   buyer_id          BigInt
   total_amount      Decimal     @db.Decimal(10,2)
   status            String      @default("PENDING") // PENDING, COMPLETED, CANCELLED
+  
+  // Checkout Info
+  customer_name     String?
+  customer_phone    String?
+  delivery_method   String?     // PICKUP, DELIVERY
+  delivery_location String?
+  delivery_notes    String?
+
   created_at        DateTime    @default(now())
   updated_at        DateTime    @updatedAt
 
@@ -138,4 +148,16 @@ model AdminApproval {
   user              User        @relation(fields: [user_id], references: [id])
   reviewer          User?       @relation("ReviewedBy", fields: [reviewed_by], references: [id])
   @@map("admin_approvals")
+}
+model Favorite {
+  id         BigInt   @id @default(autoincrement())
+  user_id    BigInt
+  product_id BigInt
+  created_at DateTime @default(now())
+
+  user       User     @relation(fields: [user_id], references: [id])
+  product    Product  @relation(fields: [product_id], references: [id])
+
+  @@unique([user_id, product_id])
+  @@map("favorites")
 }

@@ -70,6 +70,11 @@ export const productApi = {
     return handleResponse<any[]>(res);
   },
 
+  async searchProducts(query: string) {
+    const res = await fetch(`${API_URL}/products/search?q=${encodeURIComponent(query)}`);
+    return handleResponse<any[]>(res);
+  },
+
   async getProductById(id: string) {
     const res = await fetch(`${API_URL}/products/${id}`);
     return handleResponse<any>(res);
@@ -83,5 +88,70 @@ export const productApi = {
   async getProductsByStoreSlug(slug: string) {
     const res = await fetch(`${API_URL}/products/store/${slug}`);
     return handleResponse<any[]>(res);
+  },
+
+  async getSellerProducts(token: string) {
+    const res = await fetch(`${API_URL}/products/seller/me`, {
+      headers: authHeaders(token),
+    });
+    return handleResponse<any[]>(res);
+  },
+
+  async updateProduct(
+    token: string, 
+    id: string, 
+    data: Partial<CreateProductInput>, 
+    images?: File[], 
+    video?: File | null,
+    existing_images?: string[]
+  ) {
+    const formData = new FormData();
+    if (data.title) formData.append('title', data.title);
+    if (data.description) formData.append('description', data.description);
+    if (data.price) formData.append('price', data.price);
+    if (data.currency) formData.append('currency', data.currency);
+    if (data.condition) formData.append('condition', data.condition);
+    if (data.quantity_available) formData.append('quantity_available', data.quantity_available);
+    if (data.status) formData.append('status', data.status);
+    if (data.category) formData.append('category', data.category);
+    
+    if (data.tags) {
+      data.tags.forEach(tag => formData.append('tags[]', tag));
+    }
+
+    if (data.attributes) {
+      formData.append('attributes', JSON.stringify(data.attributes));
+    }
+
+    if (existing_images) {
+      existing_images.forEach(url => formData.append('existing_images[]', url));
+    }
+
+    if (images) {
+      images.forEach(image => {
+        formData.append('images', image);
+      });
+    }
+
+    if (video) {
+        formData.append('video', video);
+    }
+
+    const res = await fetch(`${API_URL}/products/${id}`, {
+      method: 'PUT',
+      headers: authHeaders(token),
+      body: formData,
+    });
+
+    return handleResponse<{ message: string; product: any }>(res);
+  },
+
+  async deleteProduct(token: string, id: string) {
+    const res = await fetch(`${API_URL}/products/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders(token),
+    });
+
+    return handleResponse<{ message: string }>(res);
   }
 };

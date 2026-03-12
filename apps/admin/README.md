@@ -1,36 +1,96 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+<![CDATA[# 🛡️ Vendly Admin — Back-Office Panel
 
-## Getting Started
+> Next.js 16 admin dashboard for managing the Vendly marketplace.
 
-First, run the development server:
+---
+
+## Quick Start
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev                # http://localhost:3001
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Architecture
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+app/
+├── page.tsx               # Redirect to dashboard
+├── layout.tsx             # Root layout (ThemeProvider)
+├── (auth)/                # Admin login
+│   └── login/
+└── (back-office)/         # Protected admin area
+    └── dashboard/         # Main dashboard
+        ├── page.tsx       # Overview & stats
+        ├── approvals/     # Seller verification management
+        └── users/         # User management
 
-## Learn More
+services/
+├── auth.service.ts        # Admin authentication API calls
+└── admin.service.ts       # Approvals & stats API calls
 
-To learn more about Next.js, take a look at the following resources:
+components/                # Admin UI components
+constants/                 # App-wide constants
+hooks/                     # Custom React hooks
+lib/
+└── theme.tsx              # ThemeProvider (dark/light mode)
+types/                     # TypeScript type definitions
+utils/                     # Utility functions
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Features
 
-## Deploy on Vercel
+### 🔐 Admin Authentication
+- Dedicated admin login flow
+- JWT-based authentication against the API
+- Role validation (ADMIN role required)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### ✅ Seller Verification
+- View pending verification requests
+- Approve or reject seller applications
+- Track review history
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### 📊 Platform Statistics
+- Total users, sellers, and products
+- Order volume and revenue metrics
+- Dashboard overview cards
+
+---
+
+## Tech Stack
+
+| Technology | Purpose |
+|---|---|
+| **Next.js 16** | App Router framework |
+| **Tailwind CSS 4** | Utility-first styling |
+| **Framer Motion** | Animations |
+| **Lucide React** | Icons |
+| **shadcn-ui** | UI component primitives |
+
+---
+
+## Scripts
+
+| Script | Description |
+|---|---|
+| `npm run dev` | Start development server |
+| `npm run build` | Production build |
+| `npm start` | Start production server |
+| `npm run lint` | Run ESLint |
+
+---
+
+## API Integration
+
+The admin panel communicates with the same NestJS API as the storefront, using endpoints under `/admin/*` that require the `ADMIN` role:
+
+| Endpoint | Description |
+|---|---|
+| `GET /admin/approvals` | List verification requests |
+| `GET /admin/stats` | Platform statistics |
+| `PATCH /admin/approve/:id` | Approve/reject a seller |
+]]>

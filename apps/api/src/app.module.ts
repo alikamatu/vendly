@@ -8,6 +8,9 @@ import { StoreModule } from './store/store.module';
 import { ProductModule } from './product/product.module';
 import { CloudinaryModule } from './common/cloudinary.module';
 
+import { OrderModule } from './order/order.module';
+import { FavoriteModule } from './favorite/favorite.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -20,6 +23,8 @@ import { CloudinaryModule } from './common/cloudinary.module';
     StoreModule,
     ProductModule,
     CloudinaryModule,
+    OrderModule,
+    FavoriteModule,
   ],
   controllers: [AppController],
   providers: [AppService],

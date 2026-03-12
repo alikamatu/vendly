@@ -7,6 +7,7 @@ export interface CartItem {
   title: string;
   price: string;
   imageUrl: string;
+  videoUrl?: string | null;
   quantity: number;
   storeLink: string;
   storeName: string;
@@ -38,8 +39,16 @@ function saveCart(items: CartState) {
   }
 }
 
-/** Group cart items by vendor (store). Key = storeLink. */
-export function groupCartByVendor(items: CartItem[]): { storeLink: string; storeName: string; logoUrl?: string | null; items: CartItem[] }[] {
+interface GroupedCart {
+  storeLink: string;
+  storeName: string;
+  logoUrl?: string | null;
+  items: CartItem[];
+  totalItems: number;
+  totalPrice: number;
+}
+
+export function groupCartByVendor(items: CartItem[]): GroupedCart[] {
   const byStore = new Map<string, { storeName: string; logoUrl?: string | null; items: CartItem[] }>();
   for (const item of items) {
     const key = item.storeLink || "unknown";
@@ -53,6 +62,8 @@ export function groupCartByVendor(items: CartItem[]): { storeLink: string; store
     storeName: data.storeName,
     logoUrl: data.logoUrl,
     items: data.items,
+    totalItems: data.items.reduce((sum, i) => sum + i.quantity, 0),
+    totalPrice: data.items.reduce((sum, i) => sum + parseFloat(String(i.price)) * i.quantity, 0),
   }));
 }
 
@@ -64,7 +75,7 @@ interface CartContextValue {
   clearCart: () => void;
   itemCount: number;
   totalPrice: number;
-  groupedByVendor: ReturnType<typeof groupCartByVendor>;
+  groupedByVendor: GroupedCart[];
 }
 
 const CartContext = createContext<CartContextValue | null>(null);

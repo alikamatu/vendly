@@ -2,10 +2,11 @@
 
 import React, { useRef, useState } from "react";
 import { motion, HTMLMotionProps } from "framer-motion";
-import { ShoppingCart, ExternalLink, Check } from "lucide-react";
+import { ShoppingCart, ExternalLink, Check, Heart } from "lucide-react";
 import Link from "next/link";
 import Card from "@/components/ui/Card";
 import { useCart } from "@/lib/cart-context";
+import { useFavorites } from "@/lib/favorite-context";
 
 interface ProductCardProps {
   product: {
@@ -26,7 +27,16 @@ interface ProductCardProps {
 export default function ProductCard({ product, index }: ProductCardProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const { addItem } = useCart();
+  const { toggleFavorite, isFavorited } = useFavorites();
   const [added, setAdded] = useState(false);
+
+  const favorited = isFavorited(String(product.id));
+
+  const handleToggleFavorite = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleFavorite(String(product.id));
+  };
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -36,6 +46,7 @@ export default function ProductCard({ product, index }: ProductCardProps) {
       title: product.title,
       price: typeof product.price === "number" ? String(product.price) : (product.price ?? "0"),
       imageUrl: product.image_urls?.[0] ?? "/placeholder-product.png",
+      videoUrl: product.video_url,
       storeLink: product.seller.store_link ?? "",
       storeName: product.seller.store_name ?? "Store",
       logoUrl: product.seller.logo_url ?? null,
@@ -103,30 +114,45 @@ export default function ProductCard({ product, index }: ProductCardProps) {
             </div>
           </Link>
           
-          {/* Quick Actions Overlay */}
-          <div className="absolute inset-x-3 bottom-3 flex items-center justify-between translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none">
-            <motion.button
-              {...({ 
-                type: "button",
-                onClick: handleAddToCart,
-                whileTap: { scale: 0.92 },
-                className: "p-3 rounded-2xl bg-white/90 backdrop-blur-md text-black hover:scale-110 active:scale-95 transition-transform shadow-lg pointer-events-auto"
-              } as HTMLMotionProps<"button">)}
-            >
-              {added ? (
-                <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 400 }}>
-                  <Check className="w-3.5 h-3.5 text-emerald-600" />
-                </motion.span>
-              ) : (
-                <ShoppingCart className="w-3.5 h-3.5" />
-              )}
-            </motion.button>
+          {/* Quick Actions Overlay (Always visible on mobile, hover on desktop) */}
+          <div className="absolute inset-x-2 bottom-2 flex items-center justify-between translate-y-0 opacity-100 md:translate-y-2 md:opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100 transition-all duration-300 pointer-events-none">
+            <div className="flex gap-2">
+              <motion.button
+                {...({ 
+                  type: "button",
+                  onClick: handleAddToCart,
+                  whileTap: { scale: 0.92 },
+                  className: "p-2.5 md:p-3 rounded-xl md:rounded-2xl bg-white/95 backdrop-blur-md text-black hover:scale-110 active:scale-95 transition-transform shadow-lg pointer-events-auto"
+                } as HTMLMotionProps<"button">)}
+              >
+                {added ? (
+                  <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 400 }}>
+                    <Check className="w-3 md:w-3.5 h-3 md:h-3.5 text-emerald-600" />
+                  </motion.span>
+                ) : (
+                  <ShoppingCart className="w-3 md:w-3.5 h-3 md:h-3.5" />
+                )}
+              </motion.button>
+
+              <motion.button
+                {...({ 
+                  type: "button",
+                  onClick: handleToggleFavorite,
+                  whileTap: { scale: 0.92 },
+                  className: `p-2.5 md:p-3 rounded-xl md:rounded-2xl backdrop-blur-md transition-all shadow-lg pointer-events-auto ${
+                    favorited ? "bg-rose-500 text-white" : "bg-white/95 text-black hover:text-rose-500"
+                  }`
+                } as HTMLMotionProps<"button">)}
+              >
+                <Heart className={`w-3 md:w-3.5 h-3 md:h-3.5 ${favorited ? "fill-current" : ""}`} />
+              </motion.button>
+            </div>
             <div className="pointer-events-auto">
               <Link 
                 href={`/s/${product.seller.store_link}`}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/40 backdrop-blur-md text-white text-[9px] font-bold border border-white/10 hover:bg-black/60 transition-colors"
+                className="flex items-center gap-1 md:gap-1.5 px-2 md:px-3 py-1.5 rounded-lg md:rounded-xl bg-black/60 md:bg-black/40 backdrop-blur-md text-white text-[8px] md:text-[9px] font-bold border border-white/10 hover:bg-black/80 transition-colors"
               >
-                View Store <ExternalLink className="w-2.5 h-2.5" />
+                View Store <ExternalLink className="w-2 md:w-2.5 h-2 md:h-2.5" />
               </Link>
             </div>
           </div>
