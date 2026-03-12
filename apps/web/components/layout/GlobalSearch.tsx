@@ -112,7 +112,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
              />
 
              {/* Search Drawer */}
-             <motion.div
+             <MotionDiv
                 initial={{ y: "100%" }}
                 animate={{ y: 0 }}
                 exit={{ y: "100%" }}
