@@ -219,7 +219,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                                   >
                                     <Tag className="w-4 h-4 text-primary group-hover:rotate-12 transition-transform" />
                                     <span className="text-[10px] font-black uppercase tracking-tight truncate">{cat.name}</span>
-                                  </motion.button>
+                                  </MotionButton>
                                 ))
                               )}
                             </div>
