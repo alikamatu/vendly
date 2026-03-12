@@ -98,12 +98,12 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
         {isOpen && (
           <div className="fixed inset-0 z-[10000] flex items-end">
              {/* Backdrop */}
-             {/* backdrop; ts types sometimes omit onClick so cast to any */}
-             <motion.div
+             {/* backdrop; specify div generic so onClick prop is included */}
+             <motion.div<HTMLDivElement>
                initial={{ opacity: 0 }}
                animate={{ opacity: 1 }}
                exit={{ opacity: 0 }}
-               onClick={onClose as any}
+               onClick={onClose}
                className="absolute inset-0 bg-black/80 backdrop-blur-md"
              />
 
