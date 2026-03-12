@@ -233,7 +233,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                    <p className="text-[9px] font-black text-muted uppercase tracking-widest opacity-40">Drag down to close</p>
                    <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                 </footer>
-             </motion.div>
+             </MotionDiv>
           </div>
         )}
       </AnimatePresence>
