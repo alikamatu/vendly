@@ -124,7 +124,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                   if (info.offset.y > 100) onClose();
                 }}
                 className="relative w-full bg-background rounded-t-[3rem] shadow-2xl flex flex-col h-[90vh] md:h-[85vh] overflow-hidden border-t border-border"
-                onClick={(e) => e.stopPropagation()}
+                onClick={(e: React.MouseEvent) => e.stopPropagation()}
              >
                 {/* Drag Handle */}
                 <div className="w-16 h-1.5 bg-border/40 rounded-full mx-auto mt-4 shrink-0" />
