@@ -6,7 +6,7 @@ export const favoriteApi = {
     return response.data;
   },
 
-  getFavorites: async () => {
+  getFavorites: async (): Promise<any[]> => {
     const response = await api.get('/favorites');
     return response.data;
   },

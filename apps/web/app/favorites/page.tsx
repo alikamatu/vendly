@@ -22,7 +22,7 @@ export default function FavoritesPage() {
     try {
       setIsLoading(true);
       const data = await favoriteApi.getFavorites();
-      setFavorites(data);
+      setFavorites(data as any[]);
     } catch (err) {
       console.error("Failed to load favorites", err);
     } finally {
