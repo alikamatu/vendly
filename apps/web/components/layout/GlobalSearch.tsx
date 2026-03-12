@@ -120,7 +120,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                 drag="y"
                 dragConstraints={{ top: 0 }}
                 dragElastic={0.2}
-                onDragEnd={(_, info) => {
+                onDragEnd={( _event: any, info: any ) => {
                   if (info.offset.y > 100) onClose();
                 }}
                 className="relative w-full bg-background rounded-t-[3rem] shadow-2xl flex flex-col h-[90vh] md:h-[85vh] overflow-hidden border-t border-border"
