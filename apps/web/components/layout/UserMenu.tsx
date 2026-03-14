@@ -19,6 +19,9 @@ import { useAuth } from "@/lib/auth-context";
 import clsx from "@/utils/clsx";
 import Portal from "../common/Portal";
 import useMediaQuery from "@/hooks/useMediaQuery";
+ 
+ // Alias for motion components to avoid strict prop typing issues
+ const MotionDiv: any = motion.div;
 
 export default function UserMenu() {
   const { user, logout } = useAuth();
@@ -143,16 +146,16 @@ export default function UserMenu() {
         {isOpen && (
           <Portal>
             {/* Backdrop */}
-            <motion.div
+            <MotionDiv
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsOpen(false)}
               className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[100]"
             />
-
+ 
             {/* Menu Container */}
-            <motion.div
+            <MotionDiv
               initial="hidden"
               animate="visible"
               exit="hidden"
@@ -289,7 +292,7 @@ export default function UserMenu() {
                   </button>
                 </div>
               </div>
-            </motion.div>
+            </MotionDiv>
           </Portal>
         )}
       </AnimatePresence>
