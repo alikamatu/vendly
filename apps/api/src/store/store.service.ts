@@ -1,4 +1,9 @@
-import { Injectable, ConflictException, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateStoreDto } from './dto/create-store.dto';
 import { CloudinaryService } from '../common/cloudinary.service';
@@ -10,7 +15,11 @@ export class StoreService {
     private cloudinaryService: CloudinaryService,
   ) {}
 
-  async createStore(userId: bigint, dto: CreateStoreDto, logoFile?: Express.Multer.File) {
+  async createStore(
+    userId: bigint,
+    dto: CreateStoreDto,
+    logoFile?: Express.Multer.File,
+  ) {
     // Check if user already has a store
     const existingStore = await this.prisma.sellerProfile.findUnique({
       where: { user_id: userId },
@@ -31,7 +40,11 @@ export class StoreService {
 
     let logo_url = null;
     if (logoFile) {
-      const uploadResult = await this.cloudinaryService.uploadImage(logoFile, 'store-logos', { vectorize: true });
+      const uploadResult = await this.cloudinaryService.uploadImage(
+        logoFile,
+        'store-logos',
+        { vectorize: true },
+      );
       logo_url = uploadResult.secure_url;
     }
 
@@ -73,7 +86,11 @@ export class StoreService {
     const data: any = { ...dto };
 
     if (logoFile) {
-      const uploadResult = await this.cloudinaryService.uploadImage(logoFile, 'store-logos', { vectorize: true });
+      const uploadResult = await this.cloudinaryService.uploadImage(
+        logoFile,
+        'store-logos',
+        { vectorize: true },
+      );
       data.logo_url = uploadResult.secure_url;
     }
 
@@ -144,11 +161,16 @@ export class StoreService {
     ]);
 
     // Calculate total sales and orders
-    const totalSales = orderItems.reduce((acc, item) => acc + Number(item.price) * item.quantity, 0);
-    const uniqueOrders = Array.from(new Set(orderItems.map(item => item.order_id.toString())));
-    
+    const totalSales = orderItems.reduce(
+      (acc, item) => acc + Number(item.price) * item.quantity,
+      0,
+    );
+    const uniqueOrders = Array.from(
+      new Set(orderItems.map((item) => item.order_id.toString())),
+    );
+
     // Map recent orders for the dashboard
-    const recentOrders = orderItems.slice(0, 5).map(item => ({
+    const recentOrders = orderItems.slice(0, 5).map((item) => ({
       id: `${item.order_id.toString()}-${item.id.toString()}`,
       displayId: `#ORD-${item.order_id.toString().slice(-4)}`,
       customer: item.order.buyer.full_name,

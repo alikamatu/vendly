@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -27,7 +31,9 @@ export class ProductService {
     });
 
     if (!seller) {
-      throw new NotFoundException('Seller profile not found. Please create a store first.');
+      throw new NotFoundException(
+        'Seller profile not found. Please create a store first.',
+      );
     }
 
     // 2. Upload images to Cloudinary (Max 3)
@@ -37,7 +43,11 @@ export class ProductService {
 
     const image_urls: string[] = [];
     for (const file of images) {
-      const uploadResult = await this.cloudinaryService.uploadImage(file, 'products', { quality: 'auto' });
+      const uploadResult = await this.cloudinaryService.uploadImage(
+        file,
+        'products',
+        { quality: 'auto' },
+      );
       image_urls.push(uploadResult.secure_url);
     }
 
@@ -47,17 +57,27 @@ export class ProductService {
       // Hard size guard so very long/high-res videos are rejected before upload work
       const MAX_VIDEO_BYTES = 15 * 1024 * 1024; // ~15 MB
       if (video.size > MAX_VIDEO_BYTES) {
-        throw new BadRequestException('Product video is too large. Please upload a short clip (max ~5 seconds).');
+        throw new BadRequestException(
+          'Product video is too large. Please upload a short clip (max ~5 seconds).',
+        );
       }
 
       let videoResult: any;
       try {
-        videoResult = await this.cloudinaryService.uploadVideo(video, 'products');
+        videoResult = await this.cloudinaryService.uploadVideo(
+          video,
+          'products',
+        );
       } catch (err: any) {
         // Normalize common upload failures into a user-facing validation error
         const message = (err && err.message) || '';
-        if (message.toLowerCase().includes('file size too large') || message.toLowerCase().includes('timeout')) {
-          throw new BadRequestException('Product video is too long or too large. Please upload a clip up to 5 seconds.');
+        if (
+          message.toLowerCase().includes('file size too large') ||
+          message.toLowerCase().includes('timeout')
+        ) {
+          throw new BadRequestException(
+            'Product video is too long or too large. Please upload a clip up to 5 seconds.',
+          );
         }
         throw err;
       }
@@ -69,7 +89,10 @@ export class ProductService {
     let parsedAttributes = {};
     if (dto.attributes) {
       try {
-        parsedAttributes = typeof dto.attributes === 'string' ? JSON.parse(dto.attributes) : dto.attributes;
+        parsedAttributes =
+          typeof dto.attributes === 'string'
+            ? JSON.parse(dto.attributes)
+            : dto.attributes;
       } catch (err) {
         console.warn('Failed to parse product attributes', err);
       }
@@ -84,7 +107,9 @@ export class ProductService {
         price: new Decimal(dto.price) as any,
         currency: dto.currency || 'GHS',
         condition: dto.condition || 'new',
-        quantity_available: dto.quantity_available ? parseInt(dto.quantity_available, 10) : 1,
+        quantity_available: dto.quantity_available
+          ? parseInt(dto.quantity_available, 10)
+          : 1,
         status: dto.status || 'draft',
         category: dto.category,
         image_urls,
@@ -113,12 +138,12 @@ export class ProductService {
             store_name: true,
             logo_url: true,
             store_link: true,
-          }
-        }
+          },
+        },
       },
       orderBy: {
         created_at: 'desc',
-      }
+      },
     });
   }
 
@@ -132,9 +157,9 @@ export class ProductService {
             logo_url: true,
             store_link: true,
             bio: true,
-          }
-        }
-      }
+          },
+        },
+      },
     });
 
     if (!product) {
@@ -143,8 +168,6 @@ export class ProductService {
 
     return product;
   }
-
-
 
   async getProductsByStoreLink(link: string) {
     return (this.prisma.product as any).findMany({
@@ -159,12 +182,12 @@ export class ProductService {
             store_name: true,
             logo_url: true,
             store_link: true,
-          }
-        }
+          },
+        },
       },
       orderBy: {
         created_at: 'desc',
-      }
+      },
     });
   }
 
@@ -191,12 +214,12 @@ export class ProductService {
             store_name: true,
             logo_url: true,
             store_link: true,
-          }
-        }
+          },
+        },
       },
       orderBy: {
         created_at: 'desc',
-      }
+      },
     });
   }
 
@@ -218,19 +241,25 @@ export class ProductService {
     }
 
     if (product.seller.user_id !== userId) {
-      throw new BadRequestException('You do not have permission to update this product');
+      throw new BadRequestException(
+        'You do not have permission to update this product',
+      );
     }
 
     // 2. Handle images
-    let image_urls = dto.existing_images || product.image_urls || [];
-    
+    const image_urls = dto.existing_images || product.image_urls || [];
+
     if (images && images.length > 0) {
       if (image_urls.length + images.length > 3) {
         throw new BadRequestException('Maximum 3 images allowed');
       }
 
       for (const file of images) {
-        const uploadResult = await this.cloudinaryService.uploadImage(file, 'products', { quality: 'auto' });
+        const uploadResult = await this.cloudinaryService.uploadImage(
+          file,
+          'products',
+          { quality: 'auto' },
+        );
         image_urls.push(uploadResult.secure_url);
       }
     }
@@ -244,7 +273,10 @@ export class ProductService {
       }
 
       try {
-        const videoResult = await this.cloudinaryService.uploadVideo(video, 'products');
+        const videoResult = await this.cloudinaryService.uploadVideo(
+          video,
+          'products',
+        );
         video_url = videoResult.secure_url;
       } catch (err: any) {
         throw new BadRequestException('Failed to upload product video.');
@@ -255,7 +287,10 @@ export class ProductService {
     let parsedAttributes = product.attributes;
     if (dto.attributes) {
       try {
-        parsedAttributes = typeof dto.attributes === 'string' ? JSON.parse(dto.attributes) : dto.attributes;
+        parsedAttributes =
+          typeof dto.attributes === 'string'
+            ? JSON.parse(dto.attributes)
+            : dto.attributes;
       } catch (err) {
         console.warn('Failed to parse product attributes', err);
       }
@@ -270,7 +305,9 @@ export class ProductService {
         price: dto.price ? new Decimal(dto.price) : undefined,
         currency: dto.currency,
         condition: dto.condition,
-        quantity_available: dto.quantity_available ? parseInt(dto.quantity_available, 10) : undefined,
+        quantity_available: dto.quantity_available
+          ? parseInt(dto.quantity_available, 10)
+          : undefined,
         status: dto.status,
         category: dto.category,
         image_urls,
@@ -283,9 +320,9 @@ export class ProductService {
     return {
       message: 'Product updated successfully',
       product: {
-        id: (updatedProduct as any).id.toString(),
-        title: (updatedProduct as any).title,
-        price: (updatedProduct as any).price.toString(),
+        id: updatedProduct.id.toString(),
+        title: updatedProduct.title,
+        price: updatedProduct.price.toString(),
       },
     };
   }
@@ -302,7 +339,9 @@ export class ProductService {
     }
 
     if (product.seller.user_id !== userId) {
-      throw new BadRequestException('You do not have permission to delete this product');
+      throw new BadRequestException(
+        'You do not have permission to delete this product',
+      );
     }
 
     // 2. Delete product
@@ -327,7 +366,11 @@ export class ProductService {
           { title: { contains: searchLower, mode: 'insensitive' } },
           { description: { contains: searchLower, mode: 'insensitive' } },
           { category: { contains: searchLower, mode: 'insensitive' } },
-          { seller: { store_name: { contains: searchLower, mode: 'insensitive' } } },
+          {
+            seller: {
+              store_name: { contains: searchLower, mode: 'insensitive' },
+            },
+          },
           { tags: { has: searchLower } },
         ],
         status: { in: ['published', 'active', 'draft'] }, // Include drafts for testing/flexibility
@@ -337,8 +380,8 @@ export class ProductService {
           select: {
             store_name: true,
             store_link: true,
-          }
-        }
+          },
+        },
       },
       take: 20, // Limit suggestions
     });

@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { v2 as cloudinary, UploadApiResponse, UploadApiErrorResponse } from 'cloudinary';
+import {
+  v2 as cloudinary,
+  UploadApiResponse,
+  UploadApiErrorResponse,
+} from 'cloudinary';
 
 @Injectable()
 export class CloudinaryService {
@@ -37,7 +41,8 @@ export class CloudinaryService {
             console.error('Cloudinary Upload Error:', error);
             return reject(error);
           }
-          if (!result) return reject(new Error('Upload failed: result is undefined'));
+          if (!result)
+            return reject(new Error('Upload failed: result is undefined'));
           resolve(result);
         },
       );
@@ -70,7 +75,10 @@ export class CloudinaryService {
             console.error('Cloudinary Video Upload Error:', error);
             return reject(error);
           }
-          if (!result) return reject(new Error('Video upload failed: result is undefined'));
+          if (!result)
+            return reject(
+              new Error('Video upload failed: result is undefined'),
+            );
           resolve(result);
         },
       );

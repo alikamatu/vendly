@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { Prisma } from '@prisma/client';
@@ -18,7 +22,7 @@ export class OrderService {
     }
 
     // 2. Fetch products and calculate total
-    const productIds = dto.items.map(item => BigInt(item.productId));
+    const productIds = dto.items.map((item) => BigInt(item.productId));
     const products = await (this.prisma.product as any).findMany({
       where: {
         id: { in: productIds },
@@ -27,14 +31,16 @@ export class OrderService {
     });
 
     if (products.length !== dto.items.length) {
-      throw new BadRequestException('One or more products not found or do not belong to this store');
+      throw new BadRequestException(
+        'One or more products not found or do not belong to this store',
+      );
     }
 
     let totalAmount = new Prisma.Decimal(0);
     const orderItemsData: Prisma.OrderItemCreateManyOrderInput[] = [];
 
     for (const item of dto.items) {
-      const product = products.find(p => p.id === BigInt(item.productId));
+      const product = products.find((p) => p.id === BigInt(item.productId));
       const subtotal = product.price.mul(item.quantity);
       totalAmount = totalAmount.add(subtotal);
 
@@ -104,28 +110,28 @@ export class OrderService {
                     store_name: true,
                     store_link: true,
                     logo_url: true,
-                  }
-                }
-              }
-            }
-          }
-        }
+                  },
+                },
+              },
+            },
+          },
+        },
       },
       orderBy: { created_at: 'desc' },
     });
 
-    return orders.map(o => ({
+    return orders.map((o) => ({
       ...o,
       id: o.id.toString(),
       buyer_id: o.buyer_id.toString(),
       total_amount: o.total_amount.toString(),
-      items: o.items.map(i => ({
+      items: o.items.map((i) => ({
         ...i,
         id: i.id.toString(),
         order_id: i.order_id.toString(),
         product_id: i.product_id.toString(),
         price: i.price.toString(),
-      }))
+      })),
     }));
   }
 
@@ -146,16 +152,16 @@ export class OrderService {
           some: {
             product: {
               seller_id: seller.id,
-            }
-          }
-        }
+            },
+          },
+        },
       },
       include: {
         items: {
           where: {
             product: {
               seller_id: seller.id,
-            }
+            },
           },
           include: {
             product: {
@@ -163,32 +169,32 @@ export class OrderService {
                 title: true,
                 image_urls: true,
                 video_url: true,
-              }
-            }
-          }
+              },
+            },
+          },
         },
         buyer: {
           select: {
             full_name: true,
             email: true,
-          }
-        }
+          },
+        },
       },
       orderBy: { created_at: 'desc' },
     });
 
-    return orders.map(o => ({
+    return orders.map((o) => ({
       ...o,
       id: o.id.toString(),
       buyer_id: o.buyer_id.toString(),
       total_amount: o.total_amount.toString(),
-      items: o.items.map(i => ({
+      items: o.items.map((i) => ({
         ...i,
         id: i.id.toString(),
         order_id: i.order_id.toString(),
         product_id: i.product_id.toString(),
         price: i.price.toString(),
-      }))
+      })),
     }));
   }
 
@@ -208,20 +214,20 @@ export class OrderService {
           where: {
             product: {
               seller_id: seller.id,
-            }
+            },
           },
           include: {
-            product: true
-          }
+            product: true,
+          },
         },
         buyer: {
           select: {
             full_name: true,
             email: true,
             school: true,
-          }
-        }
-      }
+          },
+        },
+      },
     });
 
     if (!order) {
@@ -238,13 +244,13 @@ export class OrderService {
       id: order.id.toString(),
       buyer_id: order.buyer_id.toString(),
       total_amount: order.total_amount.toString(),
-      items: order.items.map(i => ({
+      items: order.items.map((i) => ({
         ...i,
         id: i.id.toString(),
         order_id: i.order_id.toString(),
         product_id: i.product_id.toString(),
         price: i.price.toString(),
-      }))
+      })),
     };
   }
 
@@ -265,10 +271,10 @@ export class OrderService {
           where: {
             product: {
               seller_id: seller.id,
-            }
-          }
-        }
-      }
+            },
+          },
+        },
+      },
     });
 
     if (!order) {

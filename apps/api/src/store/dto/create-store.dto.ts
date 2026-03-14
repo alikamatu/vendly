@@ -8,7 +8,8 @@ export class CreateStoreDto {
   @IsString()
   @IsNotEmpty()
   @Matches(/^[a-z0-9-]+$/, {
-    message: 'Store link can only contain lowercase letters, numbers, and hyphens',
+    message:
+      'Store link can only contain lowercase letters, numbers, and hyphens',
   })
   store_link: string;
 

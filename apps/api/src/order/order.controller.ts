@@ -1,4 +1,12 @@
-import { Controller, Post, Get, Body, UseGuards, Req, Param } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  UseGuards,
+  Req,
+  Param,
+} from '@nestjs/common';
 import { OrderService } from './order.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -29,7 +37,11 @@ export class OrderController {
   }
 
   @Post(':id/status')
-  async updateOrderStatus(@Req() req: any, @Param('id') id: string, @Body('status') status: string) {
+  async updateOrderStatus(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body('status') status: string,
+  ) {
     return this.orderService.updateOrderStatus(req.user.id, id, status);
   }
 }

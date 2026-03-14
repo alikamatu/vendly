@@ -14,7 +14,9 @@ export class EmailService {
     const url = `${this.configService.get('FRONTEND_URL')}/verify-email?token=${token}`;
     try {
       const response = await this.resend.emails.send({
-        from: this.configService.get('RESEND_FROM_EMAIL') || 'onboarding@resend.dev',
+        from:
+          this.configService.get('RESEND_FROM_EMAIL') ||
+          'onboarding@resend.dev',
         to,
         subject: 'Verify your email',
         html: `<p>Click <a href="${url}">here</a> to verify your email.</p>`,
@@ -31,7 +33,9 @@ export class EmailService {
     const url = `${this.configService.get('FRONTEND_URL')}/reset-password?token=${token}`;
     try {
       const response = await this.resend.emails.send({
-        from: this.configService.get('RESEND_FROM_EMAIL') || 'onboarding@resend.dev',
+        from:
+          this.configService.get('RESEND_FROM_EMAIL') ||
+          'onboarding@resend.dev',
         to,
         subject: 'Reset your password',
         html: `<p>Click <a href="${url}">here</a> to reset your password. This link expires in 1 hour.</p>`,

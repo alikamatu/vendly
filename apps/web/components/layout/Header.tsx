@@ -43,47 +43,75 @@ export default function Header() {
     <header className="sticky top-0 z-50 border-b bg-white/70 backdrop-blur-xl dark:bg-black/40">
       <Container className="py-4">
         <div className="flex items-center justify-between">
-          <Link href="/" className="text-xl font-black uppercase tracking-tighter hover:text-primary transition-colors">
+          <Link
+            href="/"
+            className="text-xl font-black uppercase tracking-tighter hover:text-primary transition-colors"
+          >
             Ventry
           </Link>
-          
+
           <div className="flex items-center gap-3">
             <nav className="hidden md:flex gap-6 mr-4">
-              <Link href="/products" className="text-[10px] font-black uppercase tracking-widest text-muted hover:text-foreground transition-colors">Products</Link>
-              <Link href="/stores" className="text-[10px] font-black uppercase tracking-widest text-muted hover:text-foreground transition-colors">Stores</Link>
+              <Link
+                href="/products"
+                className="text-[10px] font-black uppercase tracking-widest text-muted hover:text-foreground transition-colors"
+              >
+                Products
+              </Link>
+              <Link
+                href="/stores"
+                className="text-[10px] font-black uppercase tracking-widest text-muted hover:text-foreground transition-colors"
+              >
+                Stores
+              </Link>
             </nav>
 
             <div className="flex items-center gap-2 pr-4 border-r border-border/50">
-              <button 
+              <button
                 onClick={() => setIsSearchOpen(true)}
                 className="p-2.5 rounded-xl hover:bg-surface border border-transparent hover:border-border/50 transition-all active:scale-90 group"
               >
-                <Search size={18} className="text-muted group-hover:text-primary transition-colors" />
+                <Search
+                  size={18}
+                  className="text-muted group-hover:text-primary transition-colors"
+                />
               </button>
               <ThemeToggle />
             </div>
 
             <div className="flex items-center gap-2">
-              {!isLoading && (
-                isAuthenticated ? (
+              {!isLoading &&
+                (isAuthenticated ? (
                   <UserMenu />
                 ) : (
                   <>
                     <Link href="/login">
-                      <Button variant="ghost" className="hidden sm:flex text-[10px] font-black uppercase tracking-widest">Sign in</Button>
+                      <Button
+                        variant="ghost"
+                        className="hidden sm:flex text-[10px] font-black uppercase tracking-widest"
+                      >
+                        Sign in
+                      </Button>
                     </Link>
                     <Link href="/register">
-                      <Button variant="primary" className="rounded-xl px-6 text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-primary/20">Get started</Button>
+                      <Button
+                        variant="primary"
+                        className="rounded-xl px-6 text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-primary/20"
+                      >
+                        Get started
+                      </Button>
                     </Link>
                   </>
-                )
-              )}
+                ))}
             </div>
           </div>
         </div>
       </Container>
 
-      <GlobalSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+      <GlobalSearch
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+      />
     </header>
   );
 }

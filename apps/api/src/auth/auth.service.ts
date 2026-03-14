@@ -1,4 +1,10 @@
-import { Injectable, BadRequestException, UnauthorizedException, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  UnauthorizedException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
@@ -44,64 +50,76 @@ export class AuthService {
       },
     });
 
-    this.emailService.sendVerificationEmail(user.email, verificationToken).catch(err => {
-      console.error('Failed to send verification email', err);
-    });
+    this.emailService
+      .sendVerificationEmail(user.email, verificationToken)
+      .catch((err) => {
+        console.error('Failed to send verification email', err);
+      });
 
     return {
-      message: 'Registration successful. Please check your email to verify your account.',
+      message:
+        'Registration successful. Please check your email to verify your account.',
     };
   }
 
-async login(dto: LoginDto) {
-  const user = await this.prisma.user.findUnique({
-    where: { email: dto.email },
-    include: {
-      seller_profile: true,
-      admin_approvals: {
-        orderBy: { created_at: 'desc' },
-        take: 1,
+  async login(dto: LoginDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+      include: {
+        seller_profile: true,
+        admin_approvals: {
+          orderBy: { created_at: 'desc' },
+          take: 1,
+        },
       },
-    },
-  });
-  if (!user) {
-    throw new UnauthorizedException('Invalid email or password');
-  }
+    });
+    if (!user) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
 
-  const passwordValid = await bcrypt.compare(dto.password, user.password_hash);
-  if (!passwordValid) {
-    throw new UnauthorizedException('Invalid email or password');
-  }
+    const passwordValid = await bcrypt.compare(
+      dto.password,
+      user.password_hash,
+    );
+    if (!passwordValid) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
 
-  if (!user.is_verified) {
-    throw new UnauthorizedException('Please verify your email before logging in');
-  }
+    if (!user.is_verified) {
+      throw new UnauthorizedException(
+        'Please verify your email before logging in',
+      );
+    }
 
-  const payload = { sub: user.id.toString(), email: user.email, role: user.role };
-  const latestApproval = user.admin_approvals[0] || null;
-
-  return {
-    access_token: this.jwtService.sign(payload),
-    user: {
-      id: user.id.toString(),
-      full_name: user.full_name,
+    const payload = {
+      sub: user.id.toString(),
       email: user.email,
       role: user.role,
-      is_verified: user.is_verified,
-      approval_status: latestApproval?.status || null,
-      has_verification_doc: !!user.verification_doc,
-      seller_profile: user.seller_profile
-        ? {
-            id: user.seller_profile.id.toString(),
-            store_name: user.seller_profile.store_name,
-            store_link: user.seller_profile.store_link,
-            bio: user.seller_profile.bio,
-            logo_url: user.seller_profile.logo_url,
-          }
-        : null,
-    },
-  };
-}
+    };
+    const latestApproval = user.admin_approvals[0] || null;
+
+    return {
+      access_token: this.jwtService.sign(payload),
+      user: {
+        id: user.id.toString(),
+        full_name: user.full_name,
+        email: user.email,
+        role: user.role,
+        is_verified: user.is_verified,
+        approval_status: latestApproval?.status || null,
+        has_verification_doc: !!user.verification_doc,
+        seller_profile: user.seller_profile
+          ? {
+              id: user.seller_profile.id.toString(),
+              store_name: user.seller_profile.store_name,
+              store_link: user.seller_profile.store_link,
+              bio: user.seller_profile.bio,
+              logo_url: user.seller_profile.logo_url,
+            }
+          : null,
+      },
+    };
+  }
 
   async getMe(userId: bigint) {
     const user = await this.prisma.user.findUnique({
@@ -165,7 +183,9 @@ async login(dto: LoginDto) {
     // Check if there's already a pending approval
     const latestApproval = user.admin_approvals[0];
     if (latestApproval && latestApproval.status === 'PENDING') {
-      throw new BadRequestException('You already have a pending verification request');
+      throw new BadRequestException(
+        'You already have a pending verification request',
+      );
     }
 
     // Update user's verification doc and create approval record
@@ -182,7 +202,10 @@ async login(dto: LoginDto) {
       }),
     ]);
 
-    return { message: 'Verification request submitted successfully. An admin will review your submission.' };
+    return {
+      message:
+        'Verification request submitted successfully. An admin will review your submission.',
+    };
   }
 
   async getApprovalStatus(userId: bigint) {
@@ -226,7 +249,10 @@ async login(dto: LoginDto) {
       where: { email: dto.email },
     });
     if (!user) {
-      return { message: 'If a user with that email exists, a password reset link has been sent.' };
+      return {
+        message:
+          'If a user with that email exists, a password reset link has been sent.',
+      };
     }
 
     const resetToken = randomBytes(32).toString('hex');
@@ -240,9 +266,14 @@ async login(dto: LoginDto) {
       },
     });
 
-    this.emailService.sendPasswordResetEmail(user.email, resetToken).catch(console.error);
+    this.emailService
+      .sendPasswordResetEmail(user.email, resetToken)
+      .catch(console.error);
 
-    return { message: 'If a user with that email exists, a password reset link has been sent.' };
+    return {
+      message:
+        'If a user with that email exists, a password reset link has been sent.',
+    };
   }
 
   async resetPassword(dto: ResetPasswordDto) {
@@ -268,7 +299,10 @@ async login(dto: LoginDto) {
       },
     });
 
-    return { message: 'Password reset successful. You can now log in with your new password.' };
+    return {
+      message:
+        'Password reset successful. You can now log in with your new password.',
+    };
   }
 
   // In-memory token blacklist (use Redis in production)
@@ -291,16 +325,23 @@ async login(dto: LoginDto) {
     const data: any = {};
     if (dto.full_name) data.full_name = dto.full_name;
     if (dto.email && dto.email !== user.email) {
-      const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
+      const existing = await this.prisma.user.findUnique({
+        where: { email: dto.email },
+      });
       if (existing) throw new ConflictException('Email already in use');
       data.email = dto.email;
     }
 
     if (dto.new_password) {
       if (!dto.current_password) {
-        throw new BadRequestException('Current password is required to set a new one');
+        throw new BadRequestException(
+          'Current password is required to set a new one',
+        );
       }
-      const isMatch = await bcrypt.compare(dto.current_password, user.password_hash);
+      const isMatch = await bcrypt.compare(
+        dto.current_password,
+        user.password_hash,
+      );
       if (!isMatch) throw new UnauthorizedException('Invalid current password');
       data.password_hash = await bcrypt.hash(dto.new_password, 10);
     }

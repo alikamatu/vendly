@@ -18,7 +18,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Vendly — Marketplace for Verified Entrepreneurs",
-  description: "Discover and shop from trusted, verified entrepreneurs all in one place.",
+  description:
+    "Discover and shop from trusted, verified entrepreneurs all in one place.",
 };
 
 import { FavoriteProvider } from "../lib/favorite-context";
@@ -37,9 +38,7 @@ export default function RootLayout({
           <AuthProvider>
             <FavoriteProvider>
               <CartProvider>
-                <StoreGuard>
-                  {children}
-                </StoreGuard>
+                <StoreGuard>{children}</StoreGuard>
               </CartProvider>
             </FavoriteProvider>
           </AuthProvider>

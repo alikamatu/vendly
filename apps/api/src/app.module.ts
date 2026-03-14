@@ -16,7 +16,7 @@ import { FavoriteModule } from './favorite/favorite.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-      ThrottlerModule.forRoot({
+    ThrottlerModule.forRoot({
       throttlers: [{ ttl: 60000, limit: 10 }], // ttl in milliseconds
     }),
     AuthModule,

@@ -1,19 +1,19 @@
-import { 
-  Controller, 
-  Post, 
-  Get, 
+import {
+  Controller,
+  Post,
+  Get,
   Put,
   Delete,
-  Body, 
-  UseGuards, 
-  UseInterceptors, 
-  UploadedFiles, 
-  ParseFilePipe, 
-  MaxFileSizeValidator, 
-  FileTypeValidator, 
+  Body,
+  UseGuards,
+  UseInterceptors,
+  UploadedFiles,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
   Request,
   Param,
-  Query
+  Query,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { ProductService } from './product.service';
@@ -39,7 +39,8 @@ export class ProductController {
   async createProduct(
     @Request() req,
     @Body() dto: CreateProductDto,
-    @UploadedFiles() files: { images?: Express.Multer.File[]; video?: Express.Multer.File[] },
+    @UploadedFiles()
+    files: { images?: Express.Multer.File[]; video?: Express.Multer.File[] },
   ) {
     return this.productService.createProduct(
       BigInt(req.user.id),
@@ -94,7 +95,8 @@ export class ProductController {
     @Request() req,
     @Param('id') id: string,
     @Body() dto: UpdateProductDto,
-    @UploadedFiles() files: { images?: Express.Multer.File[]; video?: Express.Multer.File[] },
+    @UploadedFiles()
+    files: { images?: Express.Multer.File[]; video?: Express.Multer.File[] },
   ) {
     return this.productService.updateProduct(
       BigInt(req.user.id),

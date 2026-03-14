@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { Role, ApprovalStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ApproveVerificationDto } from './dto/approve-verification.dto';
@@ -89,9 +93,15 @@ export class AdminService {
   async getStats() {
     const [total, pending, approved, rejected] = await Promise.all([
       this.prisma.adminApproval.count(),
-      this.prisma.adminApproval.count({ where: { status: ApprovalStatus.PENDING } }),
-      this.prisma.adminApproval.count({ where: { status: ApprovalStatus.APPROVED } }),
-      this.prisma.adminApproval.count({ where: { status: ApprovalStatus.REJECTED } }),
+      this.prisma.adminApproval.count({
+        where: { status: ApprovalStatus.PENDING },
+      }),
+      this.prisma.adminApproval.count({
+        where: { status: ApprovalStatus.APPROVED },
+      }),
+      this.prisma.adminApproval.count({
+        where: { status: ApprovalStatus.REJECTED },
+      }),
     ]);
 
     return { total, pending, approved, rejected };

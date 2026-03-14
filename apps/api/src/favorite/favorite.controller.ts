@@ -1,4 +1,11 @@
-import { Controller, Get, Post, Param, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { FavoriteService } from './favorite.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
@@ -9,7 +16,10 @@ export class FavoriteController {
 
   @Post(':productId')
   toggleFavorite(@Request() req: any, @Param('productId') productId: string) {
-    return this.favoriteService.toggleFavorite(BigInt(req.user.id), BigInt(productId));
+    return this.favoriteService.toggleFavorite(
+      BigInt(req.user.id),
+      BigInt(productId),
+    );
   }
 
   @Get()

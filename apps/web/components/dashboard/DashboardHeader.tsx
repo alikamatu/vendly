@@ -4,7 +4,14 @@ import React from "react";
 import { useTheme } from "@/lib/theme";
 import { useAuth } from "@/lib/auth-context";
 import { useCart } from "@/lib/cart-context";
-import { Moon, Sun, LayoutDashboard, ShoppingBag, Heart, Search } from "lucide-react";
+import {
+  Moon,
+  Sun,
+  LayoutDashboard,
+  ShoppingBag,
+  Heart,
+  Search,
+} from "lucide-react";
 import GlobalSearch from "../layout/GlobalSearch";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
@@ -16,7 +23,10 @@ interface DashboardHeaderProps {
 
 import UserMenu from "../layout/UserMenu";
 
-export default function DashboardHeader({ title, onMenuToggle }: DashboardHeaderProps) {
+export default function DashboardHeader({
+  title,
+  onMenuToggle,
+}: DashboardHeaderProps) {
   const [isSearchOpen, setIsSearchOpen] = React.useState(false);
   const { theme, setTheme } = useTheme();
   const { user } = useAuth();
@@ -29,18 +39,24 @@ export default function DashboardHeader({ title, onMenuToggle }: DashboardHeader
     <header className="sticky top-0 z-30 flex h-20 items-center justify-between border-b border-border bg-background/80 px-4 md:px-8 backdrop-blur-md">
       <div className="flex items-center gap-4">
         {isSeller && (
-          <button 
+          <button
             onClick={onMenuToggle}
             className="lg:hidden p-2.5 bg-surface border border-border rounded-xl text-muted hover:text-foreground transition-all"
           >
-             <LayoutDashboard className="w-5 h-5" />
+            <LayoutDashboard className="w-5 h-5" />
           </button>
         )}
         <Link href="/" className="flex items-center gap-2 group">
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-black text-xs shadow-lg shadow-primary/20 transition-transform group-hover:scale-105">
-          <img src="/logos/vendly.png" alt="Ventry Logo" className="w-full h-full" />
+            <img
+              src="/logos/vendly.png"
+              alt="Ventry Logo"
+              className="w-full h-full"
+            />
           </div>
-          <h1 className="text-md font-bold tracking-tight text-foreground truncate max-w-[100px] md:max-w-none">{title}</h1>
+          <h1 className="text-md font-bold tracking-tight text-foreground truncate max-w-[100px] md:max-w-none">
+            {title}
+          </h1>
         </Link>
       </div>
 
@@ -48,13 +64,21 @@ export default function DashboardHeader({ title, onMenuToggle }: DashboardHeader
         {/* Common Nav Items (Favorites for Auth Users) */}
         <div className="hidden sm:flex items-center gap-1 md:gap-2 mr-2">
           {user && (
-            <Link href="/favorites" className="p-2.5 text-muted hover:text-red-500 hover:bg-red-500/5 rounded-2xl transition-all group" title="Favorites">
+            <Link
+              href="/favorites"
+              className="p-2.5 text-muted hover:text-red-500 hover:bg-red-500/5 rounded-2xl transition-all group"
+              title="Favorites"
+            >
               <Heart className="w-5 h-5 group-active:scale-90 transition-transform" />
             </Link>
           )}
 
           {/* Unified Cart Link */}
-          <Link href="/cart" className="p-2.5 text-muted hover:text-primary hover:bg-primary/5 rounded-2xl transition-all group relative" title="Cart">
+          <Link
+            href="/cart"
+            className="p-2.5 text-muted hover:text-primary hover:bg-primary/5 rounded-2xl transition-all group relative"
+            title="Cart"
+          >
             <ShoppingBag className="w-5 h-5 group-active:scale-90 transition-transform" />
             {itemCount > 0 && (
               <motion.span
@@ -68,13 +92,16 @@ export default function DashboardHeader({ title, onMenuToggle }: DashboardHeader
           </Link>
 
           {/* Special "Become a Seller" for regular Users */}
-          {user && !isSeller && user.role !== "ADMIN" && user?.approval_status !== "APPROVED" && (
-            <Link href="/dashboard/seller-verification">
-              <button className="ml-2 px-4 py-2 bg-primary text-primary text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
-                Become a Seller
-              </button>
-            </Link>
-          )}
+          {user &&
+            !isSeller &&
+            user.role !== "ADMIN" &&
+            user?.approval_status !== "APPROVED" && (
+              <Link href="/dashboard/seller-verification">
+                <button className="ml-2 px-4 py-2 bg-primary text-primary text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
+                  Become a Seller
+                </button>
+              </Link>
+            )}
         </div>
 
         <div className="h-8 w-[1px] bg-border mx-1 hidden sm:block"></div>
@@ -102,7 +129,11 @@ export default function DashboardHeader({ title, onMenuToggle }: DashboardHeader
               exit={{ opacity: 0, scale: 0.8 }}
               transition={{ duration: 0.2 }}
             >
-              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              {isDark ? (
+                <Sun className="w-5 h-5" />
+              ) : (
+                <Moon className="w-5 h-5" />
+              )}
             </motion.div>
           </AnimatePresence>
         </button>
@@ -124,7 +155,10 @@ export default function DashboardHeader({ title, onMenuToggle }: DashboardHeader
           )}
         </div>
       </div>
-      <GlobalSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+      <GlobalSearch
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+      />
     </header>
   );
 }
