@@ -4,22 +4,22 @@ import React from "react";
 import { useTheme } from "@/lib/theme";
 import { useAuth } from "@/lib/auth-context";
 import { useCart } from "@/lib/cart-context";
-import { Moon, Sun, User, LayoutDashboard, ShoppingBag, Heart, LogOut, Search } from "lucide-react";
+import { Moon, Sun, LayoutDashboard, ShoppingBag, Heart, Search } from "lucide-react";
 import GlobalSearch from "../layout/GlobalSearch";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import clsx from "@/utils/clsx";
-import Image from "next/image";
 
 interface DashboardHeaderProps {
   title: string;
   onMenuToggle?: () => void;
 }
 
+import UserMenu from "../layout/UserMenu";
+
 export default function DashboardHeader({ title, onMenuToggle }: DashboardHeaderProps) {
   const [isSearchOpen, setIsSearchOpen] = React.useState(false);
   const { theme, setTheme } = useTheme();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { itemCount } = useCart();
   const isDark = theme === "dark";
 
@@ -67,17 +67,10 @@ export default function DashboardHeader({ title, onMenuToggle }: DashboardHeader
             )}
           </Link>
 
-          {/* Dashboard/Seller Links - Restricted to SELLER/ADMIN */}
-          {(isSeller || user?.role === "ADMIN") && (
-            <Link href="/dashboard" className="p-2.5 text-muted hover:text-primary hover:bg-primary/5 rounded-2xl transition-all group" title="Dashboard">
-              <LayoutDashboard className="w-5 h-5 group-active:scale-90 transition-transform" />
-            </Link>
-          )}
-
           {/* Special "Become a Seller" for regular Users */}
           {user && !isSeller && user.role !== "ADMIN" && user?.approval_status !== "APPROVED" && (
-            <Link href="/dashboard/settings/profile">
-              <button className="ml-2 px-4 py-2 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
+            <Link href="/dashboard/seller-verification">
+              <button className="ml-2 px-4 py-2 bg-primary text-primary text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
                 Become a Seller
               </button>
             </Link>
@@ -119,35 +112,7 @@ export default function DashboardHeader({ title, onMenuToggle }: DashboardHeader
         {/* User Profile or Login */}
         <div className="flex items-center gap-3 pl-1">
           {user ? (
-            <>
-              <div className="hidden text-right md:block">
-                <p className="text-[11px] font-bold text-foreground leading-none">{user.full_name}</p>
-                <p className={clsx(
-                  "text-[9px] font-black mt-1 uppercase tracking-widest",
-                  isSeller ? "text-primary" : "text-muted"
-                )}>
-                  {user.role}
-                </p>
-              </div>
-              <Link href="/dashboard/settings/profile">
-                <div className="h-10 w-10 overflow-hidden rounded-2xl bg-surface border border-border flex items-center justify-center text-primary shadow-sm hover:border-primary/30 transition-colors">
-                  {user.seller_profile?.logo_url ? (
-                     <img src={user.seller_profile.logo_url} alt="Profile" className="w-full h-full object-cover" />
-                  ) : (
-                     <span className="text-xs font-black uppercase tracking-tighter">
-                       {user.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2) || <User className="w-4 h-4" />}
-                     </span>
-                  )}
-                </div>
-              </Link>
-              <button 
-                onClick={logout}
-                className="p-2.5 text-muted hover:text-red-500 hover:bg-red-500/5 rounded-2xl transition-all"
-                title="Sign Out"
-              >
-                <LogOut className="w-5 h-5" />
-              </button>
-            </>
+            <UserMenu />
           ) : (
             <div className="flex items-center gap-2">
               <Link href="/register">

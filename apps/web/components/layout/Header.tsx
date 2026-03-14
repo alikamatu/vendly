@@ -32,8 +32,12 @@ function ThemeToggle() {
   );
 }
 
+import UserMenu from "./UserMenu";
+import { useAuth } from "../../lib/auth-context";
+
 export default function Header() {
   const [isSearchOpen, setIsSearchOpen] = React.useState(false);
+  const { isAuthenticated, isLoading } = useAuth();
 
   return (
     <header className="sticky top-0 z-50 border-b bg-white/70 backdrop-blur-xl dark:bg-black/40">
@@ -60,8 +64,20 @@ export default function Header() {
             </div>
 
             <div className="flex items-center gap-2">
-              <Button variant="ghost" className="hidden sm:flex text-[10px] font-black uppercase tracking-widest">Sign in</Button>
-              <Button variant="primary" className="rounded-xl px-6 text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-primary/20">Get started</Button>
+              {!isLoading && (
+                isAuthenticated ? (
+                  <UserMenu />
+                ) : (
+                  <>
+                    <Link href="/login">
+                      <Button variant="ghost" className="hidden sm:flex text-[10px] font-black uppercase tracking-widest">Sign in</Button>
+                    </Link>
+                    <Link href="/register">
+                      <Button variant="primary" className="rounded-xl px-6 text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-primary/20">Get started</Button>
+                    </Link>
+                  </>
+                )
+              )}
             </div>
           </div>
         </div>

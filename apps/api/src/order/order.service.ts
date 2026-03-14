@@ -98,6 +98,14 @@ export class OrderService {
               select: {
                 title: true,
                 image_urls: true,
+                video_url: true,
+                seller: {
+                  select: {
+                    store_name: true,
+                    store_link: true,
+                    logo_url: true,
+                  }
+                }
               }
             }
           }

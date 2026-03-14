@@ -2,10 +2,11 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { CheckCircle2, ArrowRight, MessageSquare, ShoppingBag } from "lucide-react";
+import { ArrowRight, Sparkles, Zap, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import Button from "../ui/Button";
 import { useAuth } from "@/lib/auth-context";
+import Container from "./Container";
 
 export default function ModernHero() {
   const { user } = useAuth();
@@ -13,113 +14,113 @@ export default function ModernHero() {
   // Only display if user is not a seller
   if (user?.role === "SELLER") return null;
 
-  const bubbles = [
-    { text: "I want a vintage bag", color: "bg-red-500 text-white shadow-xl shadow-red-500/20", x: -20, y: -40, delay: 0, align: "right" },
-    { text: "Check my shop link!", color: "bg-blue-600 text-white shadow-xl shadow-blue-600/20", x: 40, y: 20, delay: 0.5, align: "left" },
-    { text: "Available for delivery?", color: "bg-red-500 text-white shadow-xl shadow-red-500/20", x: -30, y: 80, delay: 1, align: "right" },
-  ];
-
   return (
-    <section className="relative w-full overflow-hidden bg-background py-20 lg:py-48 border-b border-border min-h-[80vh] flex items-center">
-      {/* Background Wallpaper with Entrance Animation */}
-      <motion.div 
-        initial={{ opacity: 0, scale: 1.1 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 1.2, ease: "easeOut" }}
-        className="absolute inset-0 z-0 pointer-events-none"
-      >
-        <img 
-          src="/background.svg" 
-          alt="" 
-          className="w-full h-full object-cover opacity-100 grayscale-[0.1]"
-        />
-      </motion.div>
-
-      <div className="max-w-7xl mx-auto px-6 md:px-8 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center relative z-10">
-        
-        {/* Left Side: Content */}
+    <section className="relative w-full pt-4 pb-12 md:pt-8 md:pb-24 overflow-hidden bg-background">
+      <Container>
         <motion.div 
-          initial={{ opacity: 0, x: -30 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6 }}
-          className="space-y-8 relative z-10"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="relative overflow-hidden rounded-[2.5rem] md:rounded-[4rem] bg-zinc-900 border border-white/5 shadow-2xl"
         >
-          <div className="space-y-4">
-            <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter leading-[0.9] text-foreground">
-              Stop losing sales <br />
-              <span className="text-primary italic">in the DMs.</span>
-            </h1>
-            <p className="text-lg text-muted-foreground font-medium max-w-lg leading-relaxed">
-              Every day you sell through WhatsApp DMs, you lose money to dropped networks, forgotten orders, and buyers who never come back. Vendly gives you a real store in 5 minutes.
-            </p>
-          </div>
+          {/* Decorative Gradients */}
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/20 blur-[120px] -z-10 translate-x-1/2 -translate-y-1/2" />
+          <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-blue-500/10 blur-[100px] -z-10 -translate-x-1/4 translate-y-1/4" />
 
-          <div className="flex flex-col sm:flex-row gap-4">
-            <Link href="/register">
-              <Button variant="primary" size="lg" className="w-full sm:w-auto shadow-none group">
-                Create my free store
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            </Link>
-            <Button variant="secondary" size="lg" className="w-full sm:w-auto shadow-none">
-              See how it works ↓
-            </Button>
-          </div>
+          <div className="relative z-10 px-6 py-16 md:px-16 md:py-24 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            
+            {/* Left Side: Content */}
+            <div className="space-y-8 text-center lg:text-left">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.2 }}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-white/70 text-[10px] font-black uppercase tracking-widest"
+              >
+                <Sparkles size={14} className="text-primary" />
+                The Future of Verified Entrepreneurship
+              </motion.div>
 
-          {/* Benefits Grid - Simplified */}
-          <div className="grid grid-cols-2 gap-6 pt-6 pt-8 border-t border-border/50">
-            {[
-              { text: "No credit card needed", icon: CheckCircle2 },
-              { text: "Live in 5 minutes", icon: CheckCircle2 },
-              { text: "MoMo & card payments", icon: CheckCircle2 },
-              { text: "WhatsApp alerts", icon: CheckCircle2 },
-            ].map((item, idx) => (
-              <div key={idx} className="flex items-center gap-3">
-                <item.icon className="w-4 h-4 text-primary shrink-0" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{item.text}</span>
+              <div className="space-y-4">
+                <h1 className="text-4xl md:text-6xl lg:text-7xl font-black uppercase tracking-tight leading-[0.95] text-white">
+                  Sell smarter, <br />
+                  <span className="text-primary italic">not harder.</span>
+                </h1>
+                <p className="text-base md:text-lg text-zinc-400 font-medium max-w-lg mx-auto lg:mx-0 leading-relaxed">
+                  Tired of managing sales in DMs? Vendly gives you a premium store in seconds. Professional, fast, and built for verified entrepreneurs.
+                </p>
               </div>
-            ))}
+
+              <div className="flex flex-col sm:flex-row justify-center lg:justify-start gap-4 pt-2">
+                <Link href="/seller-verification">
+                  <Button variant="primary" size="lg" className="w-full sm:w-auto rounded-2xl px-10 border-none group shadow-xl shadow-primary/20">
+                    Get Started Free
+                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </Link>
+                <Link href="/products">
+                  <Button variant="ghost" size="lg" className="w-full sm:w-auto rounded-2xl text-white/80 hover:text-white hover:bg-white/5 border border-white/10">
+                    Browse Market
+                  </Button>
+                </Link>
+              </div>
+
+              {/* Trust Indicators */}
+              <div className="flex flex-wrap justify-center lg:justify-start gap-6 pt-8">
+                {[
+                  { text: "Fast Setup", icon: Zap },
+                  { text: "Secure Payments", icon: ShieldCheck },
+                ].map((item, idx) => (
+                  <div key={idx} className="flex items-center gap-2 text-zinc-500">
+                    <item.icon className="w-4 h-4 text-primary/60" />
+                    <span className="text-[9px] font-bold uppercase tracking-[0.15em]">{item.text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right Side: Minimal Visual */}
+            <motion.div 
+               initial={{ opacity: 0, x: 20 }}
+               animate={{ opacity: 1, x: 0 }}
+               transition={{ duration: 1, delay: 0.4 }}
+               className="hidden lg:block relative"
+            >
+              <div className="relative w-full aspect-square max-w-[440px] ml-auto">
+                {/* Visual Card 1 */}
+                <motion.div 
+                  animate={{ y: [0, -10, 0] }}
+                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                  className="absolute top-0 right-0 w-64 p-6 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-xl shadow-2xl"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center text-primary mb-4">
+                    <Zap size={24} />
+                  </div>
+                  <h3 className="text-white text-sm font-black uppercase tracking-wider">Instant Setup</h3>
+                  <p className="text-zinc-500 text-[10px] mt-2 leading-relaxed">Your store is live the moment you sign up. No technical skills required.</p>
+                </motion.div>
+
+                {/* Visual Card 2 */}
+                <motion.div 
+                  animate={{ y: [0, 10, 0] }}
+                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                  className="absolute bottom-4 left-0 w-64 p-6 rounded-3xl bg-primary shadow-2xl shadow-primary/30"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-black/10 flex items-center justify-center text-white mb-4">
+                    <ArrowRight size={24} />
+                  </div>
+                  <h3 className="text-white text-sm font-black uppercase tracking-wider">Zero Fees</h3>
+                  <p className="text-white/70 text-[10px] mt-2 leading-relaxed">Start selling for free. We only grow when you grow. Built for the modern entrepreneur economy.</p>
+                </motion.div>
+                
+                {/* Ambient glow behind cards */}
+                <div className="absolute inset-0 bg-primary/5 blur-[80px] -z-10 rounded-full" />
+              </div>
+            </motion.div>
+
           </div>
         </motion.div>
-
-        {/* Right Side: Floating Bubbles (Mockup Image Removed) */}
-        <div className="relative h-[300px] lg:h-[400px]">
-          {/* Request Bubbles */}
-          <div className="absolute inset-0 z-20 pointer-events-none">
-            {bubbles.map((bubble, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, scale: 0.8, x: bubble.x + (i % 2 === 0 ? -20 : 20) }}
-                animate={{ 
-                  opacity: 1, 
-                  scale: 1, 
-                  x: (i * 40) - 20, // Simplified distribution without the mockup base
-                  y: [bubble.y, bubble.y - 10, bubble.y]
-                }}
-                transition={{ 
-                  opacity: { duration: 0.5, delay: bubble.delay + 0.5 },
-                  scale: { duration: 0.5, delay: bubble.delay + 0.5 },
-                  y: { duration: 4, repeat: Infinity, ease: "easeInOut" }
-                }}
-                className={`absolute p-4 rounded-3xl text-[11px] font-black uppercase tracking-wider ${bubble.color}`}
-                style={{ 
-                  left: `50%`, 
-                  top: `calc(50% + ${bubble.y}px)`,
-                  transform: 'translate(-50%, -50%)'
-                }}
-              >
-                <div className="flex items-center gap-2 relative">
-                  {i % 2 === 0 ? <MessageSquare className="w-3 h-3" /> : <ShoppingBag className="w-3 h-3" />}
-                  {bubble.text}
-                  
-                  {/* Chat Pointer */}
-                  <div className={`absolute -bottom-6 ${bubble.align === 'right' ? 'right-2' : 'left-2'} w-4 h-4 ${bubble.color.split(' ')[0]} rotate-45 transform pointer-events-none -z-10`} />
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </div>
+      </Container>
     </section>
   );
 }

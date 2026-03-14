@@ -174,10 +174,21 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                                    animate={{ opacity: 1, y: 0 }}
                                    transition={{ delay: idx * 0.03 }}
                                    onClick={() => handleSelect(item)}
-                                   className="flex items-center gap-4 p-4 rounded-3xl bg-surface/30 border border-border/50 hover:border-primary/30 hover:bg-white transition-all text-left group"
+                                   className="flex items-center gap-4 p-4 rounded-3xl bg-surface/30 border border-border/50 hover:border-primary/30 hover:bg-primary transition-all text-left group"
                                  >
-                                    <div className="w-16 h-16 rounded-2xl border border-border/50 overflow-hidden bg-white shrink-0">
-                                      <img src={item.image_urls[0] || '/placeholder.png'} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" />
+                                    <div className="w-16 h-16 rounded-2xl border border-border/50 overflow-hidden bg-white shrink-0 relative group">
+                                      {item.video_url ? (
+                                        <video 
+                                          src={item.video_url} 
+                                          autoPlay 
+                                          muted 
+                                          loop 
+                                          playsInline 
+                                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                        />
+                                      ) : (
+                                        <img src={item.image_urls[0] || '/placeholder.png'} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" />
+                                      )}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                        <h4 className="text-xs font-black uppercase tracking-tight truncate mb-1">{item.title}</h4>

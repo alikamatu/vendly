@@ -149,7 +149,8 @@ export class StoreService {
     
     // Map recent orders for the dashboard
     const recentOrders = orderItems.slice(0, 5).map(item => ({
-      id: `#ORD-${item.order_id.toString().slice(-4)}`,
+      id: `${item.order_id.toString()}-${item.id.toString()}`,
+      displayId: `#ORD-${item.order_id.toString().slice(-4)}`,
       customer: item.order.buyer.full_name,
       product: item.product.title,
       status: item.order.status,

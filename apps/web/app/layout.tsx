@@ -17,8 +17,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Vendly — Campus Marketplace",
-  description: "Discover trusted campus sellers, all in one place.",
+  title: "Vendly — Marketplace for Verified Entrepreneurs",
+  description: "Discover and shop from trusted, verified entrepreneurs all in one place.",
 };
 
 import { FavoriteProvider } from "../lib/favorite-context";

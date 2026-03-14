@@ -383,7 +383,7 @@ export default function ProductDetailsPage() {
                   </motion.span>
                 )}
               </Button>
-               <Button variant="secondary" className="h-16 flex-1 rounded-[2rem] font-black uppercase tracking-widest text-xs bg-black text-white border-none hover:bg-black/90 group">
+               <Button variant="secondary" className="h-16 flex-1 rounded-[2rem] font-black uppercase tracking-widest text-xs bg-black text-primary border-none hover:bg-black/90 group">
                 Buy Now
               </Button>
            </motion.div>

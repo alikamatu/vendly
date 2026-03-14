@@ -74,7 +74,7 @@ export default function HomePage() {
       <ModernHero />
 
       {/* Descriptive Marketplace Section */}
-      <section className="relative py-12 overflow-hidden bg-surface/30">
+      <section className="relative py-3 overflow-hidden">
       </section>
 
       <main className="max-w-7xl mx-auto px-4 md:px-8 pb-32 space-y-12 relative z-10">

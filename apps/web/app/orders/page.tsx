@@ -77,7 +77,7 @@ export default function BuyerOrdersPage() {
           <div>
             <h2 className="text-xl font-black uppercase tracking-tight">Order History</h2>
             <p className="text-[10px] text-muted font-bold uppercase tracking-wider mt-1">
-              Track your campus purchases • {orders.length} total
+              Track your verified entrepreneur purchases • {orders.length} total
             </p>
           </div>
         </div>
@@ -123,11 +123,46 @@ export default function BuyerOrdersPage() {
                       </div>
                     </div>
 
+                    {/* Seller Info */}
+                    {order.items[0]?.product?.seller && (
+                      <div className="mb-6 px-4 py-3 rounded-2xl bg-surface/50 border border-border/30 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg overflow-hidden bg-background border border-border/50 flex items-center justify-center">
+                            {order.items[0].product.seller.logo_url ? (
+                              <img src={order.items[0].product.seller.logo_url} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-[10px] font-black">{order.items[0].product.seller.store_name[0]}</span>
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-[9px] font-black text-muted uppercase tracking-widest leading-none">Sold by</p>
+                            <Link href={`/s/${order.items[0].product.seller.store_link}`} className="text-[11px] font-bold text-foreground hover:text-primary transition-colors">
+                              {order.items[0].product.seller.store_name}
+                            </Link>
+                          </div>
+                        </div>
+                        <Link href={`/s/${order.items[0].product.seller.store_link}`}>
+                          <Button size="sm" variant="ghost" className="h-8 text-[9px] font-black uppercase tracking-widest px-4">Visit Store</Button>
+                        </Link>
+                      </div>
+                    )}
+
                     <div className="space-y-4">
                       {order.items.map((item: any) => (
                         <div key={item.id} className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-xl border border-border/50 overflow-hidden shrink-0 bg-surface">
-                            <img src={item.product.image_urls[0]} alt="" className="w-full h-full object-cover" />
+                          <div className="w-16 h-16 rounded-xl border border-border/50 overflow-hidden shrink-0 bg-surface relative group">
+                            {item.product.video_url ? (
+                              <video 
+                                src={item.product.video_url} 
+                                autoPlay 
+                                muted 
+                                loop 
+                                playsInline 
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <img src={item.product.image_urls[0]} alt="" className="w-full h-full object-cover" />
+                            )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <h4 className="text-[11px] font-black uppercase tracking-tight truncate">{item.product.title}</h4>
@@ -152,7 +187,7 @@ export default function BuyerOrdersPage() {
                 <Package className="w-12 h-12 text-muted mx-auto opacity-10" />
                 <div className="space-y-1">
                   <p className="text-[11px] text-muted font-black uppercase tracking-[0.2em]">No orders yet</p>
-                  <p className="text-[9px] text-muted/60 font-medium uppercase tracking-widest italic">Your campus shopping journey starts here</p>
+                  <p className="text-[9px] text-muted/60 font-medium uppercase tracking-widest italic">Your shopping journey with verified entrepreneurs starts here</p>
                 </div>
                 <Link href="/" className="inline-block mt-4">
                   <Button size="sm" variant="secondary" className="rounded-xl px-8 text-[9px] font-black uppercase tracking-widest">
