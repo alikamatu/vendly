@@ -226,9 +226,9 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
       return;
     }
 
-    const MAX_VIDEO_BYTES = 15 * 1024 * 1024;
+    const MAX_VIDEO_BYTES = 60 * 1024 * 1024;
     if (file.size > MAX_VIDEO_BYTES) {
-      setMessage({ type: "error", text: "Video is too large. Max 5 seconds." });
+      setMessage({ type: "error", text: "Video is too large. Max 60MB." });
       e.target.value = "";
       return;
     }
@@ -236,23 +236,9 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     const url = URL.createObjectURL(file);
     const videoEl = document.createElement("video");
     videoEl.preload = "metadata";
-    videoEl.onloadedmetadata = () => {
-      const duration = videoEl.duration;
-      URL.revokeObjectURL(videoEl.src);
-
-      if (isNaN(duration) || duration > 5.1) {
-        setMessage({ type: "error", text: "Video must be 5 seconds or less." });
-        URL.revokeObjectURL(url);
-        if (videoInputRef.current) {
-          videoInputRef.current.value = "";
-        }
-        return;
-      }
-
-      setVideo(file);
-      setVideoPreview(url);
-      setExistingVideo(null); // Replace existing
-    };
+    setVideo(file);
+    setVideoPreview(url);
+    setExistingVideo(null); // Replace existing
     videoEl.src = url;
   };
 
@@ -421,7 +407,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
 
             {/* Video */}
             <div className="space-y-2">
-              <p className="text-[10px] font-bold text-muted uppercase tracking-widest">Video (Max 5s)</p>
+              <p className="text-[10px] font-bold text-muted uppercase tracking-widest">Video (Trims to 5s)</p>
               <div>
                 {videoPreview || existingVideo ? (
                   <div className="relative rounded-2xl overflow-hidden border border-border aspect-square md:aspect-auto md:h-[106px]">
@@ -445,7 +431,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                     className="w-full h-[106px] rounded-2xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-1 text-muted hover:border-primary/50 transition-all text-[9px] font-bold uppercase tracking-wider"
                   >
                     <ImageIcon className="w-4 h-4" />
-                    <span>Upload Short Clip</span>
+                    <span>Upload Short Clip (Auto-trims to 5s)</span>
                   </button>
                 )}
               </div>

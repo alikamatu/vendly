@@ -47,14 +47,14 @@ export default function DashboardHeader({
           </button>
         )}
         <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-black text-xs shadow-lg shadow-primary/20 transition-transform group-hover:scale-105">
+          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white text-xs shadow-lg shadow-primary/20 transition-transform group-hover:scale-105">
             <img
               src="/logos/vendly.png"
               alt="Ventry Logo"
               className="w-full h-full"
             />
           </div>
-          <h1 className="text-md font-bold tracking-tight text-foreground truncate max-w-[100px] md:max-w-none">
+          <h1 className="text-md tracking-tight text-foreground truncate max-w-[100px] md:max-w-none">
             {title}
           </h1>
         </Link>
@@ -84,7 +84,7 @@ export default function DashboardHeader({
               <motion.span
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                className="absolute -top-0.5 -right-0.5 min-w-[1.25rem] h-5 px-1 flex items-center justify-center bg-red-500 text-white text-[10px] font-black rounded-full border-2 border-background shadow-lg"
+                className="absolute -top-0.5 -right-0.5 min-w-[1.25rem] h-5 px-1 flex items-center justify-center bg-red-500 text-white text-[10px] rounded-full border-2 border-background shadow-lg"
               >
                 {itemCount > 99 ? "99+" : itemCount}
               </motion.span>
@@ -96,8 +96,8 @@ export default function DashboardHeader({
             !isSeller &&
             user.role !== "ADMIN" &&
             user?.approval_status !== "APPROVED" && (
-              <Link href="/dashboard/seller-verification">
-                <button className="ml-2 px-4 py-2 bg-primary text-primary text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
+              <Link href="/seller-verification">
+                <button className="ml-2 px-4 py-2 bg-primary text-primary text-[10px] uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
                   Become a Seller
                 </button>
               </Link>
@@ -147,7 +147,7 @@ export default function DashboardHeader({
           ) : (
             <div className="flex items-center gap-2">
               <Link href="/register">
-                <button className="px-4 py-2 bg-primary  text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
+                <button className="px-4 py-2 bg-primary  text-[10px] uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
                   Sign Up
                 </button>
               </Link>

@@ -54,11 +54,11 @@ export class ProductService {
     // 3. Optional short video upload (max ~5 seconds)
     let video_url: string | undefined;
     if (video) {
-      // Hard size guard so very long/high-res videos are rejected before upload work
-      const MAX_VIDEO_BYTES = 15 * 1024 * 1024; // ~15 MB
+      // Higher size guard for videos that will be trimmed to 5s (allowing ~60MB)
+      const MAX_VIDEO_BYTES = 60 * 1024 * 1024;
       if (video.size > MAX_VIDEO_BYTES) {
         throw new BadRequestException(
-          'Product video is too large. Please upload a short clip (max ~5 seconds).',
+          'Product video is too large. Max 60MB.',
         );
       }
 
@@ -76,7 +76,7 @@ export class ProductService {
           message.toLowerCase().includes('timeout')
         ) {
           throw new BadRequestException(
-            'Product video is too long or too large. Please upload a clip up to 5 seconds.',
+            'Product video is too large or processing failed. Max 60MB.',
           );
         }
         throw err;
@@ -130,25 +130,56 @@ export class ProductService {
     };
   }
 
-  async getProducts() {
-    return (this.prisma.product as any).findMany({
-      include: {
-        seller: {
-          select: {
-            store_name: true,
-            logo_url: true,
-            store_link: true,
+  async getProducts(params: {
+    page?: number;
+    limit?: number;
+    category?: string;
+    sellerId?: string | bigint;
+    status?: string;
+  } = {}) {
+    const { page = 1, limit = 20, category, sellerId, status } = params;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.ProductWhereInput = {
+      ...(category && { category }),
+      ...(sellerId && { seller_id: BigInt(sellerId) }),
+      ...(status ? { status } : { status: { in: ['published', 'active', 'draft'] } }),
+    };
+
+    const [data, total] = await Promise.all([
+      this.prisma.product.findMany({
+        where,
+        include: {
+          seller: {
+            select: {
+              store_name: true,
+              logo_url: true,
+              store_link: true,
+            },
           },
         },
+        orderBy: {
+          created_at: 'desc',
+        },
+        skip,
+        take: limit,
+      }),
+      this.prisma.product.count({ where }),
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
-      orderBy: {
-        created_at: 'desc',
-      },
-    });
+    };
   }
 
   async getProductById(id: bigint) {
-    const product = await (this.prisma.product as any).findUnique({
+    const product = await this.prisma.product.findUnique({
       where: { id },
       include: {
         seller: {
@@ -170,7 +201,7 @@ export class ProductService {
   }
 
   async getProductsByStoreLink(link: string) {
-    return (this.prisma.product as any).findMany({
+    return this.prisma.product.findMany({
       where: {
         seller: {
           store_link: link,
@@ -202,7 +233,7 @@ export class ProductService {
   }
 
   async getProductsBySeller(userId: bigint) {
-    return (this.prisma.product as any).findMany({
+    return this.prisma.product.findMany({
       where: {
         seller: {
           user_id: userId,
@@ -231,7 +262,7 @@ export class ProductService {
     video?: Express.Multer.File,
   ) {
     // 1. Get product and check ownership
-    const product = await (this.prisma.product as any).findUnique({
+    const product = await this.prisma.product.findUnique({
       where: { id },
       include: { seller: true },
     });
@@ -267,9 +298,9 @@ export class ProductService {
     // 3. Handle video
     let video_url = product.video_url;
     if (video) {
-      const MAX_VIDEO_BYTES = 15 * 1024 * 1024;
+      const MAX_VIDEO_BYTES = 60 * 1024 * 1024;
       if (video.size > MAX_VIDEO_BYTES) {
-        throw new BadRequestException('Product video is too large.');
+        throw new BadRequestException('Product video is too large. Max 60MB.');
       }
 
       try {
@@ -297,7 +328,7 @@ export class ProductService {
     }
 
     // 5. Update product
-    const updatedProduct = await (this.prisma.product as any).update({
+    const updatedProduct = await this.prisma.product.update({
       where: { id },
       data: {
         title: dto.title,
@@ -313,8 +344,8 @@ export class ProductService {
         image_urls,
         video_url,
         tags: dto.tags,
-        attributes: parsedAttributes,
-      } as any,
+        attributes: parsedAttributes as Prisma.InputJsonValue,
+      },
     });
 
     return {
@@ -329,7 +360,7 @@ export class ProductService {
 
   async deleteProduct(userId: bigint, id: bigint) {
     // 1. Get product and check ownership
-    const product = await (this.prisma.product as any).findUnique({
+    const product = await this.prisma.product.findUnique({
       where: { id },
       include: { seller: true },
     });
@@ -345,7 +376,7 @@ export class ProductService {
     }
 
     // 2. Delete product
-    await (this.prisma.product as any).delete({
+    await this.prisma.product.delete({
       where: { id },
     });
 
@@ -360,7 +391,7 @@ export class ProductService {
     const searchLower = query.toLowerCase();
 
     // Simple autocomplete/suggestion search
-    return (this.prisma.product as any).findMany({
+    return this.prisma.product.findMany({
       where: {
         OR: [
           { title: { contains: searchLower, mode: 'insensitive' } },

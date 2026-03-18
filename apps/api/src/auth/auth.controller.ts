@@ -9,7 +9,10 @@ import {
   Req,
   UnauthorizedException,
   Patch,
+  UseInterceptors,
+  UploadedFiles,
 } from '@nestjs/common';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -63,8 +66,22 @@ export class AuthController {
 
   @Post('submit-verification')
   @UseGuards(JwtAuthGuard)
-  async submitVerification(@Req() req, @Body() dto: SubmitVerificationDto) {
-    return this.authService.submitVerification(req.user.id, dto);
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'idImage', maxCount: 1 },
+      { name: 'salesProof', maxCount: 1 },
+    ]),
+  )
+  async submitVerification(
+    @Req() req,
+    @Body() dto: SubmitVerificationDto,
+    @UploadedFiles()
+    files: { idImage?: Express.Multer.File[]; salesProof?: Express.Multer.File[] },
+  ) {
+    return this.authService.submitVerification(req.user.id, dto, {
+      idImage: files?.idImage?.[0],
+      salesProof: files?.salesProof?.[0],
+    });
   }
 
   @Get('approval-status')

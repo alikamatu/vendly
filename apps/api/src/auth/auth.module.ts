@@ -8,12 +8,14 @@ import { AdminService } from './admin.service';
 import { AdminController } from './admin.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { EmailModule } from '../email/email.module';
+import { CloudinaryModule } from '../common/cloudinary.module';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
   imports: [
     PrismaModule,
     EmailModule,
+    CloudinaryModule,
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

@@ -114,12 +114,9 @@ export default function HomePage() {
                 animate={{ opacity: 1 }}
                 className="col-span-full py-32 text-center space-y-6 border-2 border-dashed border-border rounded-[3rem] bg-surface/30"
               >
-                <div className="w-20 h-20 bg-surface rounded-full flex items-center justify-center mx-auto shadow-sm">
-                  <FilterX size={32} className="text-muted opacity-30" />
-                </div>
                 <div>
-                   <h3 className="text-xl font-black uppercase tracking-tight">No items match your filters</h3>
-                   <p className="text-sm text-muted font-bold mt-2 max-w-xs mx-auto">
+                   <h3 className="text-xl uppercase tracking-tight">No items match your filters</h3>
+                   <p className="text-sm text-muted mt-2 max-w-xs mx-auto">
                      Try adjusting your price range or category to find more amazing campus deals.
                    </p>
                 </div>
@@ -128,7 +125,7 @@ export default function HomePage() {
                     setActiveCategory(null);
                     setPriceRange([0, 100000]);
                   }}
-                  className="text-[10px] font-black uppercase tracking-[0.2em] text-primary hover:underline"
+                  className="text-[10px] uppercase tracking-[0.2em] text-primary hover:underline"
                 >
                   Clear all filters
                 </button>

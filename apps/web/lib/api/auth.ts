@@ -92,13 +92,23 @@ export const authApi = {
     return handleResponse<{ message: string }>(res);
   },
 
-  async submitVerification(token: string, verification_doc: string) {
-    const res = await fetch(`${API_URL}/auth/submit-verification`, {
+  async submitVerification(token: string, data: any) {
+    const isFormData = data instanceof FormData;
+    const response = await fetch(`${API_URL}/auth/submit-verification`, {
       method: 'POST',
-      headers: authHeaders(token),
-      body: JSON.stringify({ verification_doc }),
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+      },
+      body: isFormData ? data : JSON.stringify(data),
     });
-    return handleResponse<{ message: string }>(res);
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Verification submission failed');
+    }
+
+    return response.json();
   },
 
   async getApprovalStatus(token: string) {

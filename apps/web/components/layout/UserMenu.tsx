@@ -80,6 +80,12 @@ export default function UserMenu() {
       show: isSeller,
     },
     {
+      label: "Open Cart",
+      href: "/cart",
+      icon: ShoppingBag,
+      show: true,
+    },
+    {
       label: "Orders",
       href: isSeller ? "/dashboard/orders" : "/orders",
       icon: ShoppingBag,

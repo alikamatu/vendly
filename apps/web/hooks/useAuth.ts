@@ -64,7 +64,7 @@ export function useResetPasswordForm() {
 export function useVerificationForm() {
   const form = useForm<VerificationInput>({
     resolver: zodResolver(verificationSchema),
-    defaultValues: { verification_doc: '' },
+    defaultValues: { type: 'URL', verification_doc: '' },
   });
 
   return { form };

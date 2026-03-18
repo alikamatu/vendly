@@ -150,7 +150,7 @@ export default function ProductCard({ product, index }: ProductCardProps) {
             <div className="pointer-events-auto">
               <Link 
                 href={`/s/${product.seller.store_link}`}
-                className="flex items-center gap-1 md:gap-1.5 px-2 md:px-3 py-1.5 rounded-lg md:rounded-xl bg-black/60 md:bg-black/40 backdrop-blur-md text-white text-[8px] md:text-[9px] font-bold border border-white/10 hover:bg-black/80 transition-colors"
+                className="flex items-center gap-1 md:gap-1.5 px-2 md:px-3 py-1.5 rounded-lg md:rounded-xl bg-black/60 md:bg-black/40 backdrop-blur-md text-white text-[8px] md:text-[9px] border border-white/10 hover:bg-black/80 transition-colors"
               >
                 View Store <ExternalLink className="w-2 md:w-2.5 h-2 md:h-2.5" />
               </Link>
@@ -162,10 +162,10 @@ export default function ProductCard({ product, index }: ProductCardProps) {
         {/* Content */}
         <div className="p-5 space-y-3">
           <div className="flex items-start justify-between gap-4">
-            <h3 className="text-xs font-black text-foreground line-clamp-1 flex-1 capitalize tracking-tight">
+            <h3 className="text-xs text-foreground line-clamp-1 flex-1 capitalize tracking-tight">
               {product.title}
             </h3>
-            <span className="text-xs text-red-500 font-bold text-primary">
+            <span className="text-xs text-red-500 text-primary">
               GH₵{parseFloat(product.price).toLocaleString()}
             </span>
           </div>
@@ -180,7 +180,7 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                  </div>
                )}
              </div>
-             <p className="text-[10px] text-muted font-bold truncate">@{product.seller.store_link}</p>
+             <p className="text-[10px] text-muted truncate">@{product.seller.store_link}</p>
           </div>
         </div>
       </Card>

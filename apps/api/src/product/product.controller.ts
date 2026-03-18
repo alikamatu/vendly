@@ -61,8 +61,16 @@ export class ProductController {
   }
 
   @Get()
-  async getProducts() {
-    return this.productService.getProducts();
+  async getProducts(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('category') category?: string,
+  ) {
+    return this.productService.getProducts({
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 20,
+      category,
+    });
   }
 
   @Get(':id')

@@ -34,18 +34,18 @@ export default function ModernHero() {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.2 }}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-white/70 text-[10px] font-black uppercase tracking-widest"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-white/70 text-[10px] uppercase tracking-widest"
               >
                 <Sparkles size={14} className="text-primary" />
                 The Future of Verified Entrepreneurship
               </motion.div>
 
               <div className="space-y-4">
-                <h1 className="text-4xl md:text-6xl lg:text-7xl font-black uppercase tracking-tight leading-[0.95] text-white">
+                <h1 className="text-4xl md:text-6xl lg:text-7xl uppercase tracking-tight leading-[0.95] text-white">
                   Sell smarter, <br />
-                  <span className="text-primary italic">not harder.</span>
+                  <span className="text-primary">not harder.</span>
                 </h1>
-                <p className="text-base md:text-lg text-zinc-400 font-medium max-w-lg mx-auto lg:mx-0 leading-relaxed">
+                <p className="text-base md:text-lg text-zinc-400 max-w-lg mx-auto lg:mx-0 leading-relaxed">
                   Tired of managing sales in DMs? Vendly gives you a premium
                   store in seconds. Professional, fast, and built for verified
                   entrepreneurs.
@@ -85,7 +85,7 @@ export default function ModernHero() {
                     className="flex items-center gap-2 text-zinc-500"
                   >
                     <item.icon className="w-4 h-4 text-primary/60" />
-                    <span className="text-[9px] font-bold uppercase tracking-[0.15em]">
+                    <span className="text-[9px] uppercase tracking-[0.15em]">
                       {item.text}
                     </span>
                   </div>
@@ -114,7 +114,7 @@ export default function ModernHero() {
                   <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center text-primary mb-4">
                     <Zap size={24} />
                   </div>
-                  <h3 className="text-white text-sm font-black uppercase tracking-wider">
+                  <h3 className="text-white text-sm uppercase tracking-wider">
                     Instant Setup
                   </h3>
                   <p className="text-zinc-500 text-[10px] mt-2 leading-relaxed">
@@ -137,7 +137,7 @@ export default function ModernHero() {
                   <div className="w-12 h-12 rounded-xl bg-black/10 flex items-center justify-center text-white mb-4">
                     <ArrowRight size={24} />
                   </div>
-                  <h3 className="text-white text-sm font-black uppercase tracking-wider">
+                  <h3 className="text-white text-sm uppercase tracking-wider">
                     Zero Fees
                   </h3>
                   <p className="text-white/70 text-[10px] mt-2 leading-relaxed">

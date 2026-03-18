@@ -11,6 +11,7 @@ import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
+import { CloudinaryService } from '../common/cloudinary.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -25,6 +26,7 @@ export class AuthService {
     private jwtService: JwtService,
     private configService: ConfigService,
     private emailService: EmailService,
+    private cloudinary: CloudinaryService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -161,7 +163,11 @@ export class AuthService {
     };
   }
 
-  async submitVerification(userId: bigint, dto: SubmitVerificationDto) {
+  async submitVerification(
+    userId: bigint,
+    dto: SubmitVerificationDto,
+    files?: { idImage?: Express.Multer.File; salesProof?: Express.Multer.File },
+  ) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: {
@@ -188,11 +194,36 @@ export class AuthService {
       );
     }
 
+    let verificationData = '';
+
+    if (dto.type === 'URL') {
+      verificationData = dto.verification_doc || '';
+    } else if (dto.type === 'CONTACT') {
+      verificationData = `CONTACT:${dto.contact_method}`;
+    } else if (dto.type === 'FILES') {
+      const urls: string[] = [];
+      if (files?.idImage) {
+        const res = await this.cloudinary.uploadImage(
+          files.idImage,
+          'verifications/ids',
+        );
+        urls.push(`ID:${res.secure_url}`);
+      }
+      if (files?.salesProof) {
+        const res = await this.cloudinary.uploadImage(
+          files.salesProof,
+          'verifications/sales',
+        );
+        urls.push(`PROOF:${res.secure_url}`);
+      }
+      verificationData = urls.length > 0 ? urls.join(',') : dto.verification_doc || '';
+    }
+
     // Update user's verification doc and create approval record
     await this.prisma.$transaction([
       this.prisma.user.update({
         where: { id: userId },
-        data: { verification_doc: dto.verification_doc },
+        data: { verification_doc: verificationData },
       }),
       this.prisma.adminApproval.create({
         data: {

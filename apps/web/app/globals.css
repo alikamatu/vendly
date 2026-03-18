@@ -65,8 +65,13 @@ body {
   background: var(--color-background);
   color: var(--color-foreground);
   font-family: var(--font-sans, Arial, Helvetica, sans-serif);
+  font-weight: 400;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 400;
 }
 
 /* Utility tokens for components */

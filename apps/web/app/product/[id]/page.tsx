@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
@@ -35,6 +35,7 @@ export default function ProductDetailsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
   const [addedFeedback, setAddedFeedback] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -115,6 +116,16 @@ export default function ProductDetailsPage() {
     setTimeout(() => setAddedFeedback(false), 2000);
   };
 
+  const togglePlay = () => {
+    if (videoRef.current) {
+      if (videoRef.current.paused) {
+        videoRef.current.play();
+      } else {
+        videoRef.current.pause();
+      }
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -173,14 +184,17 @@ export default function ProductDetailsPage() {
                 className="w-full h-full"
               >
                 {currentMedia?.type === "video" ? (
-                  <video
-                    src={currentMedia.url}
-                    className="w-full h-full object-cover"
-                    controls
-                    muted
-                    loop
-                    playsInline
-                  />
+                  <div className="relative w-full h-full cursor-pointer" onClick={togglePlay}>
+                    <video
+                      ref={videoRef}
+                      src={currentMedia.url}
+                      className="w-full h-full object-cover"
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                    />
+                  </div>
                 ) : (
                   <img
                     src={

@@ -6,6 +6,145 @@ datasource db {
   provider = "postgresql"
 }
 
+model User {
+  id                         BigInt          @id @default(autoincrement())
+  full_name                  String
+  email                      String          @unique
+  password_hash              String
+  school                     String
+  is_verified                Boolean         @default(false)
+  verification_doc           String?
+  role                       Role            @default(USER)
+  email_verification_token   String?         @unique
+  email_verification_expires DateTime?
+  password_reset_token       String?         @unique
+  password_reset_expires     DateTime?
+  created_at                 DateTime        @default(now())
+  updated_at                 DateTime        @updatedAt
+  is_suspended               Boolean         @default(false)
+  warnings                   Int             @default(0)
+  reviewed_approvals         AdminApproval[] @relation("ReviewedBy")
+  admin_approvals            AdminApproval[]
+  favorites                  Favorite[]
+  orders                     Order[]         @relation("BuyerOrders")
+  seller_profile             SellerProfile?
+
+  @@map("users")
+}
+
+model SellerProfile {
+  id                BigInt    @id @default(autoincrement())
+  user_id           BigInt    @unique
+  store_name        String
+  store_link        String    @unique
+  logo_url          String?
+  bio               String?
+  whatsapp_number   String?
+  location          String?
+  delivery_policies String?
+  business_hours    String?
+  social_links      Json?     @default("{}")
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+  products          Product[]
+  user              User      @relation(fields: [user_id], references: [id])
+
+  @@map("seller_profiles")
+}
+
+model Product {
+  id                 BigInt        @id @default(autoincrement())
+  seller_id          BigInt
+  title              String
+  description        String?
+  price              Decimal       @db.Decimal(10, 2)
+  currency           String        @default("GHS") @db.VarChar(3)
+  condition          String        @default("new") @db.VarChar(20)
+  quantity_available Int           @default(1)
+  status             String        @default("draft") @db.VarChar(20)
+  is_featured        Boolean       @default(false)
+  views_count        Int           @default(0)
+  category           String
+  attributes         Json?         @default("{}")
+  image_urls         String[]      @default([])
+  video_url          String?
+  tags               String[]      @default([])
+  created_at         DateTime      @default(now())
+  updated_at         DateTime      @updatedAt
+  favorited_by       Favorite[]
+  order_items        OrderItem[]
+  seller             SellerProfile @relation(fields: [seller_id], references: [id])
+
+  @@index([category])
+  @@index([attributes(ops: JsonbPathOps)], type: Gin)
+  @@map("products")
+}
+
+model Order {
+  id                BigInt      @id @default(autoincrement())
+  buyer_id          BigInt
+  total_amount      Decimal     @db.Decimal(10, 2)
+  status            String      @default("PENDING")
+  created_at        DateTime    @default(now())
+  updated_at        DateTime    @updatedAt
+  customer_name     String?
+  customer_phone    String?
+  delivery_location String?
+  delivery_method   String?
+  delivery_notes    String?
+  items             OrderItem[]
+  buyer             User        @relation("BuyerOrders", fields: [buyer_id], references: [id])
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id         BigInt  @id @default(autoincrement())
+  order_id   BigInt
+  product_id BigInt
+  quantity   Int
+  price      Decimal @db.Decimal(10, 2)
+  order      Order   @relation(fields: [order_id], references: [id])
+  product    Product @relation(fields: [product_id], references: [id])
+
+  @@map("order_items")
+}
+
+model Category {
+  id          BigInt   @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  fields      Json?    @default("[]")
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@map("categories")
+}
+
+model AdminApproval {
+  id          BigInt         @id @default(autoincrement())
+  user_id     BigInt
+  status      ApprovalStatus @default(PENDING)
+  reviewed_by BigInt?
+  reviewed_at DateTime?
+  created_at  DateTime       @default(now())
+  reviewer    User?          @relation("ReviewedBy", fields: [reviewed_by], references: [id])
+  user        User           @relation(fields: [user_id], references: [id])
+
+  @@map("admin_approvals")
+}
+
+model Favorite {
+  id         BigInt   @id @default(autoincrement())
+  user_id    BigInt
+  product_id BigInt
+  created_at DateTime @default(now())
+  product    Product  @relation(fields: [product_id], references: [id])
+  user       User     @relation(fields: [user_id], references: [id])
+
+  @@unique([user_id, product_id])
+  @@map("favorites")
+}
 
 enum Role {
   USER
@@ -17,147 +156,4 @@ enum ApprovalStatus {
   PENDING
   APPROVED
   REJECTED
-}
-
-model User {
-  id                        BigInt      @id @default(autoincrement())
-  full_name                 String
-  email                     String      @unique
-  password_hash             String
-  school                    String
-  is_verified               Boolean     @default(false)
-  verification_doc          String?
-  role                      Role        @default(USER)
-  email_verification_token  String?     @unique
-  email_verification_expires DateTime?
-  password_reset_token      String?     @unique
-  password_reset_expires    DateTime?
-  created_at                DateTime    @default(now())
-  updated_at                DateTime    @updatedAt
-
-  seller_profile    SellerProfile?
-  admin_approvals   AdminApproval[]
-  reviewed_approvals AdminApproval[] @relation("ReviewedBy")
-  orders            Order[]         @relation("BuyerOrders")
-  favorites         Favorite[]
-  @@map("users")
-}
-
-model SellerProfile {
-  id                BigInt      @id @default(autoincrement())
-  user_id           BigInt      @unique
-  store_name        String
-  store_link        String      @unique
-  logo_url          String?
-  bio               String?
-  whatsapp_number   String?     // added for WhatsApp contact
-  location          String?
-  delivery_policies String?
-  business_hours    String?
-  social_links      Json?       @default("{}")
-  created_at        DateTime    @default(now())
-  updated_at        DateTime    @updatedAt
-
-  user              User        @relation(fields: [user_id], references: [id])
-  products          Product[]
-  @@map("seller_profiles")
-}
-
-model Product {
-  id                BigInt      @id @default(autoincrement())
-  seller_id         BigInt
-  title             String
-  description       String?
-  price             Decimal     @db.Decimal(10,2)
-  currency          String      @default("GHS") @db.VarChar(3)
-  condition         String      @default("new") @db.VarChar(20)
-  quantity_available Int        @default(1)
-  status            String      @default("draft") @db.VarChar(20)
-  is_featured       Boolean     @default(false)
-  views_count       Int         @default(0)
-  category          String      // indexed for search
-  attributes        Json?       @default("{}")
-  image_urls        String[]    @default([])
-  video_url         String?
-  tags              String[]    @default([])
-  created_at        DateTime    @default(now())
-  updated_at        DateTime    @updatedAt
-
-  seller            SellerProfile @relation(fields: [seller_id], references: [id])
-  order_items       OrderItem[]
-  favorited_by      Favorite[]
-
-  @@index([category])
-  @@index([attributes(ops: JsonbPathOps)], type: Gin)
-  @@map("products")
-}
-
-model Order {
-  id                BigInt      @id @default(autoincrement())
-  buyer_id          BigInt
-  total_amount      Decimal     @db.Decimal(10,2)
-  status            String      @default("PENDING") // PENDING, COMPLETED, CANCELLED
-  
-  // Checkout Info
-  customer_name     String?
-  customer_phone    String?
-  delivery_method   String?     // PICKUP, DELIVERY
-  delivery_location String?
-  delivery_notes    String?
-
-  created_at        DateTime    @default(now())
-  updated_at        DateTime    @updatedAt
-
-  buyer             User        @relation("BuyerOrders", fields: [buyer_id], references: [id])
-  items             OrderItem[]
-
-  @@map("orders")
-}
-
-model OrderItem {
-  id                BigInt      @id @default(autoincrement())
-  order_id          BigInt
-  product_id        BigInt
-  quantity          Int
-  price             Decimal     @db.Decimal(10,2)
-
-  order             Order       @relation(fields: [order_id], references: [id])
-  product           Product     @relation(fields: [product_id], references: [id])
-
-  @@map("order_items")
-}
-
-model Category {
-  id                BigInt      @id @default(autoincrement())
-  name              String      @unique
-  description       String?
-  fields            Json?       @default("[]") // Dynamic fields configuration
-  created_at        DateTime    @default(now())
-  updated_at        DateTime    @updatedAt
-  @@map("categories")
-}
-
-model AdminApproval {
-  id                BigInt      @id @default(autoincrement())
-  user_id           BigInt
-  status            ApprovalStatus @default(PENDING)
-  reviewed_by       BigInt?     // admin user id
-  reviewed_at       DateTime?
-  created_at        DateTime    @default(now())
-
-  user              User        @relation(fields: [user_id], references: [id])
-  reviewer          User?       @relation("ReviewedBy", fields: [reviewed_by], references: [id])
-  @@map("admin_approvals")
-}
-model Favorite {
-  id         BigInt   @id @default(autoincrement())
-  user_id    BigInt
-  product_id BigInt
-  created_at DateTime @default(now())
-
-  user       User     @relation(fields: [user_id], references: [id])
-  product    Product  @relation(fields: [product_id], references: [id])
-
-  @@unique([user_id, product_id])
-  @@map("favorites")
 }

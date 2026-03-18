@@ -51,13 +51,13 @@ export default function ProductFilters({
       {/* Search Result Bar & Filter Toggle */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="hidden md:block">
-           <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-1">
+           <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-primary mb-1">
              <LayoutGrid size={12} />
              Marketplace
            </div>
-           <h2 className="text-xl md:text-2xl font-black uppercase tracking-tight">
+           <h2 className="text-xl md:text-2xl uppercase tracking-tight">
              {currentCategory || "All Products"} 
-             <span className="ml-3 text-sm font-bold text-muted normal-case tracking-normal opacity-50">
+             <span className="ml-3 text-sm text-muted normal-case tracking-normal opacity-50">
                ({resultsCount} items)
              </span>
            </h2>
@@ -80,7 +80,7 @@ export default function ProductFilters({
 
           <Button 
             onClick={() => setIsMobileMenuOpen(true)}
-            className="flex h-12 rounded-2xl gap-2 text-[10px] font-black uppercase"
+            className="flex h-12 rounded-2xl gap-2 text-[10px] uppercase"
           >
             <Filter size={16} /> Refine Results
           </Button>
@@ -103,7 +103,7 @@ export default function ProductFilters({
           <button
             key={cat.id || cat.name}
             onClick={() => onCategoryChange(cat.name)}
-            className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border ${
+            className={`px-6 py-3 rounded-2xl text-[10px] uppercase tracking-widest transition-all whitespace-nowrap border ${
               currentCategory === cat.name
                 ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
                 : "bg-surface text-muted border-border/50 hover:border-primary/30"
@@ -151,7 +151,7 @@ export default function ProductFilters({
                     <div className="w-16 h-1.5 bg-border/40 rounded-full mx-auto mt-4 shrink-0" />
 
                   <div className="px-8 py-6 md:p-10 border-b border-border/50 flex items-center justify-between shrink-0">
-                     <h3 className="text-xl md:text-2xl font-black uppercase tracking-tight">Refine Products</h3>
+                     <h3 className="text-xl md:text-2xl uppercase tracking-tight">Refine Products</h3>
                      <button 
                        onClick={() => setIsMobileMenuOpen(false)}
                        className="p-3 bg-surface border border-border rounded-2xl text-muted hover:text-foreground transition-all"
@@ -248,7 +248,7 @@ export default function ProductFilters({
                   <div className="absolute bottom-0 inset-x-0 p-8 md:p-10 pt-4 bg-gradient-to-t from-background via-background to-transparent shrink-0">
                      <Button 
                        onClick={() => setIsMobileMenuOpen(false)}
-                       className="w-full h-16 md:h-20 rounded-[2.5rem] font-black uppercase tracking-widest shadow-2xl shadow-primary/20"
+                       className="w-full h-16 md:h-20 rounded-[2.5rem] uppercase tracking-widest shadow-2xl shadow-primary/20"
                      >
                        Show {resultsCount} Products
                      </Button>

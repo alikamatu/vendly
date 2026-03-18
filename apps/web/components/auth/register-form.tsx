@@ -6,7 +6,7 @@ import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
 import ProgressBar from '@/components/ui/ProgressBar';
-import { Mail, Lock, User as UserIcon, School, CheckCircle } from 'lucide-react';
+import { Mail, Lock, User as UserIcon, CheckCircle, Building } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function RegisterForm() {
@@ -75,8 +75,8 @@ export default function RegisterForm() {
           />
 
           <Input
-            label="School"
-            icon={<School size={18} />}
+            label="Business name"
+            icon={<Building size={18} />}
             error={errors.school?.message}
             registration={register('school')}
           />

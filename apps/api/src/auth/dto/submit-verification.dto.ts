@@ -1,11 +1,17 @@
-import { IsString, IsNotEmpty, IsUrl } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsEnum } from 'class-validator';
 
 export class SubmitVerificationDto {
   @IsString()
-  @IsNotEmpty({ message: 'Verification document URL is required' })
-  @IsUrl(
-    {},
-    { message: 'Please provide a valid URL for the verification document' },
-  )
-  verification_doc: string;
+  @IsNotEmpty()
+  @IsEnum(['URL', 'FILES', 'CONTACT'])
+  type: string;
+
+  @IsString()
+  @IsOptional()
+  verification_doc?: string;
+
+  @IsString()
+  @IsOptional()
+  @IsEnum(['WHATSAPP', 'EMAIL', 'PHONE'])
+  contact_method?: string;
 }

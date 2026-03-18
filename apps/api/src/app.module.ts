@@ -10,6 +10,8 @@ import { CloudinaryModule } from './common/cloudinary.module';
 
 import { OrderModule } from './order/order.module';
 import { FavoriteModule } from './favorite/favorite.module';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { ApiResponseInterceptor } from './common/interceptors/api-response.interceptor';
 
 @Module({
   imports: [
@@ -27,6 +29,12 @@ import { FavoriteModule } from './favorite/favorite.module';
     FavoriteModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ApiResponseInterceptor,
+    },
+  ],
 })
 export class AppModule {}

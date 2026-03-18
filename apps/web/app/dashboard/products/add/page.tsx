@@ -191,9 +191,9 @@ export default function AddProductPage() {
       return;
     }
 
-    const MAX_VIDEO_BYTES = 15 * 1024 * 1024; // mirror backend guard (~15MB)
+    const MAX_VIDEO_BYTES = 60 * 1024 * 1024; // Up to 60MB for videos that will be trimmed
     if (file.size > MAX_VIDEO_BYTES) {
-      setMessage({ type: "error", text: "Video is too large. Please upload a short clip (max ~5 seconds)." });
+      setMessage({ type: "error", text: "Video is too large. Max 60MB." });
       e.target.value = "";
       return;
     }
@@ -201,22 +201,8 @@ export default function AddProductPage() {
     const url = URL.createObjectURL(file);
     const videoEl = document.createElement("video");
     videoEl.preload = "metadata";
-    videoEl.onloadedmetadata = () => {
-      const duration = videoEl.duration;
-      URL.revokeObjectURL(videoEl.src);
-
-      if (isNaN(duration) || duration > 5.1) {
-        setMessage({ type: "error", text: "Video must be 5 seconds or less." });
-        URL.revokeObjectURL(url);
-        if (videoInputRef.current) {
-          videoInputRef.current.value = "";
-        }
-        return;
-      }
-
-      setVideo(file);
-      setVideoPreview(url);
-    };
+    setVideo(file);
+    setVideoPreview(url);
     videoEl.src = url;
   };
 
@@ -311,7 +297,8 @@ export default function AddProductPage() {
             Product Media (Images & Video)
           </label>
           <p className="text-[10px] text-muted px-4">
-            Upload up to 3 photos and optionally 1 short video (max 5s).
+            Upload up to 3 photos and optionally 1 short video. 
+            <span className="text-primary/80 ml-1">Videos longer than 5s will be automatically trimmed.</span>
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-2">
             {/* Images */}
@@ -378,7 +365,7 @@ export default function AddProductPage() {
 
             {/* Video */}
             <div className="space-y-2">
-              <p className="text-[10px] font-bold text-muted uppercase tracking-widest">Video (Max 5s)</p>
+              <p className="text-[10px] font-bold text-muted uppercase tracking-widest">Video (Trims to 5s)</p>
               <div>
                 {videoPreview ? (
                   <div className="relative rounded-2xl overflow-hidden border border-border">
@@ -403,7 +390,7 @@ export default function AddProductPage() {
                   >
                     <ImageIcon className="w-5 h-5" />
                     <span>Upload Short Product Video</span>
-                    <span className="text-[9px] text-muted">Max 5 seconds, MP4/WEBM preferred</span>
+                    <span className="text-[9px] text-muted">Videos &gt; 5s will be auto-trimmed to the first 5s. Max 60MB.</span>
                   </button>
                 )}
               </div>

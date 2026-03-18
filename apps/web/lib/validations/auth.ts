@@ -44,9 +44,21 @@ export const resetPasswordSchema = z
     path: ['confirmPassword'],
   });
 
-export const verificationSchema = z.object({
-  verification_doc: z.string().url('Please provide a valid URL').min(1, 'Document URL is required'),
-});
+export const verificationSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('URL'),
+    verification_doc: z.string().url('Please provide a valid URL').min(1, 'Document URL is required'),
+  }),
+  z.object({
+    type: z.literal('FILES'),
+    idImage: z.any().optional(), // Handled by manual validation or pre-upload
+    salesProof: z.any().optional(),
+  }),
+  z.object({
+    type: z.literal('CONTACT'),
+    method: z.enum(['WHATSAPP', 'EMAIL', 'PHONE']),
+  }),
+]);
 
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;

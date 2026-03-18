@@ -11,6 +11,7 @@ import {
 import { AdminService } from './admin.service';
 import { ApproveVerificationDto } from './dto/approve-verification.dto';
 import { AdminQueryDto } from './dto/admin-query.dto';
+import { UpdateUserRoleDto, WarnUserDto, ToggleSuspensionDto } from './dto/admin-user-actions.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { Roles } from './guards/roles.decorator';
@@ -38,5 +39,30 @@ export class AdminController {
     @Req() req,
   ) {
     return this.adminService.approveOrReject(BigInt(id), req.user.id, dto);
+  }
+
+  @Get('users')
+  async getUsers(@Query() query: AdminQueryDto) {
+    return this.adminService.getUsers(query);
+  }
+
+  @Patch('users/:id/role')
+  async updateRole(@Param('id') id: string, @Body() dto: UpdateUserRoleDto) {
+    return this.adminService.updateUserRole(BigInt(id), dto);
+  }
+
+  @Patch('users/:id/toggle-suspension')
+  async toggleSuspension(@Param('id') id: string, @Body() dto: ToggleSuspensionDto) {
+    return this.adminService.toggleUserSuspension(BigInt(id), dto);
+  }
+
+  @Patch('users/:id/warn')
+  async warn(@Param('id') id: string, @Body() dto: WarnUserDto) {
+    return this.adminService.warnUser(BigInt(id), dto);
+  }
+
+  @Patch('users/:id/delete') // Or @Delete, but using Patch for soft-admin actions if preferred, though actual delete is implemented
+  async deleteUser(@Param('id') id: string) {
+    return this.adminService.deleteUser(BigInt(id));
   }
 }
