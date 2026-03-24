@@ -1,4 +1,14 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:1000";
+
+async function handleResponse<T>(response: Response): Promise<T> {
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    const msg = Array.isArray(errorData.message) ? errorData.message[0] : errorData.message || 'Something went wrong';
+    throw new Error(msg);
+  }
+  const json = await response.json();
+  return (json && typeof json === 'object' && 'data' in json) ? json.data : json;
+}
 
 export const orderApi = {
   async createOrder(token: string, storeLink: string, items: { productId: string; quantity: number }[], checkoutDetails: {
@@ -17,12 +27,7 @@ export const orderApi = {
       body: JSON.stringify({ storeLink, items, ...checkoutDetails }),
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Failed to place order");
-    }
-
-    return response.json();
+    return handleResponse<any>(response);
   },
 
   async getBuyerOrders(token: string) {
@@ -32,12 +37,7 @@ export const orderApi = {
       },
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Failed to fetch orders");
-    }
-
-    return response.json();
+    return handleResponse<any[]>(response);
   },
 
   async getSellerOrders(token: string) {
@@ -47,12 +47,7 @@ export const orderApi = {
       },
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Failed to fetch store orders");
-    }
-
-    return response.json();
+    return handleResponse<any[]>(response);
   },
 
   async updateOrderStatus(token: string, orderId: string, status: string) {
@@ -65,12 +60,7 @@ export const orderApi = {
       body: JSON.stringify({ status }),
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Failed to update order status");
-    }
-
-    return response.json();
+    return handleResponse<any>(response);
   },
 
   async getOrderDetails(token: string, orderId: string) {
@@ -80,11 +70,6 @@ export const orderApi = {
       },
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Failed to fetch order details");
-    }
-
-    return response.json();
+    return handleResponse<any>(response);
   },
 };

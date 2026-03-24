@@ -6,7 +6,8 @@ async function handleResponse<T>(response: Response): Promise<T> {
     const msg = Array.isArray(errorData.message) ? errorData.message[0] : errorData.message || 'Something went wrong';
     throw new Error(msg);
   }
-  return response.json();
+  const json = await response.json();
+  return (json && typeof json === 'object' && 'data' in json) ? json.data : json;
 }
 
 function getAuthHeader(): Record<string, string> {
