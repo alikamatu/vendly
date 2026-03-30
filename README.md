@@ -1,6 +1,6 @@
 # Vendly — The Marketplace for Verified Entrepreneurs
 
-Vendly is a marketplace platform designed specifically for verified entrepreneurs to manage their sales, showcase products, and scale their businesses professionally. By shifting away from informal DM-based commerce, Vendly provides a premium, trust-driven ecosystem for both sellers and buyers.
+Vendly is a comprehensive marketplace platform designed specifically for verified entrepreneurs to manage their sales, showcase products, and scale their businesses professionally. By shifting away from informal DM-based commerce, Vendly provides a premium, trust-driven ecosystem for both sellers and buyers.
 
 ## 🚀 Project Overview
 
