@@ -7,7 +7,7 @@ import { Sun, Moon, Search } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import GlobalSearch from "./GlobalSearch";
-import { useTheme } from "../../lib/theme";
+import { useTheme } from "../../lib/contexts/theme";
 
 function ThemeToggle() {
   const { theme, setTheme } = useTheme();
@@ -33,7 +33,7 @@ function ThemeToggle() {
 }
 
 import UserMenu from "./UserMenu";
-import { useAuth } from "../../lib/auth-context";
+import { useAuth } from "../../lib/contexts/auth-context";
 
 export default function Header() {
   const [isSearchOpen, setIsSearchOpen] = React.useState(false);

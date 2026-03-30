@@ -38,4 +38,16 @@ export class UpdateStoreDto {
 
   @IsOptional()
   social_links?: any;
+
+  @IsString()
+  @IsOptional()
+  bank_name?: string;
+
+  @IsString()
+  @IsOptional()
+  bank_code?: string;
+
+  @IsString()
+  @IsOptional()
+  account_number?: string;
 }

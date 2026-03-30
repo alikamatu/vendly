@@ -15,7 +15,7 @@ import {
   ExternalLink,
   X,
 } from "lucide-react";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/lib/contexts/auth-context";
 import clsx from "@/utils/clsx";
 import Portal from "../common/Portal";
 import useMediaQuery from "@/hooks/useMediaQuery";

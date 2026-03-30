@@ -13,6 +13,7 @@ import {
   Get,
   Param,
 } from '@nestjs/common';
+import { CacheInterceptor } from '@nestjs/cache-manager';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { StoreService } from './store.service';
 import { CreateStoreDto } from './dto/create-store.dto';
@@ -75,6 +76,7 @@ export class StoreController {
   }
 
   @Get('link/:link')
+  @UseInterceptors(CacheInterceptor)
   // Public endpoint
   async getStoreByLink(@Param('link') link: string) {
     return this.storeService.getStoreByLink(link);

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/lib/auth-context';
+import { useAuth } from '@/lib/contexts/auth-context';
 import { useVerificationForm } from '@/hooks/useAuth';
 import { authApi } from '@/lib/api/auth';
 import { Container } from '@/components';

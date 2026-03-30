@@ -1,9 +1,9 @@
 "use client";
 
 import React from "react";
-import { useTheme } from "@/lib/theme";
-import { useAuth } from "@/lib/auth-context";
-import { useCart } from "@/lib/cart-context";
+import { useTheme } from "@/lib/contexts/theme";
+import { useAuth } from "@/lib/contexts/auth-context";
+import { useCart } from "@/lib/contexts/cart-context";
 import {
   Moon,
   Sun,

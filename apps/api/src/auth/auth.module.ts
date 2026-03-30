@@ -10,6 +10,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { EmailModule } from '../email/email.module';
 import { CloudinaryModule } from '../common/cloudinary.module';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { PaymentsModule } from '../payments/payments.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     EmailModule,
     CloudinaryModule,
     PassportModule,
+    PaymentsModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

@@ -77,21 +77,24 @@ const baseTemplate = (content: string) => `
 </html>
 `;
 
-export const getWelcomeEmail = (name: string) => baseTemplate(`
+export const getWelcomeEmail = (name: string) =>
+  baseTemplate(`
   <h1>Welcome to Vendly, ${name}!</h1>
   <p>We're thrilled to have you join our community. Vendly is built to help you manage and grow your business with ease.</p>
   <p>To get started, feel free to explore your dashboard and set up your first storefront.</p>
   <a href="https://vendly.vercel.app/dashboard" class="button">Go to Dashboard</a>
 `);
 
-export const getVerificationEmail = (url: string) => baseTemplate(`
+export const getVerificationEmail = (url: string) =>
+  baseTemplate(`
   <h1>Verify your email</h1>
   <p>Thanks for signing up! Please confirm your email address to get full access to Vendly.</p>
   <a href="${url}" class="button">Verify Email</a>
   <p style="margin-top: 24px; font-size: 14px; color: #6b7280;">If you didn't create an account, you can safely ignore this email.</p>
 `);
 
-export const getPasswordResetEmail = (url: string) => baseTemplate(`
+export const getPasswordResetEmail = (url: string) =>
+  baseTemplate(`
   <h1>Reset your password</h1>
   <p>We received a request to reset your password. Click the button below to choose a new one.</p>
   <a href="${url}" class="button">Reset Password</a>

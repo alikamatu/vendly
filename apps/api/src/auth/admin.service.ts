@@ -7,12 +7,20 @@ import { Role, ApprovalStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ApproveVerificationDto } from './dto/approve-verification.dto';
 import { AdminQueryDto, ApprovalStatusFilter } from './dto/admin-query.dto';
+import { PaymentsService } from '../payments/payments.service';
 
-import { UpdateUserRoleDto, WarnUserDto, ToggleSuspensionDto } from './dto/admin-user-actions.dto';
+import {
+  UpdateUserRoleDto,
+  WarnUserDto,
+  ToggleSuspensionDto,
+} from './dto/admin-user-actions.dto';
 
 @Injectable()
 export class AdminService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private paymentsService: PaymentsService,
+  ) {}
 
   async getUsers(query: AdminQueryDto) {
     const page = Math.max(1, parseInt(query.page || '1', 10));
@@ -55,7 +63,7 @@ export class AdminService {
     ]);
 
     return {
-      data: users.map(u => ({ ...u, id: u.id.toString() })),
+      data: users.map((u) => ({ ...u, id: u.id.toString() })),
       meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
     };
   }
@@ -81,9 +89,9 @@ export class AdminService {
       data: { is_suspended: !user.is_suspended },
     });
 
-    return { 
+    return {
       message: `User ${updated.is_suspended ? 'suspended' : 'unsuspended'} successfully`,
-      is_suspended: updated.is_suspended
+      is_suspended: updated.is_suspended,
     };
   }
 
@@ -96,9 +104,9 @@ export class AdminService {
       data: { warnings: { increment: 1 } },
     });
 
-    return { 
+    return {
       message: `Warning issued. Total warnings: ${updated.warnings}`,
-      warnings: updated.warnings
+      warnings: updated.warnings,
     };
   }
 
@@ -249,6 +257,21 @@ export class AdminService {
           ]
         : []),
     ]);
+
+    // Automatically create Paystack subaccount if approved
+    if (dto.status === 'APPROVED') {
+      const seller = await this.prisma.sellerProfile.findUnique({
+        where: { user_id: approval.user_id },
+      });
+
+      if (seller) {
+        // Fire and forget or handle error? The task says "Failure does not crash system".
+        // createSubaccount already handles its own errors and retries.
+        this.paymentsService.createSubaccount(seller.id).catch((err) => {
+          console.error('Failed to trigger subaccount creation:', err);
+        });
+      }
+    }
 
     return {
       id: updated.id.toString(),

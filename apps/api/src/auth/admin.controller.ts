@@ -11,7 +11,11 @@ import {
 import { AdminService } from './admin.service';
 import { ApproveVerificationDto } from './dto/approve-verification.dto';
 import { AdminQueryDto } from './dto/admin-query.dto';
-import { UpdateUserRoleDto, WarnUserDto, ToggleSuspensionDto } from './dto/admin-user-actions.dto';
+import {
+  UpdateUserRoleDto,
+  WarnUserDto,
+  ToggleSuspensionDto,
+} from './dto/admin-user-actions.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { Roles } from './guards/roles.decorator';
@@ -52,7 +56,10 @@ export class AdminController {
   }
 
   @Patch('users/:id/toggle-suspension')
-  async toggleSuspension(@Param('id') id: string, @Body() dto: ToggleSuspensionDto) {
+  async toggleSuspension(
+    @Param('id') id: string,
+    @Body() dto: ToggleSuspensionDto,
+  ) {
     return this.adminService.toggleUserSuspension(BigInt(id), dto);
   }
 

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useAuth } from '@/lib/auth-context';
+import { useAuth } from '@/lib/contexts/auth-context';
 import { storeApi } from '@/lib/api/store';
 import { createStoreSchema, CreateStoreInput } from '@/lib/validations/store';
 import Button from '@/components/ui/Button';

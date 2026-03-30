@@ -1,0 +1,11 @@
+.git
+node_modules
+dist
+dist_test
+coverage
+.env
+.env.*
+*.log
+prisma/*.js
+prisma/*.js.map
+prisma/*.d.ts

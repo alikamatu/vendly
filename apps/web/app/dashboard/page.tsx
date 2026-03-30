@@ -15,7 +15,7 @@ import {
 import Link from "next/link";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/lib/contexts/auth-context";
 import { storeApi } from "@/lib/api/store";
 
 const IconMap: Record<string, any> = {

@@ -15,6 +15,7 @@ import {
   Param,
   Query,
 } from '@nestjs/common';
+import { CacheInterceptor, CacheKey, CacheTTL } from '@nestjs/cache-manager';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -51,16 +52,21 @@ export class ProductController {
   }
 
   @Get('categories')
+  @UseInterceptors(CacheInterceptor)
+  @CacheKey('product_categories')
+  @CacheTTL(3600000) // 1 hour
   async getCategories() {
     return this.productService.getCategories();
   }
 
   @Get('search')
+  @UseInterceptors(CacheInterceptor)
   async searchProducts(@Query('q') q: string) {
     return this.productService.searchProducts(q);
   }
 
   @Get()
+  @UseInterceptors(CacheInterceptor)
   async getProducts(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
@@ -74,6 +80,7 @@ export class ProductController {
   }
 
   @Get(':id')
+  @UseInterceptors(CacheInterceptor)
   async getProductById(@Param('id') id: string) {
     return this.productService.getProductById(BigInt(id));
   }

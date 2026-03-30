@@ -14,9 +14,10 @@ export interface Response<T> {
 }
 
 @Injectable()
-export class ApiResponseInterceptor<T>
-  implements NestInterceptor<T, Response<T>>
-{
+export class ApiResponseInterceptor<T> implements NestInterceptor<
+  T,
+  Response<T>
+> {
   intercept(
     context: ExecutionContext,
     next: CallHandler,
@@ -26,14 +27,19 @@ export class ApiResponseInterceptor<T>
         // Standardize the response structure
         const response = {
           data: this.serialize(data),
-          meta: (data as any)?.meta || {},
+          meta: data?.meta || {},
         };
 
         // If data already has a meta field (e.g. from pagination), lift it up
-        if (data && typeof data === 'object' && 'meta' in data && 'data' in data) {
+        if (
+          data &&
+          typeof data === 'object' &&
+          'meta' in data &&
+          'data' in data
+        ) {
           return {
-            data: this.serialize((data as any).data),
-            meta: (data as any).meta,
+            data: this.serialize(data.data),
+            meta: data.meta,
           };
         }
 

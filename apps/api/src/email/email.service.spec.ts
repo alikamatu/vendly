@@ -46,7 +46,10 @@ describe('EmailService', () => {
   });
 
   it('should send welcome email', async () => {
-    const response = await service.sendWelcomeEmail('test@example.com', 'John Doe');
+    const response = await service.sendWelcomeEmail(
+      'test@example.com',
+      'John Doe',
+    );
     expect(response).toBeDefined();
     if ('data' in response && response.data) {
       expect(response.data.id).toBe('test-id');
@@ -54,7 +57,10 @@ describe('EmailService', () => {
   });
 
   it('should send verification email', async () => {
-    const response = await service.sendVerificationEmail('test@example.com', 'token123');
+    const response = await service.sendVerificationEmail(
+      'test@example.com',
+      'token123',
+    );
     expect(response).toBeDefined();
     if ('data' in response && response.data) {
       expect(response.data.id).toBe('test-id');
@@ -62,7 +68,10 @@ describe('EmailService', () => {
   });
 
   it('should send password reset email', async () => {
-    const response = await service.sendPasswordResetEmail('test@example.com', 'token123');
+    const response = await service.sendPasswordResetEmail(
+      'test@example.com',
+      'token123',
+    );
     expect(response).toBeDefined();
     if ('data' in response && response.data) {
       expect(response.data.id).toBe('test-id');

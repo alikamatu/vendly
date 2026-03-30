@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import ThemeProvider from "../lib/theme";
-import { AuthProvider } from "../lib/auth-context";
-import { CartProvider } from "../lib/cart-context";
+import ThemeProvider from "../lib/contexts/theme";
+import { AuthProvider } from "../lib/contexts/auth-context";
+import { CartProvider } from "../lib/contexts/cart-context";
 import { StoreGuard } from "../components/auth/store-guard";
 
 const geistSans = Geist({
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     "Discover and shop from trusted, verified entrepreneurs all in one place.",
 };
 
-import { FavoriteProvider } from "../lib/favorite-context";
+import { FavoriteProvider } from "../lib/contexts/favorite-context";
 
 export default function RootLayout({
   children,

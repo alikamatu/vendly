@@ -3,7 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -33,23 +35,39 @@ model User {
 }
 
 model SellerProfile {
-  id                BigInt    @id @default(autoincrement())
-  user_id           BigInt    @unique
-  store_name        String
-  store_link        String    @unique
-  logo_url          String?
-  bio               String?
-  whatsapp_number   String?
-  location          String?
-  delivery_policies String?
-  business_hours    String?
-  social_links      Json?     @default("{}")
-  created_at        DateTime  @default(now())
-  updated_at        DateTime  @updatedAt
-  products          Product[]
-  user              User      @relation(fields: [user_id], references: [id])
+  id                       BigInt    @id @default(autoincrement())
+  user_id                  BigInt    @unique
+  store_name               String
+  store_link               String    @unique
+  logo_url                 String?
+  bio                      String?
+  whatsapp_number          String?
+  location                 String?
+  delivery_policies        String?
+  business_hours           String?
+  social_links             Json?     @default("{}")
+  bank_name                String?
+  bank_code                String?
+  account_number           String?
+  paystack_subaccount_code String?
+  created_at               DateTime  @default(now())
+  updated_at               DateTime  @updatedAt
+  products                 Product[]
+  user                     User      @relation(fields: [user_id], references: [id])
 
   @@map("seller_profiles")
+}
+
+model SubaccountRetry {
+  id         BigInt   @id @default(autoincrement())
+  seller_id  BigInt
+  attempts   Int      @default(0)
+  last_error String?
+  status     String   @default("PENDING") // PENDING, FAILED, COMPLETED
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("subaccount_retries")
 }
 
 model Product {
@@ -93,9 +111,35 @@ model Order {
   delivery_method   String?
   delivery_notes    String?
   items             OrderItem[]
+  transaction       Transaction?
   buyer             User        @relation("BuyerOrders", fields: [buyer_id], references: [id])
 
   @@map("orders")
+}
+
+model Transaction {
+  id              BigInt   @id @default(autoincrement())
+  order_id        BigInt   @unique
+  reference       String   @unique
+  amount          Decimal  @db.Decimal(10, 2)
+  status          String   @default("PENDING") // PENDING, SUCCESS, FAILED
+  provider        String   @default("PAYSTACK")
+  provider_ref    String?
+  metadata        Json?    @default("{}")
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+  order           Order    @relation(fields: [order_id], references: [id])
+
+  @@map("transactions")
+}
+
+model PaymentLog {
+  id          BigInt   @id @default(autoincrement())
+  event       String
+  payload     Json
+  created_at  DateTime @default(now())
+
+  @@map("payment_logs")
 }
 
 model OrderItem {

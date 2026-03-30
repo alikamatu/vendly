@@ -17,7 +17,7 @@ import Link from "next/link";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/lib/contexts/auth-context";
 import { orderApi } from "@/lib/api/order";
 
 export default function BuyerOrdersPage() {

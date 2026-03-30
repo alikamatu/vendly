@@ -12,7 +12,7 @@ import {
   Store,
 } from "lucide-react";
 import clsx from "@/utils/clsx";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/lib/contexts/auth-context";
 import { motion, AnimatePresence } from "framer-motion";
 
 const navItems = [

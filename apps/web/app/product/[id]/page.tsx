@@ -21,7 +21,7 @@ import { useRouter, useParams } from "next/navigation";
 import { productApi } from "@/lib/api/product";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
-import { useCart } from "@/lib/cart-context";
+import { useCart } from "@/lib/contexts/cart-context";
 
 type MediaItem =
   | { type: "image"; url: string }

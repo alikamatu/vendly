@@ -76,7 +76,10 @@ export class AuthController {
     @Req() req,
     @Body() dto: SubmitVerificationDto,
     @UploadedFiles()
-    files: { idImage?: Express.Multer.File[]; salesProof?: Express.Multer.File[] },
+    files: {
+      idImage?: Express.Multer.File[];
+      salesProof?: Express.Multer.File[];
+    },
   ) {
     return this.authService.submitVerification(req.user.id, dto, {
       idImage: files?.idImage?.[0],

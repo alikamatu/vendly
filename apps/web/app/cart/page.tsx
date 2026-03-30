@@ -15,8 +15,8 @@ import {
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
-import { useCart } from "@/lib/cart-context";
-import type { CartItem } from "@/lib/cart-context";
+import { useCart } from "@/lib/contexts/cart-context";
+import type { CartItem } from "@/lib/contexts/cart-context";
 
 function CartLine({
   item,
@@ -243,7 +243,7 @@ const CheckoutModal = ({
 };
 
 import { orderApi } from "@/lib/api/order";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/lib/contexts/auth-context";
 import { useRouter } from "next/navigation";
 import { Loader2, CheckCircle2, Info } from "lucide-react";
 

@@ -5,8 +5,8 @@ import { motion, HTMLMotionProps } from "framer-motion";
 import { ShoppingCart, ExternalLink, Check, Heart } from "lucide-react";
 import Link from "next/link";
 import Card from "@/components/ui/Card";
-import { useCart } from "@/lib/cart-context";
-import { useFavorites } from "@/lib/favorite-context";
+import { useCart } from "@/lib/contexts/cart-context";
+import { useFavorites } from "@/lib/contexts/favorite-context";
 
 interface ProductCardProps {
   product: {
