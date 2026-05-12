@@ -1,13 +1,12 @@
 "use client";
 
-import React from "react";
 import Link from "next/link";
-import { 
-  Store, 
-  User, 
-  Palette, 
-  ShieldCheck, 
-  FileText, 
+import {
+  Store,
+  User,
+  Palette,
+  ShieldCheck,
+  FileText,
   ChevronRight,
   LogOut
 } from "lucide-react";
@@ -54,8 +53,8 @@ export default function SettingsPage() {
             <Card className="overflow-hidden p-0 border-none shadow-sm" hoverEffect={false}>
               <div className="divide-y divide-border/50">
                 {group.items.map((item) => (
-                  <Link 
-                    key={item.id} 
+                  <Link
+                    key={item.id}
                     href={item.href}
                     className="flex items-center justify-between p-4 hover:bg-surface/50 active:bg-surface transition-colors group"
                   >
@@ -73,7 +72,7 @@ export default function SettingsPage() {
           </div>
         ))}
 
-        <button 
+        <button
           onClick={logout}
           className="w-full flex items-center gap-4 p-4 text-red-500 font-bold hover:bg-red-500/5 active:bg-red-500/10 rounded-2xl transition-all"
         >

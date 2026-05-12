@@ -375,7 +375,7 @@ export default function StoreSettingsPage() {
                       type="button"
                       onClick={() => {
                         const methods = isSelected 
-                          ? formData.accepted_payment_methods.filter(m => m !== method.id)
+                          ? formData.accepted_payment_methods.filter((m: string) => m !== method.id)
                           : [...formData.accepted_payment_methods, method.id];
                         setFormData({...formData, accepted_payment_methods: methods});
                       }}
