@@ -109,9 +109,16 @@ export class StoreService {
         bio: updated.bio,
         whatsapp_number: updated.whatsapp_number,
         location: updated.location,
+        location_id: updated.location_id?.toString(),
+        area: updated.area,
         delivery_policies: updated.delivery_policies,
         business_hours: updated.business_hours,
         social_links: updated.social_links,
+        accepted_payment_methods: updated.accepted_payment_methods,
+        payment_timing: updated.payment_timing,
+        bank_name: updated.bank_name,
+        bank_code: updated.bank_code,
+        account_number: updated.account_number,
       },
     };
   }
@@ -239,6 +246,8 @@ export class StoreService {
       delivery_policies: store.delivery_policies,
       business_hours: store.business_hours,
       social_links: store.social_links,
+      payment_timing: store.payment_timing,
+      accepted_payment_methods: store.accepted_payment_methods,
     };
   }
 }

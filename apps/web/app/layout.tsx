@@ -5,6 +5,8 @@ import ThemeProvider from "../lib/contexts/theme";
 import { AuthProvider } from "../lib/contexts/auth-context";
 import { CartProvider } from "../lib/contexts/cart-context";
 import { StoreGuard } from "../components/auth/store-guard";
+import { AuthModalProvider } from "../lib/contexts/auth-modal-context";
+import AuthModal from "../components/auth/AuthModal";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,11 +38,16 @@ export default function RootLayout({
       >
         <ThemeProvider>
           <AuthProvider>
-            <FavoriteProvider>
-              <CartProvider>
-                <StoreGuard>{children}</StoreGuard>
-              </CartProvider>
-            </FavoriteProvider>
+            <AuthModalProvider>
+              <FavoriteProvider>
+                <CartProvider>
+                  <StoreGuard>
+                    {children}
+                    <AuthModal />
+                  </StoreGuard>
+                </CartProvider>
+              </FavoriteProvider>
+            </AuthModalProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

@@ -26,14 +26,40 @@ import { Roles } from './guards/roles.decorator';
 export class AdminController {
   constructor(private adminService: AdminService) {}
 
+  @Get('transactions')
+  async getTransactions(@Query() query: AdminQueryDto) {
+    return this.adminService.getAllTransactions(query);
+  }
+
   @Get('approvals')
   async getApprovals(@Query() query: AdminQueryDto) {
     return this.adminService.getApprovals(query);
   }
 
+  @Get('approvals/:id')
+  async getApprovalById(@Param('id') id: string) {
+    console.log('Fetching approval by ID:', id);
+    return this.adminService.getApprovalById(BigInt(id));
+  }
+
   @Get('stats')
   async getStats() {
     return this.adminService.getStats();
+  }
+
+  @Get('overview')
+  async getOverview() {
+    return this.adminService.getGlobalOverview();
+  }
+
+  @Get('hot-sales/stats')
+  async getHotSalesStats() {
+    return this.adminService.getHotSalesStats();
+  }
+
+  @Get('hot-sales/subscriptions')
+  async getHotSalesSubscriptions(@Query() query: AdminQueryDto) {
+    return this.adminService.getHotSalesSubscriptions(query);
   }
 
   @Patch('approve/:id')
@@ -48,6 +74,11 @@ export class AdminController {
   @Get('users')
   async getUsers(@Query() query: AdminQueryDto) {
     return this.adminService.getUsers(query);
+  }
+
+  @Get('users/:id')
+  async getUserById(@Param('id') id: string) {
+    return this.adminService.getUserById(BigInt(id));
   }
 
   @Patch('users/:id/role')

@@ -8,10 +8,13 @@ import { PaymentsService } from './payments.service';
 import { PaymentsRepository } from './payments.repository';
 import paystackConfig from './config/paystack.config';
 
+import { EmailModule } from '../email/email.module';
+
 @Module({
   imports: [
     ConfigModule.forFeature(paystackConfig),
     PrismaModule,
+    EmailModule,
     HttpModule.registerAsync({
       imports: [ConfigModule.forFeature(paystackConfig)],
       inject: [paystackConfig.KEY],

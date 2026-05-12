@@ -115,177 +115,31 @@ function CartLine({
   );
 }
 
-const CheckoutModal = ({ 
-  isOpen, 
-  onClose, 
-  onConfirm, 
-  isProcessing,
-  storeName 
-}: { 
-  isOpen: boolean; 
-  onClose: () => void; 
-  onConfirm: (data: any) => void;
-  isProcessing: boolean;
-  storeName: string;
-}) => {
-  const [formData, setFormData] = React.useState({
-    customerName: "",
-    customerPhone: "",
-    deliveryMethod: "PICKUP",
-    deliveryLocation: "",
-    deliveryNotes: ""
-  });
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-      <motion.div 
-        initial={{ opacity: 0 }} 
-        animate={{ opacity: 1 }} 
-        exit={{ opacity: 0 }}
-        className="absolute inset-0 bg-background/80 backdrop-blur-sm cursor-pointer"
-        {...({ onClick: onClose } as any)}
-      />
-      <motion.div 
-        initial={{ scale: 0.95, opacity: 0, y: 20 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.95, opacity: 0, y: 20 }}
-        className="relative w-full max-w-lg bg-background border border-border shadow-2xl rounded-[2.5rem] overflow-hidden p-6 sm:p-8"
-      >
-        <div className="mb-8">
-          <h2 className="text-xl font-black uppercase tracking-tight mb-2">Checkout Details</h2>
-          <p className="text-[10px] text-muted font-bold uppercase tracking-widest">Store: {storeName}</p>
-        </div>
-
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-muted ml-1">Full Name</label>
-              <input 
-                value={formData.customerName}
-                onChange={e => setFormData(prev => ({ ...prev, customerName: e.target.value }))}
-                placeholder="Ex. John Doe"
-                className="w-full h-12 px-4 rounded-2xl bg-surface border border-border/50 text-xs font-bold focus:border-primary transition-colors outline-none"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-muted ml-1">Phone Number</label>
-              <input 
-                value={formData.customerPhone}
-                onChange={e => setFormData(prev => ({ ...prev, customerPhone: e.target.value }))}
-                placeholder="Ex. 0244000000"
-                className="w-full h-12 px-4 rounded-2xl bg-surface border border-border/50 text-xs font-bold focus:border-primary transition-colors outline-none"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-widest text-muted ml-1">Delivery Method</label>
-            <div className="grid grid-cols-2 gap-3 p-1 rounded-2xl bg-surface border border-border/50">
-               <button 
-                 onClick={() => setFormData(prev => ({ ...prev, deliveryMethod: 'PICKUP' }))}
-                 className={`py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${formData.deliveryMethod === 'PICKUP' ? 'bg-background text-primary shadow-sm' : 'text-muted'}`}
-               >
-                 Pickup
-               </button>
-               <button 
-                 onClick={() => setFormData(prev => ({ ...prev, deliveryMethod: 'DELIVERY' }))}
-                 className={`py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${formData.deliveryMethod === 'DELIVERY' ? 'bg-background text-primary shadow-sm' : 'text-muted'}`}
-               >
-                 Delivery
-               </button>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-widest text-muted ml-1">
-              {formData.deliveryMethod === 'DELIVERY' ? 'Delivery Location' : 'Pickup Point'}
-            </label>
-            <input 
-              value={formData.deliveryLocation}
-              onChange={e => setFormData(prev => ({ ...prev, deliveryLocation: e.target.value }))}
-              placeholder={formData.deliveryMethod === 'DELIVERY' ? "Hostel, Room #" : "Campus Landmark"}
-              className="w-full h-12 px-4 rounded-2xl bg-surface border border-border/50 text-xs font-bold focus:border-primary transition-colors outline-none"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-widest text-muted ml-1">Notes (Optional)</label>
-            <textarea 
-              value={formData.deliveryNotes}
-              onChange={e => setFormData(prev => ({ ...prev, deliveryNotes: e.target.value }))}
-              placeholder="Any specific instructions for the seller?"
-              className="w-full h-24 p-4 rounded-2xl bg-surface border border-border/50 text-xs font-bold focus:border-primary transition-colors outline-none resize-none"
-            />
-          </div>
-        </div>
-
-        <div className="mt-10 flex gap-3">
-          <Button 
-            variant="secondary" 
-            className="flex-1 rounded-2xl h-12 font-black uppercase tracking-widest text-[10px]"
-            onClick={onClose}
-          >
-            Cancel
-          </Button>
-          <Button 
-            disabled={isProcessing || !formData.customerName || !formData.customerPhone || !formData.deliveryLocation}
-            className="flex-[2] rounded-2xl h-12 font-black uppercase tracking-widest text-[10px]"
-            onClick={() => onConfirm(formData)}
-          >
-            {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirm Order"}
-          </Button>
-        </div>
-      </motion.div>
-    </div>
-  );
-};
-
-import { orderApi } from "@/lib/api/order";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { useRouter } from "next/navigation";
-import { Loader2, CheckCircle2, Info } from "lucide-react";
+import { Loader2, Info } from "lucide-react";
+import { useAuthModal } from "@/lib/contexts/auth-modal-context";
 
 export default function CartPage() {
-  const { groupedByVendor, itemCount, totalPrice, updateQuantity, removeItem, clearCart } = useCart();
+  const { groupedByVendor, itemCount, totalPrice, updateQuantity, removeItem } = useCart();
   const { token } = useAuth();
+  const { openLogin } = useAuthModal();
   const router = useRouter();
   const [isCheckingOut, setIsCheckingOut] = React.useState<string | null>(null);
-  const [orderSuccess, setOrderSuccess] = React.useState<string | null>(null);
-  const [activeCheckout, setActiveCheckout] = React.useState<{ storeLink: string; storeName: string; items: CartItem[] } | null>(null);
 
-  const handleCheckoutClick = (storeLink: string, storeName: string, items: CartItem[]) => {
+  const handleCheckoutClick = async (group: any) => {
     if (!token) {
-      router.push("/login?redirect=/cart");
+      openLogin({
+        message: `Sign in to complete your purchase from ${group.storeName}`,
+        onSuccess: () => {
+          router.push(`/cart/checkout?store=${encodeURIComponent(group.storeLink)}`);
+        }
+      });
       return;
     }
-    setActiveCheckout({ storeLink, storeName, items });
-  };
-
-  const processOrder = async (details: any) => {
-    if (!activeCheckout) return;
-    
-    setIsCheckingOut(activeCheckout.storeLink);
-    try {
-      await orderApi.createOrder(
-        token!,
-        activeCheckout.storeLink,
-        activeCheckout.items.map(i => ({ productId: i.productId, quantity: i.quantity })),
-        details
-      );
-      
-      setOrderSuccess(activeCheckout.storeLink);
-      // Remove items from cart after successful order
-      activeCheckout.items.forEach(i => removeItem(i.productId));
-      
-      setTimeout(() => setOrderSuccess(null), 5000);
-      setActiveCheckout(null);
-    } catch (err: any) {
-      alert(err.message || "Failed to place order");
-    } finally {
-      setIsCheckingOut(null);
-    }
+    router.push(`/cart/checkout?store=${encodeURIComponent(group.storeLink)}`);
+    setIsCheckingOut(group.storeLink);
+    setTimeout(() => setIsCheckingOut(null), 300);
   };
 
   return (
@@ -311,7 +165,7 @@ export default function CartPage() {
             >
               <div className="flex items-center gap-3">
                 <div className="p-2.5 bg-primary rounded-2xl shadow-lg shadow-primary/20">
-                  <Info className="w-4 h-4 text-white" />
+                  <Info className="w-4 h-4 text-primary" />
                 </div>
                 <div>
                   <h4 className="text-[10px] font-black uppercase tracking-wider leading-none mb-1">Session Summary</h4>
@@ -416,25 +270,18 @@ export default function CartPage() {
                         </div>
                       </div>
                       
-                      {orderSuccess === group.storeLink ? (
-                        <div className="flex items-center gap-2 text-emerald-500 font-black text-[10px] uppercase tracking-wider bg-emerald-500/10 px-6 py-3 rounded-2xl border border-emerald-500/20">
-                          <CheckCircle2 className="w-4 h-4" />
-                          Order placed sucessfully!
-                        </div>
-                      ) : (
-                        <Button 
-                          size="lg"
-                          disabled={isCheckingOut === group.storeLink}
-                          onClick={() => handleCheckoutClick(group.storeLink, group.storeName, group.items)}
-                          className="rounded-2xl px-10 font-black uppercase tracking-widest text-[10px] h-12 shadow-xl shadow-primary/10"
-                        >
-                          {isCheckingOut === group.storeLink ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            "Confirm Group Order"
-                          )}
-                        </Button>
-                      )}
+                      <Button 
+                        size="lg"
+                        disabled={isCheckingOut === group.storeLink}
+                        onClick={() => handleCheckoutClick(group)}
+                        className="rounded-2xl px-10 font-black uppercase tracking-widest text-[10px] h-12 shadow-xl shadow-primary/10"
+                      >
+                        {isCheckingOut === group.storeLink ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          "Go to Checkout"
+                        )}
+                      </Button>
                     </div>
                   </Card>
                 </motion.section>
@@ -460,17 +307,6 @@ export default function CartPage() {
           )}
         </AnimatePresence>
 
-        <AnimatePresence>
-          {activeCheckout && (
-            <CheckoutModal 
-              isOpen={!!activeCheckout}
-              onClose={() => setActiveCheckout(null)}
-              onConfirm={processOrder}
-              isProcessing={!!isCheckingOut}
-              storeName={activeCheckout.storeName}
-            />
-          )}
-        </AnimatePresence>
       </main>
     </div>
   );

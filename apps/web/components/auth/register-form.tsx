@@ -9,7 +9,11 @@ import ProgressBar from '@/components/ui/ProgressBar';
 import { Mail, Lock, User as UserIcon, CheckCircle, Building } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-export default function RegisterForm() {
+interface RegisterFormProps {
+  onSuccess?: () => void;
+}
+
+export default function RegisterForm({ onSuccess }: RegisterFormProps) {
   const { form, onSubmit, isLoading, error, clearError } = useRegisterForm();
   const [success, setSuccess] = useState(false);
   const {
@@ -22,6 +26,8 @@ export default function RegisterForm() {
     try {
       await onSubmit(e);
       setSuccess(true);
+      // We don't call onSuccess() here because we want the user to see the "Check your email" screen.
+      // The user can close the modal manually or via a "Close" button we provide there.
     } catch {
       // error handled by context
     }
@@ -44,9 +50,18 @@ export default function RegisterForm() {
             We&apos;ve sent a verification link to your email address. Please verify your account before signing in.
           </p>
         </div>
-        <a href="/login" className="text-sm font-medium text-accent hover:underline">
-          Back to sign in
-        </a>
+        <div className="w-full space-y-4">
+          <Button 
+            onClick={() => onSuccess ? onSuccess() : (window.location.href = '/login')} 
+            variant="primary" 
+            className="w-full"
+          >
+            Got it, continue
+          </Button>
+          <a href="/login" className="block text-sm font-medium text-accent hover:underline">
+            Back to sign in
+          </a>
+        </div>
       </div>
     );
   }

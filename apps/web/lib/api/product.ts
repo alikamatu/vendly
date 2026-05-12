@@ -28,6 +28,7 @@ export interface CreateProductInput {
   category: string;
   tags?: string[];
   attributes?: Record<string, any>;
+  is_featured?: boolean;
 }
 
 export const productApi = {
@@ -48,6 +49,9 @@ export const productApi = {
 
     if (data.attributes) {
       formData.append('attributes', JSON.stringify(data.attributes));
+    }
+    if (data.is_featured !== undefined) {
+      formData.append('is_featured', String(data.is_featured));
     }
 
     images.forEach(image => {
@@ -124,6 +128,9 @@ export const productApi = {
     if (data.attributes) {
       formData.append('attributes', JSON.stringify(data.attributes));
     }
+    if (data.is_featured !== undefined) {
+      formData.append('is_featured', String(data.is_featured));
+    }
 
     if (existing_images) {
       existing_images.forEach(url => formData.append('existing_images[]', url));
@@ -146,6 +153,100 @@ export const productApi = {
     });
 
     return handleResponse<{ message: string; product: any }>(res);
+  },
+
+  async toggleHotSales(token: string, id: string, is_featured: boolean) {
+    const res = await fetch(`${API_URL}/products/${id}/hot-sales`, {
+      method: 'PATCH',
+      headers: {
+        ...authHeaders(token),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ is_featured }),
+    });
+
+    return handleResponse<{ message: string; product: { id: string; is_featured: boolean } }>(res);
+  },
+
+  async initializeHotSalesPayment(token: string, id: string) {
+    const res = await fetch(`${API_URL}/products/${id}/hot-sales/initialize-payment`, {
+      method: 'POST',
+      headers: authHeaders(token),
+    });
+
+    return handleResponse<{
+      message: string;
+      reference: string;
+      amount: number;
+      checkout_url: string | null;
+      access_code: string | null;
+    }>(res);
+  },
+
+  async verifyHotSalesPayment(
+    token: string,
+    reference: string,
+    productId: string,
+  ) {
+    const res = await fetch(
+      `${API_URL}/products/hot-sales/verify?reference=${encodeURIComponent(reference)}&product_id=${encodeURIComponent(productId)}`,
+      {
+        headers: authHeaders(token),
+      },
+    );
+
+    return handleResponse<{
+      verified: boolean;
+      status: string;
+      is_featured: boolean;
+    }>(res);
+  },
+
+  async initializePromotionPayment(
+    token: string,
+    id: string,
+    category: "BOOST" | "PLAN",
+  ) {
+    const res = await fetch(`${API_URL}/products/${id}/promotions/initialize-payment`, {
+      method: "POST",
+      headers: {
+        ...authHeaders(token),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ category }),
+    });
+
+    return handleResponse<{
+      message: string;
+      reference: string;
+      amount: number;
+      category: "BOOST" | "PLAN";
+      checkout_url: string | null;
+      access_code: string | null;
+    }>(res);
+  },
+
+  async verifyPromotionPayment(token: string, reference: string, productId: string) {
+    const res = await fetch(
+      `${API_URL}/products/promotions/verify?reference=${encodeURIComponent(reference)}&product_id=${encodeURIComponent(productId)}`,
+      {
+        headers: authHeaders(token),
+      },
+    );
+
+    return handleResponse<{
+      verified: boolean;
+      status: string;
+      category: "BOOST" | "PLAN";
+      is_featured: boolean;
+    }>(res);
+  },
+
+  async getPromotionPaymentsHistory(token: string) {
+    const res = await fetch(`${API_URL}/products/promotions/history`, {
+      headers: authHeaders(token),
+    });
+    return handleResponse<any[]>(res);
   },
 
   async deleteProduct(token: string, id: string) {

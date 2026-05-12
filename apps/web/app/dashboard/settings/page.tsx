@@ -12,7 +12,7 @@ import {
   LogOut
 } from "lucide-react";
 import Card from "@/components/ui/Card";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/lib/contexts/auth-context";
 
 const settingsGroups = [
   {

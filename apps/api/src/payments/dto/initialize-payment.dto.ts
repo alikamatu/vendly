@@ -21,4 +21,12 @@ export class InitializePaymentDto {
   @IsOptional()
   @IsString()
   callbackUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  subaccount?: string;
+
+  @IsOptional()
+  @IsString()
+  bearer?: string;
 }

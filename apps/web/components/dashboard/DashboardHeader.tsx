@@ -15,6 +15,7 @@ import {
 import GlobalSearch from "../layout/GlobalSearch";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { useAuthModal } from "@/lib/contexts/auth-modal-context";
 
 interface DashboardHeaderProps {
   title: string;
@@ -30,6 +31,7 @@ export default function DashboardHeader({
   const [isSearchOpen, setIsSearchOpen] = React.useState(false);
   const { theme, setTheme } = useTheme();
   const { user } = useAuth();
+  const { openRegister } = useAuthModal();
   const { itemCount } = useCart();
   const isDark = theme === "dark";
 
@@ -146,10 +148,8 @@ export default function DashboardHeader({
             <UserMenu />
           ) : (
             <div className="flex items-center gap-2">
-              <Link href="/register">
-                <button className="px-4 py-2 bg-primary  text-[10px] uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
-                  Sign Up
-                </button>
+              <Link href="/register" className="px-4 py-2 bg-primary text-primary text-[10px] uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
+                Sign Up
               </Link>
             </div>
           )}

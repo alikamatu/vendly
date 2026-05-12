@@ -1,4 +1,11 @@
-import { IsString, IsOptional, MaxLength, IsUrl } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  MaxLength,
+  IsUrl,
+  IsNumber,
+  IsArray,
+} from 'class-validator';
 
 export class UpdateStoreDto {
   @IsString()
@@ -50,4 +57,20 @@ export class UpdateStoreDto {
   @IsString()
   @IsOptional()
   account_number?: string;
+
+  @IsNumber()
+  @IsOptional()
+  location_id?: number;
+
+  @IsString()
+  @IsOptional()
+  area?: string;
+
+  @IsArray()
+  @IsOptional()
+  accepted_payment_methods?: string[];
+
+  @IsString()
+  @IsOptional()
+  payment_timing?: any;
 }

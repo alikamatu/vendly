@@ -2,7 +2,7 @@
 
 import React, { useRef, useState } from "react";
 import { motion, AnimatePresence, HTMLMotionProps } from "framer-motion";
-import { Edit2, Trash2, MoreVertical, Eye, Check, AlertCircle } from "lucide-react";
+import { Edit2, Trash2, AlertCircle, Flame } from "lucide-react";
 import Link from "next/link";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
@@ -15,15 +15,18 @@ interface SellerProductCardProps {
     image_urls: string[];
     video_url?: string | null;
     status: string;
+    is_featured?: boolean;
     quantity_available: number;
     category: string;
     created_at: string;
   };
+  promotionState?: "idle" | "verifying" | "payment_required" | "failed";
   onDelete: (id: string) => void;
+  onToggleHotSales: (id: string, currentState: boolean) => void;
   index: number;
 }
 
-export default function SellerProductCard({ product, onDelete, index }: SellerProductCardProps) {
+export default function SellerProductCard({ product, promotionState = "idle", onDelete, onToggleHotSales, index }: SellerProductCardProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
@@ -95,6 +98,22 @@ export default function SellerProductCard({ product, onDelete, index }: SellerPr
               <p className="text-[10px] text-muted font-bold mt-1 uppercase tracking-wider">
                 {product.category} • GH₵{parseFloat(product.price).toLocaleString()}
               </p>
+              {product.is_featured && (
+                <p className="text-[9px] font-black mt-1 text-amber-600 uppercase tracking-wider inline-flex items-center gap-1">
+                  <Flame className="w-3 h-3" />
+                  Hot Sales
+                </p>
+              )}
+              {!product.is_featured && promotionState === "verifying" && (
+                <p className="text-[9px] font-black mt-1 text-blue-500 uppercase tracking-wider">
+                  Verifying Payment...
+                </p>
+              )}
+              {!product.is_featured && promotionState === "failed" && (
+                <p className="text-[9px] font-black mt-1 text-red-500 uppercase tracking-wider">
+                  Verification Failed
+                </p>
+              )}
             </div>
 
             <div className="flex items-center gap-4 text-[9px] font-black uppercase tracking-widest text-muted/60">
@@ -109,13 +128,25 @@ export default function SellerProductCard({ product, onDelete, index }: SellerPr
 
           {/* Actions */}
           <div className="flex flex-col gap-2 justify-center">
+             <button
+               className={`h-11 w-11 p-0 rounded-xl border-border/50 shadow-sm flex items-center justify-center transition-colors cursor-pointer ${
+                 product.is_featured
+                   ? "bg-amber-500/20 text-amber-600"
+                   : "bg-surface-dark hover:text-amber-600"
+               }`}
+               onClick={() => onToggleHotSales(product.id, Boolean(product.is_featured))}
+               disabled={promotionState === "verifying"}
+               title={product.is_featured ? "Disable Hot Sales" : "Enable Hot Sales for 7 GHC"}
+             >
+               <Flame className="w-3 h-3" />
+             </button>
              <Link href={`/dashboard/products/edit/${product.id}`}>
-               <button className="h-8 w-8 p-0 rounded-xl bg-surface-dark border-border/50 shadow-sm hover:text-primary flex items-center justify-center transition-colors cursor-pointer">
+               <button className="h-11 w-11 p-0 rounded-xl bg-surface-dark border-border/50 shadow-sm hover:text-primary flex items-center justify-center transition-colors cursor-pointer">
                  <Edit2 className="w-3 h-3" />
                </button>
              </Link>
              <button 
-               className="h-8 w-8 p-0 rounded-xl bg-surface-dark border-border/50 shadow-sm hover:text-red-500 flex items-center justify-center transition-colors cursor-pointer"
+               className="h-11 w-11 p-0 rounded-xl bg-surface-dark border-border/50 shadow-sm hover:text-red-500 flex items-center justify-center transition-colors cursor-pointer"
                onClick={() => setShowDeleteConfirm(true)}
              >
                <Trash2 className="w-3 h-3 text-red-600" />

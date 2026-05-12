@@ -13,6 +13,7 @@ import { CloudinaryModule } from './common/cloudinary.module';
 import { OrderModule } from './order/order.module';
 import { FavoriteModule } from './favorite/favorite.module';
 import { PaymentsModule } from './payments/payments.module';
+import { OnboardingModule } from './onboarding/onboarding.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ApiResponseInterceptor } from './common/interceptors/api-response.interceptor';
 
@@ -40,6 +41,7 @@ import { ApiResponseInterceptor } from './common/interceptors/api-response.inter
     OrderModule,
     FavoriteModule,
     PaymentsModule,
+    OnboardingModule,
   ],
   controllers: [AppController],
   providers: [

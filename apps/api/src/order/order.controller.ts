@@ -6,6 +6,7 @@ import {
   UseGuards,
   Req,
   Param,
+  Query,
 } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -31,6 +32,19 @@ export class OrderController {
     return this.orderService.getSellerOrders(req.user.id);
   }
 
+  @Get('verify/payment')
+  async verifyOrderPayment(
+    @Req() req: any,
+    @Query('reference') reference: string,
+    @Query('order_id') orderId: string,
+  ) {
+    return this.orderService.verifyOrderPayment(
+      BigInt(req.user.id),
+      reference,
+      orderId,
+    );
+  }
+
   @Get(':id')
   async getOrderDetails(@Req() req: any, @Param('id') id: string) {
     return this.orderService.getOrderById(req.user.id, id);
@@ -43,5 +57,10 @@ export class OrderController {
     @Body('status') status: string,
   ) {
     return this.orderService.updateOrderStatus(req.user.id, id, status);
+  }
+
+  @Post(':id/retry-payment')
+  async retryPayment(@Req() req: any, @Param('id') id: string) {
+    return this.orderService.reinitializeOrderPayment(BigInt(req.user.id), id);
   }
 }

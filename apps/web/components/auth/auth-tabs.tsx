@@ -7,9 +7,10 @@ import RegisterForm from './register-form';
 
 interface AuthTabsProps {
   defaultTab?: 'login' | 'register';
+  onSuccess?: () => void;
 }
 
-export default function AuthTabs({ defaultTab = 'login' }: AuthTabsProps) {
+export default function AuthTabs({ defaultTab = 'login', onSuccess }: AuthTabsProps) {
   const [mode, setMode] = useState<'login' | 'register'>(defaultTab);
 
   return (
@@ -55,7 +56,11 @@ export default function AuthTabs({ defaultTab = 'login' }: AuthTabsProps) {
           exit={{ opacity: 0, x: mode === 'login' ? 10 : -10 }}
           transition={{ duration: 0.2 }}
         >
-          {mode === 'login' ? <LoginForm /> : <RegisterForm />}
+          {mode === 'login' ? (
+            <LoginForm onSuccess={onSuccess} />
+          ) : (
+            <RegisterForm onSuccess={onSuccess} />
+          )}
         </motion.div>
       </AnimatePresence>
     </div>

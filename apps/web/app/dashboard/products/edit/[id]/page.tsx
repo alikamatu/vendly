@@ -13,15 +13,16 @@ import {
   Tag,
   LayoutGrid,
   ShoppingBag,
-  AlertCircle
+  AlertCircle,
+  Flame
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Textarea from "@/components/ui/Textarea";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/lib/contexts/auth-context";
 import { productApi } from "@/lib/api/product";
 import imageCompression from 'browser-image-compression';
 
@@ -29,6 +30,8 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   const { id } = use(params);
   const { token } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [isCompressing, setIsCompressing] = useState(false);
@@ -47,6 +50,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     tagInput: "",
     tags: [] as string[],
     attributes: {} as Record<string, string>,
+    is_featured: false,
   });
 
   const [images, setImages] = useState<File[]>([]);
@@ -60,6 +64,9 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   const videoInputRef = useRef<HTMLInputElement>(null);
   
   const [categories, setCategories] = useState<{id: string, name: string, fields: any[]}[]>([]);
+  const [existingTitles, setExistingTitles] = useState<string[]>([]);
+  const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
+  const [verificationState, setVerificationState] = useState<"idle" | "verifying" | "failed">("idle");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -84,6 +91,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           tagInput: "",
           tags: product.tags || [],
           attributes: product.attributes || {},
+          is_featured: Boolean(product.is_featured),
         });
 
         setExistingImages(product.image_urls || []);
@@ -98,6 +106,71 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     };
     
     if (token) fetchData();
+  }, [id, token]);
+
+  useEffect(() => {
+    const verifyCallback = async () => {
+      const hotSalePayment = searchParams.get("hot_sale_payment");
+      const reference = searchParams.get("reference");
+      const productId = searchParams.get("product_id");
+      if (!token || hotSalePayment !== "1" || !reference || !productId) return;
+      if (String(productId) !== String(id)) return;
+
+      setVerificationState("verifying");
+      setMessage({ type: "info", text: "Verifying Hot Sales payment..." });
+
+      try {
+        const verifyResult = await productApi.verifyHotSalesPayment(
+          token,
+          reference,
+          productId,
+        );
+        if (verifyResult.verified) {
+          setFormData((prev) => ({ ...prev, is_featured: true }));
+          setMessage({ type: "success", text: "Payment verified. Hot Sales enabled." });
+        } else {
+          setMessage({ type: "info", text: "Payment pending verification. Please try again shortly." });
+        }
+      } catch (err: any) {
+        setVerificationState("failed");
+        setMessage({ type: "error", text: err.message || "Failed to verify payment." });
+      } finally {
+        router.replace(pathname);
+      }
+    };
+
+    verifyCallback();
+  }, [searchParams, token, id, pathname, router]);
+
+  useEffect(() => {
+    const fetchSellerSuggestions = async () => {
+      if (!token) return;
+      try {
+        const products = await productApi.getSellerProducts(token);
+        const titles = Array.from(
+          new Set(
+            products
+              .filter((product: any) => String(product.id) !== String(id))
+              .map((product: any) => String(product.title || "").trim())
+              .filter(Boolean),
+          ),
+        );
+        const tags = Array.from(
+          new Set(
+            products
+              .flatMap((product: any) => Array.isArray(product.tags) ? product.tags : [])
+              .map((tag: string) => tag.trim())
+              .filter(Boolean),
+          ),
+        );
+        setExistingTitles(titles);
+        setTagSuggestions(tags);
+      } catch (err) {
+        console.error("Failed to fetch seller product suggestions", err);
+      }
+    };
+
+    fetchSellerSuggestions();
   }, [id, token]);
 
   // optionally render error message on screen
@@ -261,12 +334,18 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   };
 
   const addTag = () => {
-    if (formData.tagInput.trim() && !formData.tags.includes(formData.tagInput.trim())) {
+    const normalizedTag = formData.tagInput.trim().replace(/\s+/g, " ");
+    const hasDuplicate = formData.tags.some(
+      (tag) => tag.toLowerCase() === normalizedTag.toLowerCase(),
+    );
+    if (normalizedTag && !hasDuplicate) {
       setFormData({
         ...formData,
-        tags: [...formData.tags, formData.tagInput.trim()],
+        tags: [...formData.tags, normalizedTag],
         tagInput: ""
       });
+    } else if (hasDuplicate) {
+      setMessage({ type: "info", text: "Tag already added." });
     }
   };
 
@@ -279,9 +358,21 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!token) return;
+    if (!token || isLoading) return;
     if (images.length === 0 && existingImages.length === 0 && !video && !existingVideo) {
       setMessage({ type: "error", text: "Please have at least one product image or video" });
+      return;
+    }
+
+    const normalizedTitle = formData.title.trim().replace(/\s+/g, " ");
+    const hasDuplicateTitle = existingTitles.some(
+      (title) => title.toLowerCase() === normalizedTitle.toLowerCase(),
+    );
+    if (hasDuplicateTitle) {
+      setMessage({
+        type: "error",
+        text: "You already have another product with this title.",
+      });
       return;
     }
 
@@ -315,6 +406,26 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
       setMessage({ type: "error", text: err.message || "Failed to update product" });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleHotSalesPayment = async () => {
+    if (!token) return;
+    if (formData.is_featured) {
+      setMessage({ type: "info", text: "Hot Sales is already enabled for this product." });
+      return;
+    }
+
+    try {
+      setVerificationState("verifying");
+      const init = await productApi.initializeHotSalesPayment(token, id);
+      if (!init.checkout_url) {
+        throw new Error("Unable to initialize Hot Sales payment.");
+      }
+      window.location.href = init.checkout_url;
+    } catch (err: any) {
+      setVerificationState("failed");
+      setMessage({ type: "error", text: err.message || "Failed to initialize Hot Sales payment" });
     }
   };
 
@@ -451,8 +562,14 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                   onChange={(e) => setFormData({...formData, title: e.target.value})}
                   placeholder="Ex: iPhone 13 Case"
                   required
+                  list="product-title-suggestions"
                   className="h-12 pl-12 bg-background/50 text-xs font-bold"
                 />
+                <datalist id="product-title-suggestions">
+                  {existingTitles.slice(0, 10).map((title) => (
+                    <option key={title} value={title} />
+                  ))}
+                </datalist>
               </div>
             </div>
 
@@ -540,9 +657,29 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                     }
                   }}
                   placeholder="new, trending..."
+                  list="product-tag-suggestions"
                   className="h-12 pl-12 bg-background/50 text-xs font-bold"
                 />
+                <datalist id="product-tag-suggestions">
+                  {tagSuggestions.slice(0, 12).map((tag) => (
+                    <option key={tag} value={tag} />
+                  ))}
+                </datalist>
               </div>
+              {tagSuggestions.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {tagSuggestions.slice(0, 6).map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      className="px-2 py-1 rounded-full border border-border text-[9px] font-bold text-muted hover:text-foreground hover:border-primary/40"
+                      onClick={() => setFormData((prev) => ({ ...prev, tagInput: tag }))}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              )}
               <div className="flex flex-wrap gap-2 mt-2">
                 {formData.tags.map(tag => (
                   <span key={tag} className="flex items-center gap-1 px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold rounded-full">
@@ -552,6 +689,29 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                 ))}
               </div>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold text-muted uppercase tracking-widest px-1">Promotion</label>
+            <button
+              type="button"
+              onClick={handleHotSalesPayment}
+              disabled={verificationState === "verifying"}
+              className={`w-full h-12 px-4 rounded-2xl border text-xs font-bold flex items-center justify-between transition-all ${
+                formData.is_featured
+                  ? "border-amber-400/40 bg-amber-500/10 text-amber-600"
+                  : "border-border/50 bg-background/50 text-muted"
+              }`}
+            >
+              <span className="inline-flex items-center gap-2">
+                <Flame className="w-4 h-4" />
+                Enable Hot Sales (7 GHC)
+              </span>
+              <span>{formData.is_featured ? "Enabled" : "Pay & Enable"}</span>
+            </button>
+            <p className="text-[10px] text-muted px-1">
+              Payment is required before this product can appear in Hot Sales.
+            </p>
           </div>
 
           <div className="space-y-2">
@@ -570,7 +730,11 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className={`p-4 rounded-2xl flex items-center gap-3 ${
-              message.type === "success" ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"
+              message.type === "success"
+                ? "bg-emerald-500/10 text-emerald-500"
+                : message.type === "error"
+                ? "bg-red-500/10 text-red-500"
+                : "bg-blue-500/10 text-blue-500"
             }`}
           >
             <Info className="w-4 h-4" />

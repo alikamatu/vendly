@@ -46,4 +46,7 @@ export class CreateOrderDto {
 
   @IsString()
   deliveryNotes?: string;
+
+  @IsString()
+  paymentMethod?: string;
 }

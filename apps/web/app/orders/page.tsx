@@ -19,17 +19,65 @@ import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { orderApi } from "@/lib/api/order";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 export default function BuyerOrdersPage() {
   const { token } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [orders, setOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isRetrying, setIsRetrying] = useState<string | null>(null);
 
   useEffect(() => {
     if (token) {
       fetchOrders();
     }
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) return;
+
+    const reference = searchParams.get("reference");
+    const orderId = searchParams.get("order_id");
+    const shouldVerify = searchParams.get("order_payment");
+    if (!reference || !orderId || !shouldVerify) return;
+
+    let cancelled = false;
+    const verify = async () => {
+      try {
+        setIsVerifying(true);
+        await orderApi.verifyOrderPayment(token, reference, orderId);
+        if (!cancelled) {
+          await fetchOrders();
+          router.replace(pathname);
+        }
+      } catch (err: any) {
+        if (!cancelled) {
+          setError(err.message || "Payment verification failed");
+        }
+      } finally {
+        if (!cancelled) {
+          setIsVerifying(false);
+        }
+      }
+    };
+    verify();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token, searchParams, pathname, router]);
+
+  useEffect(() => {
+    if (!token) return;
+    const interval = setInterval(() => {
+      fetchOrders();
+    }, 15000);
+    return () => clearInterval(interval);
   }, [token]);
 
   const fetchOrders = async () => {
@@ -44,12 +92,30 @@ export default function BuyerOrdersPage() {
     }
   };
 
+  const handleRetryPayment = async (orderId: string) => {
+    if (!token) return;
+    try {
+      setIsRetrying(orderId);
+      const result = await orderApi.retryPayment(token, orderId);
+      if (result.authorization_url) {
+        window.location.href = result.authorization_url;
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to re-initialize payment");
+      setIsRetrying(null);
+    }
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status.toUpperCase()) {
       case "COMPLETED":
         return <CheckCircle2 className="w-4 h-4 text-emerald-500" />;
       case "PENDING":
         return <Clock className="w-4 h-4 text-orange-500" />;
+      case "AWAITING_PAYMENT":
+        return <Clock className="w-4 h-4 text-amber-500" />;
+      case "PAID":
+        return <CheckCircle2 className="w-4 h-4 text-primary" />;
       default:
         return <Package className="w-4 h-4 text-muted" />;
     }
@@ -92,6 +158,15 @@ export default function BuyerOrdersPage() {
             <AlertCircle className="w-4 h-4" />
             <p className="text-[10px] font-black uppercase tracking-widest">
               {error}
+            </p>
+          </div>
+        )}
+
+        {isVerifying && (
+          <div className="flex items-center gap-3 p-4 bg-primary/10 text-primary rounded-2xl mb-8 border border-primary/20">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <p className="text-[10px] font-black uppercase tracking-widest">
+              Verifying payment and syncing order status...
             </p>
           </div>
         )}
@@ -139,7 +214,7 @@ export default function BuyerOrdersPage() {
                         >
                           {getStatusIcon(order.status)}
                           <span className="text-[10px] font-black uppercase tracking-widest">
-                            {order.status}
+                            {order.status.replace('_', ' ')}
                           </span>
                         </div>
                       </div>
@@ -228,6 +303,55 @@ export default function BuyerOrdersPage() {
                           </div>
                         </div>
                       ))}
+                    </div>
+
+                    {/* Order & Payment Details */}
+                    <div className="mt-6 pt-6 border-t border-border/50 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-3">
+                        <p className="text-[10px] font-black text-muted uppercase tracking-widest border-b border-border/50 pb-2">Delivery Details</p>
+                        <div className="space-y-2">
+                          <p className="text-xs"><span className="text-muted font-bold">Name:</span> {order.customer_name}</p>
+                          <p className="text-xs"><span className="text-muted font-bold">Phone:</span> {order.customer_phone}</p>
+                          <p className="text-xs"><span className="text-muted font-bold">Method:</span> <span className="uppercase font-bold text-[10px] bg-surface px-2 py-0.5 rounded-md border border-border/50">{order.delivery_method}</span></p>
+                          <p className="text-xs"><span className="text-muted font-bold">{order.delivery_method === 'DELIVERY' ? 'Address:' : 'Pickup at:'}</span> {order.delivery_location}</p>
+                          {order.delivery_notes && (
+                            <p className="text-xs mt-1 text-muted italic">"{order.delivery_notes}"</p>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <p className="text-[10px] font-black text-muted uppercase tracking-widest border-b border-border/50 pb-2">Payment Details</p>
+                        <div className="space-y-2">
+                          <p className="text-xs"><span className="text-muted font-bold">Provider:</span> <span className={`uppercase font-bold text-[10px] px-2 py-0.5 rounded-md border ${order.payment_info?.provider === 'PAYSTACK' ? 'bg-primary/10 text-primary border-primary/20' : 'bg-surface border-border/50'}`}>{order.payment_info?.provider || 'Unknown'}</span></p>
+                          <p className="text-xs flex items-center gap-2"><span className="text-muted font-bold">Status:</span> 
+                            <span className="uppercase font-bold text-[10px]">
+                              {order.payment_info?.status === 'SUCCESS' ? (
+                                <span className="text-emerald-500 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Paid</span>
+                              ) : order.payment_info?.status === 'FAILED' ? (
+                                <span className="text-red-500 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> Failed</span>
+                              ) : (
+                                <span className="text-orange-500 flex items-center gap-1"><Clock className="w-3 h-3" /> Pending</span>
+                              )}
+                            </span>
+                          </p>
+                          {order.payment_info?.reference && (
+                            <p className="text-[10px] text-muted truncate"><span className="font-bold">Ref:</span> {order.payment_info.reference}</p>
+                          )}
+                          {order.status === 'AWAITING_PAYMENT' && (
+                            <div className="pt-2">
+                              <Button
+                                size="sm"
+                                onClick={() => handleRetryPayment(order.id)}
+                                isLoading={isRetrying === order.id}
+                                className="h-8 text-[9px] font-black uppercase tracking-widest px-4 rounded-xl flex items-center gap-2"
+                              >
+                                <CheckCircle2 className="w-3 h-3" /> Complete Payment
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
 
                     <div className="mt-6 pt-6 border-t border-border/50 flex items-center justify-between">

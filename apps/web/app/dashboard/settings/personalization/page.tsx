@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Palette, Moon, Sun, Monitor, Type, LayoutGrid } from "lucide-react";
 import Link from "next/link";
 import Card from "@/components/ui/Card";
-import { useTheme } from "@/lib/theme";
+import { useTheme } from "@/lib/contexts/theme";
 
 export default function PersonalizationPage() {
   const { theme, setTheme } = useTheme();

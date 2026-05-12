@@ -9,6 +9,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
+import { VerificationType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { CloudinaryService } from '../common/cloudinary.service';
@@ -117,6 +118,7 @@ export class AuthService {
               store_link: user.seller_profile.store_link,
               bio: user.seller_profile.bio,
               logo_url: user.seller_profile.logo_url,
+              onboarding_completed: user.seller_profile.onboarding_completed,
             }
           : null,
       },
@@ -157,6 +159,7 @@ export class AuthService {
             store_link: user.seller_profile.store_link,
             bio: user.seller_profile.bio,
             logo_url: user.seller_profile.logo_url,
+            onboarding_completed: user.seller_profile.onboarding_completed,
           }
         : null,
       created_at: user.created_at,
@@ -216,7 +219,8 @@ export class AuthService {
         );
         urls.push(`PROOF:${res.secure_url}`);
       }
-      verificationData = urls.length > 0 ? urls.join(',') : dto.verification_doc || '';
+      verificationData =
+        urls.length > 0 ? urls.join(',') : dto.verification_doc || '';
     }
 
     // Update user's verification doc and create approval record
@@ -229,6 +233,8 @@ export class AuthService {
         data: {
           user_id: userId,
           status: 'PENDING',
+          type: dto.type as VerificationType,
+          verification_data: verificationData,
         },
       }),
     ]);
@@ -270,6 +276,11 @@ export class AuthService {
         email_verification_token: null,
         email_verification_expires: null,
       },
+    });
+    
+    // Trigger Welcome Email after successful verification
+    this.emailService.sendWelcomeEmail(user.email, user.full_name).catch(err => {
+      console.error('Failed to send welcome email after verification', err);
     });
 
     return { message: 'Email verified successfully. You can now log in.' };

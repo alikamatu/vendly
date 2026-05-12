@@ -10,26 +10,68 @@ import {
   AlertCircle, 
   Package,
   ArrowLeft,
-  ChevronRight
+  ChevronRight,
+  Flame
 } from "lucide-react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/lib/contexts/auth-context";
 import { productApi } from "@/lib/api/product";
 import SellerProductCard from "@/components/products/SellerProductCard";
 
 export default function SellerProductsPage() {
   const { token } = useAuth();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const router = useRouter();
   const [products, setProducts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [promotionStates, setPromotionStates] = useState<Record<string, "idle" | "verifying" | "payment_required" | "failed">>({});
 
   useEffect(() => {
     fetchProducts();
   }, [token]);
+
+  useEffect(() => {
+    const processCallback = async () => {
+      const hotSalePayment = searchParams.get("hot_sale_payment");
+      const reference = searchParams.get("reference");
+      const productId = searchParams.get("product_id");
+
+      if (!token || hotSalePayment !== "1" || !reference || !productId) return;
+
+      setPromotionStates((prev) => ({ ...prev, [productId]: "verifying" }));
+      setActionMessage("Verifying Hot Sales payment...");
+
+      try {
+        const verifyResult = await productApi.verifyHotSalesPayment(
+          token,
+          reference,
+          productId,
+        );
+        await fetchProducts();
+        if (verifyResult.verified && verifyResult.is_featured) {
+          setActionMessage("Payment verified. Hot Sales enabled.");
+        } else {
+          setActionMessage("Payment still pending. Please refresh in a moment.");
+          setPromotionStates((prev) => ({ ...prev, [productId]: "payment_required" }));
+        }
+      } catch (err: any) {
+        setPromotionStates((prev) => ({ ...prev, [productId]: "failed" }));
+        setError(err.message || "Failed to verify Hot Sales payment");
+      } finally {
+        router.replace(pathname);
+      }
+    };
+
+    processCallback();
+  }, [searchParams, token, pathname, router]);
 
   const fetchProducts = async () => {
     if (!token) return;
@@ -48,9 +90,55 @@ export default function SellerProductsPage() {
     if (!token) return;
     try {
       await productApi.deleteProduct(token, id);
-      setProducts(products.filter(p => p.id !== id));
+      setProducts((prev) => prev.filter((p) => p.id !== id));
     } catch (err: any) {
       alert(err.message || "Failed to delete product");
+    }
+  };
+
+  const handleToggleHotSales = async (id: string, currentState: boolean) => {
+    if (!token) return;
+    try {
+      if (!currentState) {
+        setPromotionStates((prev) => ({ ...prev, [id]: "verifying" }));
+        try {
+          await productApi.toggleHotSales(token, id, true);
+          setProducts((prev) =>
+            prev.map((product) =>
+              product.id === id ? { ...product, is_featured: true } : product,
+            ),
+          );
+          setActionMessage("Hot Sales enabled successfully.");
+          setPromotionStates((prev) => ({ ...prev, [id]: "idle" }));
+          setTimeout(() => setActionMessage(null), 2500);
+          return;
+        } catch (toggleErr: any) {
+          if (!String(toggleErr?.message || "").toLowerCase().includes("payment")) {
+            throw toggleErr;
+          }
+          setPromotionStates((prev) => ({ ...prev, [id]: "payment_required" }));
+        }
+
+        const init = await productApi.initializeHotSalesPayment(token, id);
+        if (!init.checkout_url) {
+          throw new Error("Unable to initialize payment. Please try again.");
+        }
+        window.location.href = init.checkout_url;
+        return;
+      }
+
+      await productApi.toggleHotSales(token, id, false);
+      setProducts((prev) =>
+        prev.map((product) =>
+          product.id === id ? { ...product, is_featured: false } : product,
+        ),
+      );
+      setActionMessage("Hot Sales disabled for this product.");
+      setPromotionStates((prev) => ({ ...prev, [id]: "idle" }));
+      setTimeout(() => setActionMessage(null), 2500);
+    } catch (err: any) {
+      setPromotionStates((prev) => ({ ...prev, [id]: "failed" }));
+      setError(err.message || "Failed to update Hot Sales status");
     }
   };
 
@@ -123,6 +211,13 @@ export default function SellerProductsPage() {
         </select>
       </div>
 
+      {actionMessage && (
+        <div className="mx-2 flex items-center gap-2 p-3 rounded-2xl border border-amber-500/20 bg-amber-500/10 text-amber-700">
+          <Flame className="w-4 h-4" />
+          <p className="text-[10px] font-black uppercase tracking-wider">{actionMessage}</p>
+        </div>
+      )}
+
       {/* Listings */}
       <div className="space-y-4">
         {filteredProducts.length > 0 ? (
@@ -131,7 +226,9 @@ export default function SellerProductsPage() {
               <SellerProductCard 
                 key={product.id} 
                 product={product} 
+                promotionState={promotionStates[product.id] || "idle"}
                 onDelete={handleDelete}
+                onToggleHotSales={handleToggleHotSales}
                 index={idx}
               />
             ))}

@@ -3,36 +3,56 @@ import {
   Inject,
   Logger,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigType } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 import * as crypto from 'crypto';
+import { Prisma } from '@prisma/client';
 import paystackConfig from './config/paystack.config';
 import { PaymentsRepository } from './payments.repository';
 import { InitializePaymentDto } from './dto/initialize-payment.dto';
+import { EmailService } from '../email/email.service';
+
+interface PaymentProvider {
+  initializeTransaction(dto: InitializePaymentDto): Promise<any>;
+  verifyTransaction(reference: string): Promise<any>;
+}
 
 @Injectable()
 export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name);
+  private readonly platformFeePercent = Number(
+    process.env.PLATFORM_FEE_PERCENT || 10,
+  );
 
   constructor(
     private readonly httpService: HttpService,
     private readonly paymentsRepository: PaymentsRepository,
+    private readonly emailService: EmailService,
     @Inject(paystackConfig.KEY)
     private readonly paystackCfg: ConfigType<typeof paystackConfig>,
   ) {}
 
-  /**
-   * Initialize a Paystack transaction.
-   * Amount is converted to kobo (Paystack expects amount in smallest currency unit).
-   */
-  async initializeTransaction(dto: InitializePaymentDto) {
+  private getProvider(provider = 'PAYSTACK'): PaymentProvider {
+    if (provider !== 'PAYSTACK') {
+      throw new BadRequestException(`Unsupported provider: ${provider}`);
+    }
+    return {
+      initializeTransaction: this.initializePaystackTransaction.bind(this),
+      verifyTransaction: this.verifyPaystackTransaction.bind(this),
+    };
+  }
+
+  private async initializePaystackTransaction(dto: InitializePaymentDto) {
     const payload = {
       email: dto.email,
-      amount: Math.round(dto.amount * 100), // Convert to kobo
+      amount: Math.round(dto.amount * 100),
       ...(dto.reference && { reference: dto.reference }),
       ...(dto.callbackUrl && { callback_url: dto.callbackUrl }),
+      ...(dto.subaccount && { subaccount: dto.subaccount }),
+      ...(dto.bearer && { bearer: dto.bearer }),
     };
 
     const { data } = await firstValueFrom(
@@ -40,99 +60,397 @@ export class PaymentsService {
     );
 
     this.logger.log(`Payment initialized for ${dto.email}`);
-
     return data;
   }
 
-  /**
-   * Verify a Paystack transaction by reference.
-   */
-  async verifyTransaction(reference: string) {
+  async initializeTransaction(
+    dto: InitializePaymentDto,
+    provider = 'PAYSTACK',
+  ) {
+    return this.getProvider(provider).initializeTransaction(dto);
+  }
+
+  private async verifyPaystackTransaction(reference: string) {
     const { data } = await firstValueFrom(
       this.httpService.get(`/transaction/verify/${reference}`),
     );
-
     this.logger.log(`Payment verified: ${reference}`);
+    return data;
+  }
+
+  async verifyTransaction(reference: string, provider = 'PAYSTACK') {
+    const data = await this.getProvider(provider).verifyTransaction(reference);
+    const verifyData = data?.data;
+    const isSuccess = data?.status === true && verifyData?.status === 'success';
+
+    if (isSuccess) {
+      if (reference?.startsWith('hotsales_')) {
+        await this.paymentsRepository.markPromotionPaymentSuccessful(
+          reference,
+          verifyData?.id?.toString(),
+        );
+      }
+
+      if (reference?.startsWith('ORD_')) {
+        const transaction =
+          await this.paymentsRepository.findTransactionByReference(reference);
+        if (transaction && transaction.status !== 'SUCCESS') {
+          await this.paymentsRepository.updateTransactionStatus(
+            transaction.id,
+            'SUCCESS',
+            verifyData?.id?.toString(),
+          );
+          await this.paymentsRepository.finalizeOrderInventory(
+            transaction.order_id,
+          );
+          
+          // Trigger Order Confirmation Emails
+          this.triggerOrderEmails(transaction.order_id).catch((err) => {
+            this.logger.error(
+              `Failed to trigger order emails for order ${transaction.order_id}`,
+              err,
+            );
+          });
+        }
+      }
+    }
 
     return data;
   }
 
-  /**
-   * Handle Paystack webhook events.
-   */
-  async handleWebhook(payload: any, signature: string) {
-    // 1. Verify Paystack signature
-    if (!this.verifySignature(payload, signature)) {
+  async handleWebhook(payload: any, signature: string, rawBody?: Buffer) {
+    if (!this.verifySignature(payload, signature, rawBody)) {
       this.logger.error('Invalid Paystack signature');
       throw new BadRequestException('Invalid signature');
     }
 
     const { event, data } = payload;
+    const eventId =
+      data?.id?.toString() ??
+      data?.reference ??
+      `${event}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     this.logger.log(`Received Paystack webhook: ${event}`);
 
-    // 2. Log every webhook for transparency/debugging
-    await this.paymentsRepository.createPaymentLog(event, payload);
+    const existingLog =
+      await this.paymentsRepository.findPaymentLogByEventId(eventId);
+    if (existingLog) {
+      return { received: true, duplicate: true };
+    }
 
-    // 3. Process the event (currently focusing on charge.success)
+    await this.paymentsRepository.createPaymentLog(event, payload, eventId);
+
     if (event === 'charge.success') {
       await this.processChargeSuccess(data);
+    } else if (event === 'charge.failed') {
+      await this.processChargeFailed(data);
+    } else if (event === 'transfer.success') {
+      await this.processTransferSuccess(data);
+    } else if (event === 'transfer.failed') {
+      await this.processTransferFailed(data);
     }
 
     return { received: true };
   }
 
-  /**
-   * Verifies the HMAC-SHA512 signature from Paystack.
-   */
-  private verifySignature(payload: any, signature: string): boolean {
+  private verifySignature(
+    payload: any,
+    signature: string,
+    rawBody?: Buffer,
+  ): boolean {
+    const bodyPayload = rawBody ?? Buffer.from(JSON.stringify(payload));
     const hash = crypto
       .createHmac('sha512', this.paystackCfg.secretKey)
-      .update(JSON.stringify(payload))
+      .update(bodyPayload)
       .digest('hex');
 
     return hash === signature;
   }
 
-  /**
-   * Logic to update transaction and order when charge is successful.
-   * Idempotency is handled by checking the current transaction status.
-   */
   private async processChargeSuccess(data: any) {
     const reference = data.reference;
     const transaction =
       await this.paymentsRepository.findTransactionByReference(reference);
 
     if (!transaction) {
-      this.logger.warn(`Transaction not found for reference: ${reference}`);
+      const promotionPayment =
+        await this.paymentsRepository.findPromotionPaymentByReference(
+          reference,
+        );
+
+      if (!promotionPayment) {
+        this.logger.warn(`Transaction not found for reference: ${reference}`);
+        return;
+      }
+
+      const paidAmount = Number(data.amount || 0) / 100;
+      const requiredAmount = Number(promotionPayment.amount);
+
+      if (Math.abs(paidAmount - requiredAmount) > 0.001) {
+        this.logger.warn(
+          `Promotion payment amount mismatch for ${reference}: expected ${requiredAmount}, got ${paidAmount}`,
+        );
+        return;
+      }
+
+      await this.paymentsRepository.markPromotionPaymentSuccessful(
+        reference,
+        data.id?.toString(),
+      );
+      await this.paymentsRepository.createLedgerEntry({
+        seller_id: promotionPayment.seller_id,
+        reference: `LEDGER_PROMO_${reference}`,
+        type: 'DEBIT',
+        source_type: 'PROMOTION',
+        amount: new Prisma.Decimal(promotionPayment.amount as any),
+        description: 'Promotion payment settled',
+      });
+      this.logger.log(
+        `Promotion payment completed for reference: ${reference}`,
+      );
       return;
     }
 
-    // Idempotency: skip if already successful
     if (transaction.status === 'SUCCESS') {
       this.logger.log(`Transaction already marked as SUCCESS: ${reference}`);
       return;
     }
 
-    // Update statuses
     await this.paymentsRepository.updateTransactionStatus(
       transaction.id,
       'SUCCESS',
       data.id.toString(),
     );
 
-    await this.paymentsRepository.updateOrderStatus(
+    await this.paymentsRepository.finalizeOrderInventory(
       transaction.order_id,
-      'PAID',
     );
+    await this.createOrderSettlementRecords(transaction.id, reference);
+
+    // Trigger Order Confirmation Emails
+    this.triggerOrderEmails(transaction.order_id).catch((err) => {
+      this.logger.error(
+        `Failed to trigger order emails for order ${transaction.order_id}`,
+        err,
+      );
+    });
 
     this.logger.log(
       `Transaction and Order updated successfully for reference: ${reference}`,
     );
   }
 
-  /**
-   * Create a Paystack subaccount for a vendor.
-   */
+  private async triggerOrderEmails(orderId: bigint) {
+    const order = await this.paymentsRepository.findOrderWithDetails(orderId);
+    if (!order) return;
+
+    const items = order.items.map((item) => ({
+      title: item.product?.title || 'Unknown Product',
+      quantity: item.quantity,
+      price: item.price.toString(),
+    }));
+
+    const orderData = {
+      orderNumber: `ORD-${order.id.toString().slice(-6).toUpperCase()}`,
+      customerName: order.customer_name || order.buyer?.full_name || 'Customer',
+      items,
+      total: order.total_amount.toString(),
+      date: new Date(order.created_at).toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      }),
+    };
+
+    // 1. Send Order Confirmation to Buyer
+    if (order.buyer?.email) {
+      this.emailService.sendOrderConfirmation(order.buyer.email, orderData).catch((err) => {
+        this.logger.error(`Failed to send order confirmation to buyer: ${order.buyer?.email}`, err);
+      });
+    }
+
+    // 2. Group items by seller and send notifications
+    const sellerItemsMap = new Map<string, typeof items>();
+    const sellerEmailMap = new Map<string, string>();
+
+    for (const item of order.items) {
+      const sellerUser = item.product?.seller?.user;
+      if (!sellerUser?.email) continue;
+      
+      const sellerEmail = sellerUser.email;
+      let sellerItems = sellerItemsMap.get(sellerEmail);
+      if (!sellerItems) {
+        sellerItems = [];
+        sellerItemsMap.set(sellerEmail, sellerItems);
+        sellerEmailMap.set(sellerEmail, sellerEmail);
+      }
+      
+      sellerItems.push({
+        title: item.product?.title || 'Unknown Product',
+        quantity: item.quantity,
+        price: item.price.toString(),
+      });
+    }
+
+    for (const [email, sellerItems] of sellerItemsMap.entries()) {
+      const sellerOrderData = {
+        ...orderData,
+        items: sellerItems,
+        total: sellerItems
+          .reduce((sum, item) => sum + Number(item.price) * item.quantity, 0)
+          .toFixed(2),
+      };
+      
+      this.emailService.sendSellerOrderNotification(email, sellerOrderData).catch((err) => {
+        this.logger.error(`Failed to send order notification to seller: ${email}`, err);
+      });
+    }
+  }
+
+  private async processChargeFailed(data: any) {
+    const reference = data.reference;
+    const transaction =
+      await this.paymentsRepository.findTransactionByReference(reference);
+    if (transaction && transaction.status !== 'FAILED') {
+      await this.paymentsRepository.updateTransactionStatus(
+        transaction.id,
+        'FAILED',
+        data.id?.toString(),
+      );
+      await this.paymentsRepository.updateOrderStatus(
+        transaction.order_id,
+        'PENDING',
+      );
+    } else {
+      await this.paymentsRepository.markPromotionPaymentFailed(
+        reference,
+        data.id?.toString(),
+      );
+    }
+  }
+
+  private async processTransferSuccess(data: any) {
+    const reference = data.reference as string;
+    if (!reference?.startsWith('PAYOUT_')) return;
+    const payoutId = BigInt(reference.split('_')[1]);
+    await this.paymentsRepository.updatePayoutStatus(payoutId, 'SUCCESS', {
+      provider_ref: data.transfer_code?.toString(),
+      processed_at: new Date(),
+    });
+  }
+
+  private async processTransferFailed(data: any) {
+    const reference = data.reference as string;
+    if (!reference?.startsWith('PAYOUT_')) return;
+    const payoutId = BigInt(reference.split('_')[1]);
+    await this.paymentsRepository.updatePayoutStatus(payoutId, 'FAILED', {
+      failure_reason: data.reason || 'Transfer failed',
+      processed_at: new Date(),
+    });
+  }
+
+  private async createOrderSettlementRecords(
+    transactionId: bigint,
+    reference: string,
+  ) {
+    const transaction =
+      await this.paymentsRepository.findTransactionByReference(reference);
+    if (!transaction) return;
+    const sellerId = await this.paymentsRepository.findSellerByOrder(
+      transaction.order_id,
+    );
+    if (!sellerId) return;
+
+    const gross = new Prisma.Decimal(transaction.amount as any);
+    const fee = gross.mul(this.platformFeePercent).div(100);
+    const net = gross.sub(fee);
+
+    await this.paymentsRepository.createLedgerEntry({
+      seller_id: sellerId,
+      transaction_id: transactionId,
+      reference: `LEDGER_ORDER_CREDIT_${reference}`,
+      type: 'CREDIT',
+      source_type: 'ORDER',
+      amount: gross,
+      description: 'Order payment received',
+    });
+    await this.paymentsRepository.createLedgerEntry({
+      seller_id: sellerId,
+      transaction_id: transactionId,
+      reference: `LEDGER_FEE_${reference}`,
+      type: 'DEBIT',
+      source_type: 'FEE',
+      amount: fee,
+      description: 'Platform fee',
+    });
+
+    await this.paymentsRepository.upsertVendorBalanceSnapshot({
+      sellerId,
+      availableDelta: net,
+      earnedDelta: gross,
+    });
+
+    await this.createPayoutFromTransaction(
+      transactionId,
+      sellerId,
+      net,
+      'AUTO',
+    );
+  }
+
+  private async createPayoutFromTransaction(
+    transactionId: bigint,
+    sellerId: bigint,
+    amount: Prisma.Decimal,
+    mode: 'AUTO' | 'MANUAL',
+  ) {
+    const seller = await this.paymentsRepository.getSellerProfile(sellerId);
+    const isEligibleForAuto =
+      mode === 'AUTO' &&
+      Boolean(
+        seller?.paystack_subaccount_code &&
+        seller?.bank_code &&
+        seller?.account_number,
+      );
+
+    const payout = await this.paymentsRepository.createPayout({
+      seller_id: sellerId,
+      transaction_id: transactionId,
+      reference: `PAYOUT_TXN_${transactionId.toString()}_${Date.now()}`,
+      amount,
+      mode: isEligibleForAuto ? 'AUTO' : 'MANUAL',
+      status: isEligibleForAuto ? 'PROCESSING' : 'PENDING',
+      ...(isEligibleForAuto
+        ? {}
+        : {
+            failure_reason:
+              'Seller payout setup incomplete; queued for manual processing',
+          }),
+    });
+
+    if (isEligibleForAuto) {
+      await this.paymentsRepository.updatePayoutStatus(payout.id, 'SUCCESS', {
+        processed_at: new Date(),
+      });
+      await this.paymentsRepository.createLedgerEntry({
+        seller_id: sellerId,
+        payout_id: payout.id,
+        transaction_id: transactionId,
+        reference: `LEDGER_PAYOUT_${payout.reference}`,
+        type: 'DEBIT',
+        source_type: 'PAYOUT',
+        amount,
+        description: 'Automatic payout sent',
+      });
+      await this.paymentsRepository.upsertVendorBalanceSnapshot({
+        sellerId,
+        availableDelta: amount.negated(),
+        withdrawnDelta: amount,
+      });
+    }
+
+    return payout;
+  }
+
   async createSubaccount(sellerId: bigint) {
     const seller = await this.paymentsRepository.getSellerProfile(sellerId);
 
@@ -217,9 +535,143 @@ export class PaymentsService {
     }
   }
 
-  /**
-   * Health check — confirms Paystack config is loaded.
-   */
+  async listTransactions(params: {
+    userRole: string;
+    userId: bigint;
+    status?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    const page = params.page || 1;
+    const limit = params.limit || 20;
+    let sellerId: bigint | undefined = undefined;
+
+    if (params.userRole === 'SELLER') {
+      const seller = await this.paymentsRepository.getSellerProfileByUserId(
+        params.userId,
+      );
+      if (!seller) throw new NotFoundException('Seller profile not found');
+      sellerId = seller.id;
+    }
+
+    return this.paymentsRepository.listTransactions({
+      sellerId,
+      status: params.status,
+      page,
+      limit,
+    });
+  }
+
+  async getTransactionDetails(id: bigint) {
+    const transaction = await this.paymentsRepository.getTransactionById(id);
+    if (!transaction) throw new NotFoundException('Transaction not found');
+    return transaction;
+  }
+
+  async reconcileTransaction(id: bigint, status: string) {
+    return this.paymentsRepository.reconcileTransaction(id, status);
+  }
+
+  async listPayouts(params: {
+    userRole: string;
+    userId: bigint;
+    status?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    const page = params.page || 1;
+    const limit = params.limit || 20;
+    let sellerId: bigint | undefined = undefined;
+    if (params.userRole === 'SELLER') {
+      const seller = await this.paymentsRepository.getSellerProfileByUserId(
+        params.userId,
+      );
+      if (!seller) throw new NotFoundException('Seller profile not found');
+      sellerId = seller.id;
+    }
+    return this.paymentsRepository.listPayouts({
+      sellerId,
+      status: params.status,
+      page,
+      limit,
+    });
+  }
+
+  async retryPayout(id: bigint) {
+    const payout = await this.paymentsRepository.getPayoutById(id);
+    if (!payout) throw new NotFoundException('Payout not found');
+    return this.paymentsRepository.updatePayoutStatus(id, 'PROCESSING');
+  }
+
+  async runManualPayoutQueue() {
+    const queue = await this.paymentsRepository.listPayouts({
+      status: 'PENDING',
+      page: 1,
+      limit: 100,
+    });
+    const results = await Promise.all(
+      queue.items.map((item) =>
+        this.paymentsRepository.updatePayoutStatus(item.id, 'SUCCESS', {
+          processed_at: new Date(),
+        }),
+      ),
+    );
+    return {
+      processed: results.length,
+    };
+  }
+
+  async getUnifiedHistory(params: {
+    userRole: string;
+    userId: bigint;
+    page?: number;
+    limit?: number;
+  }) {
+    const page = params.page || 1;
+    const limit = params.limit || 20;
+    let sellerId: bigint | undefined = undefined;
+
+    if (params.userRole === 'SELLER') {
+      const seller = await this.paymentsRepository.getSellerProfileByUserId(
+        params.userId,
+      );
+      if (!seller) throw new NotFoundException('Seller profile not found');
+      sellerId = seller.id;
+    }
+    return this.paymentsRepository.listHistory({
+      sellerId,
+      page,
+      limit,
+    });
+  }
+
+  async listPromotionPayments(params: {
+    userRole: string;
+    userId: bigint;
+    status?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    const page = params.page || 1;
+    const limit = params.limit || 20;
+    let sellerId: bigint | undefined = undefined;
+
+    if (params.userRole === 'SELLER') {
+      const seller = await this.paymentsRepository.getSellerProfileByUserId(
+        params.userId,
+      );
+      if (!seller) throw new NotFoundException('Seller profile not found');
+      sellerId = seller.id;
+    }
+
+    return this.paymentsRepository.listPromotionPayments({
+      sellerId,
+      status: params.status,
+      page,
+      limit,
+    });
+  }
+
   getStatus() {
     return {
       status: 'active',

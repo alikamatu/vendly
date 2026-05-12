@@ -4,7 +4,7 @@ import {
   IsNumberString,
   IsOptional,
   IsArray,
-  ArrayMaxSize,
+  IsBooleanString,
 } from 'class-validator';
 
 export class CreateProductDto {
@@ -44,6 +44,10 @@ export class CreateProductDto {
   @IsOptional()
   @IsString({ each: true })
   tags?: string[];
+
+  @IsOptional()
+  @IsBooleanString()
+  is_featured?: string;
 
   @IsOptional()
   attributes?: string; // Will be parsed in service if sent as string

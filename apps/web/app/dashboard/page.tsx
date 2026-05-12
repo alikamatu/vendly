@@ -17,6 +17,7 @@ import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { storeApi } from "@/lib/api/store";
+import { adminApi } from "@/lib/api/admin";
 
 const IconMap: Record<string, any> = {
   ShoppingBag,
@@ -30,13 +31,29 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<{ stats: any[], recentOrders: any[] } | null>(null);
+  const [hotSalesStats, setHotSalesStats] = useState<{
+    totalSubscriptions: number;
+    successfulSubscriptions: number;
+    activeHotSalesProducts: number;
+    totalRevenueGhs: number;
+  } | null>(null);
+  const [hotSalesRows, setHotSalesRows] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchStats = async () => {
       if (!token) return;
       try {
-        const statsData = await storeApi.getStoreStats(token);
-        setData(statsData);
+        if (user?.role === "ADMIN") {
+          const [stats, rows] = await Promise.all([
+            adminApi.getHotSalesStats(token),
+            adminApi.getHotSalesSubscriptions(token, 1, 8),
+          ]);
+          setHotSalesStats(stats);
+          setHotSalesRows(rows.data || []);
+        } else {
+          const statsData = await storeApi.getStoreStats(token);
+          setData(statsData);
+        }
       } catch (err: any) {
         setError(err.message || "Failed to load dashboard metrics");
       } finally {
@@ -95,9 +112,64 @@ export default function DashboardPage() {
             <span className="text-[10px] font-black uppercase tracking-widest">Post Product</span>
           </Button>
         </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/dashboard/transactions">
+            <Button variant="secondary" size="sm" className="h-10 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest">
+              Transactions
+            </Button>
+          </Link>
+          <Link href="/dashboard/payouts">
+            <Button variant="secondary" size="sm" className="h-10 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest">
+              Payouts
+            </Button>
+          </Link>
+        </div>
       </motion.div>
 
-      {/* Stats Grid */}
+      {user?.role === "ADMIN" && hotSalesStats ? (
+        <div className="space-y-5">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { label: "Total Subscriptions", value: hotSalesStats.totalSubscriptions },
+              { label: "Successful Payments", value: hotSalesStats.successfulSubscriptions },
+              { label: "Active Hot Sales", value: hotSalesStats.activeHotSalesProducts },
+              { label: "Revenue (GHS)", value: `GH₵${hotSalesStats.totalRevenueGhs.toFixed(2)}` },
+            ].map((stat) => (
+              <Card key={stat.label} className="p-5 bg-surface/50 border-none shadow-xl shadow-black/5" hoverEffect={false}>
+                <p className="text-[10px] font-black text-muted uppercase tracking-[0.15em]">{stat.label}</p>
+                <p className="text-lg font-black mt-1 text-foreground leading-none">{stat.value}</p>
+              </Card>
+            ))}
+          </div>
+
+          <Card className="p-5 bg-surface/40 border-none shadow-xl shadow-black/5" hoverEffect={false}>
+            <h3 className="text-xs font-black uppercase tracking-widest mb-4">Hot Sales Subscriptions</h3>
+            <div className="space-y-3">
+              {hotSalesRows.length > 0 ? (
+                hotSalesRows.map((row) => (
+                  <div key={row.id} className="p-3 rounded-2xl bg-background/50 border border-border/30 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-black truncate">{row.product.title}</p>
+                      <p className="text-[9px] text-muted font-bold uppercase tracking-wider truncate">
+                        {row.seller.store_name} • {row.reference}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-[10px] font-black">GH₵{row.amount}</p>
+                      <p className="text-[9px] text-muted font-bold uppercase">{row.status}</p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-[10px] text-muted font-bold uppercase tracking-wider">
+                  No hot sales subscriptions yet.
+                </p>
+              )}
+            </div>
+          </Card>
+        </div>
+      ) : (
+      /* Stats Grid */
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {data?.stats.map((stat, idx) => {
           const Icon = IconMap[stat.icon] || Package;
@@ -126,8 +198,10 @@ export default function DashboardPage() {
           );
         })}
       </div>
+      )}
 
-      {/* Analytics & Orders */}
+      {user?.role !== "ADMIN" && (
+      /* Analytics & Orders */
       <div className="grid lg:grid-cols-3 gap-6 md:gap-8">
         <div className="lg:col-span-2 space-y-4">
            <div className="flex items-center gap-2 px-2">
@@ -197,6 +271,7 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }

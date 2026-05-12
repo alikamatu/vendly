@@ -15,12 +15,13 @@ import {
   ExternalLink,
   Search,
   Filter,
-  ChevronRight
+  ChevronRight,
+  CreditCard
 } from "lucide-react";
 import Link from "next/link";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/lib/contexts/auth-context";
 import { orderApi } from "@/lib/api/order";
 
 export default function StoreOrdersPage() {
@@ -36,6 +37,14 @@ export default function StoreOrdersPage() {
     if (token) {
       fetchOrders();
     }
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) return;
+    const interval = setInterval(() => {
+      fetchOrders();
+    }, 15000);
+    return () => clearInterval(interval);
   }, [token]);
 
   const fetchOrders = async () => {
@@ -202,9 +211,21 @@ export default function StoreOrdersPage() {
                              <Package className="w-3.5 h-3.5 text-muted" />
                            </div>
                            <div className="min-w-0">
-                             <p className="text-[9px] font-black text-muted uppercase tracking-widest leading-none mb-1">Logistics</p>
-                             <p className="text-xs font-bold uppercase tracking-tight">{order.delivery_method || "N/A"}</p>
-                             <p className="text-[10px] text-muted font-medium mt-0.5">{order.delivery_location || "No location specified"}</p>
+                             <p className="text-[9px] font-black text-muted uppercase tracking-widest leading-none mb-1">Logistics: {order.delivery_method || "N/A"}</p>
+                             <p className="text-xs font-bold">{order.delivery_location || "No location specified"}</p>
+                             {order.delivery_notes && (
+                               <p className="text-[10px] text-muted italic mt-0.5 max-w-[200px] truncate">"{order.delivery_notes}"</p>
+                             )}
+                           </div>
+                         </div>
+
+                         <div className="flex items-start gap-3">
+                           <div className={`p-2 rounded-xl border ${order.payment_info?.status === 'SUCCESS' ? 'bg-emerald-500/10 border-emerald-500/20' : order.payment_info?.status === 'FAILED' ? 'bg-red-500/10 border-red-500/20' : 'bg-orange-500/10 border-orange-500/20'}`}>
+                             <CreditCard className={`w-3.5 h-3.5 ${order.payment_info?.status === 'SUCCESS' ? 'text-emerald-500' : order.payment_info?.status === 'FAILED' ? 'text-red-500' : 'text-orange-500'}`} />
+                           </div>
+                           <div className="min-w-0">
+                             <p className="text-[9px] font-black text-muted uppercase tracking-widest leading-none mb-1">Payment: {order.payment_info?.provider || 'N/A'}</p>
+                             <p className="text-xs font-bold uppercase">{order.payment_info?.status}</p>
                            </div>
                          </div>
                        </div>

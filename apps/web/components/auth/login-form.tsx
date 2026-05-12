@@ -8,9 +8,13 @@ import Alert from '@/components/ui/Alert';
 import ProgressBar from '@/components/ui/ProgressBar';
 import { Mail, Lock } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/lib/auth-context';
+import { useAuth } from '@/lib/contexts/auth-context';
 
-export default function LoginForm() {
+interface LoginFormProps {
+  onSuccess?: () => void;
+}
+
+export default function LoginForm({ onSuccess }: LoginFormProps) {
   const { form, onSubmit, isLoading, error, clearError } = useLoginForm();
   const { user } = useAuth();
   const router = useRouter();
@@ -31,9 +35,13 @@ export default function LoginForm() {
   // Redirect after successful login
   React.useEffect(() => {
     if (user && !isLoading) {
-      router.push('/');
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push('/');
+      }
     }
-  }, [user, isLoading, router]);
+  }, [user, isLoading, router, onSuccess]);
 
   return (
     <div className="w-full">

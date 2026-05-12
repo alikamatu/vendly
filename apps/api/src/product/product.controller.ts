@@ -3,14 +3,12 @@ import {
   Post,
   Get,
   Put,
+  Patch,
   Delete,
   Body,
   UseGuards,
   UseInterceptors,
   UploadedFiles,
-  ParseFilePipe,
-  MaxFileSizeValidator,
-  FileTypeValidator,
   Request,
   Param,
   Query,
@@ -20,6 +18,7 @@ import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { ToggleHotSalesDto } from './dto/toggle-hot-sales.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/guards/roles.decorator';
@@ -65,8 +64,22 @@ export class ProductController {
     return this.productService.searchProducts(q);
   }
 
+  @Get('hot-sales/verify')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SELLER')
+  async verifyHotSalesPayment(
+    @Request() req,
+    @Query('reference') reference: string,
+    @Query('product_id') productId: string,
+  ) {
+    return this.productService.verifyHotSalesPayment(
+      BigInt(req.user.id),
+      reference,
+      BigInt(productId),
+    );
+  }
+
   @Get()
-  @UseInterceptors(CacheInterceptor)
   async getProducts(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
@@ -120,6 +133,68 @@ export class ProductController {
       files.images || [],
       files.video?.[0],
     );
+  }
+
+  @Patch(':id/hot-sales')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SELLER')
+  async toggleHotSales(
+    @Request() req,
+    @Param('id') id: string,
+    @Body() dto: ToggleHotSalesDto,
+  ) {
+    return this.productService.toggleHotSales(
+      BigInt(req.user.id),
+      BigInt(id),
+      dto.is_featured,
+    );
+  }
+
+  @Post(':id/hot-sales/initialize-payment')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SELLER')
+  async initializeHotSalesPayment(@Request() req, @Param('id') id: string) {
+    return this.productService.initializeHotSalesPayment(
+      BigInt(req.user.id),
+      BigInt(id),
+    );
+  }
+
+  @Post(':id/promotions/initialize-payment')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SELLER')
+  async initializePromotionPayment(
+    @Request() req,
+    @Param('id') id: string,
+    @Body('category') category?: string,
+  ) {
+    return this.productService.initializePromotionPayment(
+      BigInt(req.user.id),
+      BigInt(id),
+      category || 'BOOST',
+    );
+  }
+
+  @Get('promotions/verify')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SELLER')
+  async verifyPromotionPayment(
+    @Request() req,
+    @Query('reference') reference: string,
+    @Query('product_id') productId: string,
+  ) {
+    return this.productService.verifyPromotionPayment(
+      BigInt(req.user.id),
+      reference,
+      BigInt(productId),
+    );
+  }
+
+  @Get('promotions/history')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SELLER')
+  async getPromotionPaymentsHistory(@Request() req) {
+    return this.productService.getPromotionPaymentsHistory(BigInt(req.user.id));
   }
 
   @Delete(':id')

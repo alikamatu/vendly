@@ -1,36 +1,40 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  ArrowLeft, 
-  Plus, 
-  X, 
-  Image as ImageIcon, 
-  Loader2, 
-  Check, 
+import {
+  ArrowLeft,
+  Plus,
+  X,
+  Image as ImageIcon,
+  Loader2,
+  Check,
   Info,
   Tag,
   LayoutGrid,
-  ShoppingBag
+  ShoppingBag,
+  Flame
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Textarea from "@/components/ui/Textarea";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/lib/contexts/auth-context";
 import { productApi } from "@/lib/api/product";
 import imageCompression from 'browser-image-compression';
+import { createProductSchema } from "@/lib/validations/product";
 
 export default function AddProductPage() {
   const { token } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [isCompressing, setIsCompressing] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error" | "info"; text: string } | null>(null);
-  
+
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -43,6 +47,7 @@ export default function AddProductPage() {
     tagInput: "",
     tags: [] as string[],
     attributes: {} as Record<string, string>,
+    is_featured: false,
   });
 
   const [images, setImages] = useState<File[]>([]);
@@ -51,7 +56,11 @@ export default function AddProductPage() {
   const [video, setVideo] = useState<File | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
-  const [categories, setCategories] = useState<{id: string, name: string, fields: any[]}[]>([]);
+  const [categories, setCategories] = useState<{ id: string, name: string, fields: any[] }[]>([]);
+  const [existingTitles, setExistingTitles] = useState<string[]>([]);
+  const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
+  const [sellerProducts, setSellerProducts] = useState<any[]>([]);
+  const [verificationState, setVerificationState] = useState<"idle" | "verifying" | "failed">("idle");
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -59,8 +68,8 @@ export default function AddProductPage() {
         const cats = await productApi.getCategories();
         setCategories(cats);
         if (cats.length > 0) {
-          setFormData(prev => ({ 
-            ...prev, 
+          setFormData(prev => ({
+            ...prev,
             category: cats[0].name,
             attributes: (cats[0].fields || []).reduce((acc: any, field: any) => ({
               ...acc,
@@ -74,6 +83,112 @@ export default function AddProductPage() {
     };
     fetchCategories();
   }, []);
+
+  useEffect(() => {
+    const fetchSellerSuggestions = async () => {
+      if (!token) return;
+      try {
+        const products = await productApi.getSellerProducts(token);
+        setSellerProducts(products);
+        const titles = Array.from(
+          new Set(
+            products
+              .map((product: any) => String(product.title || "").trim())
+              .filter(Boolean),
+          ),
+        );
+        const tags = Array.from(
+          new Set(
+            products
+              .flatMap((product: any) => Array.isArray(product.tags) ? product.tags : [])
+              .map((tag: string) => tag.trim())
+              .filter(Boolean),
+          ),
+        );
+        setExistingTitles(titles);
+        setTagSuggestions(tags);
+      } catch (err) {
+        console.error("Failed to fetch seller product suggestions", err);
+      }
+    };
+
+    fetchSellerSuggestions();
+  }, [token]);
+
+  useEffect(() => {
+    const verifyCallback = async () => {
+      const hotSalePayment = searchParams.get("hot_sale_payment");
+      const reference = searchParams.get("reference");
+      const productId = searchParams.get("product_id");
+      if (!token || hotSalePayment !== "1" || !reference || !productId) return;
+
+      setVerificationState("verifying");
+      setMessage({ type: "info", text: "Verifying Hot Sales payment..." });
+
+      try {
+        const verifyResult = await productApi.verifyHotSalesPayment(
+          token,
+          reference,
+          productId,
+        );
+        if (verifyResult.verified) {
+          setMessage({ type: "success", text: "Payment verified. Hot Sales enabled." });
+        } else {
+          setMessage({ type: "info", text: "Payment is pending verification. Please check again shortly." });
+        }
+      } catch (err: any) {
+        setVerificationState("failed");
+        setMessage({ type: "error", text: err.message || "Failed to verify payment." });
+      } finally {
+        router.replace(pathname);
+      }
+    };
+
+    verifyCallback();
+  }, [searchParams, token, pathname, router]);
+
+  useEffect(() => {
+    return () => {
+      if (videoPreview) {
+        URL.revokeObjectURL(videoPreview);
+      }
+    };
+  }, [videoPreview]);
+
+  const selectedCategory = useMemo(
+    () => categories.find((c) => c.name === formData.category),
+    [categories, formData.category],
+  );
+
+  const recommendation = useMemo(() => {
+    const sameCategoryProducts = sellerProducts.filter(
+      (product) => product.category === formData.category,
+    );
+
+    if (sameCategoryProducts.length === 0) {
+      return null;
+    }
+
+    const prices = sameCategoryProducts
+      .map((product) => Number(product.price))
+      .filter((value) => Number.isFinite(value))
+      .sort((a, b) => a - b);
+
+    const quantities = sameCategoryProducts
+      .map((product) => Number(product.quantity_available))
+      .filter((value) => Number.isFinite(value));
+
+    const medianPrice = prices[Math.floor(prices.length / 2)] || 0;
+    const avgQuantity = quantities.length
+      ? Math.round(quantities.reduce((sum, value) => sum + value, 0) / quantities.length)
+      : 1;
+
+    return {
+      medianPrice,
+      avgQuantity,
+      topTags: tagSuggestions.slice(0, 3),
+    };
+  }, [formData.category, sellerProducts, tagSuggestions]);
 
   const handleCategoryChange = (catName: string) => {
     const selectedCat = categories.find(c => c.name === catName);
@@ -127,9 +242,9 @@ export default function AddProductPage() {
           // HEIC files sometimes show up as empty types or video/quicktime on Macs, or image/heic
           const fileName = file.name.toLowerCase();
           if (
-            fileName.endsWith('.heic') || 
-            fileName.endsWith('.heif') || 
-            file.type === 'image/heic' || 
+            fileName.endsWith('.heic') ||
+            fileName.endsWith('.heif') ||
+            file.type === 'image/heic' ||
             file.type === 'image/heif'
           ) {
             setMessage({ type: "info", text: "Converting HEIC image..." });
@@ -152,7 +267,7 @@ export default function AddProductPage() {
             type: "image/webp",
           });
           compressedFiles.push(webpFile);
-          
+
           const reader = new FileReader();
           const base64 = await new Promise<string>((resolve) => {
             reader.onloadend = () => resolve(reader.result as string);
@@ -220,12 +335,18 @@ export default function AddProductPage() {
   };
 
   const addTag = () => {
-    if (formData.tagInput.trim() && !formData.tags.includes(formData.tagInput.trim())) {
+    const normalizedTag = formData.tagInput.trim().replace(/\s+/g, " ");
+    const hasDuplicate = formData.tags.some(
+      (tag) => tag.toLowerCase() === normalizedTag.toLowerCase(),
+    );
+    if (normalizedTag && !hasDuplicate) {
       setFormData({
         ...formData,
-        tags: [...formData.tags, formData.tagInput.trim()],
+        tags: [...formData.tags, normalizedTag],
         tagInput: ""
       });
+    } else if (hasDuplicate) {
+      setMessage({ type: "info", text: "Tag already added." });
     }
   };
 
@@ -238,9 +359,39 @@ export default function AddProductPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!token) return;
+    if (!token || isLoading || isCompressing) return;
     if (images.length === 0 && !video) {
       setMessage({ type: "error", text: "Please add at least one product image or a short video" });
+      return;
+    }
+
+    const normalizedTitle = formData.title.trim().replace(/\s+/g, " ");
+    const hasDuplicateTitle = existingTitles.some(
+      (title) => title.toLowerCase() === normalizedTitle.toLowerCase(),
+    );
+    if (hasDuplicateTitle) {
+      setMessage({
+        type: "error",
+        text: "You already have a product with this title. Update the existing one or use a different title.",
+      });
+      return;
+    }
+
+    const parsed = createProductSchema.safeParse({
+      title: normalizedTitle,
+      price: formData.price,
+      quantity_available: formData.quantity_available,
+      category: formData.category,
+      condition: formData.condition,
+      status: formData.status,
+      tags: formData.tags,
+    });
+
+    if (!parsed.success) {
+      setMessage({
+        type: "error",
+        text: parsed.error.issues[0]?.message || "Please fix the highlighted product details.",
+      });
       return;
     }
 
@@ -248,10 +399,10 @@ export default function AddProductPage() {
     setMessage(null);
 
     try {
-      await productApi.createProduct(
+      const created = await productApi.createProduct(
         token,
         {
-          title: formData.title,
+          title: normalizedTitle,
           description: formData.description,
           price: formData.price,
           currency: formData.currency,
@@ -265,7 +416,18 @@ export default function AddProductPage() {
         images,
         video,
       );
-      
+
+      if (formData.is_featured && created?.product?.id) {
+        const initPayment = await productApi.initializeHotSalesPayment(
+          token,
+          created.product.id,
+        );
+        if (initPayment.checkout_url) {
+          window.location.href = initPayment.checkout_url;
+          return;
+        }
+      }
+
       setMessage({ type: "success", text: "Product added successfully!" });
       setTimeout(() => router.push("/dashboard"), 2000);
     } catch (err: any) {
@@ -277,7 +439,7 @@ export default function AddProductPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 pb-20">
-      <Link 
+      <Link
         href="/dashboard"
         className="inline-flex items-center gap-2 text-xs font-bold text-muted hover:text-foreground transition-colors group mb-2"
       >
@@ -297,7 +459,7 @@ export default function AddProductPage() {
             Product Media (Images & Video)
           </label>
           <p className="text-[10px] text-muted px-4">
-            Upload up to 3 photos and optionally 1 short video. 
+            Upload up to 3 photos and optionally 1 short video.
             <span className="text-primary/80 ml-1">Videos longer than 5s will be automatically trimmed.</span>
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-2">
@@ -307,7 +469,7 @@ export default function AddProductPage() {
               <div className="grid grid-cols-3 gap-3">
                 <AnimatePresence>
                   {previews.map((src, idx) => (
-                    <motion.div 
+                    <motion.div
                       key={idx}
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
@@ -315,7 +477,7 @@ export default function AddProductPage() {
                       className="relative group aspect-square rounded-2xl overflow-hidden border border-border"
                     >
                       <img src={src} alt="Product" className="w-full h-full object-cover" />
-                      <button 
+                      <button
                         type="button"
                         onClick={() => removeImage(idx)}
                         className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
@@ -353,12 +515,12 @@ export default function AddProductPage() {
                   )}
                 </AnimatePresence>
               </div>
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                onChange={handleFileChange} 
-                className="hidden" 
-                accept="image/*" 
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                className="hidden"
+                accept="image/*"
                 multiple
               />
             </div>
@@ -412,22 +574,28 @@ export default function AddProductPage() {
               <label className="text-[10px] font-bold text-muted uppercase tracking-widest px-1">Product Title</label>
               <div className="relative">
                 <ShoppingBag className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
-                <Input 
+                <Input
                   value={formData.title}
-                  onChange={(e) => setFormData({...formData, title: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   placeholder="Ex: iPhone 13 Case"
                   required
+                  list="product-title-suggestions"
                   className="h-12 pl-12 bg-background/50 text-xs font-bold"
                 />
+                <datalist id="product-title-suggestions">
+                  {existingTitles.slice(0, 10).map((title) => (
+                    <option key={title} value={title} />
+                  ))}
+                </datalist>
               </div>
             </div>
 
             <div className="space-y-2">
               <label className="text-[10px] font-bold text-muted uppercase tracking-widest px-1">Price (GH₵)</label>
-              <Input 
+              <Input
                 type="number"
                 value={formData.price}
-                onChange={(e) => setFormData({...formData, price: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                 placeholder="0.00"
                 required
                 className="h-12 bg-background/50 text-xs font-bold"
@@ -437,7 +605,7 @@ export default function AddProductPage() {
 
           {/* Condition, Quantity & Status */}
           <div className="grid md:grid-cols-3 gap-6">
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <label className="text-[10px] font-bold text-muted uppercase tracking-widest px-1">Condition</label>
               <select 
                 value={formData.condition}
@@ -450,22 +618,22 @@ export default function AddProductPage() {
                 <option value="used_good">Used - Good</option>
                 <option value="used_fair">Used - Fair</option>
               </select>
-            </div>
+            </div> */}
 
             <div className="space-y-2">
               <label className="text-[10px] font-bold text-muted uppercase tracking-widest px-1">Quantity</label>
-              <Input 
+              <Input
                 type="number"
                 min="1"
                 value={formData.quantity_available}
-                onChange={(e) => setFormData({...formData, quantity_available: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, quantity_available: e.target.value })}
                 placeholder="1"
                 required
                 className="h-12 bg-background/50 text-xs font-bold"
               />
             </div>
 
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <label className="text-[10px] font-bold text-muted uppercase tracking-widest px-1">Initial Status</label>
               <select 
                 value={formData.status}
@@ -476,7 +644,7 @@ export default function AddProductPage() {
                 <option value="draft">Draft (Hidden)</option>
                 <option value="active">Active (Visible)</option>
               </select>
-            </div>
+            </div> */}
           </div>
 
           {/* Category & Tags */}
@@ -485,7 +653,7 @@ export default function AddProductPage() {
               <label className="text-[10px] font-bold text-muted uppercase tracking-widest px-1">Category</label>
               <div className="relative">
                 <LayoutGrid className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
-                <select 
+                <select
                   value={formData.category}
                   onChange={(e) => handleCategoryChange(e.target.value)}
                   className="w-full h-12 pl-12 pr-4 bg-background/50 border border-border/50 rounded-2xl text-xs font-bold outline-none focus:border-primary/50 appearance-none transition-all cursor-pointer hover:bg-background/80"
@@ -495,7 +663,7 @@ export default function AddProductPage() {
                     <option key={cat.id} value={cat.name}>{cat.name}</option>
                   ))}
                   {categories.length === 0 && (
-                     <option value="" disabled>No categories available</option>
+                    <option value="" disabled>No categories available</option>
                   )}
                 </select>
               </div>
@@ -505,9 +673,9 @@ export default function AddProductPage() {
               <label className="text-[10px] font-bold text-muted uppercase tracking-widest px-1">Tags (Press Enter)</label>
               <div className="relative">
                 <Tag className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
-                <Input 
+                <Input
                   value={formData.tagInput}
-                  onChange={(e) => setFormData({...formData, tagInput: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, tagInput: e.target.value })}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
@@ -515,9 +683,29 @@ export default function AddProductPage() {
                     }
                   }}
                   placeholder="new, trending..."
+                  list="product-tag-suggestions"
                   className="h-12 pl-12 bg-background/50 text-xs font-bold"
                 />
+                <datalist id="product-tag-suggestions">
+                  {tagSuggestions.slice(0, 12).map((tag) => (
+                    <option key={tag} value={tag} />
+                  ))}
+                </datalist>
               </div>
+              {tagSuggestions.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {tagSuggestions.slice(0, 6).map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      className="px-2 py-1 rounded-full border border-border text-[9px] font-bold text-muted hover:text-foreground hover:border-primary/40"
+                      onClick={() => setFormData((prev) => ({ ...prev, tagInput: tag }))}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              )}
               <div className="flex flex-wrap gap-2 mt-2">
                 {formData.tags.map(tag => (
                   <span key={tag} className="flex items-center gap-1 px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold rounded-full">
@@ -529,50 +717,88 @@ export default function AddProductPage() {
             </div>
           </div>
 
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold text-muted uppercase tracking-widest px-1">Promotion</label>
+            <button
+              type="button"
+              onClick={() => setFormData((prev) => ({ ...prev, is_featured: !prev.is_featured }))}
+              className={`w-full h-12 px-4 rounded-2xl border text-xs font-bold flex items-center justify-between transition-all ${formData.is_featured
+                  ? "border-amber-400/40 bg-amber-500/10 text-amber-600"
+                  : "border-border/50 bg-background/50 text-muted"
+                }`}
+            >
+              <span className="inline-flex items-center gap-2">
+                <Flame className="w-4 h-4" />
+                Hot Sales Promotion (7 GHC)
+              </span>
+              <span>{formData.is_featured ? "Enabled" : "Disabled"}</span>
+            </button>
+            <p className="text-[10px] text-muted px-1">
+              Boost visibility by featuring this product in Hot Sales for 7 GHC.
+            </p>
+          </div>
+
+          {recommendation && (
+            <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-2">
+              <p className="text-[10px] font-black uppercase tracking-widest text-primary">
+                Smart Recommendations
+              </p>
+              <p className="text-[10px] text-muted">
+                Suggested price around <span className="font-bold">GH₵{recommendation.medianPrice.toFixed(2)}</span> and stock around{" "}
+                <span className="font-bold">{recommendation.avgQuantity}</span> units for {formData.category}.
+              </p>
+              {recommendation.topTags.length > 0 && (
+                <p className="text-[10px] text-muted">
+                  Popular tags: <span className="font-bold">{recommendation.topTags.join(", ")}</span>
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Dynamic Category Fields */}
-          {categories.find(c => c.name === formData.category)?.fields && (
-             <motion.div 
-               initial={{ opacity: 0, height: 0 }}
-               animate={{ opacity: 1, height: "auto" }}
-               className="grid md:grid-cols-2 gap-6 pt-2 overflow-hidden"
-             >
-               {categories.find(c => c.name === formData.category)?.fields.map((field: any) => (
-                 <div key={field.name} className="space-y-2">
-                   <label className="text-[10px] font-bold text-muted uppercase tracking-widest px-1">
-                     {field.label} {field.required && <span className="text-red-500">*</span>}
-                   </label>
-                   {field.type === "select" ? (
-                     <select 
-                       value={formData.attributes[field.name] || ""}
-                       onChange={(e) => handleAttributeChange(field.name, e.target.value)}
-                       required={field.required}
-                       className="w-full h-12 px-4 bg-background/50 border border-border/50 rounded-2xl text-xs font-bold outline-none focus:border-primary/50 appearance-none transition-all cursor-pointer hover:bg-background/80"
-                     >
-                       <option value="">Select {field.label}</option>
-                       {field.options?.map((opt: string) => (
-                         <option key={opt} value={opt}>{opt}</option>
-                       ))}
-                     </select>
-                   ) : (
-                     <Input 
-                       type={field.type || "text"}
-                       placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
-                       value={formData.attributes[field.name] || ""}
-                       onChange={(e) => handleAttributeChange(field.name, e.target.value)}
-                       required={field.required}
-                       className="h-12 bg-background/50 text-xs font-bold"
-                     />
-                   )}
-                 </div>
-               ))}
-             </motion.div>
+          {selectedCategory?.fields && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              className="grid md:grid-cols-2 gap-6 pt-2 overflow-hidden"
+            >
+              {selectedCategory.fields.map((field: any) => (
+                <div key={field.name} className="space-y-2">
+                  <label className="text-[10px] font-bold text-muted uppercase tracking-widest px-1">
+                    {field.label} {field.required && <span className="text-red-500">*</span>}
+                  </label>
+                  {field.type === "select" ? (
+                    <select
+                      value={formData.attributes[field.name] || ""}
+                      onChange={(e) => handleAttributeChange(field.name, e.target.value)}
+                      required={field.required}
+                      className="w-full h-12 px-4 bg-background/50 border border-border/50 rounded-2xl text-xs font-bold outline-none focus:border-primary/50 appearance-none transition-all cursor-pointer hover:bg-background/80"
+                    >
+                      <option value="">Select {field.label}</option>
+                      {field.options?.map((opt: string) => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <Input
+                      type={field.type || "text"}
+                      placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
+                      value={formData.attributes[field.name] || ""}
+                      onChange={(e) => handleAttributeChange(field.name, e.target.value)}
+                      required={field.required}
+                      className="h-12 bg-background/50 text-xs font-bold"
+                    />
+                  )}
+                </div>
+              ))}
+            </motion.div>
           )}
 
           <div className="space-y-2 pt-2">
             <label className="text-[10px] font-bold text-muted uppercase tracking-widest px-1">Description (Optional)</label>
-            <Textarea 
+            <Textarea
               value={formData.description}
-              onChange={(e) => setFormData({...formData, description: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Tell customers more about this item..."
               className="min-h-[120px] bg-background/50 text-xs font-medium py-4"
             />
@@ -580,29 +806,27 @@ export default function AddProductPage() {
         </Card>
 
         {message && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className={`p-4 rounded-2xl flex items-center gap-3 ${
-              message.type === "success" ? "bg-emerald-500/10 text-emerald-500" : 
-              message.type === "error" ? "bg-red-500/10 text-red-500" :
-              "bg-blue-500/10 text-blue-500"
-            }`}
+            className={`p-4 rounded-2xl flex items-center gap-3 ${message.type === "success" ? "bg-emerald-500/10 text-emerald-500" :
+                message.type === "error" ? "bg-red-500/10 text-red-500" :
+                  "bg-blue-500/10 text-blue-500"
+              }`}
           >
-            <div className={`p-1 rounded-full ${
-              message.type === "success" ? "bg-emerald-500/10" : 
-              message.type === "error" ? "bg-red-500/10" :
-              "bg-blue-500/10"
-            }`}>
-               {message.type === "success" ? <Check className="w-4 h-4" /> : <Info className="w-4 h-4" />}
+            <div className={`p-1 rounded-full ${message.type === "success" ? "bg-emerald-500/10" :
+                message.type === "error" ? "bg-red-500/10" :
+                  "bg-blue-500/10"
+              }`}>
+              {message.type === "success" ? <Check className="w-4 h-4" /> : <Info className="w-4 h-4" />}
             </div>
             <p className="text-xs font-bold">{message.text}</p>
           </motion.div>
         )}
 
-        <Button 
-          type="submit" 
-          disabled={isLoading}
+        <Button
+          type="submit"
+          disabled={isLoading || isCompressing || verificationState === "verifying"}
           className="w-full h-14 rounded-2xl font-black uppercase tracking-widest text-xs"
         >
           {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "List Product"}

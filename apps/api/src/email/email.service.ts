@@ -1,14 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Resend } from 'resend';
 import {
   getVerificationEmail,
   getPasswordResetEmail,
   getWelcomeEmail,
+  getOrderConfirmationEmail,
+  getSellerOrderAlertEmail,
 } from './email-templates';
 
 @Injectable()
 export class EmailService {
+  private readonly logger = new Logger(EmailService.name);
   private resend: Resend;
 
   constructor(private configService: ConfigService) {
@@ -67,6 +70,72 @@ export class EmailService {
       return response;
     } catch (error) {
       console.error('Failed to send password reset email:', error);
+      throw error;
+    }
+  }
+
+  async sendOrderConfirmation(to: string, orderData: any) {
+    const from = this.configService.get('RESEND_FROM_EMAIL') || 'onboarding@resend.dev';
+    try {
+      const response = await this.resend.emails.send({
+        from,
+        to,
+        subject: `Order Confirmation #${orderData.orderNumber}`,
+        html: getOrderConfirmationEmail(orderData),
+      });
+      
+      if (response.error) {
+        this.logger.error(`Resend API Error (Order Confirmation to ${to}):`, response.error);
+        
+        // Fallback attempt if custom domain fails
+        if (from !== 'onboarding@resend.dev') {
+           this.logger.log('Attempting fallback to onboarding@resend.dev...');
+           return this.resend.emails.send({
+             from: 'onboarding@resend.dev',
+             to,
+             subject: `Order Confirmation #${orderData.orderNumber}`,
+             html: getOrderConfirmationEmail(orderData),
+           });
+        }
+      }
+      
+      console.log('Order confirmation email response:', response);
+      return response;
+    } catch (error) {
+      console.error('Failed to send order confirmation email:', error);
+      throw error;
+    }
+  }
+
+  async sendSellerOrderNotification(to: string, orderData: any) {
+    const from = this.configService.get('RESEND_FROM_EMAIL') || 'onboarding@resend.dev';
+    try {
+      const response = await this.resend.emails.send({
+        from,
+        to,
+        subject: `New Order Received - #${orderData.orderNumber}`,
+        html: getSellerOrderAlertEmail(orderData),
+      });
+
+      if (response.error) {
+        this.logger.error(`Resend API Error (Seller Notification to ${to}):`, response.error);
+        
+        // Fallback attempt
+        if (from !== 'onboarding@resend.dev') {
+           this.logger.log('Attempting fallback to onboarding@resend.dev...');
+           return this.resend.emails.send({
+             from: 'onboarding@resend.dev',
+             to,
+             subject: `New Order Received - #${orderData.orderNumber}`,
+             html: getSellerOrderAlertEmail(orderData),
+           });
+        }
+      }
+
+      console.log('Seller order notification email response:', response);
+      return response;
+    } catch (error) {
+      console.error('Failed to send seller order notification email:', error);
       throw error;
     }
   }

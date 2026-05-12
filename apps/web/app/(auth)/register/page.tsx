@@ -22,7 +22,7 @@ function RegisterContent() {
               Join <span className="text-accent">Vendly</span>
             </h1>
             <p className="mt-2 text-foreground/60">
-              Create your account and start selling on campus.
+              Create your account and start selling.
             </p>
           </div>
 

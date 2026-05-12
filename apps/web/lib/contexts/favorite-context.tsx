@@ -13,10 +13,13 @@ interface FavoriteContextType {
 
 const FavoriteContext = createContext<FavoriteContextType | undefined>(undefined);
 
+import { useAuthModal } from "./auth-modal-context";
+
 export function FavoriteProvider({ children }: { children: React.ReactNode }) {
   const [favorites, setFavorites] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
+  const { openLogin } = useAuthModal();
 
   useEffect(() => {
     if (user) {
@@ -41,7 +44,15 @@ export function FavoriteProvider({ children }: { children: React.ReactNode }) {
   };
 
   const toggleFavorite = async (productId: string) => {
-    if (!user) return;
+    if (!user) {
+      openLogin({
+        message: "Log in to add items to your favorites",
+        onSuccess: () => {
+          toggleFavorite(productId);
+        }
+      });
+      return;
+    }
 
     // Optimistic update
     const isCurrentlyFavorited = favorites.includes(productId);

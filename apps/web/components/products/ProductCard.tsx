@@ -2,7 +2,7 @@
 
 import React, { useRef, useState } from "react";
 import { motion, HTMLMotionProps } from "framer-motion";
-import { ShoppingCart, ExternalLink, Check, Heart } from "lucide-react";
+import { ShoppingCart, ExternalLink, Check, Heart, Sparkles } from "lucide-react";
 import Link from "next/link";
 import Card from "@/components/ui/Card";
 import { useCart } from "@/lib/contexts/cart-context";
@@ -15,6 +15,7 @@ interface ProductCardProps {
     price: string;
     image_urls: string[];
     video_url?: string | null;
+    is_featured?: boolean;
     seller: {
       store_name: string;
       logo_url?: string;
@@ -103,22 +104,35 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                   className="w-full h-auto object-cover"
                 />
               ) : (
-                <img 
-                  src={product.image_urls?.[0] || "/placeholder-product.png"} 
+                <img
+                  src={product.image_urls?.[0] || "/placeholder-product.png"}
                   alt={product.title}
                   className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-105"
                 />
+              )}
+              {/* Promo Badge */}
+              {product.is_featured && (
+                <div className="absolute top-4 left-4 z-20">
+                  <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-600 backdrop-blur-md text-white text-[9px] font-bold uppercase tracking-widest shadow-xl shadow-primary/30"
+                  >
+                    <Sparkles size={12} className="text-white fill-current" />
+                    Hot Sale
+                  </motion.div>
+                </div>
               )}
               {/* Overlay Gradient */}
               <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </div>
           </Link>
-          
+
           {/* Quick Actions Overlay (Always visible on mobile, hover on desktop) */}
           <div className="absolute inset-x-2 bottom-2 flex items-center justify-between translate-y-0 opacity-100 md:translate-y-2 md:opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100 transition-all duration-300 pointer-events-none">
             <div className="flex gap-2">
               <motion.button
-                {...({ 
+                {...({
                   type: "button",
                   onClick: handleAddToCart,
                   whileTap: { scale: 0.92 },
@@ -135,20 +149,19 @@ export default function ProductCard({ product, index }: ProductCardProps) {
               </motion.button>
 
               <motion.button
-                {...({ 
+                {...({
                   type: "button",
                   onClick: handleToggleFavorite,
                   whileTap: { scale: 0.92 },
-                  className: `p-2.5 md:p-3 rounded-xl md:rounded-2xl backdrop-blur-md transition-all shadow-lg pointer-events-auto ${
-                    favorited ? "bg-rose-500 text-white" : "bg-white/95 text-black hover:text-rose-500"
-                  }`
+                  className: `p-2.5 md:p-3 rounded-xl md:rounded-2xl backdrop-blur-md transition-all shadow-lg pointer-events-auto ${favorited ? "bg-rose-500 text-white" : "bg-white/95 text-black hover:text-rose-500"
+                    }`
                 } as HTMLMotionProps<"button">)}
               >
                 <Heart className={`w-3 md:w-3.5 h-3 md:h-3.5 ${favorited ? "fill-current" : ""}`} />
               </motion.button>
             </div>
             <div className="pointer-events-auto">
-              <Link 
+              <Link
                 href={`/s/${product.seller.store_link}`}
                 className="flex items-center gap-1 md:gap-1.5 px-2 md:px-3 py-1.5 rounded-lg md:rounded-xl bg-black/60 md:bg-black/40 backdrop-blur-md text-white text-[8px] md:text-[9px] border border-white/10 hover:bg-black/80 transition-colors"
               >
@@ -171,16 +184,16 @@ export default function ProductCard({ product, index }: ProductCardProps) {
           </div>
 
           <div className="flex items-center gap-2 pt-1">
-             <div className="w-5 h-5 rounded-full overflow-hidden border border-border/50">
-               {product.seller.logo_url ? (
-                 <img src={product.seller.logo_url} className="w-full h-full object-cover" />
-               ) : (
-                 <div className="w-full h-full flex items-center justify-center text-[8px] font-bold uppercase">
-                    {product.seller.store_name[0]}
-                 </div>
-               )}
-             </div>
-             <p className="text-[10px] text-muted truncate">@{product.seller.store_link}</p>
+            <div className="w-5 h-5 rounded-full overflow-hidden border border-border/50">
+              {product.seller.logo_url ? (
+                <img src={product.seller.logo_url} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-[8px] font-bold uppercase">
+                  {product.seller.store_name[0]}
+                </div>
+              )}
+            </div>
+            <p className="text-[10px] text-muted truncate">@{product.seller.store_link}</p>
           </div>
         </div>
       </Card>

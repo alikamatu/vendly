@@ -72,4 +72,36 @@ export const orderApi = {
 
     return handleResponse<any>(response);
   },
+
+  async verifyOrderPayment(
+    token: string,
+    reference: string,
+    orderId: string,
+  ) {
+    const response = await fetch(
+      `${API_URL}/orders/verify/payment?reference=${encodeURIComponent(reference)}&order_id=${encodeURIComponent(orderId)}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+    return handleResponse<{
+      verified: boolean;
+      payment_status: string;
+      order_status: string;
+    }>(response);
+  },
+  
+  async retryPayment(token: string, orderId: string) {
+    const response = await fetch(`${API_URL}/orders/${orderId}/retry-payment`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    return handleResponse<{ authorization_url: string; reference: string }>(response);
+  },
 };

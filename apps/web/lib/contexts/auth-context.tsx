@@ -23,6 +23,7 @@ export interface User {
     business_hours: string | null;
     whatsapp_number: string | null;
     social_links: any | null;
+    onboarding_completed: boolean;
   } | null;
 }
 

@@ -3,7 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Sun, Moon } from 'lucide-react';
-import { useTheme } from '@/lib/theme';
+import { useTheme } from '@/lib/contexts/theme';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   const { theme, setTheme } = useTheme();

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Filter, X, ChevronDown, Tag, CreditCard, SortAsc, LayoutGrid } from "lucide-react";
+import { Filter, X, Tag, CreditCard, SortAsc, LayoutGrid } from "lucide-react";
 import Button from "../ui/Button";
 import Portal from "../common/Portal";
 
@@ -93,7 +93,7 @@ export default function ProductFilters({
           onClick={() => onCategoryChange(null)}
           className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border ${
             currentCategory === null 
-              ? "bg-primary text-white border-primary shadow-lg shadow-primary/20" 
+              ? "bg-primary text-red-500 border-primary shadow-lg shadow-primary/20" 
               : "bg-surface text-muted border-border/50 hover:border-primary/30"
           }`}
         >
@@ -105,7 +105,7 @@ export default function ProductFilters({
             onClick={() => onCategoryChange(cat.name)}
             className={`px-6 py-3 rounded-2xl text-[10px] uppercase tracking-widest transition-all whitespace-nowrap border ${
               currentCategory === cat.name
-                ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
+                ? "bg-primary text-red-500 border-primary shadow-lg shadow-primary/20"
                 : "bg-surface text-muted border-border/50 hover:border-primary/30"
             }`}
           >

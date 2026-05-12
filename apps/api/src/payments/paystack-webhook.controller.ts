@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Headers, Logger } from '@nestjs/common';
+import { Controller, Post, Body, Headers, Logger, Req } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 
 @Controller('webhooks')
@@ -14,10 +14,11 @@ export class PaystackWebhookController {
    */
   @Post('paystack')
   async handlePaystackWebhook(
+    @Req() req: any,
     @Body() payload: any,
     @Headers('x-paystack-signature') signature: string,
   ) {
     this.logger.log('Paystack webhook received');
-    return this.paymentsService.handleWebhook(payload, signature);
+    return this.paymentsService.handleWebhook(payload, signature, req.rawBody);
   }
 }
