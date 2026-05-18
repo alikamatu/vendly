@@ -39,7 +39,7 @@ export class OrderController {
     @Query('order_id') orderId: string,
   ) {
     return this.orderService.verifyOrderPayment(
-      BigInt(req.user.id),
+      req.user.id,
       reference,
       orderId,
     );
@@ -61,6 +61,6 @@ export class OrderController {
 
   @Post(':id/retry-payment')
   async retryPayment(@Req() req: any, @Param('id') id: string) {
-    return this.orderService.reinitializeOrderPayment(BigInt(req.user.id), id);
+    return this.orderService.reinitializeOrderPayment(req.user.id, id);
   }
 }

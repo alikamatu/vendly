@@ -2,7 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
-import * as compression from 'compression';
+import compression from 'compression';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 
 // BigInt serialization support

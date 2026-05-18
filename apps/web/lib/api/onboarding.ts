@@ -17,6 +17,15 @@ function authHeaders(token: string) {
   };
 }
 
+export type ServiceArea = 'SAME_CITY' | 'NEARBY_STATES' | 'NATIONWIDE';
+
+export type DeliveryTime =
+  | 'SAME_DAY'
+  | 'NEXT_DAY'
+  | 'TWO_TO_THREE_DAYS'
+  | 'FOUR_TO_SEVEN_DAYS'
+  | 'MORE_THAN_ONE_WEEK';
+
 export interface OnboardingStatus {
   store_profile_completed: boolean;
   location_set: boolean;
@@ -30,6 +39,8 @@ export interface OnboardingStatus {
     location_id: string | null;
     location: { id: string; region: string; city: string } | null;
     area: string | null;
+    service_area: ServiceArea | null;
+    avg_delivery_time: DeliveryTime | null;
     accepted_payment_methods: string[];
     payment_timing: string | null;
   };
@@ -65,10 +76,12 @@ export const onboardingApi = {
   },
 
   async completeLocation(token: string, data: {
-    location_id: number;
+    location_id: string;
     area?: string;
     latitude?: number;
     longitude?: number;
+    service_area: ServiceArea;
+    avg_delivery_time: DeliveryTime;
   }) {
     const res = await fetch(`${API_URL}/onboarding/location`, {
       method: 'PATCH',

@@ -18,6 +18,7 @@ import Card from "@/components/ui/Card";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { storeApi } from "@/lib/api/store";
 import { adminApi } from "@/lib/api/admin";
+import ProFeaturesSection from "@/components/dashboard/ProFeaturesSection";
 
 const IconMap: Record<string, any> = {
   ShoppingBag,
@@ -199,6 +200,8 @@ export default function DashboardPage() {
         })}
       </div>
       )}
+
+      {user?.role === "SELLER" && <ProFeaturesSection />}
 
       {user?.role !== "ADMIN" && (
       /* Analytics & Orders */

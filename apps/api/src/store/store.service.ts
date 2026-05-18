@@ -16,7 +16,7 @@ export class StoreService {
   ) {}
 
   async createStore(
-    userId: bigint,
+    userId: string,
     dto: CreateStoreDto,
     logoFile?: Express.Multer.File,
   ) {
@@ -74,7 +74,7 @@ export class StoreService {
     };
   }
 
-  async updateStore(userId: bigint, dto: any, logoFile?: Express.Multer.File) {
+  async updateStore(userId: string, dto: any, logoFile?: Express.Multer.File) {
     const store = await this.prisma.sellerProfile.findUnique({
       where: { user_id: userId },
     });
@@ -123,7 +123,7 @@ export class StoreService {
     };
   }
 
-  async getStoreStats(userId: bigint) {
+  async getStoreStats(userId: string) {
     const store = await this.prisma.sellerProfile.findUnique({
       where: { user_id: userId },
     });
@@ -226,14 +226,65 @@ export class StoreService {
     };
   }
 
+  async getTopProVendors(limit = 6) {
+    const now = new Date();
+    const stores = await this.prisma.sellerProfile.findMany({
+      where: {
+        user: {
+          is_pro: true,
+          OR: [
+            { pro_expires_at: null },
+            { pro_expires_at: { gt: now } },
+          ],
+        },
+      },
+      include: {
+        _count: { select: { products: true } },
+      },
+      orderBy: {
+        products: { _count: 'desc' },
+      },
+      take: limit,
+    });
+
+    return stores.map((s) => ({
+      id: s.id,
+      store_name: s.store_name,
+      store_link: s.store_link,
+      logo_url: s.logo_url,
+      bio: s.bio,
+      location: s.location,
+      products_count: s._count.products,
+      is_pro: true,
+    }));
+  }
+
   async getStoreByLink(link: string) {
     const store = await this.prisma.sellerProfile.findUnique({
       where: { store_link: link },
+      include: {
+        user: {
+          select: {
+            is_pro: true,
+            pro_expires_at: true,
+            is_verified: true,
+            created_at: true,
+          },
+        },
+        _count: {
+          select: { products: true },
+        },
+      },
     });
 
     if (!store) {
       throw new NotFoundException('Store not found');
     }
+
+    const now = new Date();
+    const proActive =
+      !!store.user?.is_pro &&
+      (!store.user.pro_expires_at || store.user.pro_expires_at > now);
 
     return {
       id: store.id.toString(),
@@ -243,11 +294,19 @@ export class StoreService {
       bio: store.bio,
       whatsapp_number: store.whatsapp_number,
       location: store.location,
+      area: store.area,
       delivery_policies: store.delivery_policies,
       business_hours: store.business_hours,
       social_links: store.social_links,
       payment_timing: store.payment_timing,
       accepted_payment_methods: store.accepted_payment_methods,
+      service_area: store.service_area,
+      avg_delivery_time: store.avg_delivery_time,
+      is_pro: proActive,
+      pro_expires_at: store.user?.pro_expires_at ?? null,
+      is_verified: store.user?.is_verified ?? false,
+      member_since: store.user?.created_at ?? store.created_at,
+      products_count: store._count.products,
     };
   }
 }

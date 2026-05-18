@@ -144,7 +144,8 @@ const baseTemplate = (content: string, title?: string) => `
 `;
 
 export const getWelcomeEmail = (name: string) =>
-  baseTemplate(`
+  baseTemplate(
+    `
   <div style="text-align: center;">
     <h1>Welcome to Vendly, ${name}!</h1>
     <p style="font-size: 16px; color: #4b5563;">Step into the future of unified commerce. We're excited to help you streamline your sales and reach more customers.</p>
@@ -160,27 +161,35 @@ export const getWelcomeEmail = (name: string) =>
       </ul>
     </div>
   </div>
-`, 'Welcome to Vendly');
+`,
+    'Welcome to Vendly',
+  );
 
 export const getVerificationEmail = (url: string) =>
-  baseTemplate(`
+  baseTemplate(
+    `
   <h1>Verify your email</h1>
   <p>To ensure the security of your commerce gateway, please confirm your email address by clicking the button below.</p>
   <div style="margin: 32px 0;">
     <a href="${url}" class="button">Verify Email Address</a>
   </div>
   <p style="font-size: 14px; color: #6b7280;">This link will expire in 24 hours. If you didn't create an account, you can safely ignore this email.</p>
-`, 'Verify your email');
+`,
+    'Verify your email',
+  );
 
 export const getPasswordResetEmail = (url: string) =>
-  baseTemplate(`
+  baseTemplate(
+    `
   <h1>Reset your password</h1>
   <p>We received a request to reset the password for your Vendly account. Access the secure link below to set a new one.</p>
   <div style="margin: 32px 0;">
     <a href="${url}" class="button">Set New Password</a>
   </div>
   <p style="font-size: 14px; color: #6b7280;">This secure link is valid for 1 hour. If you did not request this, please contact support immediately.</p>
-`, 'Reset your password');
+`,
+    'Reset your password',
+  );
 
 export const getOrderConfirmationEmail = (orderData: {
   orderNumber: string;
@@ -189,7 +198,8 @@ export const getOrderConfirmationEmail = (orderData: {
   total: string;
   date: string;
 }) =>
-  baseTemplate(`
+  baseTemplate(
+    `
   <div style="margin-bottom: 24px;">
     <div class="status-badge">Order Confirmed</div>
     <h1 style="margin-top: 12px;">Thank you for your order, ${orderData.customerName}!</h1>
@@ -218,13 +228,17 @@ export const getOrderConfirmationEmail = (orderData: {
       </tr>
     </thead>
     <tbody>
-      ${orderData.items.map(item => `
+      ${orderData.items
+        .map(
+          (item) => `
         <tr>
           <td style="font-size: 14px; font-weight: 600;">${item.title}</td>
           <td align="center" style="font-size: 14px;">${item.quantity}</td>
           <td align="right" style="font-size: 14px; font-weight: 700;">₵${item.price}</td>
         </tr>
-      `).join('')}
+      `,
+        )
+        .join('')}
     </tbody>
   </table>
 
@@ -238,7 +252,9 @@ export const getOrderConfirmationEmail = (orderData: {
   <div style="margin-top: 40px; text-align: center;">
     <a href="https://vendly.vercel.app/orders" class="button">View Order Details</a>
   </div>
-`, 'Order Confirmation - Vendly');
+`,
+    'Order Confirmation - Vendly',
+  );
 
 export const getSellerOrderAlertEmail = (orderData: {
   orderNumber: string;
@@ -247,7 +263,8 @@ export const getSellerOrderAlertEmail = (orderData: {
   customerName: string;
   date: string;
 }) =>
-  baseTemplate(`
+  baseTemplate(
+    `
   <div style="margin-bottom: 24px;">
     <div class="status-badge" style="background-color: #ecfcfd; color: #0891b2;">New Sale!</div>
     <h1 style="margin-top: 12px;">You've made a sale!</h1>
@@ -270,13 +287,17 @@ export const getSellerOrderAlertEmail = (orderData: {
       </tr>
     </thead>
     <tbody>
-      ${orderData.items.map(item => `
+      ${orderData.items
+        .map(
+          (item) => `
         <tr>
           <td style="font-size: 14px; font-weight: 600;">${item.title}</td>
           <td align="center" style="font-size: 14px;">${item.quantity}</td>
           <td align="right" style="font-size: 14px; font-weight: 700;">₵${item.price}</td>
         </tr>
-      `).join('')}
+      `,
+        )
+        .join('')}
     </tbody>
   </table>
 
@@ -290,4 +311,6 @@ export const getSellerOrderAlertEmail = (orderData: {
   <div style="margin-top: 40px; text-align: center;">
     <a href="https://vendly.vercel.app/dashboard" class="button" style="background-color: #0369a1;">Process Order</a>
   </div>
-`, 'You have a new order! - Vendly');
+`,
+    'You have a new order! - Vendly',
+  );

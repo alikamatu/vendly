@@ -38,7 +38,7 @@ export default function DashboardHeader({
   const isSeller = user?.role === "SELLER";
 
   return (
-    <header className="sticky top-0 z-30 flex h-20 items-center justify-between border-b border-border bg-background/80 px-4 md:px-8 backdrop-blur-md">
+    <header className="sticky top-0 z-30 flex h-20 items-center justify-between border-b border-border bg-background px-4 md:px-8">
       <div className="flex items-center gap-4">
         {isSeller && (
           <button
@@ -99,7 +99,7 @@ export default function DashboardHeader({
             user.role !== "ADMIN" &&
             user?.approval_status !== "APPROVED" && (
               <Link href="/seller-verification">
-                <button className="ml-2 px-4 py-2 bg-primary text-primary text-[10px] uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
+                <button className="ml-2 px-4 py-2 bg-red-500 text-white text-[10px] uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
                   Become a Seller
                 </button>
               </Link>

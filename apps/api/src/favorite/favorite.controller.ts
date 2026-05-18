@@ -17,18 +17,18 @@ export class FavoriteController {
   @Post(':productId')
   toggleFavorite(@Request() req: any, @Param('productId') productId: string) {
     return this.favoriteService.toggleFavorite(
-      BigInt(req.user.id),
-      BigInt(productId),
+      req.user.id,
+      productId,
     );
   }
 
   @Get()
   getFavorites(@Request() req: any) {
-    return this.favoriteService.getFavorites(BigInt(req.user.id));
+    return this.favoriteService.getFavorites(req.user.id);
   }
 
   @Get('ids')
   getFavoriteIds(@Request() req: any) {
-    return this.favoriteService.getFavoriteIds(BigInt(req.user.id));
+    return this.favoriteService.getFavoriteIds(req.user.id);
   }
 }

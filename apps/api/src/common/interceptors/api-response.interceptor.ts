@@ -55,7 +55,7 @@ export class ApiResponseInterceptor<T> implements NestInterceptor<
     if (obj === null || obj === undefined) return obj;
 
     // Handle BigInt
-    if (typeof obj === 'bigint') {
+    if (typeof obj === 'string') {
       return obj.toString();
     }
 

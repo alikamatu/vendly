@@ -14,6 +14,10 @@ import { OrderModule } from './order/order.module';
 import { FavoriteModule } from './favorite/favorite.module';
 import { PaymentsModule } from './payments/payments.module';
 import { OnboardingModule } from './onboarding/onboarding.module';
+import { CategoryModule } from './category/category.module';
+import { BrandModule } from './brand/brand.module';
+import { SettingsModule } from './settings/settings.module';
+import { SubscriptionModule } from './subscription/subscription.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ApiResponseInterceptor } from './common/interceptors/api-response.interceptor';
 
@@ -42,6 +46,10 @@ import { ApiResponseInterceptor } from './common/interceptors/api-response.inter
     FavoriteModule,
     PaymentsModule,
     OnboardingModule,
+    CategoryModule,
+    BrandModule,
+    SettingsModule,
+    SubscriptionModule,
   ],
   controllers: [AppController],
   providers: [

@@ -148,7 +148,7 @@ export class AdminService {
     };
   }
 
-  async updateUserRole(id: bigint, dto: UpdateUserRoleDto) {
+  async updateUserRole(id: string, dto: UpdateUserRoleDto) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new NotFoundException('User not found');
 
@@ -160,7 +160,7 @@ export class AdminService {
     return { message: `User role updated to ${dto.role}` };
   }
 
-  async toggleUserSuspension(id: bigint, dto: ToggleSuspensionDto) {
+  async toggleUserSuspension(id: string, dto: ToggleSuspensionDto) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new NotFoundException('User not found');
 
@@ -175,7 +175,7 @@ export class AdminService {
     };
   }
 
-  async warnUser(id: bigint, dto: WarnUserDto) {
+  async warnUser(id: string, dto: WarnUserDto) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new NotFoundException('User not found');
 
@@ -190,7 +190,7 @@ export class AdminService {
     };
   }
 
-  async deleteUser(id: bigint) {
+  async deleteUser(id: string) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new NotFoundException('User not found');
 
@@ -381,8 +381,8 @@ export class AdminService {
   }
 
   async approveOrReject(
-    approvalId: bigint,
-    adminId: bigint,
+    approvalId: string,
+    adminId: string,
     dto: ApproveVerificationDto,
   ) {
     const approval = await this.prisma.adminApproval.findUnique({
@@ -443,7 +443,7 @@ export class AdminService {
     };
   }
 
-  async getApprovalById(id: bigint) {
+  async getApprovalById(id: string) {
     const approval = await this.prisma.adminApproval.findUnique({
       where: { id },
       include: {
@@ -490,7 +490,7 @@ export class AdminService {
     };
   }
 
-  async getUserById(id: bigint) {
+  async getUserById(id: string) {
     const user = await this.prisma.user.findUnique({
       where: { id },
       select: {

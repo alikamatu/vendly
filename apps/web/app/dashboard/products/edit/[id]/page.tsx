@@ -42,11 +42,13 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     title: "",
     description: "",
     price: "",
+    original_price: "",
     currency: "GHS",
     condition: "new",
     quantity_available: "1",
     status: "draft",
     category: "",
+    brand: "",
     tagInput: "",
     tags: [] as string[],
     attributes: {} as Record<string, string>,
@@ -64,6 +66,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   const videoInputRef = useRef<HTMLInputElement>(null);
   
   const [categories, setCategories] = useState<{id: string, name: string, fields: any[]}[]>([]);
+  const [categoryBrands, setCategoryBrands] = useState<any[]>([]);
   const [existingTitles, setExistingTitles] = useState<string[]>([]);
   const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
   const [verificationState, setVerificationState] = useState<"idle" | "verifying" | "failed">("idle");
@@ -83,11 +86,13 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           title: product.title,
           description: product.description || "",
           price: product.price.toString(),
+          original_price: product.original_price != null ? String(product.original_price) : "",
           currency: product.currency || "GHS",
           condition: product.condition || "new",
           quantity_available: product.quantity_available.toString(),
           status: product.status,
           category: product.category,
+          brand: product.brand || "",
           tagInput: "",
           tags: product.tags || [],
           attributes: product.attributes || {},
@@ -141,6 +146,31 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
 
     verifyCallback();
   }, [searchParams, token, id, pathname, router]);
+
+  useEffect(() => {
+    if (!formData.category) {
+      setCategoryBrands([]);
+      return;
+    }
+    const cat = categories.find((c) => c.name === formData.category);
+    if (!cat) {
+      productApi.getBrands(formData.category)
+        .then((brs) => {
+          setCategoryBrands(brs);
+        })
+        .catch(() => {
+          setCategoryBrands([]);
+        });
+      return;
+    }
+    productApi.getBrands(undefined, cat.id)
+      .then((brs) => {
+        setCategoryBrands(brs);
+      })
+      .catch(() => {
+        setCategoryBrands([]);
+      });
+  }, [formData.category, categories]);
 
   useEffect(() => {
     const fetchSellerSuggestions = async () => {
@@ -197,6 +227,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     setFormData({
       ...formData,
       category: catName,
+      brand: "",
       attributes: newAttributes
     });
   };
@@ -379,6 +410,17 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     setIsLoading(true);
     setMessage(null);
 
+    // Validate discount: original must be greater than price if provided
+    if (formData.original_price) {
+      const orig = parseFloat(formData.original_price);
+      const cur = parseFloat(formData.price);
+      if (Number.isFinite(orig) && Number.isFinite(cur) && orig <= cur) {
+        setIsLoading(false);
+        setMessage({ type: "error", text: "Original price must be greater than the current price." });
+        return;
+      }
+    }
+
     try {
       await productApi.updateProduct(
         token,
@@ -387,11 +429,13 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           title: formData.title,
           description: formData.description,
           price: formData.price,
+          original_price: formData.original_price,
           currency: formData.currency,
           condition: formData.condition,
           quantity_available: formData.quantity_available,
           status: formData.status,
           category: formData.category,
+          brand: formData.brand || undefined,
           tags: formData.tags,
           attributes: formData.attributes,
         },
@@ -575,7 +619,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
 
             <div className="space-y-2">
               <label className="text-[10px] font-bold text-muted uppercase tracking-widest px-1">Price (GH₵)</label>
-              <Input 
+              <Input
                 type="number"
                 value={formData.price}
                 onChange={(e) => setFormData({...formData, price: e.target.value})}
@@ -583,6 +627,41 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                 required
                 className="h-12 bg-background/50 text-xs font-bold"
               />
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-muted uppercase tracking-widest px-1">
+                Original Price (GH₵) <span className="opacity-60">— optional</span>
+              </label>
+              <Input
+                type="number"
+                value={formData.original_price}
+                onChange={(e) => setFormData({...formData, original_price: e.target.value})}
+                placeholder="0.00"
+                className="h-12 bg-background/50 text-xs font-bold"
+              />
+              {(() => {
+                const orig = parseFloat(formData.original_price);
+                const cur = parseFloat(formData.price);
+                if (!Number.isFinite(orig) || !Number.isFinite(cur) || orig <= cur || orig <= 0) {
+                  return (
+                    <p className="text-[10px] text-muted px-1">
+                      Set higher than price to display a discount on this product.
+                    </p>
+                  );
+                }
+                const pct = Math.round(((orig - cur) / orig) * 100);
+                return (
+                  <p className="text-[10px] px-1 inline-flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 font-bold">
+                      −{pct}%
+                    </span>
+                    <span className="text-muted">Buyers save GH₵{(orig - cur).toFixed(2)}</span>
+                  </p>
+                );
+              })()}
             </div>
           </div>
 
@@ -627,20 +706,38 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-muted uppercase tracking-widest px-1">Category</label>
-              <div className="relative">
-                <LayoutGrid className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
-                <select 
-                  value={formData.category}
-                  onChange={(e) => handleCategoryChange(e.target.value)}
-                  className="w-full h-12 pl-12 pr-4 bg-background/50 border border-border/50 rounded-2xl text-xs font-bold outline-none appearance-none"
-                >
-                  {categories.map(cat => (
-                    <option key={cat.id} value={cat.name}>{cat.name}</option>
-                  ))}
-                </select>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-muted uppercase tracking-widest px-1">Category</label>
+                <div className="relative">
+                  <LayoutGrid className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+                  <select 
+                    value={formData.category}
+                    onChange={(e) => handleCategoryChange(e.target.value)}
+                    className="w-full h-12 pl-12 pr-4 bg-background/50 border border-border/50 rounded-2xl text-xs font-bold outline-none appearance-none"
+                  >
+                    {categories.map(cat => (
+                      <option key={cat.id} value={cat.name}>{cat.name}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
+
+              {categoryBrands.length > 0 && (
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-muted uppercase tracking-widest px-1">Brand</label>
+                  <select 
+                    value={formData.brand}
+                    onChange={(e) => setFormData({...formData, brand: e.target.value})}
+                    className="w-full h-12 px-4 bg-background/50 border border-border/50 rounded-2xl text-xs font-bold outline-none"
+                  >
+                    <option value="">Select Brand (Optional)</option>
+                    {categoryBrands.map(b => (
+                      <option key={b.id} value={b.name}>{b.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">

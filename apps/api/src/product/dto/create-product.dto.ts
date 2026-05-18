@@ -36,6 +36,10 @@ export class CreateProductDto {
   @IsNotEmpty()
   price: string;
 
+  @IsNumberString()
+  @IsOptional()
+  original_price?: string;
+
   @IsString()
   @IsNotEmpty()
   category: string;
@@ -48,6 +52,10 @@ export class CreateProductDto {
   @IsOptional()
   @IsBooleanString()
   is_featured?: string;
+
+  @IsString()
+  @IsOptional()
+  brand?: string;
 
   @IsOptional()
   attributes?: string; // Will be parsed in service if sent as string

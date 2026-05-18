@@ -43,7 +43,7 @@ export class ProductService {
   ) {}
 
   async createProduct(
-    userId: bigint,
+    userId: string,
     dto: CreateProductDto,
     images: Express.Multer.File[],
     video?: Express.Multer.File,
@@ -145,13 +145,31 @@ export class ProductService {
       }
     }
 
-    // 6. Create product
+    // 6. Validate & normalize original_price
+    let originalPriceCreate: Decimal | null | undefined = undefined;
+    if (dto.original_price !== undefined) {
+      if (dto.original_price === '' || dto.original_price === null) {
+        originalPriceCreate = null;
+      } else {
+        const op = new Decimal(dto.original_price);
+        const pr = new Decimal(dto.price);
+        if (op.lessThanOrEqualTo(pr)) {
+          throw new BadRequestException(
+            'original_price must be greater than price',
+          );
+        }
+        originalPriceCreate = op;
+      }
+    }
+
+    // 7. Create product
     const product = await this.prisma.product.create({
       data: {
         seller_id: seller.id,
         title: normalizedTitle,
         description: dto.description,
         price: new Decimal(dto.price) as any,
+        original_price: originalPriceCreate as any,
         currency: dto.currency || 'GHS',
         condition: dto.condition || 'new',
         quantity_available: dto.quantity_available
@@ -159,6 +177,7 @@ export class ProductService {
           : 1,
         status: dto.status || 'draft',
         category: dto.category,
+        brand: dto.brand,
         image_urls,
         video_url,
         tags: normalizedTags,
@@ -183,20 +202,178 @@ export class ProductService {
       page?: number;
       limit?: number;
       category?: string;
-      sellerId?: string | bigint;
+      sellerId?: string | string;
       status?: string;
+      minDiscount?: number;
+      search?: string;
+      brand?: string;
+      minPrice?: number;
+      maxPrice?: number;
+      condition?: string;
+      hasVideo?: boolean;
+      inStock?: boolean;
+      isFeatured?: boolean;
+      region?: string;
+      cityId?: string;
+      serviceArea?: 'SAME_CITY' | 'NEARBY_STATES' | 'NATIONWIDE';
+      avgDeliveryTime?:
+        | 'SAME_DAY'
+        | 'NEXT_DAY'
+        | 'TWO_TO_THREE_DAYS'
+        | 'FOUR_TO_SEVEN_DAYS'
+        | 'MORE_THAN_ONE_WEEK';
+      sort?:
+        | 'newest'
+        | 'oldest'
+        | 'price_asc'
+        | 'price_desc'
+        | 'popular'
+        | 'discount_desc';
     } = {},
   ) {
-    const { page = 1, limit = 20, category, sellerId, status } = params;
+    const {
+      page = 1,
+      limit = 20,
+      category,
+      sellerId,
+      status,
+      search,
+      brand,
+      minPrice,
+      maxPrice,
+      condition,
+      hasVideo,
+      inStock,
+      isFeatured,
+      region,
+      cityId,
+      serviceArea,
+      avgDeliveryTime,
+      sort = 'newest',
+    } = params;
+    let { minDiscount } = params;
     const skip = (page - 1) * limit;
 
     const where: Prisma.ProductWhereInput = {
       ...(category && { category }),
-      ...(sellerId && { seller_id: BigInt(sellerId) }),
+      ...(sellerId && { seller_id: sellerId }),
       ...(status
         ? { status }
         : { status: { in: ['published', 'active', 'draft'] } }),
+      ...(brand && { brand }),
+      ...(condition && { condition }),
+      ...(hasVideo === true && { video_url: { not: null } }),
+      ...(inStock === true && { quantity_available: { gt: 0 } }),
+      ...(typeof isFeatured === 'boolean' && { is_featured: isFeatured }),
     };
+
+    // Seller-scoped filters (region, city, service area, delivery time)
+    const sellerFilter: Prisma.SellerProfileWhereInput = {};
+    if (cityId) {
+      sellerFilter.location_id = cityId;
+    }
+    if (region) {
+      sellerFilter.structured_location = { region };
+    }
+    if (serviceArea) {
+      sellerFilter.service_area = serviceArea as any;
+    }
+    if (avgDeliveryTime) {
+      sellerFilter.avg_delivery_time = avgDeliveryTime as any;
+    }
+    if (Object.keys(sellerFilter).length > 0) {
+      where.seller = sellerFilter;
+    }
+
+    if (typeof minPrice === 'number' || typeof maxPrice === 'number') {
+      const priceFilter: Prisma.DecimalFilter = {};
+      if (typeof minPrice === 'number' && !Number.isNaN(minPrice)) {
+        priceFilter.gte = new Decimal(minPrice) as any;
+      }
+      if (typeof maxPrice === 'number' && !Number.isNaN(maxPrice)) {
+        priceFilter.lte = new Decimal(maxPrice) as any;
+      }
+      if (Object.keys(priceFilter).length > 0) {
+        where.price = priceFilter;
+      }
+    }
+
+    if (search && search.trim().length > 0) {
+      const term = search.trim();
+      const tokens = term
+        .split(/\s+/)
+        .map((t) => t.toLowerCase())
+        .filter(Boolean);
+      const or: Prisma.ProductWhereInput[] = [
+        { title: { contains: term, mode: 'insensitive' } },
+        { description: { contains: term, mode: 'insensitive' } },
+        { tags: { has: term.toLowerCase() } },
+      ];
+      if (tokens.length > 0) {
+        or.push({ tags: { hasSome: tokens } });
+      }
+      where.OR = or;
+    }
+
+    if (sort === 'discount_desc') {
+      const threshold =
+        typeof minDiscount === 'number' && !Number.isNaN(minDiscount)
+          ? Math.max(minDiscount, 0.01)
+          : 0.01;
+      minDiscount = threshold;
+    }
+
+    const hasDiscountFilter =
+      typeof minDiscount === 'number' &&
+      !Number.isNaN(minDiscount) &&
+      minDiscount > 0;
+
+    if (hasDiscountFilter) {
+      const allMatching = await this.prisma.product.findMany({
+        where: { ...where, original_price: { not: null } },
+        include: {
+          seller: {
+            select: {
+              store_name: true,
+              logo_url: true,
+              store_link: true,
+            },
+          },
+        },
+        orderBy: this.resolveOrderBy(sort === 'discount_desc' ? 'newest' : sort),
+      });
+
+      const withPct = allMatching
+        .map((p) => {
+          if (!p.original_price) return null;
+          const op = Number(p.original_price);
+          const pr = Number(p.price);
+          if (op <= 0 || op <= pr) return null;
+          const pct = ((op - pr) / op) * 100;
+          return { product: p, pct };
+        })
+        .filter(
+          (entry): entry is { product: (typeof allMatching)[number]; pct: number } =>
+            entry !== null && entry.pct >= (minDiscount as number),
+        );
+
+      if (sort === 'discount_desc') {
+        withPct.sort((a, b) => b.pct - a.pct);
+      }
+
+      const total = withPct.length;
+      const data = withPct.slice(skip, skip + limit).map((e) => e.product);
+
+      return {
+        data,
+        meta: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+        },
+      };
+    }
 
     const [data, total] = await Promise.all([
       this.prisma.product.findMany({
@@ -210,9 +387,7 @@ export class ProductService {
             },
           },
         },
-        orderBy: {
-          created_at: 'desc',
-        },
+        orderBy: this.resolveOrderBy(sort),
         skip,
         take: limit,
       }),
@@ -230,16 +405,71 @@ export class ProductService {
     };
   }
 
-  async getProductById(id: bigint) {
-    const product = await this.prisma.product.findUnique({
-      where: { id },
+  private resolveOrderBy(
+    sort:
+      | 'newest'
+      | 'oldest'
+      | 'price_asc'
+      | 'price_desc'
+      | 'popular'
+      | 'discount_desc'
+      | undefined,
+  ): Prisma.ProductOrderByWithRelationInput {
+    switch (sort) {
+      case 'oldest':
+        return { created_at: 'asc' };
+      case 'price_asc':
+        return { price: 'asc' };
+      case 'price_desc':
+        return { price: 'desc' };
+      case 'popular':
+        return { views_count: 'desc' };
+      case 'newest':
+      case 'discount_desc':
+      default:
+        return { created_at: 'desc' };
+    }
+  }
+
+  async getRecentProducts() {
+    return this.prisma.product.findMany({
+      where: { status: 'active' },
       include: {
         seller: {
           select: {
             store_name: true,
             logo_url: true,
             store_link: true,
+          },
+        },
+      },
+      orderBy: { created_at: 'desc' },
+      take: 20,
+    });
+  }
+
+  async getProductById(id: string) {
+    const product = await this.prisma.product.findUnique({
+      where: { id },
+      include: {
+        seller: {
+          select: {
+            id: true,
+            store_name: true,
+            logo_url: true,
+            store_link: true,
             bio: true,
+            location: true,
+            service_area: true,
+            avg_delivery_time: true,
+            user: {
+              select: {
+                is_pro: true,
+                pro_expires_at: true,
+                is_verified: true,
+                created_at: true,
+              },
+            },
           },
         },
       },
@@ -249,7 +479,27 @@ export class ProductService {
       throw new NotFoundException('Product not found');
     }
 
-    return product;
+    // Bump views_count fire-and-forget (don't block the response)
+    this.prisma.product
+      .update({ where: { id }, data: { views_count: { increment: 1 } } })
+      .catch(() => undefined);
+
+    // Compute derived Pro flag (active subscription)
+    const now = new Date();
+    const proExpires = product.seller?.user?.pro_expires_at;
+    const sellerIsPro =
+      !!product.seller?.user?.is_pro && (!proExpires || proExpires > now);
+
+    return {
+      ...product,
+      seller: product.seller
+        ? {
+            ...product.seller,
+            is_pro: sellerIsPro,
+            is_verified: product.seller.user?.is_verified ?? false,
+          }
+        : product.seller,
+    };
   }
 
   async getProductsByStoreLink(link: string) {
@@ -279,12 +529,13 @@ export class ProductService {
       select: {
         id: true,
         name: true,
+        image_url: true,
         fields: true,
       },
     });
   }
 
-  async getProductsBySeller(userId: bigint) {
+  async getProductsBySeller(userId: string) {
     return this.prisma.product.findMany({
       where: {
         seller: {
@@ -307,8 +558,8 @@ export class ProductService {
   }
 
   async updateProduct(
-    userId: bigint,
-    id: bigint,
+    userId: string,
+    id: string,
     dto: UpdateProductDto,
     images: Express.Multer.File[],
     video?: Express.Multer.File,
@@ -410,13 +661,31 @@ export class ProductService {
       }
     }
 
-    // 5. Update product
+    // 5. Validate & normalize original_price for update
+    let originalPriceUpdate: Decimal | null | undefined = undefined;
+    if (dto.original_price !== undefined) {
+      if (dto.original_price === '' || dto.original_price === null) {
+        originalPriceUpdate = null;
+      } else {
+        const op = new Decimal(dto.original_price);
+        const pr = dto.price ? new Decimal(dto.price) : product.price;
+        if (op.lessThanOrEqualTo(pr)) {
+          throw new BadRequestException(
+            'original_price must be greater than price',
+          );
+        }
+        originalPriceUpdate = op;
+      }
+    }
+
+    // 6. Update product
     const updatedProduct = await this.prisma.product.update({
       where: { id },
       data: {
         title: normalizedTitle,
         description: dto.description,
         price: dto.price ? new Decimal(dto.price) : undefined,
+        original_price: originalPriceUpdate as any,
         currency: dto.currency,
         condition: dto.condition,
         quantity_available: dto.quantity_available
@@ -424,6 +693,7 @@ export class ProductService {
           : undefined,
         status: dto.status,
         category: dto.category,
+        brand: dto.brand,
         image_urls,
         video_url,
         tags: normalizedTags,
@@ -445,7 +715,7 @@ export class ProductService {
     };
   }
 
-  async deleteProduct(userId: bigint, id: bigint) {
+  async deleteProduct(userId: string, id: string) {
     // 1. Get product and check ownership
     const product = await this.prisma.product.findUnique({
       where: { id },
@@ -470,7 +740,7 @@ export class ProductService {
     return { message: 'Product deleted successfully' };
   }
 
-  async toggleHotSales(userId: bigint, id: bigint, isFeatured: boolean) {
+  async toggleHotSales(userId: string, id: string, isFeatured: boolean) {
     const product = await this.prisma.product.findUnique({
       where: { id },
       include: { seller: true },
@@ -532,13 +802,13 @@ export class ProductService {
     };
   }
 
-  async initializeHotSalesPayment(userId: bigint, productId: bigint) {
+  async initializeHotSalesPayment(userId: string, productId: string) {
     return this.initializePromotionPayment(userId, productId, 'BOOST');
   }
 
   async initializePromotionPayment(
-    userId: bigint,
-    productId: bigint,
+    userId: string,
+    productId: string,
     category: 'BOOST' | 'PLAN' | string = 'BOOST',
   ) {
     const product = await this.prisma.product.findUnique({
@@ -634,17 +904,17 @@ export class ProductService {
   }
 
   async verifyHotSalesPayment(
-    userId: bigint,
+    userId: string,
     reference: string,
-    productId: bigint,
+    productId: string,
   ) {
     return this.verifyPromotionPayment(userId, reference, productId);
   }
 
   async verifyPromotionPayment(
-    userId: bigint,
+    userId: string,
     reference: string,
-    productId: bigint,
+    productId: string,
   ) {
     const product = await this.prisma.product.findUnique({
       where: { id: productId },
@@ -692,7 +962,7 @@ export class ProductService {
     };
   }
 
-  async getPromotionPaymentsHistory(userId: bigint) {
+  async getPromotionPaymentsHistory(userId: string) {
     const seller = await this.prisma.sellerProfile.findUnique({
       where: { user_id: userId },
       select: { id: true },

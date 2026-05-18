@@ -22,6 +22,9 @@ import { productApi } from "@/lib/api/product";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import { useCart } from "@/lib/contexts/cart-context";
+import PriceBlock from "@/components/product-detail/PriceBlock";
+import SellerCard from "@/components/product-detail/SellerCard";
+import RelatedProducts from "@/components/product-detail/RelatedProducts";
 
 type MediaItem =
   | { type: "image"; url: string }
@@ -307,18 +310,16 @@ export default function ProductDetailsPage() {
             <h1 className="text-3xl lg:text-5xl font-black tracking-tighter leading-tight uppercase">
               {product.title ?? "Product"}
             </h1>
-            <div className="flex items-center gap-4">
-              <span className="text-3xl font-black text-red-500">
-                GH₵
-                {(typeof product.price === "number"
-                  ? product.price
-                  : parseFloat(String(product.price ?? "0")) || 0
-                ).toLocaleString()}
-              </span>
-              <div className="px-3 py-1 bg-emerald-500/10 text-emerald-500 text-[10px] font-bold rounded-full uppercase tracking-wider flex items-center gap-1">
-                <Check className="w-3 h-3" /> In Stock
-              </div>
-            </div>
+            <PriceBlock
+              price={product.price}
+              originalPrice={product.original_price}
+              currency={product.currency ? `${product.currency} ` : "GH₵"}
+              quantityAvailable={
+                typeof product.quantity_available === "number"
+                  ? product.quantity_available
+                  : undefined
+              }
+            />
           </motion.div>
 
           {/* Tabs / Description */}
@@ -391,39 +392,7 @@ export default function ProductDetailsPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
             >
-              <Card className="p-6 border-none bg-surface/50 rounded-[2rem]">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-2xl bg-border/20 overflow-hidden border border-border/50">
-                      {product.seller.logo_url ? (
-                        <img
-                          src={product.seller.logo_url}
-                          alt=""
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-lg font-black uppercase">
-                          {(product.seller.store_name || "?")[0]}
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-black uppercase tracking-tight">
-                        {product.seller.store_name ?? "Store"}
-                      </h4>
-                      <p className="text-[10px] text-muted font-bold">
-                        @{product.seller.store_link ?? ""}
-                      </p>
-                    </div>
-                  </div>
-                  <Link
-                    href={`/s/${product.seller.store_link ?? ""}`}
-                    className="px-5 py-3 bg-white text-black text-[10px] font-black uppercase rounded-2xl hover:scale-105 transition-transform"
-                  >
-                    Visit
-                  </Link>
-                </div>
-              </Card>
+              <SellerCard seller={product.seller} />
             </motion.div>
           )}
 
@@ -467,6 +436,14 @@ export default function ProductDetailsPage() {
           </motion.div>
         </div>
       </main>
+
+      {/* Related products */}
+      <div className="max-w-7xl mx-auto px-4 md:px-8 pb-24">
+        <RelatedProducts
+          category={product.category}
+          excludeId={String(product.id)}
+        />
+      </div>
     </motion.div>
   );
 }

@@ -13,7 +13,8 @@ import {
   Get,
   Param,
 } from '@nestjs/common';
-import { CacheInterceptor } from '@nestjs/cache-manager';
+import { CacheInterceptor, CacheKey, CacheTTL } from '@nestjs/cache-manager';
+import { Query } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { StoreService } from './store.service';
 import { CreateStoreDto } from './dto/create-store.dto';
@@ -44,7 +45,7 @@ export class StoreController {
     )
     logo?: Express.Multer.File,
   ) {
-    return this.storeService.createStore(BigInt(req.user.id), dto, logo);
+    return this.storeService.createStore(req.user.id, dto, logo);
   }
 
   @Patch()
@@ -65,14 +66,14 @@ export class StoreController {
     )
     logo?: Express.Multer.File,
   ) {
-    return this.storeService.updateStore(BigInt(req.user.id), dto, logo);
+    return this.storeService.updateStore(req.user.id, dto, logo);
   }
 
   @Get('stats')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SELLER')
   async getStoreStats(@Request() req) {
-    return this.storeService.getStoreStats(BigInt(req.user.id));
+    return this.storeService.getStoreStats(req.user.id);
   }
 
   @Get('link/:link')
@@ -80,5 +81,15 @@ export class StoreController {
   // Public endpoint
   async getStoreByLink(@Param('link') link: string) {
     return this.storeService.getStoreByLink(link);
+  }
+
+  @Get('top-pro')
+  @UseInterceptors(CacheInterceptor)
+  @CacheKey('stores_top_pro')
+  @CacheTTL(60_000)
+  // Public endpoint - top pro vendors ordered by product count
+  async getTopProVendors(@Query('limit') limit?: string) {
+    const n = limit ? Math.min(Math.max(parseInt(limit, 10) || 6, 1), 24) : 6;
+    return this.storeService.getTopProVendors(n);
   }
 }

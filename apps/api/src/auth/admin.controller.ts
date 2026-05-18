@@ -39,7 +39,7 @@ export class AdminController {
   @Get('approvals/:id')
   async getApprovalById(@Param('id') id: string) {
     console.log('Fetching approval by ID:', id);
-    return this.adminService.getApprovalById(BigInt(id));
+    return this.adminService.getApprovalById(id);
   }
 
   @Get('stats')
@@ -68,7 +68,7 @@ export class AdminController {
     @Body() dto: ApproveVerificationDto,
     @Req() req,
   ) {
-    return this.adminService.approveOrReject(BigInt(id), req.user.id, dto);
+    return this.adminService.approveOrReject(id, req.user.id, dto);
   }
 
   @Get('users')
@@ -78,12 +78,12 @@ export class AdminController {
 
   @Get('users/:id')
   async getUserById(@Param('id') id: string) {
-    return this.adminService.getUserById(BigInt(id));
+    return this.adminService.getUserById(id);
   }
 
   @Patch('users/:id/role')
   async updateRole(@Param('id') id: string, @Body() dto: UpdateUserRoleDto) {
-    return this.adminService.updateUserRole(BigInt(id), dto);
+    return this.adminService.updateUserRole(id, dto);
   }
 
   @Patch('users/:id/toggle-suspension')
@@ -91,16 +91,16 @@ export class AdminController {
     @Param('id') id: string,
     @Body() dto: ToggleSuspensionDto,
   ) {
-    return this.adminService.toggleUserSuspension(BigInt(id), dto);
+    return this.adminService.toggleUserSuspension(id, dto);
   }
 
   @Patch('users/:id/warn')
   async warn(@Param('id') id: string, @Body() dto: WarnUserDto) {
-    return this.adminService.warnUser(BigInt(id), dto);
+    return this.adminService.warnUser(id, dto);
   }
 
   @Patch('users/:id/delete') // Or @Delete, but using Patch for soft-admin actions if preferred, though actual delete is implemented
   async deleteUser(@Param('id') id: string) {
-    return this.adminService.deleteUser(BigInt(id));
+    return this.adminService.deleteUser(id);
   }
 }

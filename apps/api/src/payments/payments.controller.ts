@@ -49,7 +49,7 @@ export class PaymentsController {
   ) {
     return this.paymentsService.listTransactions({
       userRole: req.user.role,
-      userId: BigInt(req.user.id),
+      userId: req.user.id,
       status,
       page: page ? Number(page) : undefined,
       limit: limit ? Number(limit) : undefined,
@@ -60,7 +60,7 @@ export class PaymentsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SELLER', 'ADMIN')
   async getTransactionById(@Param('id') id: string) {
-    return this.paymentsService.getTransactionDetails(BigInt(id));
+    return this.paymentsService.getTransactionDetails(id);
   }
 
   @Post('transactions/:id/reconcile')
@@ -70,7 +70,7 @@ export class PaymentsController {
     @Param('id') id: string,
     @Body('status') status: string,
   ) {
-    return this.paymentsService.reconcileTransaction(BigInt(id), status);
+    return this.paymentsService.reconcileTransaction(id, status);
   }
 
   @Get('payouts')
@@ -84,7 +84,7 @@ export class PaymentsController {
   ) {
     return this.paymentsService.listPayouts({
       userRole: req.user.role,
-      userId: BigInt(req.user.id),
+      userId: req.user.id,
       status,
       page: page ? Number(page) : undefined,
       limit: limit ? Number(limit) : undefined,
@@ -102,7 +102,7 @@ export class PaymentsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SELLER', 'ADMIN')
   async retryPayout(@Param('id') id: string) {
-    return this.paymentsService.retryPayout(BigInt(id));
+    return this.paymentsService.retryPayout(id);
   }
 
   @Get('history')
@@ -115,7 +115,7 @@ export class PaymentsController {
   ) {
     return this.paymentsService.getUnifiedHistory({
       userRole: req.user.role,
-      userId: BigInt(req.user.id),
+      userId: req.user.id,
       page: page ? Number(page) : undefined,
       limit: limit ? Number(limit) : undefined,
     });
@@ -132,7 +132,7 @@ export class PaymentsController {
   ) {
     return this.paymentsService.listPromotionPayments({
       userRole: req.user.role,
-      userId: BigInt(req.user.id),
+      userId: req.user.id,
       status,
       page: page ? Number(page) : undefined,
       limit: limit ? Number(limit) : undefined,

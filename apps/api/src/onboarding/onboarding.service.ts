@@ -16,7 +16,7 @@ export class OnboardingService {
     private paymentsService: PaymentsService,
   ) {}
 
-  async getOnboardingStatus(userId: bigint) {
+  async getOnboardingStatus(userId: string) {
     const store = await this.prisma.sellerProfile.findUnique({
       where: { user_id: userId },
       include: {
@@ -50,6 +50,8 @@ export class OnboardingService {
             }
           : null,
         area: store.area,
+        service_area: store.service_area,
+        avg_delivery_time: store.avg_delivery_time,
         accepted_payment_methods: store.accepted_payment_methods,
         payment_timing: store.payment_timing,
         payout_ready: Boolean(
@@ -61,7 +63,7 @@ export class OnboardingService {
     };
   }
 
-  async completeStoreProfile(userId: bigint, dto: CompleteStoreProfileDto) {
+  async completeStoreProfile(userId: string, dto: CompleteStoreProfileDto) {
     const store = await this.prisma.sellerProfile.findUnique({
       where: { user_id: userId },
     });
@@ -90,7 +92,7 @@ export class OnboardingService {
     };
   }
 
-  async completeLocation(userId: bigint, dto: CompleteLocationDto) {
+  async completeLocation(userId: string, dto: CompleteLocationDto) {
     const store = await this.prisma.sellerProfile.findUnique({
       where: { user_id: userId },
     });
@@ -101,7 +103,7 @@ export class OnboardingService {
 
     // Validate the location exists
     const location = await this.prisma.location.findUnique({
-      where: { id: BigInt(dto.location_id) },
+      where: { id: dto.location_id },
     });
 
     if (!location) {
@@ -111,11 +113,13 @@ export class OnboardingService {
     await this.prisma.sellerProfile.update({
       where: { user_id: userId },
       data: {
-        location_id: BigInt(dto.location_id),
+        location_id: dto.location_id,
         location: `${location.city}, ${location.region}`, // also update legacy field
         area: dto.area || null,
         latitude: dto.latitude || null,
         longitude: dto.longitude || null,
+        service_area: dto.service_area,
+        avg_delivery_time: dto.avg_delivery_time,
         location_set: true,
       },
     });
@@ -128,7 +132,7 @@ export class OnboardingService {
     };
   }
 
-  async completePayment(userId: bigint, dto: CompletePaymentDto) {
+  async completePayment(userId: string, dto: CompletePaymentDto) {
     const store = await this.prisma.sellerProfile.findUnique({
       where: { user_id: userId },
     });
@@ -169,7 +173,7 @@ export class OnboardingService {
     };
   }
 
-  private async checkAndCompleteOnboarding(userId: bigint) {
+  private async checkAndCompleteOnboarding(userId: string) {
     const store = await this.prisma.sellerProfile.findUnique({
       where: { user_id: userId },
     });

@@ -43,7 +43,7 @@ export class ProductController {
     files: { images?: Express.Multer.File[]; video?: Express.Multer.File[] },
   ) {
     return this.productService.createProduct(
-      BigInt(req.user.id),
+      req.user.id,
       dto,
       files.images || [],
       files.video?.[0],
@@ -73,29 +73,124 @@ export class ProductController {
     @Query('product_id') productId: string,
   ) {
     return this.productService.verifyHotSalesPayment(
-      BigInt(req.user.id),
+      req.user.id,
       reference,
-      BigInt(productId),
+      productId,
     );
   }
 
   @Get()
+  @UseInterceptors(CacheInterceptor)
   async getProducts(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('category') category?: string,
+    @Query('min_discount') minDiscount?: string,
+    @Query('search') search?: string,
+    @Query('brand') brand?: string,
+    @Query('min_price') minPrice?: string,
+    @Query('max_price') maxPrice?: string,
+    @Query('condition') condition?: string,
+    @Query('has_video') hasVideo?: string,
+    @Query('in_stock') inStock?: string,
+    @Query('is_featured') isFeatured?: string,
+    @Query('sort') sort?: string,
+    @Query('status') status?: string,
+    @Query('seller_id') sellerId?: string,
+    @Query('region') region?: string,
+    @Query('city_id') cityId?: string,
+    @Query('service_area') serviceArea?: string,
+    @Query('avg_delivery_time') avgDeliveryTime?: string,
   ) {
+    const parseOptionalNumber = (value: string | undefined): number | undefined => {
+      if (value === undefined || value === '') return undefined;
+      const n = Number(value);
+      return Number.isFinite(n) ? n : undefined;
+    };
+
+    const parseOptionalBool = (value: string | undefined): boolean | undefined => {
+      if (value === undefined || value === '') return undefined;
+      if (value === 'true') return true;
+      if (value === 'false') return false;
+      return undefined;
+    };
+
+    let parsedMinDiscount: number | undefined;
+    if (minDiscount !== undefined && minDiscount !== '') {
+      const n = Number(minDiscount);
+      if (Number.isFinite(n) && n >= 0 && n <= 100) {
+        parsedMinDiscount = n;
+      }
+    }
+
+    const allowedSorts = [
+      'newest',
+      'oldest',
+      'price_asc',
+      'price_desc',
+      'popular',
+      'discount_desc',
+    ] as const;
+    type SortKey = (typeof allowedSorts)[number];
+    const parsedSort: SortKey | undefined =
+      sort && (allowedSorts as readonly string[]).includes(sort)
+        ? (sort as SortKey)
+        : undefined;
+
+    const allowedServiceAreas = ['SAME_CITY', 'NEARBY_STATES', 'NATIONWIDE'] as const;
+    const allowedDeliveryTimes = [
+      'SAME_DAY',
+      'NEXT_DAY',
+      'TWO_TO_THREE_DAYS',
+      'FOUR_TO_SEVEN_DAYS',
+      'MORE_THAN_ONE_WEEK',
+    ] as const;
+    const parsedServiceArea =
+      serviceArea &&
+      (allowedServiceAreas as readonly string[]).includes(serviceArea)
+        ? (serviceArea as (typeof allowedServiceAreas)[number])
+        : undefined;
+    const parsedDeliveryTime =
+      avgDeliveryTime &&
+      (allowedDeliveryTimes as readonly string[]).includes(avgDeliveryTime)
+        ? (avgDeliveryTime as (typeof allowedDeliveryTimes)[number])
+        : undefined;
+
     return this.productService.getProducts({
       page: page ? parseInt(page, 10) : 1,
       limit: limit ? parseInt(limit, 10) : 20,
       category,
+      minDiscount: parsedMinDiscount,
+      search: search && search.trim().length > 0 ? search : undefined,
+      brand,
+      minPrice: parseOptionalNumber(minPrice),
+      maxPrice: parseOptionalNumber(maxPrice),
+      condition,
+      hasVideo: parseOptionalBool(hasVideo),
+      inStock: parseOptionalBool(inStock),
+      isFeatured: parseOptionalBool(isFeatured),
+      sort: parsedSort,
+      status,
+      sellerId,
+      region: region || undefined,
+      cityId: cityId || undefined,
+      serviceArea: parsedServiceArea,
+      avgDeliveryTime: parsedDeliveryTime,
     });
+  }
+
+  @Get('recent')
+  @UseInterceptors(CacheInterceptor)
+  @CacheKey('products_recent')
+  @CacheTTL(60000)
+  async getRecentProducts() {
+    return this.productService.getRecentProducts();
   }
 
   @Get(':id')
   @UseInterceptors(CacheInterceptor)
   async getProductById(@Param('id') id: string) {
-    return this.productService.getProductById(BigInt(id));
+    return this.productService.getProductById(id);
   }
 
   @Get('store/:link')
@@ -107,7 +202,7 @@ export class ProductController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SELLER')
   async getMyProducts(@Request() req) {
-    return this.productService.getProductsBySeller(BigInt(req.user.id));
+    return this.productService.getProductsBySeller(req.user.id);
   }
 
   @Put(':id')
@@ -127,8 +222,8 @@ export class ProductController {
     files: { images?: Express.Multer.File[]; video?: Express.Multer.File[] },
   ) {
     return this.productService.updateProduct(
-      BigInt(req.user.id),
-      BigInt(id),
+      req.user.id,
+      id,
       dto,
       files.images || [],
       files.video?.[0],
@@ -144,8 +239,8 @@ export class ProductController {
     @Body() dto: ToggleHotSalesDto,
   ) {
     return this.productService.toggleHotSales(
-      BigInt(req.user.id),
-      BigInt(id),
+      req.user.id,
+      id,
       dto.is_featured,
     );
   }
@@ -155,8 +250,8 @@ export class ProductController {
   @Roles('SELLER')
   async initializeHotSalesPayment(@Request() req, @Param('id') id: string) {
     return this.productService.initializeHotSalesPayment(
-      BigInt(req.user.id),
-      BigInt(id),
+      req.user.id,
+      id,
     );
   }
 
@@ -169,8 +264,8 @@ export class ProductController {
     @Body('category') category?: string,
   ) {
     return this.productService.initializePromotionPayment(
-      BigInt(req.user.id),
-      BigInt(id),
+      req.user.id,
+      id,
       category || 'BOOST',
     );
   }
@@ -184,9 +279,9 @@ export class ProductController {
     @Query('product_id') productId: string,
   ) {
     return this.productService.verifyPromotionPayment(
-      BigInt(req.user.id),
+      req.user.id,
       reference,
-      BigInt(productId),
+      productId,
     );
   }
 
@@ -194,13 +289,13 @@ export class ProductController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SELLER')
   async getPromotionPaymentsHistory(@Request() req) {
-    return this.productService.getPromotionPaymentsHistory(BigInt(req.user.id));
+    return this.productService.getPromotionPaymentsHistory(req.user.id);
   }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SELLER')
   async deleteProduct(@Request() req, @Param('id') id: string) {
-    return this.productService.deleteProduct(BigInt(req.user.id), BigInt(id));
+    return this.productService.deleteProduct(req.user.id, id);
   }
 }

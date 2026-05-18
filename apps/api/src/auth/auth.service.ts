@@ -125,7 +125,7 @@ export class AuthService {
     };
   }
 
-  async getMe(userId: bigint) {
+  async getMe(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: {
@@ -167,7 +167,7 @@ export class AuthService {
   }
 
   async submitVerification(
-    userId: bigint,
+    userId: string,
     dto: SubmitVerificationDto,
     files?: { idImage?: Express.Multer.File; salesProof?: Express.Multer.File },
   ) {
@@ -245,7 +245,7 @@ export class AuthService {
     };
   }
 
-  async getApprovalStatus(userId: bigint) {
+  async getApprovalStatus(userId: string) {
     const approval = await this.prisma.adminApproval.findFirst({
       where: { user_id: userId },
       orderBy: { created_at: 'desc' },
@@ -277,11 +277,13 @@ export class AuthService {
         email_verification_expires: null,
       },
     });
-    
+
     // Trigger Welcome Email after successful verification
-    this.emailService.sendWelcomeEmail(user.email, user.full_name).catch(err => {
-      console.error('Failed to send welcome email after verification', err);
-    });
+    this.emailService
+      .sendWelcomeEmail(user.email, user.full_name)
+      .catch((err) => {
+        console.error('Failed to send welcome email after verification', err);
+      });
 
     return { message: 'Email verified successfully. You can now log in.' };
   }
@@ -355,7 +357,7 @@ export class AuthService {
     return { message: 'Logged out successfully' };
   }
 
-  async updateProfile(userId: bigint, dto: any) {
+  async updateProfile(userId: string, dto: any) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });

@@ -7,7 +7,7 @@ datasource db {
 }
 
 model User {
-  id                         BigInt          @id @default(autoincrement())
+  id                         String          @id @default(uuid()) @db.Uuid
   full_name                  String
   email                      String          @unique
   password_hash              String
@@ -23,6 +23,8 @@ model User {
   updated_at                 DateTime        @updatedAt
   is_suspended               Boolean         @default(false)
   warnings                   Int             @default(0)
+  is_pro                     Boolean         @default(false)
+  pro_expires_at             DateTime?
   reviewed_approvals         AdminApproval[] @relation("ReviewedBy")
   admin_approvals            AdminApproval[]
   favorites                  Favorite[]
@@ -33,15 +35,15 @@ model User {
 }
 
 model SellerProfile {
-  id                       BigInt         @id @default(autoincrement())
-  user_id                  BigInt         @unique
+  id                       String         @id @default(uuid()) @db.Uuid
+  user_id                  String         @unique @db.Uuid
   store_name               String
   store_link               String         @unique
   logo_url                 String?
   bio                      String?
   whatsapp_number          String?
   location                 String?
-  location_id              BigInt?
+  location_id              String?        @db.Uuid
   area                     String?
   latitude                 Decimal?       @db.Decimal(10, 7)
   longitude                Decimal?       @db.Decimal(10, 7)
@@ -58,6 +60,8 @@ model SellerProfile {
   payment_setup_completed  Boolean        @default(false)
   accepted_payment_methods String[]       @default([])
   payment_timing           PaymentTiming?
+  service_area             ServiceArea?
+  avg_delivery_time        DeliveryTime?
   created_at               DateTime       @default(now())
   updated_at               DateTime       @updatedAt
   products                 Product[]
@@ -72,11 +76,11 @@ model SellerProfile {
 }
 
 model SubaccountRetry {
-  id         BigInt   @id @default(autoincrement())
-  seller_id  BigInt
+  id         String   @id @default(uuid()) @db.Uuid
+  seller_id  String   @db.Uuid
   attempts   Int      @default(0)
   last_error String?
-  status     String   @default("PENDING") // PENDING, FAILED, COMPLETED
+  status     String   @default("PENDING")
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
@@ -84,11 +88,12 @@ model SubaccountRetry {
 }
 
 model Product {
-  id                 BigInt        @id @default(autoincrement())
-  seller_id          BigInt
+  id                 String        @id @default(uuid()) @db.Uuid
+  seller_id          String        @db.Uuid
   title              String
   description        String?
   price              Decimal       @db.Decimal(10, 2)
+  original_price     Decimal?      @db.Decimal(10, 2)
   currency           String        @default("GHS") @db.VarChar(3)
   condition          String        @default("new") @db.VarChar(20)
   quantity_available Int           @default(1)
@@ -96,6 +101,7 @@ model Product {
   is_featured        Boolean       @default(false)
   views_count        Int           @default(0)
   category           String
+  brand              String?       @db.VarChar(100)
   attributes         Json?         @default("{}")
   image_urls         String[]      @default([])
   video_url          String?
@@ -114,9 +120,9 @@ model Product {
 }
 
 model ProductPromotionPayment {
-  id           BigInt                 @id @default(autoincrement())
-  seller_id    BigInt
-  product_id   BigInt
+  id           String                 @id @default(uuid()) @db.Uuid
+  seller_id    String                 @db.Uuid
+  product_id   String                 @db.Uuid
   reference    String                 @unique
   category     PromotionPaymentCategory @default(BOOST)
   amount       Decimal                @db.Decimal(10, 2)
@@ -136,8 +142,8 @@ model ProductPromotionPayment {
 }
 
 model Order {
-  id                BigInt      @id @default(autoincrement())
-  buyer_id          BigInt
+  id                String      @id @default(uuid()) @db.Uuid
+  buyer_id          String      @db.Uuid
   total_amount      Decimal     @db.Decimal(10, 2)
   status            String      @default("PENDING")
   created_at        DateTime    @default(now())
@@ -155,11 +161,11 @@ model Order {
 }
 
 model Transaction {
-  id              BigInt   @id @default(autoincrement())
-  order_id        BigInt   @unique
+  id              String   @id @default(uuid()) @db.Uuid
+  order_id        String   @unique @db.Uuid
   reference       String   @unique
   amount          Decimal  @db.Decimal(10, 2)
-  status          String   @default("PENDING") // PENDING, SUCCESS, FAILED
+  status          String   @default("PENDING")
   provider        String   @default("PAYSTACK")
   provider_ref    String?
   metadata        Json?    @default("{}")
@@ -175,7 +181,7 @@ model Transaction {
 }
 
 model PaymentLog {
-  id          BigInt   @id @default(autoincrement())
+  id          String   @id @default(uuid()) @db.Uuid
   event       String
   event_id    String?  @unique
   payload     Json
@@ -185,9 +191,9 @@ model PaymentLog {
 }
 
 model Payout {
-  id               BigInt       @id @default(autoincrement())
-  seller_id        BigInt
-  transaction_id   BigInt?      @unique
+  id               String       @id @default(uuid()) @db.Uuid
+  seller_id        String       @db.Uuid
+  transaction_id   String?      @unique @db.Uuid
   reference        String       @unique
   amount           Decimal      @db.Decimal(10, 2)
   currency         String       @default("GHS") @db.VarChar(3)
@@ -210,10 +216,10 @@ model Payout {
 }
 
 model PaymentLedgerEntry {
-  id              BigInt             @id @default(autoincrement())
-  seller_id       BigInt
-  transaction_id  BigInt?
-  payout_id       BigInt?
+  id              String             @id @default(uuid()) @db.Uuid
+  seller_id       String             @db.Uuid
+  transaction_id  String?            @db.Uuid
+  payout_id       String?            @db.Uuid
   reference       String             @unique
   type            LedgerEntryType
   source_type     LedgerSourceType
@@ -232,8 +238,8 @@ model PaymentLedgerEntry {
 }
 
 model VendorBalanceSnapshot {
-  id                 BigInt   @id @default(autoincrement())
-  seller_id          BigInt   @unique
+  id                 String   @id @default(uuid()) @db.Uuid
+  seller_id          String   @unique @db.Uuid
   available_balance  Decimal  @default(0) @db.Decimal(10, 2)
   pending_balance    Decimal  @default(0) @db.Decimal(10, 2)
   total_earned       Decimal  @default(0) @db.Decimal(10, 2)
@@ -246,9 +252,9 @@ model VendorBalanceSnapshot {
 }
 
 model OrderItem {
-  id         BigInt  @id @default(autoincrement())
-  order_id   BigInt
-  product_id BigInt
+  id         String  @id @default(uuid()) @db.Uuid
+  order_id   String  @db.Uuid
+  product_id String  @db.Uuid
   quantity   Int
   price      Decimal @db.Decimal(10, 2)
   order      Order   @relation(fields: [order_id], references: [id])
@@ -258,23 +264,48 @@ model OrderItem {
 }
 
 model Category {
-  id          BigInt   @id @default(autoincrement())
+  id          String   @id @default(uuid()) @db.Uuid
   name        String   @unique
   description String?
+  image_url   String?
   fields      Json?    @default("[]")
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
+  brands      Brand[]
 
   @@map("categories")
 }
 
+model Brand {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  image_url   String?
+  category_id String   @db.Uuid
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  category    Category @relation(fields: [category_id], references: [id], onDelete: Cascade)
+
+  @@unique([name, category_id])
+  @@map("brands")
+}
+
+model PlatformSetting {
+  key         String   @id
+  value       Json
+  description String?
+  updated_at  DateTime @updatedAt
+  created_at  DateTime @default(now())
+
+  @@map("platform_settings")
+}
+
 model AdminApproval {
-  id                BigInt           @id @default(autoincrement())
-  user_id           BigInt
+  id                String           @id @default(uuid()) @db.Uuid
+  user_id           String           @db.Uuid
   status            ApprovalStatus   @default(PENDING)
   type              VerificationType @default(FILES)
   verification_data String?          @db.Text
-  reviewed_by       BigInt?
+  reviewed_by       String?          @db.Uuid
   reviewed_at       DateTime?
   created_at        DateTime         @default(now())
   reviewer          User?            @relation("ReviewedBy", fields: [reviewed_by], references: [id])
@@ -284,9 +315,9 @@ model AdminApproval {
 }
 
 model Favorite {
-  id         BigInt   @id @default(autoincrement())
-  user_id    BigInt
-  product_id BigInt
+  id         String   @id @default(uuid()) @db.Uuid
+  user_id    String   @db.Uuid
+  product_id String   @db.Uuid
   created_at DateTime @default(now())
   product    Product  @relation(fields: [product_id], references: [id])
   user       User     @relation(fields: [user_id], references: [id])
@@ -296,7 +327,7 @@ model Favorite {
 }
 
 model Location {
-  id              BigInt          @id @default(autoincrement())
+  id              String          @id @default(uuid()) @db.Uuid
   country         String          @default("Ghana")
   region          String
   city            String
@@ -367,4 +398,18 @@ enum LedgerSourceType {
   ADJUSTMENT
   FEE
   PAYOUT
+}
+
+enum ServiceArea {
+  SAME_CITY
+  NEARBY_STATES
+  NATIONWIDE
+}
+
+enum DeliveryTime {
+  SAME_DAY
+  NEXT_DAY
+  TWO_TO_THREE_DAYS
+  FOUR_TO_SEVEN_DAYS
+  MORE_THAN_ONE_WEEK
 }

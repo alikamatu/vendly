@@ -8,7 +8,9 @@ export class PaymentsRepository {
 
   private isMissingColumnError(error: unknown): boolean {
     const e = error as { code?: string; message?: string };
-    return e?.code === 'P2022' || Boolean(e?.message?.includes('does not exist'));
+    return (
+      e?.code === 'P2022' || Boolean(e?.message?.includes('does not exist'))
+    );
   }
 
   async findTransactionByReference(reference: string) {
@@ -19,7 +21,7 @@ export class PaymentsRepository {
   }
 
   async updateTransactionStatus(
-    id: bigint,
+    id: string,
     status: string,
     providerRef?: string,
   ) {
@@ -32,14 +34,14 @@ export class PaymentsRepository {
     });
   }
 
-  async updateOrderStatus(id: bigint, status: string) {
+  async updateOrderStatus(id: string, status: string) {
     return this.prisma.order.update({
       where: { id },
       data: { status },
     });
   }
 
-  async finalizeOrderInventory(orderId: bigint) {
+  async finalizeOrderInventory(orderId: string) {
     return this.prisma.$transaction(async (tx) => {
       // 1. Fetch order with items
       const order = await tx.order.findUnique({
@@ -71,7 +73,7 @@ export class PaymentsRepository {
     });
   }
 
-  async findOrderWithDetails(orderId: bigint) {
+  async findOrderWithDetails(orderId: string) {
     return this.prisma.order.findUnique({
       where: { id: orderId },
       include: {
@@ -93,10 +95,38 @@ export class PaymentsRepository {
     });
   }
 
-  async findSellerByProfileId(sellerProfileId: bigint) {
+  async findSellerByProfileId(sellerProfileId: string) {
     return this.prisma.sellerProfile.findUnique({
       where: { id: sellerProfileId },
       include: { user: true },
+    });
+  }
+
+  async findUserByEmail(email: string) {
+    return this.prisma.user.findUnique({
+      where: { email },
+      select: { id: true, email: true, pro_expires_at: true, is_pro: true },
+    });
+  }
+
+  async upgradeUserToPro(userId: string, durationDays: number) {
+    const existing = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { pro_expires_at: true },
+    });
+    const now = new Date();
+    const base =
+      existing?.pro_expires_at &&
+      existing.pro_expires_at.getTime() > now.getTime()
+        ? existing.pro_expires_at
+        : now;
+    const nextExpiry = new Date(
+      base.getTime() + durationDays * 24 * 60 * 60 * 1000,
+    );
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { is_pro: true, pro_expires_at: nextExpiry },
+      select: { id: true, is_pro: true, pro_expires_at: true },
     });
   }
 
@@ -116,26 +146,26 @@ export class PaymentsRepository {
     });
   }
 
-  async getSellerProfile(id: bigint) {
+  async getSellerProfile(id: string) {
     return this.prisma.sellerProfile.findUnique({
       where: { id },
     });
   }
 
-  async getSellerProfileByUserId(userId: bigint) {
+  async getSellerProfileByUserId(userId: string) {
     return this.prisma.sellerProfile.findUnique({
       where: { user_id: userId },
     });
   }
 
-  async updateSellerSubaccount(id: bigint, subaccountCode: string) {
+  async updateSellerSubaccount(id: string, subaccountCode: string) {
     return this.prisma.sellerProfile.update({
       where: { id },
       data: { paystack_subaccount_code: subaccountCode },
     });
   }
 
-  async createSubaccountRetry(sellerId: bigint, lastError: string) {
+  async createSubaccountRetry(sellerId: string, lastError: string) {
     return this.prisma.subaccountRetry.create({
       data: {
         seller_id: sellerId,
@@ -147,7 +177,7 @@ export class PaymentsRepository {
   }
 
   async updateSubaccountRetry(
-    id: bigint,
+    id: string,
     data: { attempts?: number; last_error?: string; status?: string },
   ) {
     return this.prisma.subaccountRetry.update({
@@ -156,7 +186,7 @@ export class PaymentsRepository {
     });
   }
 
-  async findPendingSubaccountRetry(sellerId: bigint) {
+  async findPendingSubaccountRetry(sellerId: string) {
     return this.prisma.subaccountRetry.findFirst({
       where: { seller_id: sellerId, status: 'PENDING' },
     });
@@ -210,7 +240,7 @@ export class PaymentsRepository {
     });
   }
 
-  async findSellerByOrder(orderId: bigint) {
+  async findSellerByOrder(orderId: string) {
     const item = await this.prisma.orderItem.findFirst({
       where: { order_id: orderId },
       include: {
@@ -224,9 +254,9 @@ export class PaymentsRepository {
   }
 
   async createLedgerEntry(data: {
-    seller_id: bigint;
-    transaction_id?: bigint;
-    payout_id?: bigint;
+    seller_id: string;
+    transaction_id?: string;
+    payout_id?: string;
     reference: string;
     type: 'CREDIT' | 'DEBIT';
     source_type: 'ORDER' | 'PROMOTION' | 'ADJUSTMENT' | 'FEE' | 'PAYOUT';
@@ -250,7 +280,7 @@ export class PaymentsRepository {
   }
 
   async upsertVendorBalanceSnapshot(input: {
-    sellerId: bigint;
+    sellerId: string;
     availableDelta?: Prisma.Decimal;
     pendingDelta?: Prisma.Decimal;
     earnedDelta?: Prisma.Decimal;
@@ -291,8 +321,8 @@ export class PaymentsRepository {
   }
 
   async createPayout(data: {
-    seller_id: bigint;
-    transaction_id?: bigint;
+    seller_id: string;
+    transaction_id?: string;
     reference: string;
     amount: Prisma.Decimal;
     mode: 'AUTO' | 'MANUAL';
@@ -315,7 +345,7 @@ export class PaymentsRepository {
   }
 
   async updatePayoutStatus(
-    id: bigint,
+    id: string,
     status: 'PENDING' | 'PROCESSING' | 'SUCCESS' | 'FAILED',
     payload?: {
       provider_ref?: string;
@@ -334,7 +364,7 @@ export class PaymentsRepository {
     });
   }
 
-  async getPayoutById(id: bigint) {
+  async getPayoutById(id: string) {
     return this.prisma.payout.findUnique({
       where: { id },
       include: { seller: true, transaction: true },
@@ -342,7 +372,7 @@ export class PaymentsRepository {
   }
 
   async listPayouts(params: {
-    sellerId?: bigint;
+    sellerId?: string;
     status?: string;
     page: number;
     limit: number;
@@ -367,7 +397,7 @@ export class PaymentsRepository {
   }
 
   async listTransactions(params: {
-    sellerId?: bigint;
+    sellerId?: string;
     status?: string;
     page: number;
     limit: number;
@@ -429,7 +459,7 @@ export class PaymentsRepository {
     return { items, total };
   }
 
-  async getTransactionById(id: bigint) {
+  async getTransactionById(id: string) {
     try {
       return await this.prisma.transaction.findUnique({
         where: { id },
@@ -456,7 +486,7 @@ export class PaymentsRepository {
     }
   }
 
-  async reconcileTransaction(id: bigint, status: string) {
+  async reconcileTransaction(id: string, status: string) {
     try {
       return await this.prisma.transaction.update({
         where: { id },
@@ -484,7 +514,7 @@ export class PaymentsRepository {
   }
 
   async listHistory(params: {
-    sellerId?: bigint;
+    sellerId?: string;
     page: number;
     limit: number;
   }) {
@@ -548,7 +578,7 @@ export class PaymentsRepository {
   }
 
   async listPromotionPayments(params: {
-    sellerId?: bigint;
+    sellerId?: string;
     status?: string;
     page: number;
     limit: number;

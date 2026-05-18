@@ -17,9 +17,10 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { useAuth } from '@/lib/contexts/auth-context';
-import { onboardingApi, OnboardingStatus, LocationCity } from '@/lib/api/onboarding';
+import { onboardingApi, OnboardingStatus } from '@/lib/api/onboarding';
 import Button from '@/components/ui/Button';
 import { toast } from 'sonner';
+import LocationStep from '@/components/onboarding/LocationStep';
 
 // ───────── Constants ─────────
 const PAYMENT_METHODS = [
@@ -215,155 +216,6 @@ function StoreProfileStep({
   );
 }
 
-// ───────── Step 2: Location ─────────
-function LocationStep({
-  data,
-  onComplete,
-  isLoading,
-  onBack,
-}: {
-  data: OnboardingStatus['current_data'];
-  onComplete: (formData: any) => void;
-  isLoading: boolean;
-  onBack: () => void;
-}) {
-  const [regions, setRegions] = useState<string[]>([]);
-  const [cities, setCities] = useState<LocationCity[]>([]);
-  const [selectedRegion, setSelectedRegion] = useState(data.location?.region || '');
-  const [selectedCityId, setSelectedCityId] = useState(data.location_id || '');
-  const [area, setArea] = useState(data.area || '');
-  const [loadingRegions, setLoadingRegions] = useState(true);
-  const [loadingCities, setLoadingCities] = useState(false);
-
-  useEffect(() => {
-    onboardingApi.getRegions()
-      .then(setRegions)
-      .catch(() => toast.error('Failed to load regions'))
-      .finally(() => setLoadingRegions(false));
-  }, []);
-
-  useEffect(() => {
-    if (!selectedRegion) {
-      setCities([]);
-      return;
-    }
-    setLoadingCities(true);
-    setSelectedCityId('');
-    onboardingApi.getCitiesByRegion(selectedRegion)
-      .then(setCities)
-      .catch(() => toast.error('Failed to load cities'))
-      .finally(() => setLoadingCities(false));
-  }, [selectedRegion]);
-
-  // Pre-select city when editing
-  useEffect(() => {
-    if (data.location_id && cities.length > 0) {
-      const match = cities.find(c => c.id === data.location_id);
-      if (match) setSelectedCityId(match.id);
-    }
-  }, [cities, data.location_id]);
-
-  const canProceed = selectedRegion && selectedCityId;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: 50 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -50 }}
-      transition={{ duration: 0.3 }}
-      className="space-y-6"
-    >
-      <div className="text-center space-y-2 mb-8">
-        <div className="inline-flex items-center justify-center p-3 bg-primary/5 rounded-2xl">
-          <MapPin className="w-8 h-8 text-primary" />
-        </div>
-        <h2 className="text-xl font-extrabold tracking-tight">Set Your Location</h2>
-        <p className="text-xs text-muted font-medium max-w-sm mx-auto leading-relaxed">
-          Help customers near you find your store. Select your region and city.
-        </p>
-      </div>
-
-      <div className="space-y-5">
-        {/* Region Select */}
-        <div className="space-y-2">
-          <label className="text-[11px] font-bold text-muted uppercase tracking-widest pl-1">Region</label>
-          {loadingRegions ? (
-            <div className="flex items-center gap-2 py-3 px-4 bg-surface/50 rounded-2xl border border-border">
-              <Loader2 className="w-4 h-4 animate-spin text-muted" />
-              <span className="text-xs text-muted">Loading regions...</span>
-            </div>
-          ) : (
-            <select
-              value={selectedRegion}
-              onChange={(e) => setSelectedRegion(e.target.value)}
-              className="w-full bg-surface/50 border border-border rounded-2xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary/30 outline-none transition-all appearance-none cursor-pointer"
-            >
-              <option value="">Select your region</option>
-              {regions.map((r) => (
-                <option key={r} value={r}>{r}</option>
-              ))}
-            </select>
-          )}
-        </div>
-
-        {/* City Select */}
-        <div className="space-y-2">
-          <label className="text-[11px] font-bold text-muted uppercase tracking-widest pl-1">City / Town</label>
-          {loadingCities ? (
-            <div className="flex items-center gap-2 py-3 px-4 bg-surface/50 rounded-2xl border border-border">
-              <Loader2 className="w-4 h-4 animate-spin text-muted" />
-              <span className="text-xs text-muted">Loading cities...</span>
-            </div>
-          ) : (
-            <select
-              value={selectedCityId}
-              onChange={(e) => setSelectedCityId(e.target.value)}
-              disabled={!selectedRegion}
-              className="w-full bg-surface/50 border border-border rounded-2xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary/30 outline-none transition-all appearance-none cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <option value="">{selectedRegion ? 'Select your city' : 'Select a region first'}</option>
-              {cities.map((c) => (
-                <option key={c.id} value={c.id}>{c.city}</option>
-              ))}
-            </select>
-          )}
-        </div>
-
-        {/* Area (optional) */}
-        <div className="space-y-2">
-          <label className="text-[11px] font-bold text-muted uppercase tracking-widest pl-1">
-            Area / Neighborhood <span className="text-muted/50">(optional)</span>
-          </label>
-          <input
-            type="text"
-            value={area}
-            onChange={(e) => setArea(e.target.value)}
-            placeholder="e.g. East Legon, Osu Oxford Street"
-            className="w-full bg-surface/50 border border-border rounded-2xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary/30 outline-none transition-all placeholder:text-muted/40"
-          />
-        </div>
-      </div>
-
-      <div className="flex gap-3 mt-4">
-        <Button
-          onClick={onBack}
-          variant="secondary"
-          className="flex-1 h-13 text-sm font-bold rounded-2xl"
-        >
-          <ChevronLeft className="w-4 h-4 mr-1" /> Back
-        </Button>
-        <Button
-          onClick={() => onComplete({ location_id: Number(selectedCityId), area: area || undefined })}
-          isLoading={isLoading}
-          disabled={!canProceed}
-          className="flex-[2] h-13 text-sm font-bold rounded-2xl disabled:opacity-40"
-        >
-          Continue <ChevronRight className="w-4 h-4 ml-1" />
-        </Button>
-      </div>
-    </motion.div>
-  );
-}
 
 // ───────── Step 3: Payment ─────────
 function PaymentStep({

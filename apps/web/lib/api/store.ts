@@ -73,5 +73,24 @@ export const storeApi = {
       },
     });
     return handleResponse<any>(res);
-  }
+  },
+
+  async getTopProVendors(limit = 6): Promise<TopProVendor[]> {
+    const res = await fetch(`${API_URL}/stores/top-pro?limit=${limit}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    return handleResponse<TopProVendor[]>(res);
+  },
 };
+
+export interface TopProVendor {
+  id: string;
+  store_name: string;
+  store_link: string;
+  logo_url: string | null;
+  bio: string | null;
+  location: string | null;
+  products_count: number;
+  is_pro: boolean;
+}

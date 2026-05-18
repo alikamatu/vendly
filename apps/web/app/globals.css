@@ -99,3 +99,26 @@ h1, h2, h3, h4, h5, h6 {
   backdrop-filter: blur(12px);
   border: 1px solid color-mix(in srgb, var(--color-foreground) 8%, transparent);
 }
+
+/**
+ * Prevent iOS Safari from zooming in when a user taps any form field.
+ * Safari zooms when the computed font-size of the focused input is < 16px.
+ * We cap at 16px on small screens and let the cascade restore the design
+ * font-size on larger viewports.
+ */
+@media screen and (max-width: 768px) {
+  input,
+  input[type="text"],
+  input[type="number"],
+  input[type="email"],
+  input[type="password"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="search"],
+  input[type="date"],
+  input[type="time"],
+  select,
+  textarea {
+    font-size: max(16px, 1em) !important;
+  }
+}

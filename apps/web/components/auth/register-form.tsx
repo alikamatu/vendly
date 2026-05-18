@@ -52,13 +52,13 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
         </div>
         <div className="w-full space-y-4">
           <Button 
-            onClick={() => onSuccess ? onSuccess() : (window.location.href = '/login')} 
+            onClick={() => onSuccess ? onSuccess() : (window.location.href = '/register')} 
             variant="primary" 
             className="w-full"
           >
             Got it, continue
           </Button>
-          <a href="/login" className="block text-sm font-medium text-accent hover:underline">
+          <a href="/register" className="block text-sm font-medium text-accent hover:underline">
             Back to sign in
           </a>
         </div>

@@ -103,7 +103,7 @@ export class PaymentsService {
           await this.paymentsRepository.finalizeOrderInventory(
             transaction.order_id,
           );
-          
+
           // Trigger Order Confirmation Emails
           this.triggerOrderEmails(transaction.order_id).catch((err) => {
             this.logger.error(
@@ -168,6 +168,35 @@ export class PaymentsService {
 
   private async processChargeSuccess(data: any) {
     const reference = data.reference;
+
+    if (reference?.startsWith('pro_')) {
+      const email: string | undefined =
+        data?.customer?.email || data?.customer_email || data?.email;
+      if (!email) {
+        this.logger.warn(
+          `Pro webhook missing email for reference: ${reference}`,
+        );
+        return;
+      }
+      const user = await this.paymentsRepository.findUserByEmail(email);
+      if (!user) {
+        this.logger.warn(
+          `Pro webhook: user not found for email=${email} ref=${reference}`,
+        );
+        return;
+      }
+      // PRO_DURATION_DAYS lives in subscription module; avoid import cycle by hardcoding 30 here.
+      const PRO_DURATION_DAYS = 30;
+      await this.paymentsRepository.upgradeUserToPro(
+        user.id,
+        PRO_DURATION_DAYS,
+      );
+      this.logger.log(
+        `Pro subscription activated via webhook for user=${user.id} ref=${reference}`,
+      );
+      return;
+    }
+
     const transaction =
       await this.paymentsRepository.findTransactionByReference(reference);
 
@@ -201,7 +230,7 @@ export class PaymentsService {
         reference: `LEDGER_PROMO_${reference}`,
         type: 'DEBIT',
         source_type: 'PROMOTION',
-        amount: new Prisma.Decimal(promotionPayment.amount as any),
+        amount: new Prisma.Decimal(promotionPayment.amount),
         description: 'Promotion payment settled',
       });
       this.logger.log(
@@ -221,9 +250,7 @@ export class PaymentsService {
       data.id.toString(),
     );
 
-    await this.paymentsRepository.finalizeOrderInventory(
-      transaction.order_id,
-    );
+    await this.paymentsRepository.finalizeOrderInventory(transaction.order_id);
     await this.createOrderSettlementRecords(transaction.id, reference);
 
     // Trigger Order Confirmation Emails
@@ -239,7 +266,7 @@ export class PaymentsService {
     );
   }
 
-  private async triggerOrderEmails(orderId: bigint) {
+  private async triggerOrderEmails(orderId: string) {
     const order = await this.paymentsRepository.findOrderWithDetails(orderId);
     if (!order) return;
 
@@ -263,9 +290,14 @@ export class PaymentsService {
 
     // 1. Send Order Confirmation to Buyer
     if (order.buyer?.email) {
-      this.emailService.sendOrderConfirmation(order.buyer.email, orderData).catch((err) => {
-        this.logger.error(`Failed to send order confirmation to buyer: ${order.buyer?.email}`, err);
-      });
+      this.emailService
+        .sendOrderConfirmation(order.buyer.email, orderData)
+        .catch((err) => {
+          this.logger.error(
+            `Failed to send order confirmation to buyer: ${order.buyer?.email}`,
+            err,
+          );
+        });
     }
 
     // 2. Group items by seller and send notifications
@@ -275,7 +307,7 @@ export class PaymentsService {
     for (const item of order.items) {
       const sellerUser = item.product?.seller?.user;
       if (!sellerUser?.email) continue;
-      
+
       const sellerEmail = sellerUser.email;
       let sellerItems = sellerItemsMap.get(sellerEmail);
       if (!sellerItems) {
@@ -283,7 +315,7 @@ export class PaymentsService {
         sellerItemsMap.set(sellerEmail, sellerItems);
         sellerEmailMap.set(sellerEmail, sellerEmail);
       }
-      
+
       sellerItems.push({
         title: item.product?.title || 'Unknown Product',
         quantity: item.quantity,
@@ -299,10 +331,15 @@ export class PaymentsService {
           .reduce((sum, item) => sum + Number(item.price) * item.quantity, 0)
           .toFixed(2),
       };
-      
-      this.emailService.sendSellerOrderNotification(email, sellerOrderData).catch((err) => {
-        this.logger.error(`Failed to send order notification to seller: ${email}`, err);
-      });
+
+      this.emailService
+        .sendSellerOrderNotification(email, sellerOrderData)
+        .catch((err) => {
+          this.logger.error(
+            `Failed to send order notification to seller: ${email}`,
+            err,
+          );
+        });
     }
   }
 
@@ -331,7 +368,7 @@ export class PaymentsService {
   private async processTransferSuccess(data: any) {
     const reference = data.reference as string;
     if (!reference?.startsWith('PAYOUT_')) return;
-    const payoutId = BigInt(reference.split('_')[1]);
+    const payoutId = reference.split('_')[1];
     await this.paymentsRepository.updatePayoutStatus(payoutId, 'SUCCESS', {
       provider_ref: data.transfer_code?.toString(),
       processed_at: new Date(),
@@ -341,7 +378,7 @@ export class PaymentsService {
   private async processTransferFailed(data: any) {
     const reference = data.reference as string;
     if (!reference?.startsWith('PAYOUT_')) return;
-    const payoutId = BigInt(reference.split('_')[1]);
+    const payoutId = reference.split('_')[1];
     await this.paymentsRepository.updatePayoutStatus(payoutId, 'FAILED', {
       failure_reason: data.reason || 'Transfer failed',
       processed_at: new Date(),
@@ -349,7 +386,7 @@ export class PaymentsService {
   }
 
   private async createOrderSettlementRecords(
-    transactionId: bigint,
+    transactionId: string,
     reference: string,
   ) {
     const transaction =
@@ -360,7 +397,7 @@ export class PaymentsService {
     );
     if (!sellerId) return;
 
-    const gross = new Prisma.Decimal(transaction.amount as any);
+    const gross = new Prisma.Decimal(transaction.amount);
     const fee = gross.mul(this.platformFeePercent).div(100);
     const net = gross.sub(fee);
 
@@ -398,8 +435,8 @@ export class PaymentsService {
   }
 
   private async createPayoutFromTransaction(
-    transactionId: bigint,
-    sellerId: bigint,
+    transactionId: string,
+    sellerId: string,
     amount: Prisma.Decimal,
     mode: 'AUTO' | 'MANUAL',
   ) {
@@ -451,7 +488,7 @@ export class PaymentsService {
     return payout;
   }
 
-  async createSubaccount(sellerId: bigint) {
+  async createSubaccount(sellerId: string) {
     const seller = await this.paymentsRepository.getSellerProfile(sellerId);
 
     if (!seller) {
@@ -520,7 +557,7 @@ export class PaymentsService {
   /**
    * Handle subaccount creation failure by logging and updating retry record.
    */
-  private async handleSubaccountFailure(sellerId: bigint, errorMsg: string) {
+  private async handleSubaccountFailure(sellerId: string, errorMsg: string) {
     const existingRetry =
       await this.paymentsRepository.findPendingSubaccountRetry(sellerId);
 
@@ -537,14 +574,14 @@ export class PaymentsService {
 
   async listTransactions(params: {
     userRole: string;
-    userId: bigint;
+    userId: string;
     status?: string;
     page?: number;
     limit?: number;
   }) {
     const page = params.page || 1;
     const limit = params.limit || 20;
-    let sellerId: bigint | undefined = undefined;
+    let sellerId: string | undefined = undefined;
 
     if (params.userRole === 'SELLER') {
       const seller = await this.paymentsRepository.getSellerProfileByUserId(
@@ -562,26 +599,26 @@ export class PaymentsService {
     });
   }
 
-  async getTransactionDetails(id: bigint) {
+  async getTransactionDetails(id: string) {
     const transaction = await this.paymentsRepository.getTransactionById(id);
     if (!transaction) throw new NotFoundException('Transaction not found');
     return transaction;
   }
 
-  async reconcileTransaction(id: bigint, status: string) {
+  async reconcileTransaction(id: string, status: string) {
     return this.paymentsRepository.reconcileTransaction(id, status);
   }
 
   async listPayouts(params: {
     userRole: string;
-    userId: bigint;
+    userId: string;
     status?: string;
     page?: number;
     limit?: number;
   }) {
     const page = params.page || 1;
     const limit = params.limit || 20;
-    let sellerId: bigint | undefined = undefined;
+    let sellerId: string | undefined = undefined;
     if (params.userRole === 'SELLER') {
       const seller = await this.paymentsRepository.getSellerProfileByUserId(
         params.userId,
@@ -597,7 +634,7 @@ export class PaymentsService {
     });
   }
 
-  async retryPayout(id: bigint) {
+  async retryPayout(id: string) {
     const payout = await this.paymentsRepository.getPayoutById(id);
     if (!payout) throw new NotFoundException('Payout not found');
     return this.paymentsRepository.updatePayoutStatus(id, 'PROCESSING');
@@ -623,13 +660,13 @@ export class PaymentsService {
 
   async getUnifiedHistory(params: {
     userRole: string;
-    userId: bigint;
+    userId: string;
     page?: number;
     limit?: number;
   }) {
     const page = params.page || 1;
     const limit = params.limit || 20;
-    let sellerId: bigint | undefined = undefined;
+    let sellerId: string | undefined = undefined;
 
     if (params.userRole === 'SELLER') {
       const seller = await this.paymentsRepository.getSellerProfileByUserId(
@@ -647,14 +684,14 @@ export class PaymentsService {
 
   async listPromotionPayments(params: {
     userRole: string;
-    userId: bigint;
+    userId: string;
     status?: string;
     page?: number;
     limit?: number;
   }) {
     const page = params.page || 1;
     const limit = params.limit || 20;
-    let sellerId: bigint | undefined = undefined;
+    let sellerId: string | undefined = undefined;
 
     if (params.userRole === 'SELLER') {
       const seller = await this.paymentsRepository.getSellerProfileByUserId(

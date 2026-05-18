@@ -9,7 +9,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class FavoriteService {
   constructor(private prisma: PrismaService) {}
 
-  async toggleFavorite(userId: bigint, productId: bigint) {
+  async toggleFavorite(userId: string, productId: string) {
     const product = await this.prisma.product.findUnique({
       where: { id: productId },
     });
@@ -43,7 +43,7 @@ export class FavoriteService {
     }
   }
 
-  async getFavorites(userId: bigint) {
+  async getFavorites(userId: string) {
     return this.prisma.favorite.findMany({
       where: { user_id: userId },
       include: {
@@ -59,7 +59,7 @@ export class FavoriteService {
     });
   }
 
-  async getFavoriteIds(userId: bigint) {
+  async getFavoriteIds(userId: string) {
     const favorites = await this.prisma.favorite.findMany({
       where: { user_id: userId },
       select: { product_id: true },

@@ -13,6 +13,7 @@ interface ProductCardProps {
     id: string;
     title: string;
     price: string;
+    original_price?: string | number | null;
     image_urls: string[];
     video_url?: string | null;
     is_featured?: boolean;
@@ -23,6 +24,14 @@ interface ProductCardProps {
     };
   };
   index: number;
+}
+
+function computeDiscount(price: string | number, original?: string | number | null) {
+  if (original == null) return null;
+  const o = Number(original);
+  const p = Number(price);
+  if (!Number.isFinite(o) || !Number.isFinite(p) || o <= p || o <= 0) return null;
+  return Math.round(((o - p) / o) * 100);
 }
 
 export default function ProductCard({ product, index }: ProductCardProps) {
@@ -123,6 +132,22 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                   </motion.div>
                 </div>
               )}
+              {/* Discount Badge */}
+              {(() => {
+                const d = computeDiscount(product.price, product.original_price);
+                if (d == null) return null;
+                return (
+                  <div className="absolute top-4 right-4 z-20">
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="px-2.5 py-1.5 rounded-full bg-emerald-500 text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/30"
+                    >
+                      −{d}%
+                    </motion.div>
+                  </div>
+                );
+              })()}
               {/* Overlay Gradient */}
               <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </div>
@@ -178,9 +203,16 @@ export default function ProductCard({ product, index }: ProductCardProps) {
             <h3 className="text-xs text-foreground line-clamp-1 flex-1 capitalize tracking-tight">
               {product.title}
             </h3>
-            <span className="text-xs text-red-500 text-primary">
-              GH₵{parseFloat(product.price).toLocaleString()}
-            </span>
+            <div className="flex flex-col items-end leading-tight">
+              <span className="text-xs text-red-500 text-primary">
+                GH₵{parseFloat(product.price).toLocaleString()}
+              </span>
+              {product.original_price != null && computeDiscount(product.price, product.original_price) != null && (
+                <span className="text-[10px] text-muted-foreground line-through">
+                  GH₵{Number(product.original_price).toLocaleString()}
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center gap-2 pt-1">

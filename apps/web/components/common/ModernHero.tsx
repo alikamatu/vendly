@@ -63,14 +63,15 @@ export default function ModernHero() {
                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </Link>
-                <Button
-                  variant="ghost"
-                  size="lg"
-                  onClick={() => document.getElementById("marketplace")?.scrollIntoView({ behavior: "smooth" })}
-                  className="w-full sm:w-auto rounded-2xl text-white hover:bg-black border border-white/10 bg-black"
-                >
-                  Browse Market
-                </Button>
+                <Link href="/products" className="w-full sm:w-auto">
+                  <Button
+                    variant="ghost"
+                    size="lg"
+                    className="w-full sm:w-auto rounded-2xl text-white hover:bg-black border border-white/10 bg-black"
+                  >
+                    Browse Market
+                  </Button>
+                </Link>
               </div>
 
               {/* Trust Indicators */}

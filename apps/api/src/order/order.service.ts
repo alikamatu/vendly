@@ -15,7 +15,7 @@ export class OrderService {
     private paymentsService: PaymentsService,
   ) {}
 
-  async createOrder(userId: bigint, dto: CreateOrderDto) {
+  async createOrder(userId: string, dto: CreateOrderDto) {
     // 1. Get seller/store
     const seller = await this.prisma.sellerProfile.findUnique({
       where: { store_link: dto.storeLink },
@@ -46,7 +46,7 @@ export class OrderService {
     const requiresPaystack = isUpfrontRequired || isUpfrontRequested;
 
     // 2. Fetch products and calculate total
-    const productIds = dto.items.map((item) => BigInt(item.productId));
+    const productIds = dto.items.map((item) => item.productId);
     const products = await (this.prisma.product as any).findMany({
       where: {
         id: { in: productIds },
@@ -64,7 +64,7 @@ export class OrderService {
     const orderItemsData: Prisma.OrderItemCreateManyOrderInput[] = [];
 
     for (const item of dto.items) {
-      const product = products.find((p) => p.id === BigInt(item.productId));
+      const product = products.find((p) => p.id === item.productId);
       const subtotal = product.price.mul(item.quantity);
       totalAmount = totalAmount.add(subtotal);
 
@@ -101,7 +101,7 @@ export class OrderService {
       if (!requiresPaystack) {
         for (const item of dto.items) {
           await tx.product.update({
-            where: { id: BigInt(item.productId) },
+            where: { id: item.productId },
             data: {
               quantity_available: {
                 decrement: item.quantity,
@@ -152,8 +152,8 @@ export class OrderService {
     }
 
     return {
-      message: requiresPaystack 
-        ? 'Order initiated. Complete payment to finalize.' 
+      message: requiresPaystack
+        ? 'Order initiated. Complete payment to finalize.'
         : 'Order placed successfully',
       orderId: order.id.toString(),
       total: order.total_amount.toString(),
@@ -161,7 +161,7 @@ export class OrderService {
     };
   }
 
-  async getBuyerOrders(userId: bigint) {
+  async getBuyerOrders(userId: string) {
     const orders = await this.prisma.order.findMany({
       where: { buyer_id: userId },
       include: {
@@ -214,7 +214,7 @@ export class OrderService {
     }));
   }
 
-  async getSellerOrders(userId: bigint) {
+  async getSellerOrders(userId: string) {
     const seller = await this.prisma.sellerProfile.findUnique({
       where: { user_id: userId },
     });
@@ -290,7 +290,7 @@ export class OrderService {
     }));
   }
 
-  async getOrderById(userId: bigint, orderId: string) {
+  async getOrderById(userId: string, orderId: string) {
     const seller = await this.prisma.sellerProfile.findUnique({
       where: { user_id: userId },
     });
@@ -300,7 +300,7 @@ export class OrderService {
     }
 
     const order = await this.prisma.order.findUnique({
-      where: { id: BigInt(orderId) },
+      where: { id: orderId },
       include: {
         items: {
           where: {
@@ -346,7 +346,7 @@ export class OrderService {
     };
   }
 
-  async updateOrderStatus(userId: bigint, orderId: string, status: string) {
+  async updateOrderStatus(userId: string, orderId: string, status: string) {
     const seller = await this.prisma.sellerProfile.findUnique({
       where: { user_id: userId },
     });
@@ -357,7 +357,7 @@ export class OrderService {
 
     // Check if order exists and belongs to seller
     const order = await this.prisma.order.findUnique({
-      where: { id: BigInt(orderId) },
+      where: { id: orderId },
       include: {
         items: {
           where: {
@@ -378,7 +378,7 @@ export class OrderService {
     }
 
     const updatedOrder = await this.prisma.order.update({
-      where: { id: BigInt(orderId) },
+      where: { id: orderId },
       data: { status },
     });
 
@@ -388,13 +388,13 @@ export class OrderService {
     };
   }
 
-  async verifyOrderPayment(userId: bigint, reference: string, orderId: string) {
+  async verifyOrderPayment(userId: string, reference: string, orderId: string) {
     if (!reference || !orderId) {
       throw new BadRequestException('reference and order_id are required');
     }
 
     const order = await this.prisma.order.findUnique({
-      where: { id: BigInt(orderId) },
+      where: { id: orderId },
       include: {
         items: {
           include: {
@@ -430,7 +430,7 @@ export class OrderService {
     });
 
     const freshOrder = await this.prisma.order.findUnique({
-      where: { id: BigInt(orderId) },
+      where: { id: orderId },
       select: { status: true },
     });
 
@@ -441,9 +441,9 @@ export class OrderService {
     };
   }
 
-  async reinitializeOrderPayment(userId: bigint, orderId: string) {
+  async reinitializeOrderPayment(userId: string, orderId: string) {
     const order = await this.prisma.order.findUnique({
-      where: { id: BigInt(orderId) },
+      where: { id: orderId },
       include: {
         buyer: true,
         items: {
@@ -511,7 +511,9 @@ export class OrderService {
     });
 
     if (!paystackData || !paystackData.data) {
-      throw new BadRequestException('Failed to initialize payment with Paystack');
+      throw new BadRequestException(
+        'Failed to initialize payment with Paystack',
+      );
     }
 
     return {
@@ -523,7 +525,7 @@ export class OrderService {
   /**
    * Deducts inventory for an order. Called when an order is paid.
    */
-  async finalizeOrderInventory(orderId: bigint) {
+  async finalizeOrderInventory(orderId: string) {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
       include: { items: true },

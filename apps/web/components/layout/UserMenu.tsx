@@ -63,7 +63,7 @@ export default function UserMenu() {
   const navLinks = [
     {
       label: "My Profile",
-      href: "/dashboard/settings/profile",
+      href: "/account/profile",
       icon: User,
       show: true,
     },
@@ -94,7 +94,7 @@ export default function UserMenu() {
     { label: "Favorites", href: "/favorites", icon: Heart, show: true },
     {
       label: "Settings",
-      href: "/dashboard/settings",
+      href: "/account",
       icon: Settings,
       show: true,
     },

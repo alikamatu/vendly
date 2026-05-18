@@ -25,7 +25,7 @@ export class OnboardingController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SELLER')
   async getOnboardingStatus(@Request() req) {
-    return this.onboardingService.getOnboardingStatus(BigInt(req.user.id));
+    return this.onboardingService.getOnboardingStatus(req.user.id);
   }
 
   @Patch('onboarding/store-profile')
@@ -36,7 +36,7 @@ export class OnboardingController {
     @Body() dto: CompleteStoreProfileDto,
   ) {
     return this.onboardingService.completeStoreProfile(
-      BigInt(req.user.id),
+      req.user.id,
       dto,
     );
   }
@@ -45,14 +45,14 @@ export class OnboardingController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SELLER')
   async completeLocation(@Request() req, @Body() dto: CompleteLocationDto) {
-    return this.onboardingService.completeLocation(BigInt(req.user.id), dto);
+    return this.onboardingService.completeLocation(req.user.id, dto);
   }
 
   @Patch('onboarding/payment')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SELLER')
   async completePayment(@Request() req, @Body() dto: CompletePaymentDto) {
-    return this.onboardingService.completePayment(BigInt(req.user.id), dto);
+    return this.onboardingService.completePayment(req.user.id, dto);
   }
 
   // ====== Location Endpoints (public) ======

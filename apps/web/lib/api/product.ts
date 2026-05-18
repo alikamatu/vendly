@@ -1,5 +1,71 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1000';
 
+export type BrowseSort =
+  | 'newest'
+  | 'oldest'
+  | 'price_asc'
+  | 'price_desc'
+  | 'popular'
+  | 'discount_desc';
+
+export type ServiceAreaFilter = "SAME_CITY" | "NEARBY_STATES" | "NATIONWIDE";
+export type DeliveryTimeFilter =
+  | "SAME_DAY"
+  | "NEXT_DAY"
+  | "TWO_TO_THREE_DAYS"
+  | "FOUR_TO_SEVEN_DAYS"
+  | "MORE_THAN_ONE_WEEK";
+
+export interface BrowseProductsParams {
+  search?: string;
+  category?: string;
+  brand?: string;
+  min_price?: number;
+  max_price?: number;
+  condition?: string;
+  has_video?: boolean;
+  in_stock?: boolean;
+  is_featured?: boolean;
+  min_discount?: number;
+  region?: string;
+  city_id?: string;
+  service_area?: ServiceAreaFilter;
+  avg_delivery_time?: DeliveryTimeFilter;
+  sort?: BrowseSort;
+  page?: number;
+  limit?: number;
+}
+
+export interface BrowseProduct {
+  id: string;
+  title: string;
+  description?: string | null;
+  price: string | number;
+  original_price?: string | number | null;
+  currency: string;
+  condition: string;
+  quantity_available: number;
+  status: string;
+  is_featured: boolean;
+  views_count?: number;
+  category: string;
+  brand?: string | null;
+  image_urls: string[];
+  video_url?: string | null;
+  tags: string[];
+  created_at: string;
+  seller: {
+    store_name: string;
+    logo_url?: string | null;
+    store_link: string;
+  };
+}
+
+export interface BrowseProductsResponse {
+  data: BrowseProduct[];
+  meta: { total: number; page: number; limit: number; totalPages: number };
+}
+
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
@@ -21,11 +87,13 @@ export interface CreateProductInput {
   title: string;
   description?: string;
   price: string;
+  original_price?: string;
   currency?: string;
   condition: string;
   quantity_available?: string;
   status?: string;
   category: string;
+  brand?: string;
   tags?: string[];
   attributes?: Record<string, any>;
   is_featured?: boolean;
@@ -37,11 +105,13 @@ export const productApi = {
     formData.append('title', data.title);
     if (data.description) formData.append('description', data.description);
     formData.append('price', data.price);
+    if (data.original_price) formData.append('original_price', data.original_price);
     if (data.currency) formData.append('currency', data.currency);
     formData.append('condition', data.condition);
     if (data.quantity_available) formData.append('quantity_available', data.quantity_available);
     if (data.status) formData.append('status', data.status);
     formData.append('category', data.category);
+    if (data.brand) formData.append('brand', data.brand);
     
     if (data.tags) {
       data.tags.forEach(tag => formData.append('tags[]', tag));
@@ -81,6 +151,35 @@ export const productApi = {
     return handleResponse<any[]>(res);
   },
 
+  /**
+   * Full-featured products browser query. Preserves the `{ data, meta }`
+   * envelope returned by the API (unlike getProducts which collapses to an array).
+   */
+  async browseProducts(params: BrowseProductsParams): Promise<BrowseProductsResponse> {
+    const qs = new URLSearchParams();
+    for (const [k, v] of Object.entries(params)) {
+      if (v === undefined || v === null || v === '') continue;
+      qs.set(k, typeof v === 'boolean' ? String(v) : String(v));
+    }
+    const res = await fetch(`${API_URL}/products?${qs.toString()}`);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      const msg = Array.isArray(data?.message) ? data.message[0] : data?.message || 'Failed to load';
+      throw new Error(msg);
+    }
+    const json = await res.json();
+    // Envelope is { data: [...], meta: { total, page, limit, totalPages } }
+    return {
+      data: (json?.data ?? []) as BrowseProduct[],
+      meta: {
+        total: Number(json?.meta?.total ?? 0),
+        page: Number(json?.meta?.page ?? 1),
+        limit: Number(json?.meta?.limit ?? 20),
+        totalPages: Number(json?.meta?.totalPages ?? 1),
+      },
+    };
+  },
+
   async getProductById(id: string) {
     const res = await fetch(`${API_URL}/products/${id}`);
     return handleResponse<any>(res);
@@ -88,7 +187,16 @@ export const productApi = {
 
   async getCategories() {
     const res = await fetch(`${API_URL}/products/categories`);
-    return handleResponse<{ id: string; name: string; fields: any[] }[]>(res);
+    return handleResponse<{ id: string; name: string; image_url?: string | null; fields: any[] }[]>(res);
+  },
+  
+  async getBrands(categoryName?: string, categoryId?: string) {
+    const params = new URLSearchParams();
+    if (categoryName) params.append('category', categoryName);
+    if (categoryId) params.append('category_id', categoryId);
+    
+    const res = await fetch(`${API_URL}/brands?${params.toString()}`);
+    return handleResponse<{ id: string; name: string; image_url?: string | null; category_id: string }[]>(res);
   },
 
   async getProductsByStoreSlug(slug: string) {
@@ -115,11 +223,13 @@ export const productApi = {
     if (data.title) formData.append('title', data.title);
     if (data.description) formData.append('description', data.description);
     if (data.price) formData.append('price', data.price);
+    if (data.original_price !== undefined) formData.append('original_price', data.original_price || '');
     if (data.currency) formData.append('currency', data.currency);
     if (data.condition) formData.append('condition', data.condition);
     if (data.quantity_available) formData.append('quantity_available', data.quantity_available);
     if (data.status) formData.append('status', data.status);
     if (data.category) formData.append('category', data.category);
+    if (data.brand !== undefined) formData.append('brand', data.brand || '');
     
     if (data.tags) {
       data.tags.forEach(tag => formData.append('tags[]', tag));
