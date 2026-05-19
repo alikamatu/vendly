@@ -28,12 +28,25 @@ import { ApiResponseInterceptor } from './common/interceptors/api-response.inter
     }),
     CacheModule.registerAsync({
       isGlobal: true,
-      useFactory: async () => ({
-        store: await redisStore({
-          url: process.env.REDIS_URL || 'redis://localhost:6379',
-          ttl: 600000, // 10 minutes in milliseconds
-        }),
-      }),
+      useFactory: async () => {
+        const url = process.env.REDIS_URL;
+        // No Redis configured → use the built-in in-memory store. Fine for
+        // single-instance deploys; lossy across restarts.
+        if (!url) {
+          // eslint-disable-next-line no-console
+          console.warn('[cache] REDIS_URL not set — falling back to in-memory cache');
+          return { ttl: 600000 };
+        }
+        try {
+          const store = await redisStore({ url, ttl: 600000 });
+          return { store, ttl: 600000 };
+        } catch (err) {
+          // Don't take the whole API down if Redis is unreachable at boot.
+          // eslint-disable-next-line no-console
+          console.error('[cache] Redis unreachable, falling back to in-memory:', (err as Error)?.message);
+          return { ttl: 600000 };
+        }
+      },
     }),
     ThrottlerModule.forRoot({
       throttlers: [{ ttl: 60000, limit: 10 }], // ttl in milliseconds
