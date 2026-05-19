@@ -1,7 +1,10 @@
 {
   "extends": "@vendly/typescript-config/nestjs",
   "compilerOptions": {
-    "baseUrl": "./"
+    "baseUrl": "./",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist", "test", "prisma", "prisma.config.ts"]
