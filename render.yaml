@@ -1,0 +1,49 @@
+# Render blueprint for the Vendly NestJS API.
+# https://render.com/docs/blueprint-spec
+#
+# Render's default Node detection runs `npm install` at the repo root, which
+# can't resolve the `workspace:*` protocol used by pnpm workspaces. This
+# blueprint pins pnpm, installs only the API and its workspace deps, and
+# runs the production NestJS entry point.
+
+services:
+  - type: web
+    name: vendly-api
+    runtime: node
+    plan: free
+    rootDir: .
+    buildCommand: |
+      npm install -g pnpm@9.15.4
+      pnpm install --frozen-lockfile --filter @vendly/api...
+      pnpm --filter @vendly/api exec prisma generate
+      pnpm --filter @vendly/api run build
+    startCommand: pnpm --filter @vendly/api exec node dist/src/main.js
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 1000
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: PAYSTACK_SECRET_KEY
+        sync: false
+      - key: PAYSTACK_PUBLIC_KEY
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM_EMAIL
+        sync: false
