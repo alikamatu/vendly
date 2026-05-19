@@ -17,7 +17,7 @@ services:
       pnpm install --frozen-lockfile --filter @vendly/api...
       pnpm --filter @vendly/api exec prisma generate
       pnpm --filter @vendly/api run build
-    startCommand: pnpm --filter @vendly/api exec node dist/src/main.js
+    startCommand: pnpm --filter @vendly/api exec node dist/main.js
     healthCheckPath: /
     autoDeploy: true
     envVars:
