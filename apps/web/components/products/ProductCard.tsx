@@ -137,7 +137,7 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                 const d = computeDiscount(product.price, product.original_price);
                 if (d == null) return null;
                 return (
-                  <div className="absolute top-4 right-4 z-20">
+                  <div className={`absolute ${product.is_featured ? "top-12" : "top-4"} left-4 z-20`}>
                     <motion.div
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
@@ -184,14 +184,6 @@ export default function ProductCard({ product, index }: ProductCardProps) {
               >
                 <Heart className={`w-3 md:w-3.5 h-3 md:h-3.5 ${favorited ? "fill-current" : ""}`} />
               </motion.button>
-            </div>
-            <div className="pointer-events-auto">
-              <Link
-                href={`/s/${product.seller.store_link}`}
-                className="flex items-center gap-1 md:gap-1.5 px-2 md:px-3 py-1.5 rounded-lg md:rounded-xl bg-black/60 md:bg-black/40 backdrop-blur-md text-white text-[8px] md:text-[9px] border border-white/10 hover:bg-black/80 transition-colors"
-              >
-                View Store <ExternalLink className="w-2 md:w-2.5 h-2 md:h-2.5" />
-              </Link>
             </div>
           </div>
         </div>

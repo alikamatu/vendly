@@ -9,7 +9,6 @@ import Loading from "@/app/loading";
 import { useHomeData } from "@/hooks/useHomeData";
 import { useHomeFilters } from "@/hooks/useHomeFilters";
 import CategoryShowcase from "./CategoryShowcase";
-import TrustStrip from "./TrustStrip";
 import FeaturedMarketplace from "./FeaturedMarketplace";
 import BrandSectionsList from "./BrandSectionsList";
 import RecentProducts from "./RecentProducts";
@@ -81,8 +80,6 @@ export default function HomeView() {
       <HomeJsonLd categories={categories} />
       <DashboardHeader title="Home" />
       <ModernHero />
-
-      <TrustStrip />
 
       <CategoryShowcase
         categories={categories}

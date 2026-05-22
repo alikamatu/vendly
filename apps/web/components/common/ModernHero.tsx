@@ -1,8 +1,7 @@
 "use client";
 
-import React from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, Sparkles, Zap, ShieldCheck } from "lucide-react";
+import { ArrowRight, Zap, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import Button from "../ui/Button";
 import { useAuth } from "@/lib/contexts/auth-context";
@@ -21,7 +20,7 @@ export default function ModernHero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="relative overflow-hidden rounded-[2.5rem] md:rounded-[4rem] bg-zinc-900 border border-white/5 shadow-2xl"
+          className="relative overflow-hidden rounded-[2.5rem] md:rounded-[4rem] bg-zinc-900"
         >
           {/* Decorative Gradients */}
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/20 blur-[120px] -z-10 translate-x-1/2 -translate-y-1/2" />
@@ -34,7 +33,7 @@ export default function ModernHero() {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.2 }}
-                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/15 text-white text-[10px] uppercase tracking-wider font-normal backdrop-blur-sm"
+                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 text-white text-[10px] uppercase tracking-wider font-normal backdrop-blur-sm"
               >
                 <span className="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 Verified marketplace for modern businesses

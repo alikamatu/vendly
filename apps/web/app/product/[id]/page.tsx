@@ -16,10 +16,8 @@ import {
   Play,
   Ruler,
 } from "lucide-react";
-import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
 import { productApi } from "@/lib/api/product";
-import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import { useCart } from "@/lib/contexts/cart-context";
 import PriceBlock from "@/components/product-detail/PriceBlock";
@@ -83,12 +81,12 @@ export default function ProductDetailsPage() {
     const obj =
       typeof raw === "string"
         ? (() => {
-            try {
-              return JSON.parse(raw);
-            } catch {
-              return {};
-            }
-          })()
+          try {
+            return JSON.parse(raw);
+          } catch {
+            return {};
+          }
+        })()
         : raw && typeof raw === "object"
           ? raw
           : {};
@@ -140,7 +138,7 @@ export default function ProductDetailsPage() {
     }
     try {
       await navigator.clipboard.writeText(url);
-    } catch {}
+    } catch { }
   };
 
   const togglePlay = () => {
@@ -278,11 +276,10 @@ export default function ProductDetailsPage() {
               {mediaItems.map((_, idx) => (
                 <div
                   key={idx}
-                  className={`h-1.5 rounded-full transition-all duration-300 ${
-                    idx === currentMediaIndex
-                      ? "w-8 bg-white"
-                      : "w-1.5 bg-white/50"
-                  }`}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentMediaIndex
+                    ? "w-8 bg-white"
+                    : "w-1.5 bg-white/50"
+                    }`}
                 />
               ))}
             </div>
@@ -294,11 +291,10 @@ export default function ProductDetailsPage() {
               <button
                 key={idx}
                 onClick={() => setCurrentMediaIndex(idx)}
-                className={`relative w-20 h-20 rounded-2xl overflow-hidden border-2 transition-all shrink-0 ${
-                  idx === currentMediaIndex
-                    ? "border-primary scale-105"
-                    : "border-transparent opacity-50"
-                }`}
+                className={`relative w-20 h-20 rounded-2xl overflow-hidden border-2 transition-all shrink-0 ${idx === currentMediaIndex
+                  ? "border-primary scale-105"
+                  : "border-transparent opacity-50"
+                  }`}
               >
                 {item.type === "video" ? (
                   <>
@@ -343,7 +339,7 @@ export default function ProductDetailsPage() {
                 </span>
               )}
             </div>
-            <h1 className="text-3xl lg:text-5xl font-medium tracking-tighter leading-tight uppercase">
+            <h1 className="text-xl font-medium tracking-tighter leading-tight uppercase">
               {product.title ?? "Product"}
             </h1>
             <PriceBlock
