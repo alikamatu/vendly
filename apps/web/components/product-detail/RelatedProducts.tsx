@@ -71,15 +71,14 @@ export default function RelatedProducts({
       </header>
 
       {loading ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
               className="rounded-3xl bg-surface/40 border border-border/30 overflow-hidden"
             >
               <div
-                className="w-full bg-border/30 animate-pulse"
-                style={{ height: 220 + (i % 2) * 30 }}
+                className="w-full aspect-[4/5] bg-border/30 animate-pulse"
               />
               <div className="p-4 space-y-2">
                 <div className="h-3 w-3/4 rounded bg-border/30 animate-pulse" />
@@ -89,13 +88,27 @@ export default function RelatedProducts({
           ))}
         </div>
       ) : (
-        <div className="columns-2 md:columns-3 lg:columns-4 gap-4">
-          {items.map((p, idx) => (
-            <div key={p.id} className="break-inside-avoid mb-4">
-              <ProductCard product={p as any} index={idx} />
-            </div>
-          ))}
-        </div>
+        // Mobile: horizontal snap carousel for predictable layout.
+        // Desktop: even grid (no masonry — avoids the column overflow glitch).
+        <>
+          <div className="md:hidden flex gap-3 overflow-x-auto snap-x snap-mandatory scroll-smooth -mx-4 px-4 pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            {items.map((p, idx) => (
+              <div
+                key={p.id}
+                className="snap-start flex-shrink-0 w-[62vw] xs:w-[48vw] sm:w-[260px]"
+              >
+                <ProductCard product={p as any} index={idx} />
+              </div>
+            ))}
+          </div>
+          <div className="hidden md:grid grid-cols-3 lg:grid-cols-4 gap-4">
+            {items.map((p, idx) => (
+              <div key={p.id}>
+                <ProductCard product={p as any} index={idx} />
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </section>
   );

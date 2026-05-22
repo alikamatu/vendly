@@ -25,6 +25,7 @@ import { useCart } from "@/lib/contexts/cart-context";
 import PriceBlock from "@/components/product-detail/PriceBlock";
 import SellerCard from "@/components/product-detail/SellerCard";
 import RelatedProducts from "@/components/product-detail/RelatedProducts";
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
 
 type MediaItem =
   | { type: "image"; url: string }
@@ -119,6 +120,29 @@ export default function ProductDetailsPage() {
     setTimeout(() => setAddedFeedback(false), 2000);
   };
 
+  const handleBuyNow = () => {
+    if (!product?.seller) return;
+    handleAddToCart();
+    // Jump straight to checkout for this store
+    router.push(`/cart/checkout?store=${encodeURIComponent(product.seller.store_link)}`);
+  };
+
+  const handleShare = async () => {
+    if (typeof window === "undefined") return;
+    const url = window.location.href;
+    if ((navigator as any).share) {
+      try {
+        await (navigator as any).share({ title: product?.title ?? "Vendly product", url });
+        return;
+      } catch {
+        // fall through
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {}
+  };
+
   const togglePlay = () => {
     if (videoRef.current) {
       if (videoRef.current.paused) {
@@ -156,25 +180,37 @@ export default function ProductDetailsPage() {
       animate={{ opacity: 1 }}
       className="min-h-screen bg-background pb-20"
     >
-      {/* Navigation Header */}
-      <div className="fixed top-0 inset-x-0 h-20 bg-background/80 backdrop-blur-xl z-50 flex items-center justify-between px-6 border-b border-border/50">
+      {/* Unified Navigation Header */}
+      <DashboardHeader title={product.title ?? "Product"} />
+
+      {/* Mobile back + share + favorite strip — subtle, sits under the header */}
+      <div className="max-w-7xl mx-auto px-4 md:px-8 pt-4 flex items-center justify-between gap-2">
         <button
           onClick={() => router.back()}
-          className="p-3 rounded-2xl bg-surface hover:bg-border/20 transition-colors"
+          aria-label="Go back"
+          className="inline-flex items-center gap-1.5 px-3 h-9 rounded-xl bg-surface hover:bg-border/20 transition-colors text-xs font-bold"
         >
-          <ArrowLeft className="w-5 h-5" />
+          <ArrowLeft className="w-3.5 h-3.5" />
+          Back
         </button>
-        <div className="flex items-center gap-3">
-          <button className="p-3 rounded-2xl bg-surface hover:bg-border/20 transition-colors">
-            <Share2 className="w-5 h-5" />
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleShare}
+            aria-label="Share product"
+            className="p-2.5 rounded-xl bg-surface hover:bg-border/20 transition-colors"
+          >
+            <Share2 className="w-4 h-4" />
           </button>
-          <button className="p-3 rounded-2xl bg-surface hover:bg-border/20 transition-colors text-red-500">
-            <Heart className="w-5 h-5" />
+          <button
+            aria-label="Add to favorites"
+            className="p-2.5 rounded-xl bg-surface hover:bg-border/20 transition-colors text-red-500"
+          >
+            <Heart className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      <main className="pt-24 max-w-7xl mx-auto px-4 md:px-8 grid md:grid-cols-2 gap-8 lg:gap-16">
+      <main className="pt-6 md:pt-10 max-w-7xl mx-auto px-4 md:px-8 grid md:grid-cols-2 gap-8 lg:gap-16">
         {/* Left: Media Carousel (images + video) */}
         <div className="space-y-6">
           <div className="relative aspect-[4/5] md:aspect-square bg-surface rounded-[2.5rem] overflow-hidden group">
@@ -429,6 +465,11 @@ export default function ProductDetailsPage() {
             </Button>
             <Button
               variant="secondary"
+              onClick={handleBuyNow}
+              disabled={
+                typeof product.quantity_available === "number" &&
+                product.quantity_available <= 0
+              }
               className="h-16 flex-1 rounded-[2rem] font-black uppercase tracking-widest text-xs bg-black text-primary border-none hover:bg-black/90 group"
             >
               Buy Now

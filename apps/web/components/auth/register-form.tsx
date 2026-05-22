@@ -6,6 +6,7 @@ import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
 import ProgressBar from '@/components/ui/ProgressBar';
+import PasswordStrength from '@/components/auth/PasswordStrength';
 import { Mail, Lock, User as UserIcon, CheckCircle, Building } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -113,6 +114,8 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
               registration={register('confirmPassword')}
             />
           </div>
+
+          <PasswordStrength value={form.watch('password') || ''} />
         </div>
 
         <Button type="submit" variant="primary" className="w-full" isLoading={isLoading}>
