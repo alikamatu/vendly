@@ -53,7 +53,7 @@ function Field({
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--color-muted)] uppercase tracking-wider">
+      <label className="flex items-center gap-1.5 text-[11px] font-normal text-[var(--color-muted)] uppercase tracking-wider">
         <Icon className="w-3.5 h-3.5" />
         {label}
       </label>
@@ -199,14 +199,14 @@ export default function ProfileSettingsPage() {
       {/* ── Back ── */}
       <Link
         href="/dashboard/settings"
-        className="inline-flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] hover:text-[var(--color-foreground)] transition-colors group"
+        className="inline-flex items-center gap-2 text-xs font-normal text-[var(--color-muted)] hover:text-[var(--color-foreground)] transition-colors group"
       >
         <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
         Settings
       </Link>
 
       <div>
-        <h1 className="text-lg font-black tracking-tight text-[var(--color-foreground)]">Personal Info</h1>
+        <h1 className="text-lg font-medium tracking-tight text-[var(--color-foreground)]">Personal Info</h1>
         <p className="text-[11px] text-[var(--color-muted)] font-medium mt-0.5">
           Update your name, school, and account details
         </p>
@@ -217,18 +217,18 @@ export default function ProfileSettingsPage() {
         <div className="flex items-center gap-4">
           {/* Avatar */}
           <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center flex-shrink-0 shadow-lg`}>
-            <span className="text-xl font-black text-white">{initials}</span>
+            <span className="text-xl font-medium text-white">{initials}</span>
           </div>
 
           <div className="flex-1 min-w-0 space-y-2">
             <div>
-              <p className="text-base font-black text-[var(--color-foreground)] truncate">{user.full_name}</p>
+              <p className="text-base font-medium text-[var(--color-foreground)] truncate">{user.full_name}</p>
               <p className="text-[11px] text-[var(--color-muted)] truncate">{user.email}</p>
             </div>
             <div className="flex flex-wrap gap-2">
               {/* Role badge */}
               <span
-                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide ${
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wide ${
                   user.role === "SELLER"
                     ? "bg-emerald-500/10 text-emerald-600"
                     : user.role === "ADMIN"
@@ -242,11 +242,11 @@ export default function ProfileSettingsPage() {
 
               {/* Verified badge */}
               {user.is_verified ? (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-normal bg-emerald-500/10 text-emerald-600">
                   <Check className="w-3 h-3" /> Verified
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-normal bg-amber-500/10 text-amber-600">
                   <Mail className="w-3 h-3" /> Email unverified
                 </span>
               )}
@@ -292,7 +292,7 @@ export default function ProfileSettingsPage() {
         <Button
           type="submit"
           disabled={isLoading}
-          className="w-full h-14 rounded-2xl font-black uppercase tracking-widest text-sm"
+          className="w-full h-14 rounded-2xl font-medium uppercase tracking-wider text-sm"
         >
           {isLoading ? (
             <span className="flex items-center gap-2">
@@ -306,7 +306,7 @@ export default function ProfileSettingsPage() {
 
       {/* ── Account danger zone ── */}
       <div className="space-y-1.5">
-        <p className="px-1 text-[10px] font-black text-[var(--color-muted)] uppercase tracking-widest">Quick Links</p>
+        <p className="px-1 text-[10px] font-medium text-[var(--color-muted)] uppercase tracking-wider">Quick Links</p>
         <div className="bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)] divide-y divide-[var(--color-border)]/50">
           <Link
             href="/dashboard/settings/security"
@@ -316,7 +316,7 @@ export default function ProfileSettingsPage() {
               <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center">
                 <Shield className="w-4 h-4 text-emerald-500" />
               </div>
-              <span className="text-sm font-bold text-[var(--color-foreground)]">Change Password</span>
+              <span className="text-sm font-normal text-[var(--color-foreground)]">Change Password</span>
             </div>
             <ChevronRight className="w-4 h-4 text-[var(--color-muted)] group-hover:text-[var(--color-foreground)] transition-colors" />
           </Link>
@@ -331,9 +331,9 @@ export default function ProfileSettingsPage() {
                   <Star className="w-4 h-4 text-[var(--color-accent)]" />
                 </div>
                 <div>
-                  <span className="text-sm font-bold text-[var(--color-foreground)]">Start selling</span>
+                  <span className="text-sm font-normal text-[var(--color-foreground)]">Start selling</span>
                   {user.approval_status === "PENDING" && (
-                    <span className="ml-2 text-[10px] font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full">
+                    <span className="ml-2 text-[10px] font-normal text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full">
                       Pending
                     </span>
                   )}

@@ -52,17 +52,17 @@ export default function RelatedProducts({
     <section className="mt-16 md:mt-24 space-y-6">
       <header className="flex items-end justify-between gap-3 flex-wrap">
         <div className="space-y-1">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
+          <p className="text-[10px] font-medium uppercase tracking-wider text-primary">
             Discovery
           </p>
-          <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">
+          <h2 className="text-xl md:text-2xl font-medium tracking-tight">
             You may also like
           </h2>
         </div>
         {category && (
           <Link
             href={`/products?category=${encodeURIComponent(category)}`}
-            className="inline-flex items-center gap-1.5 px-4 h-10 rounded-xl border border-border/50 text-[11px] font-black uppercase tracking-widest text-foreground hover:bg-surface transition-colors"
+            className="inline-flex items-center gap-1.5 px-4 h-10 rounded-xl border border-border/50 text-[11px] font-medium uppercase tracking-wider text-foreground hover:bg-surface transition-colors"
           >
             See all {category}
             <ArrowRight className="w-3.5 h-3.5" />

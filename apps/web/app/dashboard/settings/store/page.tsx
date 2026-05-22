@@ -144,15 +144,15 @@ export default function StoreSettingsPage() {
     <div className="max-w-2xl mx-auto pb-12 px-4 md:px-0">
       <Link 
         href="/dashboard/settings"
-        className="inline-flex items-center gap-2 text-[10px] font-bold text-muted hover:text-foreground transition-colors group mb-6"
+        className="inline-flex items-center gap-2 text-[10px] font-normal text-muted hover:text-foreground transition-colors group mb-6"
       >
         <ArrowLeft className="w-3 h-3 transition-transform group-hover:-translate-x-1" />
         BACK TO SETTINGS
       </Link>
 
       <div className="mb-8">
-        <h1 className="text-md font-black tracking-tight uppercase">Store Optimization</h1>
-        <p className="text-[10px] text-muted font-bold mt-1 uppercase tracking-wider">Refine your brand & logistics</p>
+        <h1 className="text-md font-medium tracking-tight uppercase">Store Optimization</h1>
+        <p className="text-[10px] text-muted font-normal mt-1 uppercase tracking-wider">Refine your brand & logistics</p>
       </div>
 
       <AnimatePresence>
@@ -170,7 +170,7 @@ export default function StoreSettingsPage() {
             <div className={`p-1.5 rounded-xl ${message.type === "success" ? "bg-emerald-500/10" : "bg-red-500/10"}`}>
                {message.type === "success" ? <Check className="w-3.5 h-3.5" /> : <Info className="w-3.5 h-3.5" />}
             </div>
-            <p className="text-[11px] font-bold uppercase tracking-tight">{message.text}</p>
+            <p className="text-[11px] font-normal uppercase tracking-tight">{message.text}</p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -183,7 +183,7 @@ export default function StoreSettingsPage() {
               <div className="p-2 bg-primary/10 rounded-xl">
                 <Store className="w-4 h-4 text-primary" />
               </div>
-              <h3 className="text-xs font-black uppercase tracking-widest">Branding</h3>
+              <h3 className="text-xs font-medium uppercase tracking-wider">Branding</h3>
             </div>
 
             <div className="flex flex-col items-center gap-6">
@@ -210,24 +210,24 @@ export default function StoreSettingsPage() {
                 />
               </div>
               <div className="text-center">
-                <p className="text-[10px] font-black uppercase tracking-widest">Store Identity</p>
-                <p className="text-[9px] text-muted font-bold mt-1 tracking-wider italic">Optimized to SVG for maximum clarity</p>
+                <p className="text-[10px] font-medium uppercase tracking-wider">Store Identity</p>
+                <p className="text-[9px] text-muted font-normal mt-1 tracking-wider italic">Optimized to SVG for maximum clarity</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-[9px] font-black text-muted uppercase tracking-[0.2em] px-1">Shop Name</label>
+                <label className="text-[9px] font-medium text-muted uppercase tracking-wider px-1">Shop Name</label>
                 <Input 
                   value={formData.store_name}
                   onChange={(e) => setFormData({...formData, store_name: e.target.value})}
                   placeholder="The Premium Collective"
                   required
-                  className="h-11 bg-background/50 text-[11px] font-bold rounded-xl"
+                  className="h-11 bg-background/50 text-[11px] font-normal rounded-xl"
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-[9px] font-black text-muted uppercase tracking-[0.2em] px-1">Unique Alias</label>
+                <label className="text-[9px] font-medium text-muted uppercase tracking-wider px-1">Unique Alias</label>
                 <div className="relative">
                   <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-3 h-3 text-muted" />
                   <Input 
@@ -235,14 +235,14 @@ export default function StoreSettingsPage() {
                     onChange={(e) => setFormData({...formData, store_link: e.target.value})}
                     placeholder="premium-shop"
                     required
-                    className="h-11 pl-12 bg-background/50 text-[11px] font-bold rounded-xl"
+                    className="h-11 pl-12 bg-background/50 text-[11px] font-normal rounded-xl"
                   />
                 </div>
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-[9px] font-black text-muted uppercase tracking-[0.2em] px-1">Brand Narrative</label>
+              <label className="text-[9px] font-medium text-muted uppercase tracking-wider px-1">Brand Narrative</label>
               <Textarea 
                 value={formData.bio}
                 onChange={(e) => setFormData({...formData, bio: e.target.value})}
@@ -259,23 +259,23 @@ export default function StoreSettingsPage() {
             <div className="p-2 bg-emerald-500/10 rounded-xl">
               <Truck className="w-4 h-4 text-emerald-500" />
             </div>
-            <h3 className="text-xs font-black uppercase tracking-widest">Logistics & Location</h3>
+            <h3 className="text-xs font-medium uppercase tracking-wider">Logistics & Location</h3>
           </div>
 
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-[9px] font-black text-muted uppercase tracking-[0.2em] px-1">Region</label>
+                <label className="text-[9px] font-medium text-muted uppercase tracking-wider px-1">Region</label>
                 {loadingRegions ? (
                   <div className="h-11 flex items-center gap-2 px-4 bg-background/50 rounded-xl border border-border/10">
                     <Loader2 className="w-3 h-3 animate-spin text-muted" />
-                    <span className="text-[10px] text-muted font-bold">Loading...</span>
+                    <span className="text-[10px] text-muted font-normal">Loading...</span>
                   </div>
                 ) : (
                   <select
                     value={selectedRegion}
                     onChange={(e) => setSelectedRegion(e.target.value)}
-                    className="w-full h-11 bg-background/50 border border-border/10 rounded-xl px-4 text-[11px] font-bold outline-none focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer"
+                    className="w-full h-11 bg-background/50 border border-border/10 rounded-xl px-4 text-[11px] font-normal outline-none focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer"
                   >
                     <option value="">Select Region</option>
                     {regions.map((r) => (
@@ -286,18 +286,18 @@ export default function StoreSettingsPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-[9px] font-black text-muted uppercase tracking-[0.2em] px-1">City / Town</label>
+                <label className="text-[9px] font-medium text-muted uppercase tracking-wider px-1">City / Town</label>
                 {loadingCities ? (
                   <div className="h-11 flex items-center gap-2 px-4 bg-background/50 rounded-xl border border-border/10">
                     <Loader2 className="w-3 h-3 animate-spin text-muted" />
-                    <span className="text-[10px] text-muted font-bold">Loading...</span>
+                    <span className="text-[10px] text-muted font-normal">Loading...</span>
                   </div>
                 ) : (
                   <select
                     value={formData.location_id}
                     onChange={(e) => setFormData({...formData, location_id: Number(e.target.value)})}
                     disabled={!selectedRegion}
-                    className="w-full h-11 bg-background/50 border border-border/10 rounded-xl px-4 text-[11px] font-bold outline-none focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer disabled:opacity-40"
+                    className="w-full h-11 bg-background/50 border border-border/10 rounded-xl px-4 text-[11px] font-normal outline-none focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer disabled:opacity-40"
                   >
                     <option value="">{selectedRegion ? 'Select City' : 'Select Region First'}</option>
                     {cities.map((c) => (
@@ -309,31 +309,31 @@ export default function StoreSettingsPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-[9px] font-black text-muted uppercase tracking-[0.2em] px-1">Area / Neighborhood</label>
+              <label className="text-[9px] font-medium text-muted uppercase tracking-wider px-1">Area / Neighborhood</label>
               <Input 
                 value={formData.area}
                 onChange={(e) => setFormData({...formData, area: e.target.value})}
                 placeholder="e.g. East Legon, Osu"
-                className="h-11 bg-background/50 text-[11px] font-bold rounded-xl"
+                className="h-11 bg-background/50 text-[11px] font-normal rounded-xl"
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-[9px] font-black text-muted uppercase tracking-[0.2em] px-1">Physical / Pickup Address <span className="opacity-40">(Legacy)</span></label>
+              <label className="text-[9px] font-medium text-muted uppercase tracking-wider px-1">Physical / Pickup Address <span className="opacity-40">(Legacy)</span></label>
               <div className="relative">
                 <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-3 h-3 text-muted" />
                 <Input 
                   value={formData.location}
                   onChange={(e) => setFormData({...formData, location: e.target.value})}
                   placeholder="Ex: No. 24, Silicon Avenue, Accra"
-                  className="h-11 pl-12 bg-background/50 text-[11px] font-bold rounded-xl"
+                  className="h-11 pl-12 bg-background/50 text-[11px] font-normal rounded-xl"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-[9px] font-black text-muted uppercase tracking-[0.2em] px-1">Shipping Policies</label>
+                <label className="text-[9px] font-medium text-muted uppercase tracking-wider px-1">Shipping Policies</label>
                 <Textarea 
                   value={formData.delivery_policies}
                   onChange={(e) => setFormData({...formData, delivery_policies: e.target.value})}
@@ -342,7 +342,7 @@ export default function StoreSettingsPage() {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-[9px] font-black text-muted uppercase tracking-[0.2em] px-1">Service Hours</label>
+                <label className="text-[9px] font-medium text-muted uppercase tracking-wider px-1">Service Hours</label>
                 <Textarea 
                   value={formData.business_hours}
                   onChange={(e) => setFormData({...formData, business_hours: e.target.value})}
@@ -360,12 +360,12 @@ export default function StoreSettingsPage() {
             <div className="p-2 bg-amber-500/10 rounded-xl">
               <CreditCard className="w-4 h-4 text-amber-500" />
             </div>
-            <h3 className="text-xs font-black uppercase tracking-widest">Payment & Settlement</h3>
+            <h3 className="text-xs font-medium uppercase tracking-wider">Payment & Settlement</h3>
           </div>
 
           <div className="space-y-6">
             <div className="space-y-3">
-              <label className="text-[9px] font-black text-muted uppercase tracking-[0.2em] px-1">Accepted Methods</label>
+              <label className="text-[9px] font-medium text-muted uppercase tracking-wider px-1">Accepted Methods</label>
               <div className="grid grid-cols-1 gap-3">
                 {PAYMENT_METHODS.map((method) => {
                   const isSelected = formData.accepted_payment_methods.includes(method.id);
@@ -385,7 +385,7 @@ export default function StoreSettingsPage() {
                     >
                       <span className="text-xl">{method.icon}</span>
                       <div className="flex-1">
-                        <p className="text-[11px] font-bold">{method.label}</p>
+                        <p className="text-[11px] font-normal">{method.label}</p>
                         <p className="text-[9px] text-muted font-medium">{method.description}</p>
                       </div>
                       <div className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center ${
@@ -400,11 +400,11 @@ export default function StoreSettingsPage() {
             </div>
 
             <div className="space-y-3">
-              <label className="text-[9px] font-black text-muted uppercase tracking-[0.2em] px-1">Payout Destination</label>
+              <label className="text-[9px] font-medium text-muted uppercase tracking-wider px-1">Payout Destination</label>
               <div className="p-5 rounded-2xl bg-muted/20 border border-border/10 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-[9px] font-bold text-muted uppercase tracking-widest">Bank / Provider</label>
+                    <label className="text-[9px] font-normal text-muted uppercase tracking-wider">Bank / Provider</label>
                     <select
                       value={formData.bank_code}
                       onChange={(e) => setFormData({
@@ -412,7 +412,7 @@ export default function StoreSettingsPage() {
                         bank_code: e.target.value,
                         bank_name: GHANA_BANKS.find(b => b.code === e.target.value)?.name || MOMO_PROVIDERS.find(p => p.code === e.target.value)?.name || ""
                       })}
-                      className="w-full h-11 bg-background border border-border/10 rounded-xl px-4 text-[11px] font-bold outline-none focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer"
+                      className="w-full h-11 bg-background border border-border/10 rounded-xl px-4 text-[11px] font-normal outline-none focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer"
                     >
                       <option value="">Select Provider</option>
                       <optgroup label="Banks">
@@ -424,12 +424,12 @@ export default function StoreSettingsPage() {
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[9px] font-bold text-muted uppercase tracking-widest">Account / Phone Number</label>
+                    <label className="text-[9px] font-normal text-muted uppercase tracking-wider">Account / Phone Number</label>
                     <Input 
                       value={formData.account_number}
                       onChange={(e) => setFormData({...formData, account_number: e.target.value})}
                       placeholder="Enter details"
-                      className="h-11 bg-background text-[11px] font-bold rounded-xl"
+                      className="h-11 bg-background text-[11px] font-normal rounded-xl"
                     />
                   </div>
                 </div>
@@ -437,7 +437,7 @@ export default function StoreSettingsPage() {
             </div>
 
             <div className="space-y-3">
-              <label className="text-[9px] font-black text-muted uppercase tracking-[0.2em] px-1">Payment Timing</label>
+              <label className="text-[9px] font-medium text-muted uppercase tracking-wider px-1">Payment Timing</label>
               <div className="grid grid-cols-1 gap-3">
                 {PAYMENT_TIMINGS.map((timing) => {
                   const isSelected = formData.payment_timing === timing.id;
@@ -455,7 +455,7 @@ export default function StoreSettingsPage() {
                         <Icon size={16} />
                       </div>
                       <div className="flex-1">
-                        <p className="text-[11px] font-bold">{timing.label}</p>
+                        <p className="text-[11px] font-normal">{timing.label}</p>
                         <p className="text-[9px] text-muted font-medium">{timing.description}</p>
                       </div>
                       <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
@@ -477,19 +477,19 @@ export default function StoreSettingsPage() {
             <div className="p-2 bg-blue-500/10 rounded-xl">
               <Share2 className="w-4 h-4 text-blue-500" />
             </div>
-            <h3 className="text-xs font-black uppercase tracking-widest">Social Channels</h3>
+            <h3 className="text-xs font-medium uppercase tracking-wider">Social Channels</h3>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-[9px] font-black text-muted uppercase tracking-[0.2em] px-1">WhatsApp Number</label>
+              <label className="text-[9px] font-medium text-muted uppercase tracking-wider px-1">WhatsApp Number</label>
               <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[11px] font-bold text-muted">+</div>
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[11px] font-normal text-muted">+</div>
                 <Input 
                   value={formData.whatsapp_number}
                   onChange={(e) => setFormData({...formData, whatsapp_number: e.target.value})}
                   placeholder="2348000000000"
-                  className="h-11 pl-8 bg-background/50 text-[11px] font-bold rounded-xl"
+                  className="h-11 pl-8 bg-background/50 text-[11px] font-normal rounded-xl"
                 />
               </div>
             </div>
@@ -501,7 +501,7 @@ export default function StoreSettingsPage() {
                   value={(formData.social_links as any).instagram}
                   onChange={(e) => updateSocialLink('instagram', e.target.value)}
                   placeholder="Instagram Username"
-                  className="h-11 pl-12 bg-background/50 text-[11px] font-bold rounded-xl"
+                  className="h-11 pl-12 bg-background/50 text-[11px] font-normal rounded-xl"
                 />
               </div>
               <div className="relative">
@@ -510,7 +510,7 @@ export default function StoreSettingsPage() {
                   value={(formData.social_links as any).twitter}
                   onChange={(e) => updateSocialLink('twitter', e.target.value)}
                   placeholder="Twitter Handle"
-                  className="h-11 pl-12 bg-background/50 text-[11px] font-bold rounded-xl"
+                  className="h-11 pl-12 bg-background/50 text-[11px] font-normal rounded-xl"
                 />
               </div>
             </div>
@@ -521,7 +521,7 @@ export default function StoreSettingsPage() {
           <Button 
             type="submit" 
             disabled={isLoading}
-            className="w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] shadow-2xl shadow-primary/20 transition-all hover:scale-[1.01] active:scale-[0.99]"
+            className="w-full h-14 rounded-2xl font-medium uppercase tracking-wider text-[10px] shadow-2xl shadow-primary/20 transition-all hover:scale-[1.01] active:scale-[0.99]"
           >
             {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
               <span className="flex items-center gap-2">

@@ -84,11 +84,11 @@ export default function StorefrontQRModal({
               <div className="space-y-1">
                 <p
                   id="qr-modal-title"
-                  className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-accent)]"
+                  className="text-[10px] font-medium uppercase tracking-wider text-[var(--color-accent)]"
                 >
                   Pro · Storefront QR
                 </p>
-                <h2 className="text-lg font-extrabold tracking-tight text-[var(--color-foreground)]">
+                <h2 className="text-lg font-medium tracking-tight text-[var(--color-foreground)]">
                   {storeName}
                 </h2>
               </div>
@@ -137,7 +137,7 @@ export default function StorefrontQRModal({
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={download}
-                  className="h-11 inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--color-foreground)] text-[var(--color-background)] text-xs font-black hover:opacity-90 transition-opacity"
+                  className="h-11 inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--color-foreground)] text-[var(--color-background)] text-xs font-medium hover:opacity-90 transition-opacity"
                 >
                   <Download className="w-3.5 h-3.5" />
                   Download PNG
@@ -146,7 +146,7 @@ export default function StorefrontQRModal({
                   href={url}
                   target="_blank"
                   rel="noreferrer"
-                  className="h-11 inline-flex items-center justify-center gap-2 rounded-2xl border border-[var(--color-border)] text-xs font-black text-[var(--color-foreground)] hover:bg-[var(--color-surface)] transition-colors"
+                  className="h-11 inline-flex items-center justify-center gap-2 rounded-2xl border border-[var(--color-border)] text-xs font-medium text-[var(--color-foreground)] hover:bg-[var(--color-surface)] transition-colors"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
                   Preview

@@ -62,8 +62,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                )}
             </div>
             <div>
-              <span className="text-md font-black tracking-tight text-foreground block leading-none">Vendly</span>
-              <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-muted">Seller Hub</span>
+              <span className="text-md font-medium tracking-tight text-foreground block leading-none">Vendly</span>
+              <span className="text-[9px] font-normal uppercase tracking-wider text-muted">Seller Hub</span>
             </div>
           </div>
 
@@ -77,7 +77,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                   href={item.href}
                   onClick={onClose}
                   className={clsx(
-                    "group relative flex items-center gap-3 rounded-2xl px-4 py-3 text-xs font-bold transition-all duration-300",
+                    "group relative flex items-center gap-3 rounded-2xl px-4 py-3 text-xs font-normal transition-all duration-300",
                     isActive 
                       ? "bg-primary/5 text-primary" 
                       : "text-muted hover:bg-surface hover:text-foreground"
@@ -103,23 +103,23 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           <div className="mt-auto space-y-4">
             {user?.seller_profile && (
                <div className="p-3 rounded-2xl bg-surface border border-border/50">
-                  <p className="text-[10px] font-bold text-muted uppercase tracking-wider mb-2">My Store</p>
+                  <p className="text-[10px] font-normal text-muted uppercase tracking-wider mb-2">My Store</p>
                   <div className="flex items-center gap-3">
-                     <div className="h-8 w-8 rounded-xl border border-border overflow-hidden bg-background flex items-center justify-center text-primary font-bold text-[10px] uppercase">
+                     <div className="h-8 w-8 rounded-xl border border-border overflow-hidden bg-background flex items-center justify-center text-primary font-normal text-[10px] uppercase">
                         {user.seller_profile.logo_url ? (
                            <img src={user.seller_profile.logo_url} alt="Store Logo" className="w-full h-full object-cover" />
                         ) : (
                            user.seller_profile.store_name.charAt(0)
                         )}
                      </div>
-                     <p className="text-xs font-bold truncate text-foreground">{user.seller_profile.store_name}</p>
+                     <p className="text-xs font-normal truncate text-foreground">{user.seller_profile.store_name}</p>
                   </div>
                </div>
             )}
             
             <button
               onClick={logout}
-              className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-xs font-bold text-red-500 transition-all hover:bg-red-500/5"
+              className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-xs font-normal text-red-500 transition-all hover:bg-red-500/5"
             >
               <LogOut className="w-4 h-4" />
               <span>Sign Out</span>

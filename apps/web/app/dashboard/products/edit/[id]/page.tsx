@@ -208,8 +208,8 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     return (
       <div className="max-w-2xl mx-auto px-4 mt-20 text-center">
         <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4 opacity-20" />
-        <h2 className="text-xl font-black uppercase tracking-tight mb-2">Error Loading Product</h2>
-        <p className="text-[10px] text-muted font-bold uppercase tracking-widest mb-8">{error}</p>
+        <h2 className="text-xl font-medium uppercase tracking-tight mb-2">Error Loading Product</h2>
+        <p className="text-[10px] text-muted font-normal uppercase tracking-wider mb-8">{error}</p>
         <Link href="/dashboard/products">
            <Button variant="secondary" className="rounded-2xl px-8">Back to products</Button>
         </Link>
@@ -485,27 +485,27 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     <div className="max-w-2xl mx-auto space-y-6 pb-20">
       <Link 
         href="/dashboard/products"
-        className="inline-flex items-center gap-2 text-xs font-bold text-muted hover:text-foreground transition-colors group mb-2"
+        className="inline-flex items-center gap-2 text-xs font-normal text-muted hover:text-foreground transition-colors group mb-2"
       >
         <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
         Back to Inventory
       </Link>
 
       <div className="px-2">
-        <h2 className="text-md font-black tracking-tight uppercase">Edit Product</h2>
+        <h2 className="text-md font-medium tracking-tight uppercase">Edit Product</h2>
         <p className="text-xs text-muted font-medium mt-1">Refine your listing details</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Media */}
         <div className="space-y-3">
-          <label className="text-[10px] font-bold text-muted uppercase tracking-widest px-4">
+          <label className="text-[10px] font-normal text-muted uppercase tracking-wider px-4">
             Product Media
           </label>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-2">
             {/* Images */}
             <div className="space-y-2">
-              <p className="text-[10px] font-bold text-muted uppercase tracking-widest">Photos (Max 3)</p>
+              <p className="text-[10px] font-normal text-muted uppercase tracking-wider">Photos (Max 3)</p>
               <div className="grid grid-cols-3 gap-3">
                 <AnimatePresence>
                   {existingImages.map((src) => (
@@ -533,7 +533,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                       className="relative group aspect-square rounded-2xl overflow-hidden border border-primary/30"
                     >
                       <img src={src} alt="Product" className="w-full h-full object-cover" />
-                      <div className="absolute top-1 left-1 bg-primary text-[6px] font-black px-1 rounded text-white uppercase italic">New</div>
+                      <div className="absolute top-1 left-1 bg-primary text-[6px] font-medium px-1 rounded text-white uppercase italic">New</div>
                       <button 
                         type="button"
                         onClick={() => removeImage(idx)}
@@ -562,7 +562,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
 
             {/* Video */}
             <div className="space-y-2">
-              <p className="text-[10px] font-bold text-muted uppercase tracking-widest">Video (Trims to 5s)</p>
+              <p className="text-[10px] font-normal text-muted uppercase tracking-wider">Video (Trims to 5s)</p>
               <div>
                 {videoPreview || existingVideo ? (
                   <div className="relative rounded-2xl overflow-hidden border border-border aspect-square md:aspect-auto md:h-[106px]">
@@ -583,7 +583,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                   <button
                     type="button"
                     onClick={() => videoInputRef.current?.click()}
-                    className="w-full h-[106px] rounded-2xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-1 text-muted hover:border-primary/50 transition-all text-[9px] font-bold uppercase tracking-wider"
+                    className="w-full h-[106px] rounded-2xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-1 text-muted hover:border-primary/50 transition-all text-[9px] font-normal uppercase tracking-wider"
                   >
                     <ImageIcon className="w-4 h-4" />
                     <span>Upload Short Clip (Auto-trims to 5s)</span>
@@ -598,7 +598,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         <Card className="p-6 md:p-8 space-y-6 border-none shadow-sm" hoverEffect={false}>
           <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-muted uppercase tracking-widest px-1">Product Title</label>
+              <label className="text-[10px] font-normal text-muted uppercase tracking-wider px-1">Product Title</label>
               <div className="relative">
                 <ShoppingBag className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                 <Input 
@@ -607,7 +607,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                   placeholder="Ex: iPhone 13 Case"
                   required
                   list="product-title-suggestions"
-                  className="h-12 pl-12 bg-background/50 text-xs font-bold"
+                  className="h-12 pl-12 bg-background/50 text-xs font-normal"
                 />
                 <datalist id="product-title-suggestions">
                   {existingTitles.slice(0, 10).map((title) => (
@@ -618,21 +618,21 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-muted uppercase tracking-widest px-1">Price (GH₵)</label>
+              <label className="text-[10px] font-normal text-muted uppercase tracking-wider px-1">Price (GH₵)</label>
               <Input
                 type="number"
                 value={formData.price}
                 onChange={(e) => setFormData({...formData, price: e.target.value})}
                 placeholder="0.00"
                 required
-                className="h-12 bg-background/50 text-xs font-bold"
+                className="h-12 bg-background/50 text-xs font-normal"
               />
             </div>
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-muted uppercase tracking-widest px-1">
+              <label className="text-[10px] font-normal text-muted uppercase tracking-wider px-1">
                 Original Price (GH₵) <span className="opacity-60">— optional</span>
               </label>
               <Input
@@ -640,7 +640,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                 value={formData.original_price}
                 onChange={(e) => setFormData({...formData, original_price: e.target.value})}
                 placeholder="0.00"
-                className="h-12 bg-background/50 text-xs font-bold"
+                className="h-12 bg-background/50 text-xs font-normal"
               />
               {(() => {
                 const orig = parseFloat(formData.original_price);
@@ -655,7 +655,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                 const pct = Math.round(((orig - cur) / orig) * 100);
                 return (
                   <p className="text-[10px] px-1 inline-flex items-center gap-2">
-                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 font-bold">
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 font-normal">
                       −{pct}%
                     </span>
                     <span className="text-muted">Buyers save GH₵{(orig - cur).toFixed(2)}</span>
@@ -667,11 +667,11 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
 
           <div className="grid md:grid-cols-3 gap-6">
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-muted uppercase tracking-widest px-1">Condition</label>
+              <label className="text-[10px] font-normal text-muted uppercase tracking-wider px-1">Condition</label>
               <select 
                 value={formData.condition}
                 onChange={(e) => setFormData({...formData, condition: e.target.value})}
-                className="w-full h-12 px-4 bg-background/50 border border-border/50 rounded-2xl text-xs font-bold outline-none"
+                className="w-full h-12 px-4 bg-background/50 border border-border/50 rounded-2xl text-xs font-normal outline-none"
               >
                 <option value="new">New</option>
                 <option value="used_like_new">Used - Like New</option>
@@ -681,22 +681,22 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-muted uppercase tracking-widest px-1">Quantity</label>
+              <label className="text-[10px] font-normal text-muted uppercase tracking-wider px-1">Quantity</label>
               <Input 
                 type="number"
                 min="0"
                 value={formData.quantity_available}
                 onChange={(e) => setFormData({...formData, quantity_available: e.target.value})}
-                className="h-12 bg-background/50 text-xs font-bold"
+                className="h-12 bg-background/50 text-xs font-normal"
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-muted uppercase tracking-widest px-1">Status</label>
+              <label className="text-[10px] font-normal text-muted uppercase tracking-wider px-1">Status</label>
               <select 
                 value={formData.status}
                 onChange={(e) => setFormData({...formData, status: e.target.value})}
-                className="w-full h-12 px-4 bg-background/50 border border-border/50 rounded-2xl text-xs font-bold outline-none"
+                className="w-full h-12 px-4 bg-background/50 border border-border/50 rounded-2xl text-xs font-normal outline-none"
               >
                 <option value="draft">Draft (Hidden)</option>
                 <option value="active">Active (Visible)</option>
@@ -708,13 +708,13 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <div className="space-y-2">
-                <label className="text-[10px] font-bold text-muted uppercase tracking-widest px-1">Category</label>
+                <label className="text-[10px] font-normal text-muted uppercase tracking-wider px-1">Category</label>
                 <div className="relative">
                   <LayoutGrid className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                   <select 
                     value={formData.category}
                     onChange={(e) => handleCategoryChange(e.target.value)}
-                    className="w-full h-12 pl-12 pr-4 bg-background/50 border border-border/50 rounded-2xl text-xs font-bold outline-none appearance-none"
+                    className="w-full h-12 pl-12 pr-4 bg-background/50 border border-border/50 rounded-2xl text-xs font-normal outline-none appearance-none"
                   >
                     {categories.map(cat => (
                       <option key={cat.id} value={cat.name}>{cat.name}</option>
@@ -725,11 +725,11 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
 
               {categoryBrands.length > 0 && (
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-muted uppercase tracking-widest px-1">Brand</label>
+                  <label className="text-[10px] font-normal text-muted uppercase tracking-wider px-1">Brand</label>
                   <select 
                     value={formData.brand}
                     onChange={(e) => setFormData({...formData, brand: e.target.value})}
-                    className="w-full h-12 px-4 bg-background/50 border border-border/50 rounded-2xl text-xs font-bold outline-none"
+                    className="w-full h-12 px-4 bg-background/50 border border-border/50 rounded-2xl text-xs font-normal outline-none"
                   >
                     <option value="">Select Brand (Optional)</option>
                     {categoryBrands.map(b => (
@@ -741,7 +741,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-muted uppercase tracking-widest px-1">Tags (Press Enter)</label>
+              <label className="text-[10px] font-normal text-muted uppercase tracking-wider px-1">Tags (Press Enter)</label>
               <div className="relative">
                 <Tag className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                 <Input 
@@ -755,7 +755,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                   }}
                   placeholder="new, trending..."
                   list="product-tag-suggestions"
-                  className="h-12 pl-12 bg-background/50 text-xs font-bold"
+                  className="h-12 pl-12 bg-background/50 text-xs font-normal"
                 />
                 <datalist id="product-tag-suggestions">
                   {tagSuggestions.slice(0, 12).map((tag) => (
@@ -769,7 +769,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                     <button
                       key={tag}
                       type="button"
-                      className="px-2 py-1 rounded-full border border-border text-[9px] font-bold text-muted hover:text-foreground hover:border-primary/40"
+                      className="px-2 py-1 rounded-full border border-border text-[9px] font-normal text-muted hover:text-foreground hover:border-primary/40"
                       onClick={() => setFormData((prev) => ({ ...prev, tagInput: tag }))}
                     >
                       {tag}
@@ -779,7 +779,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
               )}
               <div className="flex flex-wrap gap-2 mt-2">
                 {formData.tags.map(tag => (
-                  <span key={tag} className="flex items-center gap-1 px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold rounded-full">
+                  <span key={tag} className="flex items-center gap-1 px-3 py-1 bg-primary/10 text-primary text-[10px] font-normal rounded-full">
                     {tag}
                     <X className="w-3 h-3 cursor-pointer" onClick={() => removeTag(tag)} />
                   </span>
@@ -789,12 +789,12 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           </div>
 
           <div className="space-y-2">
-            <label className="text-[10px] font-bold text-muted uppercase tracking-widest px-1">Promotion</label>
+            <label className="text-[10px] font-normal text-muted uppercase tracking-wider px-1">Promotion</label>
             <button
               type="button"
               onClick={handleHotSalesPayment}
               disabled={verificationState === "verifying"}
-              className={`w-full h-12 px-4 rounded-2xl border text-xs font-bold flex items-center justify-between transition-all ${
+              className={`w-full h-12 px-4 rounded-2xl border text-xs font-normal flex items-center justify-between transition-all ${
                 formData.is_featured
                   ? "border-amber-400/40 bg-amber-500/10 text-amber-600"
                   : "border-border/50 bg-background/50 text-muted"
@@ -812,7 +812,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           </div>
 
           <div className="space-y-2">
-            <label className="text-[10px] font-bold text-muted uppercase tracking-widest px-1">Description</label>
+            <label className="text-[10px] font-normal text-muted uppercase tracking-wider px-1">Description</label>
             <Textarea 
               value={formData.description}
               onChange={(e) => setFormData({...formData, description: e.target.value})}
@@ -835,7 +835,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             }`}
           >
             <Info className="w-4 h-4" />
-            <p className="text-xs font-bold uppercase tracking-wider">{message.text}</p>
+            <p className="text-xs font-normal uppercase tracking-wider">{message.text}</p>
           </motion.div>
         )}
 
@@ -844,14 +844,14 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
              type="button" 
              variant="secondary"
              onClick={() => router.back()}
-             className="flex-1 h-14 rounded-2xl font-black uppercase tracking-widest text-xs border-border/50"
+             className="flex-1 h-14 rounded-2xl font-medium uppercase tracking-wider text-xs border-border/50"
            >
              Cancel
            </Button>
            <Button 
              type="submit" 
              disabled={isLoading}
-             className="flex-[2] h-14 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-primary/20"
+             className="flex-[2] h-14 rounded-2xl font-medium uppercase tracking-wider text-xs shadow-xl shadow-primary/20"
            >
              {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Save Changes"}
            </Button>

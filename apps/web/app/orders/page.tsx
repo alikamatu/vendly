@@ -136,7 +136,7 @@ export default function BuyerOrdersPage() {
       <main className="max-w-3xl mx-auto px-4 sm:px-6 md:px-8 pt-24 pb-20">
         <Link
           href="/dashboard"
-          className="inline-flex items-center gap-2 text-xs font-bold text-muted hover:text-foreground transition-colors mb-6"
+          className="inline-flex items-center gap-2 text-xs font-normal text-muted hover:text-foreground transition-colors mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
           Dashboard
@@ -144,10 +144,10 @@ export default function BuyerOrdersPage() {
 
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h2 className="text-xl font-black uppercase tracking-tight">
+            <h2 className="text-xl font-medium uppercase tracking-tight">
               Order History
             </h2>
-            <p className="text-[10px] text-muted font-bold uppercase tracking-wider mt-1">
+            <p className="text-[10px] text-muted font-normal uppercase tracking-wider mt-1">
               Track your verified entrepreneur purchases • {orders.length} total
             </p>
           </div>
@@ -156,7 +156,7 @@ export default function BuyerOrdersPage() {
         {error && (
           <div className="flex items-center gap-3 p-4 bg-red-500/10 text-red-500 rounded-2xl mb-8 border border-red-500/20">
             <AlertCircle className="w-4 h-4" />
-            <p className="text-[10px] font-black uppercase tracking-widest">
+            <p className="text-[10px] font-medium uppercase tracking-wider">
               {error}
             </p>
           </div>
@@ -165,7 +165,7 @@ export default function BuyerOrdersPage() {
         {isVerifying && (
           <div className="flex items-center gap-3 p-4 bg-primary/10 text-primary rounded-2xl mb-8 border border-primary/20">
             <Loader2 className="w-4 h-4 animate-spin" />
-            <p className="text-[10px] font-black uppercase tracking-widest">
+            <p className="text-[10px] font-medium uppercase tracking-wider">
               Verifying payment and syncing order status...
             </p>
           </div>
@@ -191,10 +191,10 @@ export default function BuyerOrdersPage() {
                           <ShoppingBag className="w-5 h-5 text-primary" />
                         </div>
                         <div>
-                          <p className="text-[10px] font-black text-muted uppercase tracking-widest leading-none mb-1">
+                          <p className="text-[10px] font-medium text-muted uppercase tracking-wider leading-none mb-1">
                             Order ID
                           </p>
-                          <p className="text-sm font-black text-foreground">
+                          <p className="text-sm font-medium text-foreground">
                             #{order.id.slice(-8).toUpperCase()}
                           </p>
                         </div>
@@ -202,10 +202,10 @@ export default function BuyerOrdersPage() {
 
                       <div className="flex items-center gap-6">
                         <div className="text-right hidden sm:block">
-                          <p className="text-[10px] font-black text-muted uppercase tracking-widest leading-none mb-1">
+                          <p className="text-[10px] font-medium text-muted uppercase tracking-wider leading-none mb-1">
                             Placed On
                           </p>
-                          <p className="text-xs font-bold">
+                          <p className="text-xs font-normal">
                             {new Date(order.created_at).toLocaleDateString()}
                           </p>
                         </div>
@@ -213,7 +213,7 @@ export default function BuyerOrdersPage() {
                           className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border/50 bg-surface/50`}
                         >
                           {getStatusIcon(order.status)}
-                          <span className="text-[10px] font-black uppercase tracking-widest">
+                          <span className="text-[10px] font-medium uppercase tracking-wider">
                             {order.status.replace('_', ' ')}
                           </span>
                         </div>
@@ -232,18 +232,18 @@ export default function BuyerOrdersPage() {
                                 className="w-full h-full object-cover"
                               />
                             ) : (
-                              <span className="text-[10px] font-black">
+                              <span className="text-[10px] font-medium">
                                 {order.items[0].product.seller.store_name[0]}
                               </span>
                             )}
                           </div>
                           <div>
-                            <p className="text-[9px] font-black text-muted uppercase tracking-widest leading-none">
+                            <p className="text-[9px] font-medium text-muted uppercase tracking-wider leading-none">
                               Sold by
                             </p>
                             <Link
                               href={`/s/${order.items[0].product.seller.store_link}`}
-                              className="text-[11px] font-bold text-foreground hover:text-primary transition-colors"
+                              className="text-[11px] font-normal text-foreground hover:text-primary transition-colors"
                             >
                               {order.items[0].product.seller.store_name}
                             </Link>
@@ -255,7 +255,7 @@ export default function BuyerOrdersPage() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="h-8 text-[9px] font-black uppercase tracking-widest px-4"
+                            className="h-8 text-[9px] font-medium uppercase tracking-wider px-4"
                           >
                             Visit Store
                           </Button>
@@ -285,16 +285,16 @@ export default function BuyerOrdersPage() {
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h4 className="text-[11px] font-black uppercase tracking-tight truncate">
+                            <h4 className="text-[11px] font-medium uppercase tracking-tight truncate">
                               {item.product.title}
                             </h4>
-                            <p className="text-[10px] text-muted font-bold">
+                            <p className="text-[10px] text-muted font-normal">
                               Qty: {item.quantity} • GH₵
                               {parseFloat(item.price).toLocaleString()}
                             </p>
                           </div>
                           <div className="text-right">
-                            <p className="text-xs font-black">
+                            <p className="text-xs font-medium">
                               GH₵
                               {(
                                 parseFloat(item.price) * item.quantity
@@ -308,12 +308,12 @@ export default function BuyerOrdersPage() {
                     {/* Order & Payment Details */}
                     <div className="mt-6 pt-6 border-t border-border/50 grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-3">
-                        <p className="text-[10px] font-black text-muted uppercase tracking-widest border-b border-border/50 pb-2">Delivery Details</p>
+                        <p className="text-[10px] font-medium text-muted uppercase tracking-wider border-b border-border/50 pb-2">Delivery Details</p>
                         <div className="space-y-2">
-                          <p className="text-xs"><span className="text-muted font-bold">Name:</span> {order.customer_name}</p>
-                          <p className="text-xs"><span className="text-muted font-bold">Phone:</span> {order.customer_phone}</p>
-                          <p className="text-xs"><span className="text-muted font-bold">Method:</span> <span className="uppercase font-bold text-[10px] bg-surface px-2 py-0.5 rounded-md border border-border/50">{order.delivery_method}</span></p>
-                          <p className="text-xs"><span className="text-muted font-bold">{order.delivery_method === 'DELIVERY' ? 'Address:' : 'Pickup at:'}</span> {order.delivery_location}</p>
+                          <p className="text-xs"><span className="text-muted font-normal">Name:</span> {order.customer_name}</p>
+                          <p className="text-xs"><span className="text-muted font-normal">Phone:</span> {order.customer_phone}</p>
+                          <p className="text-xs"><span className="text-muted font-normal">Method:</span> <span className="uppercase font-normal text-[10px] bg-surface px-2 py-0.5 rounded-md border border-border/50">{order.delivery_method}</span></p>
+                          <p className="text-xs"><span className="text-muted font-normal">{order.delivery_method === 'DELIVERY' ? 'Address:' : 'Pickup at:'}</span> {order.delivery_location}</p>
                           {order.delivery_notes && (
                             <p className="text-xs mt-1 text-muted italic">"{order.delivery_notes}"</p>
                           )}
@@ -321,11 +321,11 @@ export default function BuyerOrdersPage() {
                       </div>
                       
                       <div className="space-y-3">
-                        <p className="text-[10px] font-black text-muted uppercase tracking-widest border-b border-border/50 pb-2">Payment Details</p>
+                        <p className="text-[10px] font-medium text-muted uppercase tracking-wider border-b border-border/50 pb-2">Payment Details</p>
                         <div className="space-y-2">
-                          <p className="text-xs"><span className="text-muted font-bold">Provider:</span> <span className={`uppercase font-bold text-[10px] px-2 py-0.5 rounded-md border ${order.payment_info?.provider === 'PAYSTACK' ? 'bg-primary/10 text-primary border-primary/20' : 'bg-surface border-border/50'}`}>{order.payment_info?.provider || 'Unknown'}</span></p>
-                          <p className="text-xs flex items-center gap-2"><span className="text-muted font-bold">Status:</span> 
-                            <span className="uppercase font-bold text-[10px]">
+                          <p className="text-xs"><span className="text-muted font-normal">Provider:</span> <span className={`uppercase font-normal text-[10px] px-2 py-0.5 rounded-md border ${order.payment_info?.provider === 'PAYSTACK' ? 'bg-primary/10 text-primary border-primary/20' : 'bg-surface border-border/50'}`}>{order.payment_info?.provider || 'Unknown'}</span></p>
+                          <p className="text-xs flex items-center gap-2"><span className="text-muted font-normal">Status:</span> 
+                            <span className="uppercase font-normal text-[10px]">
                               {order.payment_info?.status === 'SUCCESS' ? (
                                 <span className="text-emerald-500 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Paid</span>
                               ) : order.payment_info?.status === 'FAILED' ? (
@@ -336,7 +336,7 @@ export default function BuyerOrdersPage() {
                             </span>
                           </p>
                           {order.payment_info?.reference && (
-                            <p className="text-[10px] text-muted truncate"><span className="font-bold">Ref:</span> {order.payment_info.reference}</p>
+                            <p className="text-[10px] text-muted truncate"><span className="font-normal">Ref:</span> {order.payment_info.reference}</p>
                           )}
                           {order.status === 'AWAITING_PAYMENT' && (
                             <div className="pt-2">
@@ -344,7 +344,7 @@ export default function BuyerOrdersPage() {
                                 size="sm"
                                 onClick={() => handleRetryPayment(order.id)}
                                 isLoading={isRetrying === order.id}
-                                className="h-8 text-[9px] font-black uppercase tracking-widest px-4 rounded-xl flex items-center gap-2"
+                                className="h-8 text-[9px] font-medium uppercase tracking-wider px-4 rounded-xl flex items-center gap-2"
                               >
                                 <CheckCircle2 className="w-3 h-3" /> Complete Payment
                               </Button>
@@ -355,10 +355,10 @@ export default function BuyerOrdersPage() {
                     </div>
 
                     <div className="mt-6 pt-6 border-t border-border/50 flex items-center justify-between">
-                      <p className="text-[10px] font-black text-muted uppercase tracking-widest">
+                      <p className="text-[10px] font-medium text-muted uppercase tracking-wider">
                         Total Amount
                       </p>
-                      <p className="text-lg font-black text-primary">
+                      <p className="text-lg font-medium text-primary">
                         GH₵{parseFloat(order.total_amount).toLocaleString()}
                       </p>
                     </div>
@@ -369,10 +369,10 @@ export default function BuyerOrdersPage() {
               <div className="py-20 text-center space-y-4 border border-dashed border-border/50 rounded-[2.5rem] bg-surface/10">
                 <Package className="w-12 h-12 text-muted mx-auto opacity-10" />
                 <div className="space-y-1">
-                  <p className="text-[11px] text-muted font-black uppercase tracking-[0.2em]">
+                  <p className="text-[11px] text-muted font-medium uppercase tracking-wider">
                     No orders yet
                   </p>
-                  <p className="text-[9px] text-muted/60 font-medium uppercase tracking-widest italic">
+                  <p className="text-[9px] text-muted/60 font-medium uppercase tracking-wider italic">
                     Your shopping journey with verified entrepreneurs starts
                     here
                   </p>
@@ -381,7 +381,7 @@ export default function BuyerOrdersPage() {
                   <Button
                     size="sm"
                     variant="secondary"
-                    className="rounded-xl px-8 text-[9px] font-black uppercase tracking-widest"
+                    className="rounded-xl px-8 text-[9px] font-medium uppercase tracking-wider"
                   >
                     Post First Order
                   </Button>

@@ -110,7 +110,7 @@ export default function CategoryGalleryPage() {
       <div className="max-w-7xl mx-auto px-4 md:px-8 pt-8 pb-4">
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-xs font-bold text-muted-foreground hover:text-primary transition-colors group"
+          className="inline-flex items-center gap-2 text-xs font-normal text-muted-foreground hover:text-primary transition-colors group"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
           Back to Marketplace
@@ -119,11 +119,11 @@ export default function CategoryGalleryPage() {
 
       {/* Showcase Hero Intro */}
       <section className="max-w-7xl mx-auto px-4 md:px-8 py-8 space-y-4">
-        <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.4em] text-primary font-black">
+        <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-primary font-medium">
           <Sparkles className="w-3.5 h-3.5 animate-pulse" />
           Immersive Catalog
         </div>
-        <h1 className="text-3xl md:text-5xl uppercase tracking-tight font-black text-foreground">
+        <h1 className="text-3xl md:text-5xl uppercase tracking-tight font-medium text-foreground">
           Categories & Brands
         </h1>
         <p className="text-sm text-muted-foreground max-w-xl leading-relaxed">
@@ -155,7 +155,7 @@ export default function CategoryGalleryPage() {
                 {/* Content Overlay */}
                 <div className="relative z-[2] space-y-4 w-full text-white">
                   <div className="flex justify-between items-start">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-[10px] font-bold uppercase tracking-wider">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-[10px] font-normal uppercase tracking-wider">
                       <ShoppingBag className="w-3 h-3" />
                       {cat.productCount} active item{cat.productCount === 1 ? "" : "s"}
                     </span>
@@ -169,7 +169,7 @@ export default function CategoryGalleryPage() {
                   </div>
 
                   <div className="space-y-1">
-                    <h3 className="text-xl md:text-2xl font-black uppercase tracking-tight">
+                    <h3 className="text-xl md:text-2xl font-medium uppercase tracking-tight">
                       {cat.name}
                     </h3>
                     {cat.description && (
@@ -181,7 +181,7 @@ export default function CategoryGalleryPage() {
 
                   {/* Horizontally scrolling brand tags */}
                   <div className="space-y-2 pt-2 border-t border-white/10">
-                    <p className="text-[10px] uppercase tracking-wider text-white/40 font-bold">
+                    <p className="text-[10px] uppercase tracking-wider text-white/40 font-normal">
                       Available Brands
                     </p>
                     {cat.brands.length === 0 ? (
@@ -220,7 +220,7 @@ export default function CategoryGalleryPage() {
       <section className="max-w-7xl mx-auto px-4 md:px-8 py-10 bg-surface/30 rounded-[3rem] border border-border/40">
         <div className="space-y-8">
           <div className="space-y-2">
-            <h2 className="text-xl md:text-2xl font-extrabold uppercase tracking-tight text-foreground flex items-center gap-2">
+            <h2 className="text-xl md:text-2xl font-medium uppercase tracking-tight text-foreground flex items-center gap-2">
               <Layers className="w-5 h-5 text-primary" />
               General Brand Directory
             </h2>
@@ -245,12 +245,12 @@ export default function CategoryGalleryPage() {
                     {b.image_url ? (
                       <img src={b.image_url} alt={b.name} className="w-full h-full object-contain" />
                     ) : (
-                      <span className="text-sm font-black uppercase text-muted-foreground/30">
+                      <span className="text-sm font-medium uppercase text-muted-foreground/30">
                         {b.name.charAt(0)}
                       </span>
                     )}
                   </div>
-                  <span className="text-[11px] font-bold text-foreground text-center truncate w-full">
+                  <span className="text-[11px] font-normal text-foreground text-center truncate w-full">
                     {b.name}
                   </span>
                   <span className="text-[9px] text-muted-foreground truncate w-full text-center">

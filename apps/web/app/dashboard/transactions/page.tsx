@@ -34,7 +34,7 @@ export default function TransactionsPage() {
         <Link href="/dashboard" className="text-muted hover:text-foreground">
           <ArrowLeft className="w-4 h-4" />
         </Link>
-        <h1 className="text-lg font-black uppercase tracking-widest">Transactions</h1>
+        <h1 className="text-lg font-medium uppercase tracking-wider">Transactions</h1>
       </div>
 
       {isLoading && (
@@ -59,11 +59,11 @@ export default function TransactionsPage() {
               <div key={tx.id} className="border border-border/50 rounded-xl p-4 bg-surface/40">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-bold uppercase">{tx.reference}</p>
+                    <p className="text-xs font-normal uppercase">{tx.reference}</p>
                     <p className="text-[11px] text-muted">{tx.provider}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs font-bold">{tx.status}</p>
+                    <p className="text-xs font-normal">{tx.status}</p>
                     <p className="text-[11px] text-muted">GHS {Number(tx.amount).toFixed(2)}</p>
                   </div>
                 </div>

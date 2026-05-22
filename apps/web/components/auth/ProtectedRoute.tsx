@@ -92,7 +92,7 @@ function AccessDenied() {
           <Lock className="w-6 h-6" />
         </div>
         <div className="space-y-2">
-          <h1 className="text-lg font-extrabold tracking-tight text-[var(--color-foreground)]">
+          <h1 className="text-lg font-medium tracking-tight text-[var(--color-foreground)]">
             Seller access only
           </h1>
           <p className="text-sm text-[var(--color-muted)] leading-relaxed">
@@ -103,14 +103,14 @@ function AccessDenied() {
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link
             href="/"
-            className="inline-flex items-center justify-center gap-2 px-5 h-11 rounded-2xl bg-[var(--color-foreground)] text-[var(--color-background)] text-sm font-bold hover:opacity-90 transition-opacity"
+            className="inline-flex items-center justify-center gap-2 px-5 h-11 rounded-2xl bg-[var(--color-foreground)] text-[var(--color-background)] text-sm font-normal hover:opacity-90 transition-opacity"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to shop
           </Link>
           <Link
             href="/create-store"
-            className="inline-flex items-center justify-center px-5 h-11 rounded-2xl border border-[var(--color-border)] text-sm font-bold text-[var(--color-foreground)] hover:bg-[var(--color-border)]/40 transition-colors"
+            className="inline-flex items-center justify-center px-5 h-11 rounded-2xl border border-[var(--color-border)] text-sm font-normal text-[var(--color-foreground)] hover:bg-[var(--color-border)]/40 transition-colors"
           >
             Become a seller
           </Link>

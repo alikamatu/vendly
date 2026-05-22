@@ -27,7 +27,7 @@ export default function PriceBlock({
   return (
     <div className="space-y-2">
       <div className="flex items-baseline flex-wrap gap-3">
-        <span className="text-3xl md:text-4xl font-black text-red-500 tabular-nums">
+        <span className="text-3xl md:text-4xl font-medium text-red-500 tabular-nums">
           {currency}
           {cur.toLocaleString()}
         </span>
@@ -37,7 +37,7 @@ export default function PriceBlock({
               {currency}
               {orig!.toLocaleString()}
             </span>
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-500/15 text-emerald-600">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium uppercase tracking-wider bg-emerald-500/15 text-emerald-600">
               <BadgePercent className="w-3 h-3" />−{pct}%
             </span>
           </>
@@ -45,7 +45,7 @@ export default function PriceBlock({
         <StockBadge quantity={quantityAvailable} />
       </div>
       {hasDiscount && (
-        <p className="text-[11px] font-bold text-emerald-600">
+        <p className="text-[11px] font-normal text-emerald-600">
           You save {currency}
           {savings.toLocaleString()}
         </p>

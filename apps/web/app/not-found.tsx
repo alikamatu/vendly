@@ -18,7 +18,7 @@ export default function NotFound() {
         <div className="absolute inset-0 bg-red-500/20 rounded-full"></div>
         <div className="relative w-[200px] bg-surface border border-border/50 p-8 rounded-[2.5rem] shadow-2xl">
           <Search className="w-12 h-12 text-primary mx-auto mb-4 opacity-20" />
-          <h1 className="text-md font-black tracking-tight text-foreground uppercase">404</h1>
+          <h1 className="text-md font-medium tracking-tight text-foreground uppercase">404</h1>
         </div>
       </motion.div>
 
@@ -28,7 +28,7 @@ export default function NotFound() {
         transition={{ delay: 0.2 }}
         className="space-y-4 max-w-xs mx-auto"
       >
-        <h2 className="text-md font-bold text-foreground">Lost in the marketplace?</h2>
+        <h2 className="text-md font-normal text-foreground">Lost in the marketplace?</h2>
         <p className="text-xs text-muted leading-relaxed font-medium">
           The page you're looking for doesn't exist or has been moved to a different stall.
         </p>
@@ -42,7 +42,7 @@ export default function NotFound() {
       >
         <button 
           onClick={() => window.history.back()}
-          className="flex-1 px-6 py-3.5 text-xs font-bold text-muted hover:text-foreground transition-colors flex items-center justify-center gap-2"
+          className="flex-1 px-6 py-3.5 text-xs font-normal text-muted hover:text-foreground transition-colors flex items-center justify-center gap-2"
         >
           <ArrowLeft className="w-4 h-4" />
           Go Back

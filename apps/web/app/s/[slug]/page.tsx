@@ -59,7 +59,7 @@ export default function StorePage() {
           <div className="w-20 h-20 bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
             <ShoppingBag className="w-10 h-10 text-destructive" />
           </div>
-          <h1 className="text-2xl font-black uppercase tracking-tight">Store Not Found</h1>
+          <h1 className="text-2xl font-medium uppercase tracking-tight">Store Not Found</h1>
           <p className="text-muted-foreground">{error || "The store you're looking for doesn't exist or has been moved."}</p>
           <Link href="/" className="block w-full">
             <Button variant="primary" className="w-full">
@@ -80,7 +80,7 @@ export default function StorePage() {
 
         {/* Products Section - Masonry Layout like Homepage */}
         <div className="space-y-8">
-          <h2 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground px-2">
+          <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground px-2">
             Available Products
           </h2>
 
@@ -103,7 +103,7 @@ export default function StorePage() {
                 <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto opacity-40">
                   <ShoppingBag className="w-6 h-6" />
                 </div>
-                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
+                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
                   No items listed yet
                 </p>
               </motion.div>

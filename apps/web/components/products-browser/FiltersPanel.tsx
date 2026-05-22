@@ -98,7 +98,7 @@ export default function FiltersPanel({
                 key={c}
                 type="button"
                 onClick={() => state.setCondition(active ? null : c)}
-                className={`text-left px-3 h-9 rounded-lg border text-[11px] font-bold capitalize transition-colors ${
+                className={`text-left px-3 h-9 rounded-lg border text-[11px] font-normal capitalize transition-colors ${
                   active
                     ? "border-[var(--color-accent)] bg-[var(--color-accent)]/10 text-[var(--color-accent)]"
                     : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-foreground)] hover:border-[var(--color-accent)]/40"
@@ -122,7 +122,7 @@ export default function FiltersPanel({
       <button
         type="button"
         onClick={state.clearAll}
-        className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[var(--color-muted)] hover:text-[var(--color-foreground)] transition-colors"
+        className="inline-flex items-center gap-1.5 text-[11px] font-normal text-[var(--color-muted)] hover:text-[var(--color-foreground)] transition-colors"
       >
         <RefreshCcw className="w-3 h-3" />
         Reset filters
@@ -216,7 +216,7 @@ function DeliveryFilter({ state }: { state: ProductsBrowserState }) {
   return (
     <div className="space-y-3">
       <div className="space-y-1.5">
-        <p className="text-[10px] font-bold text-[var(--color-muted)] uppercase tracking-wider px-0.5">
+        <p className="text-[10px] font-normal text-[var(--color-muted)] uppercase tracking-wider px-0.5">
           Service area
         </p>
         <div className="grid grid-cols-1 gap-1.5">
@@ -227,7 +227,7 @@ function DeliveryFilter({ state }: { state: ProductsBrowserState }) {
                 key={sa}
                 type="button"
                 onClick={() => state.setServiceArea(active ? null : sa)}
-                className={`text-left px-3 h-9 rounded-lg border text-[11px] font-bold transition-colors ${
+                className={`text-left px-3 h-9 rounded-lg border text-[11px] font-normal transition-colors ${
                   active
                     ? "border-[var(--color-accent)] bg-[var(--color-accent)]/10 text-[var(--color-accent)]"
                     : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-foreground)] hover:border-[var(--color-accent)]/40"
@@ -241,7 +241,7 @@ function DeliveryFilter({ state }: { state: ProductsBrowserState }) {
       </div>
 
       <div className="space-y-1.5">
-        <p className="text-[10px] font-bold text-[var(--color-muted)] uppercase tracking-wider px-0.5">
+        <p className="text-[10px] font-normal text-[var(--color-muted)] uppercase tracking-wider px-0.5">
           Average delivery
         </p>
         <select
@@ -277,7 +277,7 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
   return (
     <details open className="group/details">
       <summary className="list-none cursor-pointer flex items-center justify-between gap-2 pb-2 select-none">
-        <span className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--color-muted)]">
+        <span className="text-[10px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
           {title}
         </span>
         <ChevronDown className="w-3.5 h-3.5 text-[var(--color-muted)] transition-transform group-open/details:rotate-180" />

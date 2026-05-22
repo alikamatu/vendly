@@ -72,10 +72,10 @@ function ProductsBrowserInner() {
       <div className="max-w-7xl mx-auto px-4 md:px-8 pt-6 md:pt-10 pb-24 md:pb-32 space-y-6 md:space-y-8">
         <header className="space-y-3" id="products-top">
           <div className="space-y-1">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-accent)]">
+            <p className="text-[10px] font-medium uppercase tracking-wider text-[var(--color-accent)]">
               Marketplace
             </p>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-[var(--color-foreground)]">
+            <h1 className="text-2xl md:text-3xl font-medium tracking-tight text-[var(--color-foreground)]">
               Explore every product
             </h1>
             <p className="text-[12px] text-[var(--color-muted)]">
@@ -89,7 +89,7 @@ function ProductsBrowserInner() {
           {/* Desktop sidebar */}
           <aside className="hidden lg:block">
             <div className="sticky top-20 space-y-5 max-h-[calc(100vh-6rem)] overflow-y-auto pr-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-[var(--color-border)] [&::-webkit-scrollbar-thumb]:rounded-full">
-              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-muted)] pb-2 border-b border-[var(--color-border)]/60">
+              <h2 className="text-[10px] font-medium uppercase tracking-wider text-[var(--color-muted)] pb-2 border-b border-[var(--color-border)]/60">
                 Filters
               </h2>
               <FiltersPanel state={state} categories={categories} brands={brands} />
@@ -114,10 +114,10 @@ function ProductsBrowserInner() {
               <div className="flex items-start gap-3 p-4 rounded-2xl border border-red-500/30 bg-red-500/5 text-red-600">
                 <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
                 <div className="space-y-2 flex-1">
-                  <p className="text-[12px] font-bold">{state.error}</p>
+                  <p className="text-[12px] font-normal">{state.error}</p>
                   <button
                     onClick={state.reload}
-                    className="text-[11px] font-bold underline underline-offset-2"
+                    className="text-[11px] font-normal underline underline-offset-2"
                   >
                     Try again
                   </button>

@@ -153,7 +153,7 @@ export default function SellerProductsPage() {
       <div className="flex h-[60vh] items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-8 h-8 text-primary animate-spin" />
-          <p className="text-[10px] font-black text-muted uppercase tracking-[0.2em] animate-pulse italic">
+          <p className="text-[10px] font-medium text-muted uppercase tracking-wider animate-pulse italic">
             Fetching Inventory...
           </p>
         </div>
@@ -170,12 +170,12 @@ export default function SellerProductsPage() {
             <Link href="/dashboard" className="text-muted hover:text-foreground transition-colors">
               <ArrowLeft className="w-4 h-4" />
             </Link>
-            <span className="text-[9px] font-black text-muted uppercase tracking-[0.2em]">Dashboard</span>
+            <span className="text-[9px] font-medium text-muted uppercase tracking-wider">Dashboard</span>
             <ChevronRight className="w-3 h-3 text-muted/30" />
-            <span className="text-[9px] font-black text-foreground uppercase tracking-[0.2em]">Inventory</span>
+            <span className="text-[9px] font-medium text-foreground uppercase tracking-wider">Inventory</span>
           </div>
-          <h2 className="text-xl font-black tracking-tight uppercase">Product Lab</h2>
-          <p className="text-[10px] text-muted font-bold uppercase tracking-wider italic">
+          <h2 className="text-xl font-medium tracking-tight uppercase">Product Lab</h2>
+          <p className="text-[10px] text-muted font-normal uppercase tracking-wider italic">
             Manage and optimize your listings • {products.length} total items
           </p>
         </div>
@@ -183,7 +183,7 @@ export default function SellerProductsPage() {
         <Link href="/dashboard/products/add">
           <Button size="sm" className="h-12 px-8 rounded-2xl flex items-center gap-2 group shadow-xl shadow-primary/20">
             <Plus className="w-4 h-4 transition-transform group-hover:rotate-90" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Post New item</span>
+            <span className="text-[10px] font-medium uppercase tracking-wider">Post New item</span>
           </Button>
         </Link>
       </div>
@@ -194,13 +194,13 @@ export default function SellerProductsPage() {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted/50" />
           <Input 
             placeholder="Search items by title..." 
-            className="h-12 pl-12 bg-surface/30 border-none shadow-sm rounded-2xl text-[11px] font-bold uppercase tracking-wider placeholder:lowercase italic"
+            className="h-12 pl-12 bg-surface/30 border-none shadow-sm rounded-2xl text-[11px] font-normal uppercase tracking-wider placeholder:lowercase italic"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
         <select 
-          className="h-12 px-4 bg-surface/30 border-none rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] outline-none cursor-pointer hover:bg-surface/50 transition-colors appearance-none text-center shadow-sm"
+          className="h-12 px-4 bg-surface/30 border-none rounded-2xl text-[10px] font-medium uppercase tracking-wide outline-none cursor-pointer hover:bg-surface/50 transition-colors appearance-none text-center shadow-sm"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
         >
@@ -214,7 +214,7 @@ export default function SellerProductsPage() {
       {actionMessage && (
         <div className="mx-2 flex items-center gap-2 p-3 rounded-2xl border border-amber-500/20 bg-amber-500/10 text-amber-700">
           <Flame className="w-4 h-4" />
-          <p className="text-[10px] font-black uppercase tracking-wider">{actionMessage}</p>
+          <p className="text-[10px] font-medium uppercase tracking-wider">{actionMessage}</p>
         </div>
       )}
 
@@ -252,16 +252,16 @@ export default function SellerProductsPage() {
                )}
             </div>
             <div className="space-y-1">
-              <p className="text-[11px] text-muted font-black uppercase tracking-[0.2em]">
+              <p className="text-[11px] text-muted font-medium uppercase tracking-wider">
                 {searchQuery ? "No matches found" : "Your inventory is empty"}
               </p>
-              <p className="text-[9px] text-muted/60 font-medium uppercase tracking-widest italic">
+              <p className="text-[9px] text-muted/60 font-medium uppercase tracking-wider italic">
                 {searchQuery ? "Try refining your search keywords" : "Start selling by posting your first product"}
               </p>
             </div>
             {!searchQuery && (
               <Link href="/dashboard/products/add" className="inline-block mt-4">
-                <Button size="sm" variant="secondary" className="rounded-xl px-8 text-[9px] font-black uppercase tracking-widest border-border/50 bg-transparent">
+                <Button size="sm" variant="secondary" className="rounded-xl px-8 text-[9px] font-medium uppercase tracking-wider border-border/50 bg-transparent">
                    Initialize Inventory
                 </Button>
               </Link>
@@ -273,7 +273,7 @@ export default function SellerProductsPage() {
       {error && (
         <div className="flex items-center gap-3 p-4 bg-red-500/10 text-red-500 rounded-2xl mx-2 border border-red-500/20">
           <AlertCircle className="w-4 h-4" />
-          <p className="text-[10px] font-black uppercase tracking-widest">{error}</p>
+          <p className="text-[10px] font-medium uppercase tracking-wider">{error}</p>
         </div>
       )}
     </div>

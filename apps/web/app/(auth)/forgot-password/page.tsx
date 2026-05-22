@@ -62,7 +62,7 @@ export default function ForgotPasswordPage() {
               >
                 <Send size={28} />
               </motion.div>
-              <h2 className="text-xl font-semibold">Check your email</h2>
+              <h2 className="text-xl font-normal">Check your email</h2>
               <p className="max-w-sm text-sm text-foreground/60">
                 If an account exists with that email address, we&apos;ve sent a password reset link. Please check your
                 inbox and spam folder.
@@ -74,7 +74,7 @@ export default function ForgotPasswordPage() {
           ) : (
             <>
               <div className="mb-6">
-                <h1 className="text-2xl font-bold">Forgot your password?</h1>
+                <h1 className="text-2xl font-normal">Forgot your password?</h1>
                 <p className="mt-2 text-sm text-foreground/60">
                   Enter your email address and we&apos;ll send you a link to reset your password.
                 </p>

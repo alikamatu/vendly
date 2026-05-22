@@ -70,7 +70,7 @@ export default function DashboardPage() {
       <div className="flex h-[60vh] items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-8 h-8 text-primary animate-spin" />
-          <p className="text-xs font-bold text-muted uppercase tracking-widest">Compiling Analytics...</p>
+          <p className="text-xs font-normal text-muted uppercase tracking-wider">Compiling Analytics...</p>
         </div>
       </div>
     );
@@ -84,7 +84,7 @@ export default function DashboardPage() {
             <AlertCircle className="w-8 h-8 text-red-500" />
           </div>
           <div>
-            <h3 className="text-sm font-bold uppercase tracking-tight">Sync Failed</h3>
+            <h3 className="text-sm font-normal uppercase tracking-tight">Sync Failed</h3>
             <p className="text-[11px] text-muted mt-2 font-medium leading-relaxed">{error}</p>
           </div>
           <Button onClick={() => window.location.reload()} variant="primary" size="sm" className="rounded-xl w-full">
@@ -104,23 +104,23 @@ export default function DashboardPage() {
         className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 md:p-6 rounded-[2rem] bg-surface/30 border border-border/50 backdrop-blur-sm shadow-xl shadow-black/5"
       >
         <div>
-          <h2 className="text-sm font-black tracking-tight uppercase">Welcome back, {user?.full_name?.split(' ')[0]} ⚡️</h2>
-          <p className="text-[10px] text-muted mt-1 font-bold uppercase tracking-wider italic">Real-time performance metrics</p>
+          <h2 className="text-sm font-medium tracking-tight uppercase">Welcome back, {user?.full_name?.split(' ')[0]} ⚡️</h2>
+          <p className="text-[10px] text-muted mt-1 font-normal uppercase tracking-wider italic">Real-time performance metrics</p>
         </div>
         <Link href="/dashboard/products/add">
           <Button size="sm" className="h-10 px-6 rounded-xl flex items-center gap-2 group shadow-lg shadow-primary/20">
             <Plus className="w-4 h-4 transition-transform group-hover:rotate-90" />
-            <span className="text-[10px] font-black uppercase tracking-widest">Post Product</span>
+            <span className="text-[10px] font-medium uppercase tracking-wider">Post Product</span>
           </Button>
         </Link>
         <div className="flex items-center gap-2">
           <Link href="/dashboard/transactions">
-            <Button variant="secondary" size="sm" className="h-10 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest">
+            <Button variant="secondary" size="sm" className="h-10 px-4 rounded-xl text-[10px] font-medium uppercase tracking-wider">
               Transactions
             </Button>
           </Link>
           <Link href="/dashboard/payouts">
-            <Button variant="secondary" size="sm" className="h-10 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest">
+            <Button variant="secondary" size="sm" className="h-10 px-4 rounded-xl text-[10px] font-medium uppercase tracking-wider">
               Payouts
             </Button>
           </Link>
@@ -137,32 +137,32 @@ export default function DashboardPage() {
               { label: "Revenue (GHS)", value: `GH₵${hotSalesStats.totalRevenueGhs.toFixed(2)}` },
             ].map((stat) => (
               <Card key={stat.label} className="p-5 bg-surface/50 border-none shadow-xl shadow-black/5" hoverEffect={false}>
-                <p className="text-[10px] font-black text-muted uppercase tracking-[0.15em]">{stat.label}</p>
-                <p className="text-lg font-black mt-1 text-foreground leading-none">{stat.value}</p>
+                <p className="text-[10px] font-medium text-muted uppercase tracking-wide">{stat.label}</p>
+                <p className="text-lg font-medium mt-1 text-foreground leading-none">{stat.value}</p>
               </Card>
             ))}
           </div>
 
           <Card className="p-5 bg-surface/40 border-none shadow-xl shadow-black/5" hoverEffect={false}>
-            <h3 className="text-xs font-black uppercase tracking-widest mb-4">Hot Sales Subscriptions</h3>
+            <h3 className="text-xs font-medium uppercase tracking-wider mb-4">Hot Sales Subscriptions</h3>
             <div className="space-y-3">
               {hotSalesRows.length > 0 ? (
                 hotSalesRows.map((row) => (
                   <div key={row.id} className="p-3 rounded-2xl bg-background/50 border border-border/30 flex items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-[11px] font-black truncate">{row.product.title}</p>
-                      <p className="text-[9px] text-muted font-bold uppercase tracking-wider truncate">
+                      <p className="text-[11px] font-medium truncate">{row.product.title}</p>
+                      <p className="text-[9px] text-muted font-normal uppercase tracking-wider truncate">
                         {row.seller.store_name} • {row.reference}
                       </p>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-[10px] font-black">GH₵{row.amount}</p>
-                      <p className="text-[9px] text-muted font-bold uppercase">{row.status}</p>
+                      <p className="text-[10px] font-medium">GH₵{row.amount}</p>
+                      <p className="text-[9px] text-muted font-normal uppercase">{row.status}</p>
                     </div>
                   </div>
                 ))
               ) : (
-                <p className="text-[10px] text-muted font-bold uppercase tracking-wider">
+                <p className="text-[10px] text-muted font-normal uppercase tracking-wider">
                   No hot sales subscriptions yet.
                 </p>
               )}
@@ -186,14 +186,14 @@ export default function DashboardPage() {
                   <div className={`p-2 rounded-xl ${stat.color} shadow-lg shadow-current/10`}>
                     <Icon className="w-4 h-4" />
                   </div>
-                  <div className={`flex items-center gap-0.5 text-[9px] font-black px-2 py-0.5 rounded-full ${
+                  <div className={`flex items-center gap-0.5 text-[9px] font-medium px-2 py-0.5 rounded-full ${
                     stat.isPositive ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"
                   }`}>
                     {stat.change}
                   </div>
                 </div>
-                <p className="text-[10px] font-black text-muted uppercase tracking-[0.15em]">{stat.label}</p>
-                <p className="text-lg font-black mt-1 text-foreground leading-none">{stat.value}</p>
+                <p className="text-[10px] font-medium text-muted uppercase tracking-wide">{stat.label}</p>
+                <p className="text-lg font-medium mt-1 text-foreground leading-none">{stat.value}</p>
               </Card>
             </motion.div>
           );
@@ -209,19 +209,19 @@ export default function DashboardPage() {
         <div className="lg:col-span-2 space-y-4">
            <div className="flex items-center gap-2 px-2">
              <TrendingUp className="w-4 h-4 text-primary" />
-             <h3 className="text-xs font-black uppercase tracking-widest">Growth Engine</h3>
+             <h3 className="text-xs font-medium uppercase tracking-wider">Growth Engine</h3>
            </div>
            <Card className="p-10 md:p-14 border-dashed border-2 bg-surface/20 flex flex-col items-center text-center gap-5 rounded-[2.5rem]">
               <div className="w-16 h-16 bg-primary/5 rounded-[1.5rem] flex items-center justify-center rotate-3 transition-transform hover:rotate-0">
                  <TrendingUp className="w-8 h-8 text-primary/40" />
               </div>
               <div className="space-y-2 max-w-xs mx-auto">
-                <h3 className="text-sm font-black uppercase tracking-tight">Analytics Coming Soon</h3>
-                <p className="text-[10px] text-muted font-bold leading-relaxed uppercase tracking-wider">
+                <h3 className="text-sm font-medium uppercase tracking-tight">Analytics Coming Soon</h3>
+                <p className="text-[10px] text-muted font-normal leading-relaxed uppercase tracking-wider">
                   Detailed growth trends will be unlocked once you fulfill more orders.
                 </p>
               </div>
-              <Button variant="secondary" size="sm" className="rounded-xl px-8 text-[9px] font-black uppercase tracking-[0.2em] border-border/50">
+              <Button variant="secondary" size="sm" className="rounded-xl px-8 text-[9px] font-medium uppercase tracking-wider border-border/50">
                 How to Scale?
               </Button>
            </Card>
@@ -229,9 +229,9 @@ export default function DashboardPage() {
 
         <div className="space-y-4">
           <div className="flex items-center justify-between px-2">
-            <h3 className="text-xs font-black uppercase tracking-widest">Recent Flows</h3>
+            <h3 className="text-xs font-medium uppercase tracking-wider">Recent Flows</h3>
             <Link href="/dashboard/orders">
-              <button className="text-[10px] font-black text-primary hover:underline uppercase tracking-widest transition-all hover:tracking-[0.2em]">See All</button>
+              <button className="text-[10px] font-medium text-primary hover:underline uppercase tracking-wider transition-all hover:tracking-wider">See All</button>
             </Link>
           </div>
           
@@ -251,13 +251,13 @@ export default function DashboardPage() {
                           <Clock className="w-4 h-4 text-muted" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-[11px] font-black text-foreground truncate">{order.customer}</p>
-                          <p className="text-[9px] text-muted font-bold mt-0.5 truncate italic">{order.product}</p>
+                          <p className="text-[11px] font-medium text-foreground truncate">{order.customer}</p>
+                          <p className="text-[9px] text-muted font-normal mt-0.5 truncate italic">{order.product}</p>
                         </div>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="text-[11px] font-black text-foreground">{order.amount}</p>
-                        <p className="text-[8px] font-black text-primary uppercase tracking-widest mt-1">
+                        <p className="text-[11px] font-medium text-foreground">{order.amount}</p>
+                        <p className="text-[8px] font-medium text-primary uppercase tracking-wider mt-1">
                           {new Date(order.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                         </p>
                       </div>
@@ -268,7 +268,7 @@ export default function DashboardPage() {
             ) : (
               <div className="py-12 text-center space-y-3 border border-dashed border-border/50 rounded-[2rem] bg-surface/10">
                 <ShoppingBag className="w-8 h-8 text-muted mx-auto opacity-20" />
-                <p className="text-[10px] text-muted font-black uppercase tracking-widest">Waiting for first order</p>
+                <p className="text-[10px] text-muted font-medium uppercase tracking-wider">Waiting for first order</p>
               </div>
             )}
           </div>

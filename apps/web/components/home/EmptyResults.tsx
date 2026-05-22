@@ -23,7 +23,7 @@ export default function EmptyResults({
       </div>
       <button
         onClick={onClear}
-        className="text-[10px] uppercase tracking-[0.2em] text-primary hover:underline"
+        className="text-[10px] uppercase tracking-wider text-primary hover:underline"
       >
         {actionLabel}
       </button>

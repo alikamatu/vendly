@@ -77,7 +77,7 @@ export default function Footer() {
             {TRUST.map(({ Icon, label }) => (
               <li
                 key={label}
-                className="flex items-center gap-2.5 text-[12px] font-bold text-foreground"
+                className="flex items-center gap-2.5 text-[12px] font-normal text-foreground"
               >
                 <span className="inline-flex w-9 h-9 rounded-2xl items-center justify-center bg-primary/10 text-primary">
                   <Icon className="w-4 h-4" />
@@ -97,7 +97,7 @@ export default function Footer() {
               <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20 overflow-hidden">
                 <img src="/logos/vendly.png" alt="Vendly" className="w-full h-full" />
               </div>
-              <span className="text-lg font-black uppercase tracking-tight text-foreground">
+              <span className="text-lg font-medium uppercase tracking-tight text-foreground">
                 Vendly
               </span>
             </Link>
@@ -134,15 +134,15 @@ export default function Footer() {
       {/* Bottom */}
       <div className="border-t border-border">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-[11px] text-muted">
-          <p className="font-bold">
+          <p className="font-normal">
             © {new Date().getFullYear()} Vendly. All rights reserved.
           </p>
           <div className="flex items-center gap-4 flex-wrap">
-            <span className="inline-flex items-center gap-1.5 font-bold">
+            <span className="inline-flex items-center gap-1.5 font-normal">
               <Globe className="w-3.5 h-3.5" />
               Ghana · English (GH)
             </span>
-            <span className="inline-flex items-center gap-1.5 font-bold">
+            <span className="inline-flex items-center gap-1.5 font-normal">
               <Sparkles className="w-3.5 h-3.5 text-primary" />
               Built for young businesses
             </span>
@@ -156,7 +156,7 @@ export default function Footer() {
 function LinkGroup({ title, links }: { title: string; links: FooterLink[] }) {
   return (
     <div className="space-y-3">
-      <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted">{title}</h3>
+      <h3 className="text-[10px] font-medium uppercase tracking-wider text-muted">{title}</h3>
       <ul className="space-y-2">
         {links.map((l) => (
           <li key={l.href + l.label}>
@@ -192,7 +192,7 @@ function NewsletterForm() {
 
   if (submitted) {
     return (
-      <div className="inline-flex items-center gap-2 px-3 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 text-[11px] font-bold">
+      <div className="inline-flex items-center gap-2 px-3 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 text-[11px] font-normal">
         <CheckCircle2 className="w-3.5 h-3.5" />
         You're on the list — we'll be in touch.
       </div>
@@ -201,7 +201,7 @@ function NewsletterForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-2">
-      <label htmlFor="footer-newsletter" className="text-[10px] font-black uppercase tracking-[0.2em] text-muted block">
+      <label htmlFor="footer-newsletter" className="text-[10px] font-medium uppercase tracking-wider text-muted block">
         Newsletter
       </label>
       <div className="relative flex items-center">
@@ -218,19 +218,19 @@ function NewsletterForm() {
             if (error) setError(null);
           }}
           aria-invalid={!!error}
-          className={`flex-1 h-10 pl-9 pr-24 rounded-2xl bg-background border text-[12px] font-bold outline-none focus:ring-2 focus:ring-primary/30 transition-all ${
+          className={`flex-1 h-10 pl-9 pr-24 rounded-2xl bg-background border text-[12px] font-normal outline-none focus:ring-2 focus:ring-primary/30 transition-all ${
             error ? "border-red-500/50" : "border-border"
           }`}
         />
         <button
           type="submit"
-          className="absolute right-1 top-1 bottom-1 px-3 inline-flex items-center gap-1 rounded-xl bg-primary text-white text-[11px] font-black uppercase tracking-wider hover:opacity-90 transition-opacity"
+          className="absolute right-1 top-1 bottom-1 px-3 inline-flex items-center gap-1 rounded-xl bg-primary text-white text-[11px] font-medium uppercase tracking-wider hover:opacity-90 transition-opacity"
         >
           <Send className="w-3 h-3" />
           Subscribe
         </button>
       </div>
-      {error && <p className="text-[10px] font-bold text-red-500 px-1">{error}</p>}
+      {error && <p className="text-[10px] font-normal text-red-500 px-1">{error}</p>}
       <p className="text-[10px] text-muted leading-snug">
         Get launches, deals, and seller tips. No spam — unsubscribe anytime.
       </p>

@@ -109,7 +109,7 @@ export default function DashboardHeader({
           user.role !== "ADMIN" &&
           user?.approval_status !== "APPROVED" && (
             <Link href="/seller-verification" className="hidden sm:inline-flex">
-              <button className="ml-1 px-4 py-2 bg-primary text-white text-[10px] uppercase tracking-widest font-black rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
+              <button className="ml-1 px-3.5 h-9 bg-primary text-white text-xs rounded-lg shadow-sm hover:opacity-90 active:scale-[0.98] transition-all">
                 Start selling
               </button>
             </Link>
@@ -157,10 +157,10 @@ export default function DashboardHeader({
             <UserMenu />
           ) : (
             <div className="flex items-center gap-2">
-              <Link href="/login" className="hidden sm:inline-flex px-3 py-2 text-foreground/80 hover:text-foreground text-[10px] font-bold uppercase tracking-widest transition-colors">
+              <Link href="/login" className="hidden sm:inline-flex px-3 h-9 items-center text-foreground/80 hover:text-foreground text-xs transition-colors">
                 Sign in
               </Link>
-              <Link href="/register" className="px-4 py-2 bg-primary text-white font-black text-[10px] uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
+              <Link href="/register" className="px-3.5 h-9 inline-flex items-center bg-primary text-white text-xs rounded-lg shadow-sm hover:opacity-90 active:scale-[0.98] transition-all">
                 Sign up
               </Link>
             </div>

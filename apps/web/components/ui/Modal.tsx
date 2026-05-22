@@ -66,7 +66,7 @@ export default function Modal({
               {(title || showClose) && (
                 <div className="flex items-center justify-between mb-6 sticky top-0 bg-background z-10 pt-2 pb-2">
                   {title ? (
-                    <h2 className="text-xl font-black uppercase tracking-tight text-foreground">
+                    <h2 className="text-xl font-medium uppercase tracking-tight text-foreground">
                       {title}
                     </h2>
                   ) : <div />}

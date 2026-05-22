@@ -22,7 +22,7 @@ export default function BrandLogo({ name, src, size = "md" }: BrandLogoProps) {
       {src ? (
         <img src={src} alt={name} loading="lazy" className="w-full h-full object-cover" />
       ) : (
-        <div className="w-full h-full bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center font-black uppercase text-primary italic">
+        <div className="w-full h-full bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center font-medium uppercase text-primary italic">
           {name.slice(0, 2)}
         </div>
       )}

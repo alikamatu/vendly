@@ -46,7 +46,7 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
           <CheckCircle size={40} />
         </motion.div>
         <div>
-          <h3 className="text-xl font-semibold">Check your email</h3>
+          <h3 className="text-xl font-normal">Check your email</h3>
           <p className="mt-2 text-sm text-foreground/60 leading-relaxed">
             We&apos;ve sent a verification link to your email address. Please verify your account before signing in.
           </p>

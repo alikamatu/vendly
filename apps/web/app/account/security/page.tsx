@@ -53,7 +53,7 @@ function StrengthBar({ password }: { password: string }) {
           />
         ))}
       </div>
-      <p className="text-[10px] font-bold text-[var(--color-muted)] pl-0.5">{label}</p>
+      <p className="text-[10px] font-normal text-[var(--color-muted)] pl-0.5">{label}</p>
     </div>
   );
 }
@@ -76,7 +76,7 @@ function PasswordField({
   const [show, setShow] = useState(false);
   return (
     <div>
-      <label className="block text-[11px] font-black text-[var(--color-muted)] uppercase tracking-widest mb-1.5">
+      <label className="block text-[11px] font-medium text-[var(--color-muted)] uppercase tracking-wider mb-1.5">
         {label}
       </label>
       <div className="relative">
@@ -158,14 +158,14 @@ export default function AccountSecurityPage() {
       {/* Back */}
       <Link
         href="/account"
-        className="inline-flex items-center gap-2 text-[11px] font-black text-[var(--color-muted)] hover:text-[var(--color-foreground)] uppercase tracking-widest transition-colors group"
+        className="inline-flex items-center gap-2 text-[11px] font-medium text-[var(--color-muted)] hover:text-[var(--color-foreground)] uppercase tracking-wider transition-colors group"
       >
         <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
         Account
       </Link>
 
       <div>
-        <h1 className="text-lg font-black tracking-tight">Password & Security</h1>
+        <h1 className="text-lg font-medium tracking-tight">Password & Security</h1>
         <p className="text-[11px] text-[var(--color-muted)] mt-0.5">Keep your account safe with a strong password</p>
       </div>
 
@@ -175,7 +175,7 @@ export default function AccountSecurityPage() {
           <ShieldCheck className="w-4 h-4 text-emerald-500" />
         </div>
         <div className="space-y-1">
-          <p className="text-[12px] font-black text-[var(--color-foreground)]">Password tips</p>
+          <p className="text-[12px] font-medium text-[var(--color-foreground)]">Password tips</p>
           <ul className="space-y-0.5 text-[11px] text-[var(--color-muted)]">
             <li>· At least 8 characters</li>
             <li>· Mix uppercase, numbers and symbols</li>
@@ -215,7 +215,7 @@ export default function AccountSecurityPage() {
                 required
               />
               {mismatch && (
-                <p className="mt-1.5 text-[11px] font-bold text-red-500 pl-0.5">
+                <p className="mt-1.5 text-[11px] font-normal text-red-500 pl-0.5">
                   Passwords don't match
                 </p>
               )}
@@ -248,7 +248,7 @@ export default function AccountSecurityPage() {
         <button
           type="submit"
           disabled={isLoading || mismatch}
-          className="w-full h-14 rounded-2xl bg-[var(--color-foreground)] text-[var(--color-background)] font-black uppercase tracking-widest text-sm hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="w-full h-14 rounded-2xl bg-[var(--color-foreground)] text-[var(--color-background)] font-medium uppercase tracking-wider text-sm hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {isLoading ? (
             <><Loader2 className="w-4 h-4 animate-spin" /> Updating…</>
@@ -261,7 +261,7 @@ export default function AccountSecurityPage() {
       {/* Forgot password link */}
       <p className="text-center text-[11px] text-[var(--color-muted)]">
         Forgot your current password?{" "}
-        <Link href="/forgot-password" className="font-bold text-[var(--color-accent)] hover:underline">
+        <Link href="/forgot-password" className="font-normal text-[var(--color-accent)] hover:underline">
           Reset it here
         </Link>
       </p>

@@ -82,7 +82,7 @@ export default function CreateStorePage() {
             >
               <Store className="w-10 h-10 text-primary" />
             </motion.div>
-            <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
+            <h1 className="text-4xl font-medium tracking-tight sm:text-5xl">
               Create Your Store
             </h1>
             <p className="text-lg text-muted max-w-md mx-auto leading-relaxed">
@@ -162,7 +162,7 @@ export default function CreateStorePage() {
                 />
 
                 <div className="space-y-3">
-                  <Label htmlFor="bio" className="text-sm font-semibold text-muted pl-1">Store Description (Optional)</Label>
+                  <Label htmlFor="bio" className="text-sm font-normal text-muted pl-1">Store Description (Optional)</Label>
                   <Textarea
                     id="bio"
                     placeholder="Tell your customers about your amazing products..."
@@ -180,7 +180,7 @@ export default function CreateStorePage() {
               <Button
                 type="submit"
                 size='lg'
-                className="w-full h-14 text-lg font-bold bg-red-500 text-white"
+                className="w-full h-14 text-lg font-normal bg-red-500 text-white"
                 isLoading={isLoading}
               >
                 Launch Store

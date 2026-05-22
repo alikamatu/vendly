@@ -168,7 +168,7 @@ export default function ProductDetailsPage() {
   if (!product) {
     return (
       <div className="min-h-screen bg-background p-8 text-center flex flex-col items-center justify-center gap-4">
-        <h2 className="text-xl font-black uppercase">Product not found</h2>
+        <h2 className="text-xl font-medium uppercase">Product not found</h2>
         <Button onClick={() => router.push("/")}>Back to browse</Button>
       </div>
     );
@@ -188,7 +188,7 @@ export default function ProductDetailsPage() {
         <button
           onClick={() => router.back()}
           aria-label="Go back"
-          className="inline-flex items-center gap-1.5 px-3 h-9 rounded-xl bg-surface hover:bg-border/20 transition-colors text-xs font-bold"
+          className="inline-flex items-center gap-1.5 px-3 h-9 rounded-xl bg-surface hover:bg-border/20 transition-colors text-xs font-normal"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           Back
@@ -334,16 +334,16 @@ export default function ProductDetailsPage() {
             className="space-y-4"
           >
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-primary text-[10px] font-black uppercase tracking-[0.2em]">
+              <span className="text-primary text-[10px] font-medium uppercase tracking-wider">
                 <Sparkles className="w-3 h-3 inline mr-1" /> Trending Now
               </span>
               {product.category && (
-                <span className="px-3 py-1 rounded-full bg-surface border border-border/50 text-[10px] font-bold text-muted uppercase tracking-wider">
+                <span className="px-3 py-1 rounded-full bg-surface border border-border/50 text-[10px] font-normal text-muted uppercase tracking-wider">
                   {product.category}
                 </span>
               )}
             </div>
-            <h1 className="text-3xl lg:text-5xl font-black tracking-tighter leading-tight uppercase">
+            <h1 className="text-3xl lg:text-5xl font-medium tracking-tighter leading-tight uppercase">
               {product.title ?? "Product"}
             </h1>
             <PriceBlock
@@ -365,7 +365,7 @@ export default function ProductDetailsPage() {
             transition={{ delay: 0.3 }}
             className="space-y-4"
           >
-            <div className="flex items-center gap-2 text-[10px] font-bold text-muted uppercase tracking-widest">
+            <div className="flex items-center gap-2 text-[10px] font-normal text-muted uppercase tracking-wider">
               <Info className="w-4 h-4" /> Description
             </div>
             <p className="text-sm font-medium text-muted leading-relaxed">
@@ -381,7 +381,7 @@ export default function ProductDetailsPage() {
               transition={{ delay: 0.35 }}
               className="space-y-4"
             >
-              <div className="flex items-center gap-2 text-[10px] font-bold text-muted uppercase tracking-widest">
+              <div className="flex items-center gap-2 text-[10px] font-normal text-muted uppercase tracking-wider">
                 <Ruler className="w-4 h-4" /> Details
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -390,10 +390,10 @@ export default function ProductDetailsPage() {
                     key={key}
                     className="flex flex-wrap items-baseline justify-between gap-2 py-2 px-4 rounded-xl bg-surface/50 border border-border/50"
                   >
-                    <span className="text-[10px] font-bold text-muted uppercase tracking-wider">
+                    <span className="text-[10px] font-normal text-muted uppercase tracking-wider">
                       {formatAttributeLabel(key)}
                     </span>
-                    <span className="text-sm font-semibold text-foreground truncate max-w-[60%]">
+                    <span className="text-sm font-normal text-foreground truncate max-w-[60%]">
                       {value}
                     </span>
                   </div>
@@ -413,7 +413,7 @@ export default function ProductDetailsPage() {
               {product.tags.map((tag: string) => (
                 <span
                   key={tag}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-surface border border-border/50 rounded-xl text-[10px] font-bold text-muted hover:text-foreground hover:border-primary/30 transition-all cursor-default uppercase"
+                  className="flex items-center gap-1.5 px-4 py-2 bg-surface border border-border/50 rounded-xl text-[10px] font-normal text-muted hover:text-foreground hover:border-primary/30 transition-all cursor-default uppercase"
                 >
                   <Tag className="w-3 h-3" /> {tag}
                 </span>
@@ -441,7 +441,7 @@ export default function ProductDetailsPage() {
           >
             <Button
               onClick={handleAddToCart}
-              className="h-16 flex-1 rounded-[2rem] font-black uppercase tracking-widest text-xs gap-3"
+              className="h-16 flex-1 rounded-[2rem] font-medium uppercase tracking-wider text-xs gap-3"
             >
               {addedFeedback ? (
                 <motion.span
@@ -470,7 +470,7 @@ export default function ProductDetailsPage() {
                 typeof product.quantity_available === "number" &&
                 product.quantity_available <= 0
               }
-              className="h-16 flex-1 rounded-[2rem] font-black uppercase tracking-widest text-xs bg-black text-primary border-none hover:bg-black/90 group"
+              className="h-16 flex-1 rounded-[2rem] font-medium uppercase tracking-wider text-xs bg-black text-primary border-none hover:bg-black/90 group"
             >
               Buy Now
             </Button>

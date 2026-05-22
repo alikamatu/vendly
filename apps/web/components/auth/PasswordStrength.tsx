@@ -54,7 +54,7 @@ export default function PasswordStrength({ value }: PasswordStrengthProps) {
             aria-label={`Password strength: ${level.label}`}
           />
         </div>
-        <span className={`font-bold ${level.text}`}>{level.label}</span>
+        <span className={`font-normal ${level.text}`}>{level.label}</span>
       </div>
       <ul className="grid grid-cols-2 gap-x-3 gap-y-1">
         {results.map((rule) => (

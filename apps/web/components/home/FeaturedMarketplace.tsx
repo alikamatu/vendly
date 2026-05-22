@@ -19,7 +19,7 @@ export default function FeaturedMarketplace({ products, limit = 10 }: FeaturedMa
     <section className="space-y-8">
       <div className="flex items-center gap-4">
         <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/20 to-primary/40" />
-        <h2 className="text-[10px] uppercase tracking-[0.4em] text-primary font-black flex items-center gap-2">
+        <h2 className="text-[10px] uppercase tracking-wider text-primary font-medium flex items-center gap-2">
           <Sparkles className="w-3 h-3" />
           Featured Marketplace
         </h2>

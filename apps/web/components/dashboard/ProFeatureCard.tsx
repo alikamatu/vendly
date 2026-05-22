@@ -37,7 +37,7 @@ export default function ProFeatureCard({
   function renderCta() {
     if (!cta) return null;
     const btnClass =
-      "h-9 inline-flex items-center justify-center gap-1.5 px-3.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-opacity";
+      "h-9 inline-flex items-center justify-center gap-1.5 px-3.5 rounded-xl text-[11px] font-medium uppercase tracking-wider transition-opacity";
     if (!unlocked) {
       return (
         <Link
@@ -75,13 +75,13 @@ export default function ProFeatureCard({
       className={`relative rounded-3xl border p-4 md:p-5 flex flex-col gap-4 transition-colors ${cardClass}`}
     >
       {!unlocked && (
-        <span className="absolute top-3 right-3 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-[var(--color-foreground)]/[0.06] text-[var(--color-muted)]">
+        <span className="absolute top-3 right-3 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-medium uppercase tracking-wider bg-[var(--color-foreground)]/[0.06] text-[var(--color-muted)]">
           <Lock className="w-2.5 h-2.5" />
           Pro
         </span>
       )}
       {unlocked && (
-        <span className="absolute top-3 right-3 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-[var(--color-accent)]/15 text-[var(--color-accent)]">
+        <span className="absolute top-3 right-3 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-medium uppercase tracking-wider bg-[var(--color-accent)]/15 text-[var(--color-accent)]">
           <Sparkles className="w-2.5 h-2.5" />
           Pro
         </span>
@@ -94,7 +94,7 @@ export default function ProFeatureCard({
           <Icon className="w-5 h-5" />
         </div>
         <div className="space-y-1 min-w-0">
-          <h3 className="text-sm font-black text-[var(--color-foreground)] leading-tight">
+          <h3 className="text-sm font-medium text-[var(--color-foreground)] leading-tight">
             {title}
           </h3>
           <p className="text-[11px] text-[var(--color-muted)] leading-snug">

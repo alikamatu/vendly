@@ -117,7 +117,7 @@ export default function UserMenu() {
               className="w-full h-full object-cover"
             />
           ) : (
-            <span className="text-xs md:text-sm font-black uppercase tracking-tighter group-hover:scale-110 transition-transform">
+            <span className="text-xs md:text-sm font-medium uppercase tracking-tighter group-hover:scale-110 transition-transform">
               {user.full_name
                 ?.split(" ")
                 .map((n) => n[0])
@@ -127,12 +127,12 @@ export default function UserMenu() {
           )}
         </div>
         <div className="hidden sm:flex flex-col items-start pr-1">
-          <span className="text-[10px] md:text-[11px] font-black uppercase tracking-widest text-foreground truncate max-w-[100px]">
+          <span className="text-[10px] md:text-[11px] font-medium uppercase tracking-wider text-foreground truncate max-w-[100px]">
             {user.full_name.split(" ")[0]}
           </span>
           <span
             className={clsx(
-              "text-[8px] md:text-[9px] font-bold uppercase tracking-[0.15em] leading-none mt-0.5",
+              "text-[8px] md:text-[9px] font-normal uppercase tracking-wide leading-none mt-0.5",
               isSeller ? "text-primary" : "text-muted",
             )}
           >
@@ -198,11 +198,11 @@ export default function UserMenu() {
                   )}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary text-lg font-black font-mono">
+                    <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary text-lg font-medium font-mono">
                       {user.full_name[0]}
                     </div>
                     <div>
-                      <p className="text-xs font-black uppercase tracking-widest text-foreground">
+                      <p className="text-xs font-medium uppercase tracking-wider text-foreground">
                         {user.full_name}
                       </p>
                       <p className="text-[10px] text-muted mt-0.5">
@@ -222,7 +222,7 @@ export default function UserMenu() {
 
                 {/* Seller Stats / Quick Info */}
                 {isSeller && !isMobile && (
-                  <div className="px-4 py-2 mb-4 flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-primary bg-primary/5 rounded-xl border border-primary/10">
+                  <div className="px-4 py-2 mb-4 flex items-center justify-between text-[9px] font-medium uppercase tracking-wider text-primary bg-primary/5 rounded-xl border border-primary/10">
                     <span>Seller Profile Active</span>
                     <Link
                       href={`/s/${user.seller_profile?.store_link}`}
@@ -251,8 +251,8 @@ export default function UserMenu() {
                         className={clsx(
                           "flex items-center gap-4 rounded-2xl transition-all group",
                           isMobile
-                            ? "px-5 py-4 text-sm font-bold text-foreground border border-transparent active:bg-surface active:border-border/50"
-                            : "px-4 py-3 text-[10px] font-black uppercase tracking-widest text-muted hover:text-primary hover:bg-primary/5",
+                            ? "px-5 py-4 text-sm font-normal text-foreground border border-transparent active:bg-surface active:border-border/50"
+                            : "px-4 py-3 text-[10px] font-medium uppercase tracking-wider text-muted hover:text-primary hover:bg-primary/5",
                         )}
                       >
                         <link.icon
@@ -286,8 +286,8 @@ export default function UserMenu() {
                     className={clsx(
                       "w-full flex items-center gap-4 rounded-2xl text-red-500 transition-all group",
                       isMobile
-                        ? "px-5 py-5 text-sm font-bold active:bg-red-50"
-                        : "px-4 py-3 text-[10px] font-black uppercase tracking-widest hover:bg-red-500/5",
+                        ? "px-5 py-5 text-sm font-normal active:bg-red-50"
+                        : "px-4 py-3 text-[10px] font-medium uppercase tracking-wider hover:bg-red-500/5",
                     )}
                   >
                     <LogOut

@@ -22,21 +22,21 @@ export default function GlobalError({
               <AlertCircle className="w-8 h-8 text-red-500" />
             </div>
             
-            <h1 className="text-md font-black tracking-tight mb-2 uppercase">Critical Error</h1>
+            <h1 className="text-md font-medium tracking-tight mb-2 uppercase">Critical Error</h1>
             <p className="text-xs text-slate-400 leading-relaxed mb-8">
               A major system failure occurred. Please refresh to restore the marketplace.
             </p>
 
             <button
                onClick={reset}
-               className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-4 px-6 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-xl shadow-red-500/10"
+               className="w-full bg-red-500 hover:bg-red-600 text-white font-normal py-4 px-6 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-xl shadow-red-500/10"
             >
               <RefreshCcw className="w-4 h-4" />
               <span className="text-xs">Restore System</span>
             </button>
             
             {error.digest && (
-              <p className="mt-6 text-[8px] font-mono text-slate-600 truncate opacity-50 uppercase tracking-widest">
+              <p className="mt-6 text-[8px] font-mono text-slate-600 truncate opacity-50 uppercase tracking-wider">
                 System Digest: {error.digest}
               </p>
             )}

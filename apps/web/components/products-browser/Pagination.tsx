@@ -73,7 +73,7 @@ function PageButton({
       onClick={onClick}
       disabled={disabled}
       {...rest}
-      className={`min-w-[36px] h-9 px-2 rounded-xl text-[12px] font-bold transition-colors disabled:opacity-30 disabled:pointer-events-none ${
+      className={`min-w-[36px] h-9 px-2 rounded-xl text-[12px] font-normal transition-colors disabled:opacity-30 disabled:pointer-events-none ${
         active
           ? "bg-[var(--color-foreground)] text-[var(--color-background)]"
           : "bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-foreground)] hover:border-[var(--color-accent)]/40 hover:text-[var(--color-accent)]"

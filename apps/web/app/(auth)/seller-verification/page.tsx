@@ -138,7 +138,7 @@ export default function SellerVerificationPage() {
             >
               <ShieldCheck size={40} />
             </motion.div>
-            <h1 className="text-3xl font-extrabold tracking-tight">Seller Verification</h1>
+            <h1 className="text-3xl font-medium tracking-tight">Seller Verification</h1>
             <p className="mt-3 text-base text-foreground/60 leading-relaxed">
               Verify your business to start selling. Choose the most convenient method for you.
             </p>
@@ -155,7 +155,7 @@ export default function SellerVerificationPage() {
                 <CheckCircle size={48} className="text-emerald-600 dark:text-emerald-400" />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-emerald-800 dark:text-emerald-400">Verified Successfully!</h3>
+                <h3 className="text-xl font-normal text-emerald-800 dark:text-emerald-400">Verified Successfully!</h3>
                 <p className="mt-2 text-sm text-emerald-700 dark:text-emerald-400/80">
                   Your seller account is now active. You can start listing products and growing your business.
                 </p>
@@ -176,7 +176,7 @@ export default function SellerVerificationPage() {
                 <Clock size={48} className="text-amber-600 dark:text-amber-400" />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-amber-800 dark:text-amber-400">Verification Pending</h3>
+                <h3 className="text-xl font-normal text-amber-800 dark:text-amber-400">Verification Pending</h3>
                 <p className="mt-2 text-sm text-amber-700 dark:text-amber-400/80">
                   We're currently reviewing your submission. This usually takes 24-48 hours.
                 </p>
@@ -209,7 +209,7 @@ export default function SellerVerificationPage() {
                           <option.icon size={24} />
                         </div>
                         <div className="grow">
-                          <h4 className="font-bold text-foreground">{option.title}</h4>
+                          <h4 className="font-normal text-foreground">{option.title}</h4>
                           <p className="text-sm text-foreground/50">{option.description}</p>
                         </div>
                         <ExternalLink size={20} className="text-foreground/20 transition-colors group-hover:text-primary" />
@@ -226,7 +226,7 @@ export default function SellerVerificationPage() {
                   >
                     <button
                       onClick={() => handleSelectOption(null)}
-                      className="flex items-center gap-2 text-sm font-semibold text-foreground/40 transition-colors hover:text-primary"
+                      className="flex items-center gap-2 text-sm font-normal text-foreground/40 transition-colors hover:text-primary"
                     >
                       <ArrowLeft size={16} />
                       Choose different method
@@ -256,7 +256,7 @@ export default function SellerVerificationPage() {
                           {selectedOption === 'FILES' && (
                             <StaggerItem className="space-y-6">
                               <div className="space-y-4">
-                                <label className="block text-sm font-bold text-foreground">National ID Card</label>
+                                <label className="block text-sm font-normal text-foreground">National ID Card</label>
                                 <input
                                   type="file"
                                   id="idImage"
@@ -277,7 +277,7 @@ export default function SellerVerificationPage() {
                                 </label>
                               </div>
                               <div className="space-y-4">
-                                <label className="block text-sm font-bold text-foreground">Proof of Sales</label>
+                                <label className="block text-sm font-normal text-foreground">Proof of Sales</label>
                                 <input
                                   type="file"
                                   id="salesProof"
@@ -314,7 +314,7 @@ export default function SellerVerificationPage() {
                                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20">
                                     <MessageSquare size={20} />
                                   </div>
-                                  <div className="text-left font-bold">WhatsApp Support</div>
+                                  <div className="text-left font-normal">WhatsApp Support</div>
                                 </button>
                                 <button
                                   type="button"
@@ -324,7 +324,7 @@ export default function SellerVerificationPage() {
                                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20">
                                     <Phone size={20} />
                                   </div>
-                                  <div className="text-left font-bold">Call Us Directly</div>
+                                  <div className="text-left font-normal">Call Us Directly</div>
                                 </button>
                                 <button
                                   type="button"
@@ -334,7 +334,7 @@ export default function SellerVerificationPage() {
                                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20">
                                     <Mail size={20} />
                                   </div>
-                                  <div className="text-left font-bold">Email Support</div>
+                                  <div className="text-left font-normal">Email Support</div>
                                 </button>
                               </div>
                               <div className="text-center p-4 rounded-xl bg-foreground/5">
@@ -350,7 +350,7 @@ export default function SellerVerificationPage() {
                           <Button
                             type="submit"
                             variant="primary"
-                            className="w-full py-4 text-base font-bold shadow-lg shadow-primary/20"
+                            className="w-full py-4 text-base font-normal shadow-lg shadow-primary/20"
                             isLoading={isSubmitting}
                           >
                             Submit Application
@@ -372,14 +372,14 @@ export default function SellerVerificationPage() {
               transition={{ delay: 0.5 }}
               className="mt-12 flex items-center gap-3 rounded-2xl border border-foreground/5 bg-foreground/5 p-4 text-left"
             >
-              <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
+              <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-normal">
                 {user.full_name.charAt(0)}
               </div>
               <div className="grow">
-                <p className="text-sm font-bold text-foreground">{user.full_name}</p>
+                <p className="text-sm font-normal text-foreground">{user.full_name}</p>
                 <p className="text-xs text-foreground/40">{user.email}</p>
               </div>
-              <div className="px-2 py-1 rounded-md bg-foreground/5 text-[10px] font-black uppercase text-foreground/40 tracking-wider">
+              <div className="px-2 py-1 rounded-md bg-foreground/5 text-[10px] font-medium uppercase text-foreground/40 tracking-wider">
                 {user.role}
               </div>
             </motion.div>

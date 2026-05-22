@@ -34,42 +34,42 @@ export default function ModernHero() {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.2 }}
-                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/15 text-white text-[10px] uppercase tracking-[0.18em] font-bold backdrop-blur-sm"
+                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/15 text-white text-[10px] uppercase tracking-wider font-normal backdrop-blur-sm"
               >
                 <span className="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 Verified marketplace for modern businesses
               </motion.div>
 
-              <div className="space-y-4">
-                <h1 className="text-4xl md:text-6xl lg:text-7xl uppercase tracking-tight leading-[0.95] text-white">
-                  Sell smarter, <br />
+              <div className="space-y-5">
+                <h1 className="text-4xl md:text-5xl lg:text-6xl tracking-tight leading-[1.05] text-white">
+                  Sell smarter,<br />
                   <span className="text-primary">not harder.</span>
                 </h1>
-                <p className="text-base md:text-lg text-black max-w-lg mx-auto lg:mx-0 leading-relaxed">
+                <p className="text-base md:text-lg text-white/80 max-w-lg mx-auto lg:mx-0 leading-relaxed">
                   Tired of running your business in DMs? Vendly gives young
                   entrepreneurs and small businesses a premium storefront in
                   seconds — professional, fast, and built to grow.
                 </p>
               </div>
 
-              <div className="flex flex-col sm:flex-row justify-center lg:justify-start gap-4 pt-2">
+              <div className="flex flex-col sm:flex-row justify-center lg:justify-start gap-3 pt-1">
                 <Link href="/seller-verification">
                   <Button
                     variant="primary"
                     size="lg"
-                    className="w-full sm:w-auto rounded-2xl px-10 border-none group shadow-xl shadow-primary/20"
+                    className="w-full sm:w-auto rounded-xl px-8 border-none group shadow-xl shadow-primary/20"
                   >
-                    Get Started Free
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    Get started free
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </Link>
                 <Link href="/products" className="w-full sm:w-auto">
                   <Button
                     variant="ghost"
                     size="lg"
-                    className="w-full sm:w-auto rounded-2xl text-white hover:bg-black border border-white/10 bg-black"
+                    className="w-full sm:w-auto rounded-xl text-white hover:bg-white/10 border border-white/15 bg-transparent"
                   >
-                    Browse Market
+                    Browse market
                   </Button>
                 </Link>
               </div>
@@ -87,21 +87,19 @@ export default function ModernHero() {
                       ),
                     )}
                   </div>
-                  <p className="text-[11px] text-white font-bold">
+                  <p className="text-[11px] text-white font-normal">
                     <span className="text-primary">1,000+</span> entrepreneurs trust Vendly
                   </p>
                 </div>
-                <div className="flex flex-wrap justify-center lg:justify-start gap-x-6 gap-y-2 text-white">
+                <div className="flex flex-wrap justify-center lg:justify-start gap-x-5 gap-y-2 text-white/80">
                   {[
                     { text: "Live in 60 seconds", icon: Zap },
                     { text: "Paystack secured", icon: ShieldCheck },
                     { text: "0% setup fee", icon: ArrowRight },
                   ].map((item, idx) => (
                     <div key={idx} className="flex items-center gap-1.5">
-                      <item.icon className="w-3.5 h-3.5 text-primary/70" />
-                      <span className="text-[10px] uppercase tracking-[0.15em] font-bold">
-                        {item.text}
-                      </span>
+                      <item.icon className="w-3.5 h-3.5 text-primary" />
+                      <span className="text-xs">{item.text}</span>
                     </div>
                   ))}
                 </div>
@@ -130,11 +128,11 @@ export default function ModernHero() {
                     <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center text-primary">
                       <Zap className="w-4 h-4" />
                     </div>
-                    <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400">
+                    <span className="text-[9px] font-medium uppercase tracking-wider text-emerald-400">
                       ● Live
                     </span>
                   </div>
-                  <h3 className="text-white text-sm font-extrabold uppercase tracking-tight">
+                  <h3 className="text-white text-sm font-medium uppercase tracking-tight">
                     Storefront ready in seconds
                   </h3>
                   <p className="text-white/70 text-[11px] mt-2 leading-relaxed">
@@ -157,11 +155,11 @@ export default function ModernHero() {
                     <div className="w-10 h-10 rounded-xl bg-black/15 flex items-center justify-center text-white">
                       <ArrowRight className="w-4 h-4" />
                     </div>
-                    <span className="text-[9px] font-black uppercase tracking-widest text-white/80">
+                    <span className="text-[9px] font-medium uppercase tracking-wider text-white/80">
                       Today
                     </span>
                   </div>
-                  <h3 className="text-white text-sm font-extrabold uppercase tracking-tight">
+                  <h3 className="text-white text-sm font-medium uppercase tracking-tight">
                     GH₵12,480 in sales
                   </h3>
                   <p className="text-white/85 text-[11px] mt-2 leading-relaxed">

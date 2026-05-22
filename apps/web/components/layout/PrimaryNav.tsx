@@ -107,7 +107,7 @@ export default function PrimaryNav() {
             type="button"
             onClick={() => setDrawerOpen(true)}
             aria-label="Open menu"
-            className="lg:hidden inline-flex items-center gap-1.5 h-9 px-3 rounded-xl border border-border text-[11px] font-black uppercase tracking-wider hover:bg-surface transition-colors"
+            className="lg:hidden inline-flex items-center gap-1.5 h-9 px-3 rounded-xl border border-border text-[11px] font-medium uppercase tracking-wider hover:bg-surface transition-colors"
           >
             <Menu className="w-3.5 h-3.5" />
             Menu
@@ -129,7 +129,7 @@ export default function PrimaryNav() {
               <Link
                 key={href + label}
                 href={href}
-                className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[12px] font-bold text-foreground/80 hover:text-foreground hover:bg-surface transition-colors"
+                className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[12px] font-normal text-foreground/80 hover:text-foreground hover:bg-surface transition-colors"
               >
                 <Icon className="w-3.5 h-3.5" />
                 {label}
@@ -149,7 +149,7 @@ export default function PrimaryNav() {
               type="search"
               inputMode="search"
               placeholder="Search Vendly…"
-              className="h-9 w-full pl-9 pr-3 rounded-xl bg-surface border border-border text-[12px] font-bold outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-all"
+              className="h-9 w-full pl-9 pr-3 rounded-xl bg-surface border border-border text-[12px] font-normal outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-all"
             />
           </form>
         </div>
@@ -197,7 +197,7 @@ function Trigger({
       type="button"
       onClick={onClick}
       aria-expanded={isOpen}
-      className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[12px] font-bold transition-colors ${
+      className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[12px] font-normal transition-colors ${
         isOpen
           ? "bg-primary/10 text-primary"
           : "text-foreground/80 hover:text-foreground hover:bg-surface"
@@ -270,7 +270,7 @@ function CategoryMega({
               <Package className="w-4 h-4 text-primary" />
             )}
           </div>
-          <span className="text-[12px] font-bold text-foreground group-hover:text-primary truncate flex-1">
+          <span className="text-[12px] font-normal text-foreground group-hover:text-primary truncate flex-1">
             {c.name}
           </span>
           <ArrowRight className="w-3.5 h-3.5 text-muted opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
@@ -307,7 +307,7 @@ function BrandMega({
         <button
           key={b.id || b.name}
           onClick={() => go(`/products?brand=${encodeURIComponent(b.name)}`)}
-          className="inline-flex items-center gap-2 px-3 h-9 rounded-xl border border-border bg-surface/40 hover:bg-primary/5 hover:border-primary/30 text-[11px] font-bold text-foreground/80 hover:text-primary transition-colors"
+          className="inline-flex items-center gap-2 px-3 h-9 rounded-xl border border-border bg-surface/40 hover:bg-primary/5 hover:border-primary/30 text-[11px] font-normal text-foreground/80 hover:text-primary transition-colors"
         >
           {b.image_url ? (
             <img src={b.image_url} alt="" className="w-4 h-4 rounded object-cover" />
@@ -378,7 +378,7 @@ function MobileDrawer({
                 <div className="w-8 h-8 bg-primary rounded-lg overflow-hidden">
                   <img src="/logos/vendly.png" alt="" className="w-full h-full" />
                 </div>
-                <span className="text-base font-black uppercase">Vendly</span>
+                <span className="text-base font-medium uppercase">Vendly</span>
               </Link>
               <button
                 onClick={onClose}
@@ -425,7 +425,7 @@ function MobileDrawer({
                 <div className="space-y-2">
                   <button
                     onClick={() => setTab("main")}
-                    className="text-[11px] font-bold text-muted hover:text-foreground inline-flex items-center gap-1.5"
+                    className="text-[11px] font-normal text-muted hover:text-foreground inline-flex items-center gap-1.5"
                   >
                     <ChevronDown className="w-3.5 h-3.5 rotate-90" />
                     Back
@@ -441,7 +441,7 @@ function MobileDrawer({
                               <Link
                                 href={`/products?category=${encodeURIComponent(c.name)}`}
                                 onClick={onClose}
-                                className="flex items-center justify-between px-3 h-11 rounded-xl hover:bg-surface text-[13px] font-bold text-foreground"
+                                className="flex items-center justify-between px-3 h-11 rounded-xl hover:bg-surface text-[13px] font-normal text-foreground"
                               >
                                 {c.name}
                                 <ArrowRight className="w-3.5 h-3.5 text-muted" />
@@ -461,7 +461,7 @@ function MobileDrawer({
                               <Link
                                 href={`/products?brand=${encodeURIComponent(b.name)}`}
                                 onClick={onClose}
-                                className="flex items-center justify-between px-3 h-11 rounded-xl hover:bg-surface text-[13px] font-bold text-foreground"
+                                className="flex items-center justify-between px-3 h-11 rounded-xl hover:bg-surface text-[13px] font-normal text-foreground"
                               >
                                 {b.name}
                                 <ArrowRight className="w-3.5 h-3.5 text-muted" />
@@ -498,7 +498,7 @@ function DrawerRow({
       <span className="inline-flex w-9 h-9 rounded-xl bg-primary/10 text-primary items-center justify-center">
         <Icon className="w-4 h-4" />
       </span>
-      <span className="flex-1 text-[13px] font-bold text-foreground">{label}</span>
+      <span className="flex-1 text-[13px] font-normal text-foreground">{label}</span>
       {chevron && <ChevronDown className="w-3.5 h-3.5 -rotate-90 text-muted" />}
     </>
   );

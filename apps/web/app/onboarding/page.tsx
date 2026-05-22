@@ -101,7 +101,7 @@ function StepIndicator({ currentStep, completedSteps }: { currentStep: number; c
                   />
                 )}
               </div>
-              <span className={`text-[9px] font-bold uppercase tracking-widest
+              <span className={`text-[9px] font-normal uppercase tracking-wider
                 ${isCurrent ? 'text-primary' : isCompleted ? 'text-emerald-500' : 'text-muted'}
               `}>
                 {step.label}
@@ -152,7 +152,7 @@ function StoreProfileStep({
         <div className="inline-flex items-center justify-center p-3 bg-primary/5 rounded-2xl">
           <Store className="w-8 h-8 text-primary" />
         </div>
-        <h2 className="text-xl font-extrabold tracking-tight">Complete Your Store Profile</h2>
+        <h2 className="text-xl font-medium tracking-tight">Complete Your Store Profile</h2>
         <p className="text-xs text-muted font-medium max-w-sm mx-auto leading-relaxed">
           Tell customers more about your store. This builds trust and helps them find you.
         </p>
@@ -160,7 +160,7 @@ function StoreProfileStep({
 
       <div className="space-y-5">
         <div className="space-y-2">
-          <label className="text-[11px] font-bold text-muted uppercase tracking-widest pl-1">Store Description</label>
+          <label className="text-[11px] font-normal text-muted uppercase tracking-wider pl-1">Store Description</label>
           <textarea
             value={bio}
             onChange={(e) => setBio(e.target.value)}
@@ -171,7 +171,7 @@ function StoreProfileStep({
         </div>
 
         <div className="space-y-2">
-          <label className="text-[11px] font-bold text-muted uppercase tracking-widest pl-1">WhatsApp Number</label>
+          <label className="text-[11px] font-normal text-muted uppercase tracking-wider pl-1">WhatsApp Number</label>
           <input
             type="text"
             value={whatsapp}
@@ -183,7 +183,7 @@ function StoreProfileStep({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="text-[11px] font-bold text-muted uppercase tracking-widest pl-1">Business Hours</label>
+            <label className="text-[11px] font-normal text-muted uppercase tracking-wider pl-1">Business Hours</label>
             <input
               type="text"
               value={hours}
@@ -193,7 +193,7 @@ function StoreProfileStep({
             />
           </div>
           <div className="space-y-2">
-            <label className="text-[11px] font-bold text-muted uppercase tracking-widest pl-1">Delivery Policy</label>
+            <label className="text-[11px] font-normal text-muted uppercase tracking-wider pl-1">Delivery Policy</label>
             <input
               type="text"
               value={delivery}
@@ -208,7 +208,7 @@ function StoreProfileStep({
       <Button
         onClick={() => onComplete({ bio, whatsapp_number: whatsapp, business_hours: hours, delivery_policies: delivery })}
         isLoading={isLoading}
-        className="w-full h-13 text-sm font-bold rounded-2xl mt-4"
+        className="w-full h-13 text-sm font-normal rounded-2xl mt-4"
       >
         Continue <ChevronRight className="w-4 h-4 ml-1" />
       </Button>
@@ -257,7 +257,7 @@ function PaymentStep({
         <div className="inline-flex items-center justify-center p-3 bg-primary/5 rounded-2xl">
           <CreditCard className="w-8 h-8 text-primary" />
         </div>
-        <h2 className="text-xl font-extrabold tracking-tight">Payment Preferences</h2>
+        <h2 className="text-xl font-medium tracking-tight">Payment Preferences</h2>
         <p className="text-xs text-muted font-medium max-w-sm mx-auto leading-relaxed">
           Choose how you want to accept payments from customers.
         </p>
@@ -265,7 +265,7 @@ function PaymentStep({
 
       {/* Payment Methods */}
       <div className="space-y-3">
-        <label className="text-[11px] font-bold text-muted uppercase tracking-widest pl-1">
+        <label className="text-[11px] font-normal text-muted uppercase tracking-wider pl-1">
           Accepted Methods <span className="text-red-400">*</span>
         </label>
         <div className="grid gap-3">
@@ -286,7 +286,7 @@ function PaymentStep({
               >
                 <span className="text-2xl">{method.icon}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold">{method.label}</p>
+                  <p className="text-sm font-normal">{method.label}</p>
                   <p className="text-[10px] text-muted font-medium mt-0.5">{method.description}</p>
                 </div>
                 <div className={`
@@ -314,14 +314,14 @@ function PaymentStep({
             className="space-y-4 overflow-hidden"
           >
             <div className="p-5 rounded-[1.5rem] bg-primary/5 border border-primary/10 space-y-4">
-              <p className="text-[10px] font-black text-primary uppercase tracking-widest">
+              <p className="text-[10px] font-medium text-primary uppercase tracking-wider">
                 Settlement Details (Where you receive money)
               </p>
 
               {methods.includes('mobile_money') && !methods.includes('bank_transfer') ? (
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-muted uppercase tracking-widest pl-1">MoMo Provider</label>
+                    <label className="text-[10px] font-normal text-muted uppercase tracking-wider pl-1">MoMo Provider</label>
                     <select
                       value={bankCode}
                       onChange={(e) => {
@@ -337,7 +337,7 @@ function PaymentStep({
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-muted uppercase tracking-widest pl-1">Mobile Money Number</label>
+                    <label className="text-[10px] font-normal text-muted uppercase tracking-wider pl-1">Mobile Money Number</label>
                     <input
                       type="text"
                       placeholder="e.g. 024XXXXXXX"
@@ -350,7 +350,7 @@ function PaymentStep({
               ) : (
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-muted uppercase tracking-widest pl-1">Bank Name</label>
+                    <label className="text-[10px] font-normal text-muted uppercase tracking-wider pl-1">Bank Name</label>
                     <select
                       value={bankCode}
                       onChange={(e) => {
@@ -366,7 +366,7 @@ function PaymentStep({
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-muted uppercase tracking-widest pl-1">Account Number</label>
+                    <label className="text-[10px] font-normal text-muted uppercase tracking-wider pl-1">Account Number</label>
                     <input
                       type="text"
                       placeholder="Enter your account number"
@@ -384,7 +384,7 @@ function PaymentStep({
 
       {/* Payment Timing */}
       <div className="space-y-3">
-        <label className="text-[11px] font-bold text-muted uppercase tracking-widest pl-1">
+        <label className="text-[11px] font-normal text-muted uppercase tracking-wider pl-1">
           When Should Customers Pay? <span className="text-red-400">*</span>
         </label>
         <div className="grid gap-3">
@@ -408,7 +408,7 @@ function PaymentStep({
                   <Icon className={`w-5 h-5 ${isSelected ? 'text-primary' : 'text-muted'}`} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold">{option.label}</p>
+                  <p className="text-sm font-normal">{option.label}</p>
                   <p className="text-[10px] text-muted font-medium mt-0.5">{option.description}</p>
                 </div>
                 <div className={`
@@ -430,7 +430,7 @@ function PaymentStep({
         <Button
           onClick={onBack}
           variant="secondary"
-          className="flex-1 h-13 text-sm font-bold rounded-2xl"
+          className="flex-1 h-13 text-sm font-normal rounded-2xl"
         >
           <ChevronLeft className="w-4 h-4 mr-1" /> Back
         </Button>
@@ -444,7 +444,7 @@ function PaymentStep({
           })}
           isLoading={isLoading}
           disabled={!canProceed}
-          className="flex-[2] h-13 text-sm font-bold rounded-2xl disabled:opacity-40"
+          className="flex-[2] h-13 text-sm font-normal rounded-2xl disabled:opacity-40"
         >
           <Sparkles className="w-4 h-4 mr-1" /> Complete Setup
         </Button>
@@ -477,12 +477,12 @@ function SuccessScreen() {
         <Check className="w-12 h-12 text-white" strokeWidth={3} />
       </motion.div>
       <div className="space-y-2">
-        <h2 className="text-2xl font-extrabold tracking-tight">You&apos;re All Set! 🎉</h2>
+        <h2 className="text-2xl font-medium tracking-tight">You&apos;re All Set! 🎉</h2>
         <p className="text-sm text-muted font-medium max-w-xs mx-auto leading-relaxed">
           Your store is fully set up. Start adding products and making sales!
         </p>
       </div>
-      <div className="flex items-center gap-2 text-xs text-muted font-bold">
+      <div className="flex items-center gap-2 text-xs text-muted font-normal">
         <Loader2 className="w-3 h-3 animate-spin" />
         <span>Redirecting to dashboard...</span>
       </div>
@@ -555,7 +555,7 @@ export default function OnboardingPage() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-8 h-8 text-primary animate-spin" />
-          <p className="text-[10px] font-bold text-muted uppercase tracking-widest">Loading setup...</p>
+          <p className="text-[10px] font-normal text-muted uppercase tracking-wider">Loading setup...</p>
         </div>
       </div>
     );
@@ -569,7 +569,7 @@ export default function OnboardingPage() {
           <div className="p-3 bg-red-500/10 rounded-2xl inline-block">
             <AlertCircle className="w-8 h-8 text-red-500" />
           </div>
-          <h3 className="text-sm font-bold">{error}</h3>
+          <h3 className="text-sm font-normal">{error}</h3>
           <Button onClick={() => window.location.reload()} size="sm" className="rounded-xl w-full">
             Retry
           </Button>
@@ -599,10 +599,10 @@ export default function OnboardingPage() {
               animate={{ opacity: 1, y: 0 }}
               className="text-center space-y-1"
             >
-              <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">
+              <p className="text-[10px] font-medium text-primary uppercase tracking-wider">
                 Setup {currentStep + 1} of {STEPS.length}
               </p>
-              <h1 className="text-3xl font-extrabold tracking-tight">Finish Your Store Setup</h1>
+              <h1 className="text-3xl font-medium tracking-tight">Finish Your Store Setup</h1>
             </motion.div>
 
             {/* Progress */}
@@ -641,7 +641,7 @@ export default function OnboardingPage() {
             </div>
 
             {/* Footer hint */}
-            <p className="text-center text-[9px] text-muted/50 font-bold uppercase tracking-widest">
+            <p className="text-center text-[9px] text-muted/50 font-normal uppercase tracking-wider">
               <Clock className="w-3 h-3 inline mr-1 -mt-0.5" />
               Progress is saved automatically
             </p>

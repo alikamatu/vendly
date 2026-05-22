@@ -36,10 +36,10 @@ export default function TrustStrip() {
               <Icon className="w-4 h-4" />
             </span>
             <div className="min-w-0">
-              <p className="text-sm md:text-base font-black tracking-tight text-foreground tabular-nums">
+              <p className="text-sm md:text-base font-medium tracking-tight text-foreground tabular-nums">
                 {value}
               </p>
-              <p className="text-[10px] md:text-[11px] font-bold text-muted uppercase tracking-wider truncate">
+              <p className="text-[10px] md:text-[11px] font-normal text-muted uppercase tracking-wider truncate">
                 {label}
               </p>
             </div>

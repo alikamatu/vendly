@@ -79,7 +79,7 @@ export default function ResetPasswordContent() {
               >
                 <CheckCircle size={32} />
               </motion.div>
-              <h2 className="text-xl font-semibold">Password Reset!</h2>
+              <h2 className="text-xl font-normal">Password Reset!</h2>
               <p className="max-w-sm text-sm text-foreground/60">
                 Your password has been reset successfully. You can now sign in with your new password.
               </p>
@@ -92,7 +92,7 @@ export default function ResetPasswordContent() {
           ) : (
             <>
               <div className="mb-6">
-                <h1 className="text-2xl font-bold">Reset your password</h1>
+                <h1 className="text-2xl font-normal">Reset your password</h1>
                 <p className="mt-2 text-sm text-foreground/60">
                   Enter your new password below.
                 </p>

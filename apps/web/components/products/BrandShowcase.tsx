@@ -63,11 +63,11 @@ export default function BrandShowcase({ products, brands, onBrandSelect }: Brand
   return (
     <section className="space-y-16 py-10 relative">
       <div className="space-y-2">
-        <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.4em] text-primary font-black">
+        <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-primary font-medium">
           <Sparkles className="w-3.5 h-3.5 animate-pulse" />
           Vendly Collections
         </div>
-        <h2 className="text-2xl md:text-4xl uppercase tracking-tight font-extrabold text-foreground">
+        <h2 className="text-2xl md:text-4xl uppercase tracking-tight font-medium text-foreground">
           Top Vendly Brands
         </h2>
         <p className="text-xs text-muted max-w-md">
@@ -96,18 +96,18 @@ export default function BrandShowcase({ products, brands, onBrandSelect }: Brand
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center text-xs font-black uppercase text-primary italic">
+                    <div className="w-full h-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center text-xs font-medium uppercase text-primary italic">
                       {brand.name.slice(0, 2)}
                     </div>
                   )}
                 </div>
 
                 <div className="space-y-1">
-                  <h3 className="text-md md:text-lg font-black uppercase tracking-wider text-foreground">
+                  <h3 className="text-md md:text-lg font-medium uppercase tracking-wider text-foreground">
                     {brand.name}
                   </h3>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold text-primary bg-primary/10 border border-primary/20 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                    <span className="text-[10px] font-normal text-primary bg-primary/10 border border-primary/20 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
                       {brand.totalCount} {brand.totalCount === 1 ? "Product" : "Products"}
                     </span>
                     <span className="text-[10px] text-muted font-medium">Top Rank #{brandIdx + 1}</span>
@@ -118,7 +118,7 @@ export default function BrandShowcase({ products, brands, onBrandSelect }: Brand
               {/* View All CTA Button */}
               <button
                 onClick={() => onBrandSelect(brand.name)}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] hover:bg-[var(--color-border)]/30 hover:border-[var(--color-accent)]/30 text-xs font-bold text-[var(--color-foreground)] transition-all duration-300 group hover:shadow-lg self-start md:self-auto"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] hover:bg-[var(--color-border)]/30 hover:border-[var(--color-accent)]/30 text-xs font-normal text-[var(--color-foreground)] transition-all duration-300 group hover:shadow-lg self-start md:self-auto"
               >
                 <span>View All {brand.name}</span>
                 <ArrowRight className="w-3.5 h-3.5 text-primary group-hover:translate-x-1 transition-transform" />

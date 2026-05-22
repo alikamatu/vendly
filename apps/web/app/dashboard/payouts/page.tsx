@@ -49,7 +49,7 @@ export default function PayoutsPage() {
         <Link href="/dashboard" className="text-muted hover:text-foreground">
           <ArrowLeft className="w-4 h-4" />
         </Link>
-        <h1 className="text-lg font-black uppercase tracking-widest">Payouts</h1>
+        <h1 className="text-lg font-medium uppercase tracking-wider">Payouts</h1>
       </div>
 
       {isLoading && (
@@ -74,18 +74,18 @@ export default function PayoutsPage() {
               <div key={payout.id} className="border border-border/50 rounded-xl p-4 bg-surface/40">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-xs font-bold uppercase">{payout.reference}</p>
+                    <p className="text-xs font-normal uppercase">{payout.reference}</p>
                     <p className="text-[11px] text-muted">
                       {payout.mode} • {payout.status}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs font-bold">GHS {Number(payout.amount).toFixed(2)}</p>
+                    <p className="text-xs font-normal">GHS {Number(payout.amount).toFixed(2)}</p>
                     {payout.status !== "SUCCESS" && (
                       <button
                         onClick={() => retryPayout(payout.id)}
                         disabled={retryingId === payout.id}
-                        className="text-[10px] text-primary font-bold uppercase mt-1 disabled:opacity-50"
+                        className="text-[10px] text-primary font-normal uppercase mt-1 disabled:opacity-50"
                       >
                         {retryingId === payout.id ? "Retrying..." : "Retry"}
                       </button>

@@ -26,7 +26,7 @@ export default function SortDropdown({ value, onChange }: SortDropdownProps) {
         value={value}
         onChange={(e) => onChange(e.target.value as BrowseSort)}
         aria-label="Sort products"
-        className="h-10 pl-9 pr-7 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] text-[12px] font-bold text-[var(--color-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30 focus:border-[var(--color-accent)]/50 appearance-none cursor-pointer"
+        className="h-10 pl-9 pr-7 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] text-[12px] font-normal text-[var(--color-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30 focus:border-[var(--color-accent)]/50 appearance-none cursor-pointer"
       >
         {OPTIONS.map((o) => (
           <option key={o.value} value={o.value}>

@@ -125,7 +125,7 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                   <motion.div
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-600 backdrop-blur-md text-white text-[9px] font-bold uppercase tracking-widest shadow-xl shadow-primary/30"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-600 backdrop-blur-md text-white text-[9px] font-normal uppercase tracking-wider shadow-xl shadow-primary/30"
                   >
                     <Sparkles size={12} className="text-white fill-current" />
                     Hot Sale
@@ -141,7 +141,7 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                     <motion.div
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="px-2.5 py-1.5 rounded-full bg-emerald-500 text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/30"
+                      className="px-2.5 py-1.5 rounded-full bg-emerald-500 text-white text-[10px] font-medium uppercase tracking-wider shadow-lg shadow-emerald-500/30"
                     >
                       −{d}%
                     </motion.div>
@@ -220,7 +220,7 @@ export default function ProductCard({ product, index }: ProductCardProps) {
               {product.seller.logo_url ? (
                 <img src={product.seller.logo_url} className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-[8px] font-bold uppercase">
+                <div className="w-full h-full flex items-center justify-center text-[8px] font-normal uppercase">
                   {product.seller.store_name[0]}
                 </div>
               )}

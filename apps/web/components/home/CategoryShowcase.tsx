@@ -55,7 +55,7 @@ function CategoryShowcase({
         action={
           <Link
             href="/categories"
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-[var(--color-surface,theme(colors.muted.DEFAULT))] border border-border hover:bg-primary/10 hover:border-primary/30 text-xs font-bold transition-all group"
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-[var(--color-surface,theme(colors.muted.DEFAULT))] border border-border hover:bg-primary/10 hover:border-primary/30 text-xs font-normal transition-all group"
           >
             <span>View all categories</span>
             <Sparkles className="w-3.5 h-3.5 text-primary group-hover:scale-110 transition-transform" />
@@ -111,7 +111,7 @@ function CategoryShowcase({
                   }`}
                 />
                 <div className="relative z-10 space-y-1.5">
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white bg-primary/95 backdrop-blur-md px-3 py-1.5 rounded-full inline-block">
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-white bg-primary/95 backdrop-blur-md px-3 py-1.5 rounded-full inline-block">
                     {cat.name}
                   </span>
                   <p className="text-[10px] text-white/70 line-clamp-1 group-hover:text-white transition-colors">

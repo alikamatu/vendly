@@ -22,7 +22,7 @@ export default function DeliveryTimeSelect({ value, onChange }: DeliveryTimeSele
     <div className="space-y-2">
       <label
         htmlFor="avg-delivery-time"
-        className="text-[11px] font-bold text-[var(--color-muted)] uppercase tracking-widest pl-1 flex items-center gap-1"
+        className="text-[11px] font-normal text-[var(--color-muted)] uppercase tracking-wider pl-1 flex items-center gap-1"
       >
         Average Delivery Time <span className="text-[var(--color-accent)]">*</span>
       </label>

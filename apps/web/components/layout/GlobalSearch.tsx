@@ -151,7 +151,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
                       onKeyDown={handleKeyDown}
-                      className="w-full h-14 md:h-16 pl-14 pr-14 bg-surface/50 border-2 border-border/50 rounded-3xl text-sm md:text-base font-bold outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/5 transition-all"
+                      className="w-full h-14 md:h-16 pl-14 pr-14 bg-surface/50 border-2 border-border/50 rounded-3xl text-sm md:text-base font-normal outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/5 transition-all"
                     />
                     {isLoading && (
                       <div className="absolute right-14 top-1/2 -translate-y-1/2">
@@ -173,7 +173,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                 <div className="max-w-4xl mx-auto space-y-10">
                   {query.length > 0 ? (
                     <div className="space-y-6">
-                      <p className="px-2 text-[10px] font-black uppercase tracking-[0.3em] text-primary/60">
+                      <p className="px-2 text-[10px] font-medium uppercase tracking-[0.3em] text-primary/60">
                         Results
                       </p>
                       {suggestions.length > 0 ? (
@@ -208,14 +208,14 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                                 )}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <h4 className="text-xs font-black uppercase tracking-tight truncate mb-1">
+                                <h4 className="text-xs font-medium uppercase tracking-tight truncate mb-1">
                                   {item.title}
                                 </h4>
                                 <div className="flex items-center gap-3">
-                                  <span className="text-[9px] font-black uppercase tracking-widest text-primary">
+                                  <span className="text-[9px] font-medium uppercase tracking-wider text-primary">
                                     {item.category}
                                   </span>
-                                  <span className="text-[9px] font-bold text-muted uppercase tracking-widest italic">
+                                  <span className="text-[9px] font-normal text-muted uppercase tracking-wider italic">
                                     {item.seller.store_name}
                                   </span>
                                 </div>
@@ -228,7 +228,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                         !isLoading && (
                           <div className="py-20 text-center space-y-4">
                             <ShoppingBag className="w-12 h-12 text-muted mx-auto opacity-10" />
-                            <p className="text-[11px] font-black uppercase tracking-widest text-muted">
+                            <p className="text-[11px] font-medium uppercase tracking-wider text-muted">
                               No products found
                             </p>
                           </div>
@@ -240,7 +240,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                       <section className="space-y-6">
                         <div className="flex items-center gap-3">
                           <Sparkles className="w-4 h-4 text-primary" />
-                          <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-foreground">
+                          <h3 className="text-[11px] font-medium uppercase tracking-[0.3em] text-foreground">
                             Trending Categories
                           </h3>
                         </div>
@@ -262,7 +262,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                                   className="flex items-center gap-3 p-4 rounded-3xl bg-surface border border-border/50 hover:border-primary/30 hover:bg-white transition-all text-left active:scale-95 group"
                                 >
                                   <Tag className="w-4 h-4 text-primary group-hover:rotate-12 transition-transform" />
-                                  <span className="text-[10px] font-black uppercase tracking-tight truncate">
+                                  <span className="text-[10px] font-medium uppercase tracking-tight truncate">
                                     {cat.name}
                                   </span>
                                 </MotionButton>
@@ -276,7 +276,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
 
               {/* Footer */}
               <footer className="px-10 py-6 border-t border-border/50 bg-background shrink-0 flex items-center justify-between">
-                <p className="text-[9px] font-black text-muted uppercase tracking-widest opacity-40">
+                <p className="text-[9px] font-medium text-muted uppercase tracking-wider opacity-40">
                   Drag down to close
                 </p>
                 <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />

@@ -45,7 +45,7 @@ export default function Header() {
         <div className="flex items-center justify-between">
           <Link
             href="/"
-            className="text-xl font-black uppercase tracking-tighter hover:text-primary transition-colors"
+            className="text-xl font-medium uppercase tracking-tighter hover:text-primary transition-colors"
           >
             Ventry
           </Link>
@@ -54,13 +54,13 @@ export default function Header() {
             <nav className="hidden md:flex gap-6 mr-4">
               <Link
                 href="/products"
-                className="text-[10px] font-black uppercase tracking-widest text-muted hover:text-foreground transition-colors"
+                className="text-[10px] font-medium uppercase tracking-wider text-muted hover:text-foreground transition-colors"
               >
                 Products
               </Link>
               <Link
                 href="/stores"
-                className="text-[10px] font-black uppercase tracking-widest text-muted hover:text-foreground transition-colors"
+                className="text-[10px] font-medium uppercase tracking-wider text-muted hover:text-foreground transition-colors"
               >
                 Stores
               </Link>
@@ -88,7 +88,7 @@ export default function Header() {
                     <Link href="/login">
                       <Button
                         variant="ghost"
-                        className="hidden sm:flex text-[10px] font-black uppercase tracking-widest"
+                        className="hidden sm:flex text-[10px] font-medium uppercase tracking-wider"
                       >
                         Sign in
                       </Button>
@@ -96,7 +96,7 @@ export default function Header() {
                     <Link href="/register">
                       <Button
                         variant="primary"
-                        className="rounded-xl px-6 text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-primary/20"
+                        className="rounded-xl px-6 text-[10px] font-medium uppercase tracking-wider shadow-lg shadow-primary/20"
                       >
                         Get started
                       </Button>

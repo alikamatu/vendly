@@ -20,21 +20,21 @@ export default function PersonalizationPage() {
     <div className="max-w-2xl mx-auto space-y-6">
       <Link 
         href="/dashboard/settings"
-        className="inline-flex items-center gap-2 text-xs font-bold text-muted hover:text-foreground transition-colors group mb-2"
+        className="inline-flex items-center gap-2 text-xs font-normal text-muted hover:text-foreground transition-colors group mb-2"
       >
         <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
         Back to Settings
       </Link>
 
       <div className="px-2">
-        <h2 className="text-md font-black tracking-tight uppercase">Personalization</h2>
+        <h2 className="text-md font-medium tracking-tight uppercase">Personalization</h2>
         <p className="text-xs text-muted font-medium mt-1">Customize your Vendly experience and display</p>
       </div>
 
       <div className="space-y-6">
         {/* Theme Section */}
         <section className="space-y-3">
-          <h3 className="px-4 text-[10px] font-bold text-muted uppercase tracking-widest flex items-center gap-2">
+          <h3 className="px-4 text-[10px] font-normal text-muted uppercase tracking-wider flex items-center gap-2">
              <Palette className="w-3 h-3" /> Appearance theme
           </h3>
           <Card className="p-2 border-none shadow-sm" hoverEffect={false}>
@@ -50,7 +50,7 @@ export default function PersonalizationPage() {
                     }`}
                   >
                     <t.icon className={`w-5 h-5 ${theme === t.id ? "text-white" : t.color}`} />
-                    <span className="text-[10px] font-bold">{t.name}</span>
+                    <span className="text-[10px] font-normal">{t.name}</span>
                   </button>
                 ))}
              </div>
@@ -59,7 +59,7 @@ export default function PersonalizationPage() {
 
         {/* Mock Display Section */}
         <section className="space-y-3">
-          <h3 className="px-4 text-[10px] font-bold text-muted uppercase tracking-widest flex items-center gap-2">
+          <h3 className="px-4 text-[10px] font-normal text-muted uppercase tracking-wider flex items-center gap-2">
              <Type className="w-3 h-3" /> Accessibility & Text
           </h3>
           <Card className="p-0 overflow-hidden border-none shadow-sm" hoverEffect={false}>
@@ -69,7 +69,7 @@ export default function PersonalizationPage() {
                       <div className="p-2 rounded-xl bg-orange-500/10 text-orange-500">
                          <Type className="w-4 h-4" />
                       </div>
-                      <span className="text-xs font-bold">Large Text Mode</span>
+                      <span className="text-xs font-normal">Large Text Mode</span>
                    </div>
                    <div className="w-10 h-6 bg-border/50 rounded-full relative cursor-not-allowed">
                       <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full"></div>
@@ -80,7 +80,7 @@ export default function PersonalizationPage() {
                       <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500">
                          <LayoutGrid className="w-4 h-4" />
                       </div>
-                      <span className="text-xs font-bold">Compact Dashboard</span>
+                      <span className="text-xs font-normal">Compact Dashboard</span>
                    </div>
                    <div className="w-10 h-6 bg-primary rounded-full relative cursor-not-allowed">
                       <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full"></div>

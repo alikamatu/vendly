@@ -29,7 +29,7 @@ export default function AuthModal() {
           <Fingerprint size={32} />
         </div>
         <div className="space-y-1">
-          <h2 className="text-2xl font-black uppercase tracking-tight text-foreground">
+          <h2 className="text-2xl font-medium uppercase tracking-tight text-foreground">
             {view === "login" ? "Welcome Back" : "Create Account"}
           </h2>
         </div>
@@ -43,7 +43,7 @@ export default function AuthModal() {
       </div>
 
       <div className="mt-8 text-center">
-        <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">
+        <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
           Secure • SSL Encrypted • Identity Verified
         </p>
       </div>

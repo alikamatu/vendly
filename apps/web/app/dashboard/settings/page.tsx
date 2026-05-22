@@ -50,7 +50,7 @@ function Avatar({ name, size = "md" }: { name: string; size?: "sm" | "md" | "lg"
   const bg = getAvatarColor(name);
   const sizeClass = { sm: "w-9 h-9 text-sm", md: "w-14 h-14 text-lg", lg: "w-20 h-20 text-2xl" }[size];
   return (
-    <div className={`${sizeClass} ${bg} rounded-2xl flex items-center justify-center font-black text-white flex-shrink-0`}>
+    <div className={`${sizeClass} ${bg} rounded-2xl flex items-center justify-center font-medium text-white flex-shrink-0`}>
       {initials || "?"}
     </div>
   );
@@ -80,7 +80,7 @@ function SettingsRow({ item }: { item: SettingItem }) {
           <item.icon className={`w-4 h-4 ${item.color}`} />
         </div>
         <div>
-          <p className="text-sm font-bold text-[var(--color-foreground)] leading-tight">{item.name}</p>
+          <p className="text-sm font-normal text-[var(--color-foreground)] leading-tight">{item.name}</p>
           <p className="text-[11px] text-[var(--color-muted)] leading-tight mt-0.5">{item.desc}</p>
         </div>
       </div>
@@ -92,7 +92,7 @@ function SettingsRow({ item }: { item: SettingItem }) {
 function SettingsGroup({ title, items }: { title: string; items: SettingItem[] }) {
   return (
     <div className="space-y-1.5">
-      <p className="px-1 text-[10px] font-black text-[var(--color-muted)] uppercase tracking-widest">{title}</p>
+      <p className="px-1 text-[10px] font-medium text-[var(--color-muted)] uppercase tracking-wider">{title}</p>
       <div className="bg-[var(--color-surface)] rounded-3xl overflow-hidden border border-[var(--color-border)]">
         <div className="divide-y divide-[var(--color-border)]/50">
           {items.map((item) => (
@@ -114,7 +114,7 @@ function RoleBadge({ role }: { role: "USER" | "SELLER" | "ADMIN" }) {
   };
   const { label, class: cls } = map[role];
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide ${cls}`}>
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wide ${cls}`}>
       {role === "SELLER" && <BadgeCheck className="w-3 h-3" />}
       {label}
     </span>
@@ -123,11 +123,11 @@ function RoleBadge({ role }: { role: "USER" | "SELLER" | "ADMIN" }) {
 
 function VerifiedBadge({ verified }: { verified: boolean }) {
   return verified ? (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600">
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-normal bg-emerald-500/10 text-emerald-600">
       <CheckCircle2 className="w-3 h-3" /> Verified
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600">
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-normal bg-amber-500/10 text-amber-600">
       <MailWarning className="w-3 h-3" /> Email not verified
     </span>
   );
@@ -182,9 +182,9 @@ function SellerCTA({ status }: { status: "PENDING" | "APPROVED" | "REJECTED" | n
         </div>
         <div className="flex-1 min-w-0 space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-sm font-black text-[var(--color-foreground)]">{c.title}</p>
+            <p className="text-sm font-medium text-[var(--color-foreground)]">{c.title}</p>
             {c.badge && (
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${c.badge}`}>
+              <span className={`text-[10px] font-normal px-2 py-0.5 rounded-full ${c.badge}`}>
                 {c.badgeText}
               </span>
             )}
@@ -195,7 +195,7 @@ function SellerCTA({ status }: { status: "PENDING" | "APPROVED" | "REJECTED" | n
       {c.cta && (
         <Link
           href={c.cta.href}
-          className="flex items-center justify-center w-full h-11 rounded-2xl bg-[var(--color-accent)] text-white text-xs font-black uppercase tracking-widest hover:opacity-90 active:scale-[0.98] transition-all"
+          className="flex items-center justify-center w-full h-11 rounded-2xl bg-[var(--color-accent)] text-white text-xs font-medium uppercase tracking-wider hover:opacity-90 active:scale-[0.98] transition-all"
         >
           {c.cta.label}
         </Link>
@@ -245,7 +245,7 @@ export default function SettingsPage() {
     <div className="max-w-lg mx-auto space-y-5 pb-10">
       {/* ── Page header ── */}
       <div>
-        <h1 className="text-lg font-black tracking-tight text-[var(--color-foreground)]">Settings</h1>
+        <h1 className="text-lg font-medium tracking-tight text-[var(--color-foreground)]">Settings</h1>
         <p className="text-[11px] text-[var(--color-muted)] font-medium mt-0.5">
           Manage your account and preferences
         </p>
@@ -255,7 +255,7 @@ export default function SettingsPage() {
       <div className="bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)] p-4 flex items-center gap-4">
         <Avatar name={user.full_name} size="md" />
         <div className="flex-1 min-w-0 space-y-1">
-          <p className="text-base font-black text-[var(--color-foreground)] truncate">{user.full_name}</p>
+          <p className="text-base font-medium text-[var(--color-foreground)] truncate">{user.full_name}</p>
           <p className="text-[11px] text-[var(--color-muted)] truncate">{user.email}</p>
           <div className="flex items-center gap-2 flex-wrap pt-0.5">
             <RoleBadge role={user.role} />
@@ -264,7 +264,7 @@ export default function SettingsPage() {
         </div>
         <Link
           href="/dashboard/settings/profile"
-          className="flex-shrink-0 px-3 h-8 rounded-xl border border-[var(--color-border)] text-[11px] font-bold text-[var(--color-muted)] hover:border-[var(--color-accent)]/50 hover:text-[var(--color-accent)] transition-all flex items-center"
+          className="flex-shrink-0 px-3 h-8 rounded-xl border border-[var(--color-border)] text-[11px] font-normal text-[var(--color-muted)] hover:border-[var(--color-accent)]/50 hover:text-[var(--color-accent)] transition-all flex items-center"
         >
           Edit
         </Link>
@@ -308,7 +308,7 @@ export default function SettingsPage() {
             <LogOut className="w-4 h-4 text-red-500" />
           </div>
           <div>
-            <p className="text-sm font-bold text-red-500 leading-tight">Sign Out</p>
+            <p className="text-sm font-normal text-red-500 leading-tight">Sign Out</p>
             <p className="text-[11px] text-red-400 leading-tight mt-0.5">Log out of your account</p>
           </div>
         </button>

@@ -118,7 +118,7 @@ function FeaturedCard({
 
       {/* Rank badge */}
       <div className="absolute top-3 left-3 md:top-4 md:left-4 z-10">
-        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-widest bg-white/15 backdrop-blur-md text-white border border-white/20">
+        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[9px] font-medium uppercase tracking-wider bg-white/15 backdrop-blur-md text-white border border-white/20">
           {item.count} {item.count === 1 ? "Item" : "Items"}
         </span>
       </div>
@@ -128,7 +128,7 @@ function FeaturedCard({
         <div className="space-y-2">
           <span className="inline-block text-white">
             <span
-              className={`block font-black uppercase tracking-tight leading-tight ${
+              className={`block font-medium uppercase tracking-tight leading-tight ${
                 isHero ? "text-2xl md:text-4xl" : "text-base md:text-xl"
               }`}
             >
@@ -142,7 +142,7 @@ function FeaturedCard({
           )}
           <div className="flex items-center gap-1.5 text-white/90">
             <span
-              className={`font-black uppercase tracking-widest ${
+              className={`font-medium uppercase tracking-wider ${
                 isHero ? "text-[11px] md:text-xs" : "text-[10px]"
               }`}
             >

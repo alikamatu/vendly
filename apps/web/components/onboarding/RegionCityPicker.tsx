@@ -108,7 +108,7 @@ export default function RegionCityPicker({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-2">
-      <label className="text-[11px] font-bold text-[var(--color-muted)] uppercase tracking-widest pl-1">
+      <label className="text-[11px] font-normal text-[var(--color-muted)] uppercase tracking-wider pl-1">
         {label}
       </label>
       {children}

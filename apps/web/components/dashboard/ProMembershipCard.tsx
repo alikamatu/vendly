@@ -105,14 +105,14 @@ export default function ProMembershipCard() {
           </div>
           <div className="space-y-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-sm font-black text-[var(--color-foreground)]">Vendly Pro</h2>
+              <h2 className="text-sm font-medium text-[var(--color-foreground)]">Vendly Pro</h2>
               {isPro ? (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-normal bg-emerald-500/10 text-emerald-600">
                   <CheckCircle2 className="w-3 h-3" />
                   Active
                 </span>
               ) : (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[var(--color-border)]/50 text-[var(--color-muted)]">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-normal bg-[var(--color-border)]/50 text-[var(--color-muted)]">
                   Free plan
                 </span>
               )}
@@ -128,7 +128,7 @@ export default function ProMembershipCard() {
         <button
           onClick={startUpgrade}
           disabled={starting}
-          className={`flex-shrink-0 inline-flex items-center gap-1.5 h-10 px-4 rounded-2xl text-xs font-black transition-all
+          className={`flex-shrink-0 inline-flex items-center gap-1.5 h-10 px-4 rounded-2xl text-xs font-medium transition-all
             ${
               isPro
                 ? "bg-[var(--color-foreground)] text-[var(--color-background)] hover:opacity-90"

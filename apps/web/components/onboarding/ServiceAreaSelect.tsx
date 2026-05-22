@@ -26,7 +26,7 @@ interface ServiceAreaSelectProps {
 export default function ServiceAreaSelect({ value, onChange }: ServiceAreaSelectProps) {
   return (
     <div className="space-y-3">
-      <label className="text-[11px] font-bold text-[var(--color-muted)] uppercase tracking-widest pl-1 flex items-center gap-1">
+      <label className="text-[11px] font-normal text-[var(--color-muted)] uppercase tracking-wider pl-1 flex items-center gap-1">
         Service Areas <span className="text-[var(--color-accent)]">*</span>
       </label>
 
@@ -61,7 +61,7 @@ export default function ServiceAreaSelect({ value, onChange }: ServiceAreaSelect
                 >
                   <Icon className="w-4 h-4" />
                 </div>
-                <p className="text-sm font-bold text-[var(--color-foreground)] leading-tight">
+                <p className="text-sm font-normal text-[var(--color-foreground)] leading-tight">
                   {opt.title}
                 </p>
                 <p className="text-[11px] text-[var(--color-muted)] leading-snug">

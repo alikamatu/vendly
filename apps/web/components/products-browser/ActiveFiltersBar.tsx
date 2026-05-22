@@ -18,7 +18,7 @@ export default function ActiveFiltersBar({ chips, onClearAll }: ActiveFiltersBar
           key={chip.key}
           type="button"
           onClick={chip.onClear}
-          className="group inline-flex items-center gap-1.5 px-3 h-8 rounded-full bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/25 text-[var(--color-accent)] text-[11px] font-bold transition-all hover:bg-[var(--color-accent)]/15"
+          className="group inline-flex items-center gap-1.5 px-3 h-8 rounded-full bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/25 text-[var(--color-accent)] text-[11px] font-normal transition-all hover:bg-[var(--color-accent)]/15"
         >
           <span className="truncate max-w-[160px]">{chip.label}</span>
           <X className="w-3 h-3 opacity-70 group-hover:opacity-100" />
@@ -28,7 +28,7 @@ export default function ActiveFiltersBar({ chips, onClearAll }: ActiveFiltersBar
         <button
           type="button"
           onClick={onClearAll}
-          className="text-[11px] font-bold text-[var(--color-muted)] hover:text-[var(--color-foreground)] underline underline-offset-2 ml-1"
+          className="text-[11px] font-normal text-[var(--color-muted)] hover:text-[var(--color-foreground)] underline underline-offset-2 ml-1"
         >
           Clear all
         </button>

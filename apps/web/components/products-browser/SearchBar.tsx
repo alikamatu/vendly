@@ -47,7 +47,7 @@ export default function SearchBar({ value, onChange, placeholder = "Search produ
             <X className="w-3.5 h-3.5" />
           </button>
         )}
-        <kbd className="hidden md:inline-flex items-center justify-center min-w-[24px] h-6 px-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-background)] text-[10px] font-bold text-[var(--color-muted)]">
+        <kbd className="hidden md:inline-flex items-center justify-center min-w-[24px] h-6 px-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-background)] text-[10px] font-normal text-[var(--color-muted)]">
           /
         </kbd>
       </div>

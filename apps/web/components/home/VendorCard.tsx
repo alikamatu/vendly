@@ -24,14 +24,14 @@ function VendorCard({ vendor, rank }: VendorCardProps) {
         className="relative overflow-hidden h-full rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 flex flex-col gap-4 transition-colors hover:border-[var(--color-accent)]/40"
       >
         {/* Pro tag */}
-        <span className="absolute top-3 right-3 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-[var(--color-accent)]/15 text-[var(--color-accent)]">
+        <span className="absolute top-3 right-3 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-medium uppercase tracking-wider bg-[var(--color-accent)]/15 text-[var(--color-accent)]">
           <Sparkles className="w-2.5 h-2.5" />
           Pro
         </span>
 
         {/* Rank chip */}
         {rank != null && (
-          <span className="absolute top-3 left-3 inline-flex items-center justify-center w-6 h-6 rounded-full bg-[var(--color-foreground)] text-[var(--color-background)] text-[10px] font-black">
+          <span className="absolute top-3 left-3 inline-flex items-center justify-center w-6 h-6 rounded-full bg-[var(--color-foreground)] text-[var(--color-background)] text-[10px] font-medium">
             {rank}
           </span>
         )}
@@ -46,16 +46,16 @@ function VendorCard({ vendor, rank }: VendorCardProps) {
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-sm font-black uppercase text-[var(--color-accent)] bg-[var(--color-accent)]/10">
+              <div className="w-full h-full flex items-center justify-center text-sm font-medium uppercase text-[var(--color-accent)] bg-[var(--color-accent)]/10">
                 {vendor.store_name.slice(0, 2)}
               </div>
             )}
           </div>
           <div className="min-w-0 flex-1 pt-0.5">
-            <p className="text-sm font-black text-[var(--color-foreground)] uppercase tracking-tight truncate leading-tight">
+            <p className="text-sm font-medium text-[var(--color-foreground)] uppercase tracking-tight truncate leading-tight">
               {vendor.store_name}
             </p>
-            <p className="text-[10px] text-[var(--color-accent)] font-bold truncate">
+            <p className="text-[10px] text-[var(--color-accent)] font-normal truncate">
               @{vendor.store_link}
             </p>
           </div>
@@ -68,7 +68,7 @@ function VendorCard({ vendor, rank }: VendorCardProps) {
         )}
 
         <div className="mt-auto flex items-center justify-between gap-2 pt-2 border-t border-[var(--color-border)]/60">
-          <div className="flex items-center gap-2.5 text-[10px] font-bold text-[var(--color-muted)] uppercase tracking-widest min-w-0">
+          <div className="flex items-center gap-2.5 text-[10px] font-normal text-[var(--color-muted)] uppercase tracking-wider min-w-0">
             <span className="inline-flex items-center gap-1">
               <Package className="w-3 h-3" />
               {vendor.products_count}

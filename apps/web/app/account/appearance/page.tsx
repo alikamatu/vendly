@@ -31,20 +31,20 @@ export default function AppearancePage() {
       {/* Back */}
       <Link
         href="/account"
-        className="inline-flex items-center gap-2 text-[11px] font-black text-[var(--color-muted)] hover:text-[var(--color-foreground)] uppercase tracking-widest transition-colors group"
+        className="inline-flex items-center gap-2 text-[11px] font-medium text-[var(--color-muted)] hover:text-[var(--color-foreground)] uppercase tracking-wider transition-colors group"
       >
         <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
         Account
       </Link>
 
       <div>
-        <h1 className="text-lg font-black tracking-tight">Appearance</h1>
+        <h1 className="text-lg font-medium tracking-tight">Appearance</h1>
         <p className="text-[11px] text-[var(--color-muted)] mt-0.5">Choose how Vendly looks on your device</p>
       </div>
 
       {/* Theme cards */}
       <div className="space-y-1.5">
-        <p className="px-1 text-[10px] font-black text-[var(--color-muted)] uppercase tracking-widest">Theme</p>
+        <p className="px-1 text-[10px] font-medium text-[var(--color-muted)] uppercase tracking-wider">Theme</p>
         <div className="grid grid-cols-2 gap-3">
           {THEMES.map((t) => {
             const Icon = t.icon;
@@ -73,7 +73,7 @@ export default function AppearancePage() {
                 <div className="flex items-center gap-2 w-full">
                   <Icon className={`w-4 h-4 flex-shrink-0 ${active ? "text-[var(--color-accent)]" : "text-[var(--color-muted)]"}`} />
                   <div className="min-w-0">
-                    <p className={`text-[12px] font-black ${active ? "text-[var(--color-accent)]" : "text-[var(--color-foreground)]"}`}>
+                    <p className={`text-[12px] font-medium ${active ? "text-[var(--color-accent)]" : "text-[var(--color-foreground)]"}`}>
                       {t.label}
                     </p>
                     <p className="text-[10px] text-[var(--color-muted)] truncate">{t.desc}</p>
@@ -96,7 +96,7 @@ export default function AppearancePage() {
           <Monitor className="w-4 h-4 text-[var(--color-muted)]" />
         </div>
         <div>
-          <p className="text-[12px] font-bold text-[var(--color-foreground)]">System Sync</p>
+          <p className="text-[12px] font-normal text-[var(--color-foreground)]">System Sync</p>
           <p className="text-[11px] text-[var(--color-muted)]">Follow device dark mode — coming soon</p>
         </div>
       </div>

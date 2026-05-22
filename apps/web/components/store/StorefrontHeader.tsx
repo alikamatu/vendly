@@ -123,13 +123,13 @@ export default function StorefrontHeader({ store, productsCount }: StorefrontHea
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-[var(--color-accent)]/10 text-2xl md:text-3xl font-black uppercase text-[var(--color-accent)]">
+                <div className="w-full h-full flex items-center justify-center bg-[var(--color-accent)]/10 text-2xl md:text-3xl font-medium uppercase text-[var(--color-accent)]">
                   {store.store_name.slice(0, 2)}
                 </div>
               )}
             </div>
             {store.is_pro && (
-              <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-[var(--color-accent)] text-white shadow-sm">
+              <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 px-2 py-1 rounded-full text-[9px] font-medium uppercase tracking-wider bg-[var(--color-accent)] text-white shadow-sm">
                 <Sparkles className="w-3 h-3" />
                 Pro
               </span>
@@ -141,19 +141,19 @@ export default function StorefrontHeader({ store, productsCount }: StorefrontHea
         <div className="flex-1 min-w-0 space-y-3">
           <div className="space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-[var(--color-foreground)]">
+              <h1 className="text-2xl md:text-3xl font-medium uppercase tracking-tight text-[var(--color-foreground)]">
                 {store.store_name}
               </h1>
               {store.is_verified && (
                 <span
                   title="Verified seller"
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-500"
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-normal bg-blue-500/10 text-blue-500"
                 >
                   <BadgeCheck className="w-3 h-3" /> Verified
                 </span>
               )}
             </div>
-            <p className="text-[var(--color-accent)] text-sm font-bold tracking-tight">
+            <p className="text-[var(--color-accent)] text-sm font-normal tracking-tight">
               @{store.store_link}
             </p>
           </div>
@@ -195,7 +195,7 @@ export default function StorefrontHeader({ store, productsCount }: StorefrontHea
           </Button>
           <Button
             variant="secondary"
-            className="flex-1 md:w-full gap-2 text-[11px] uppercase font-black tracking-widest shadow-none"
+            className="flex-1 md:w-full gap-2 text-[11px] uppercase font-medium tracking-wider shadow-none"
             onClick={handleShare}
           >
             {shared ? <Check className="w-3 h-3" /> : <Share2 className="w-3 h-3" />}
@@ -209,7 +209,7 @@ export default function StorefrontHeader({ store, productsCount }: StorefrontHea
 
 function Chip({ icon: Icon, children }: { icon: any; children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--color-background)] border border-[var(--color-border)] text-[10px] font-black uppercase tracking-widest text-[var(--color-muted)]">
+    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--color-background)] border border-[var(--color-border)] text-[10px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
       <Icon className="w-3 h-3" />
       {children}
     </span>

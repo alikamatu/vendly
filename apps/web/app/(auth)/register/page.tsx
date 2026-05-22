@@ -18,7 +18,7 @@ function RegisterContent() {
         {/* Left column: forms */}
         <div className="flex flex-col justify-center">
           <div className="mb-8 text-center md:text-left">
-            <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
+            <h1 className="text-3xl font-normal tracking-tight md:text-4xl">
               Join <span className="text-accent">Vendly</span>
             </h1>
             <p className="mt-2 text-foreground/60">

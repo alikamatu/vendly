@@ -29,7 +29,7 @@ export default function Error({
         <div className="absolute inset-0 bg-red-500/20 blur-[100px] rounded-full"></div>
         <div className="relative bg-surface border border-border/50 p-8 rounded-[2.5rem] shadow-2xl">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4 opacity-50" />
-          <h1 className="text-md font-black tracking-tight text-foreground uppercase">Oops!</h1>
+          <h1 className="text-md font-medium tracking-tight text-foreground uppercase">Oops!</h1>
         </div>
       </motion.div>
 
@@ -39,7 +39,7 @@ export default function Error({
         transition={{ delay: 0.2 }}
         className="space-y-4 max-w-xs mx-auto"
       >
-        <h2 className="text-md font-bold text-foreground">Something went wrong</h2>
+        <h2 className="text-md font-normal text-foreground">Something went wrong</h2>
         <p className="text-xs text-muted leading-relaxed font-medium">
           Vendly encountered an unexpected error. Don't worry, your data is safe.
         </p>

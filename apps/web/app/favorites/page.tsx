@@ -40,15 +40,15 @@ export default function FavoritesPage() {
         <Container>
           <div className="flex items-center justify-between mb-12">
             <div className="space-y-1">
-               <h1 className="text-3xl md:text-4xl font-black uppercase tracking-tight flex items-center gap-3">
+               <h1 className="text-3xl md:text-4xl font-medium uppercase tracking-tight flex items-center gap-3">
                  <Heart className="text-rose-500 fill-current" size={32} />
                  My Wishlist
                </h1>
-               <p className="text-sm text-muted font-bold uppercase tracking-widest opacity-60">
+               <p className="text-sm text-muted font-normal uppercase tracking-wider opacity-60">
                  {favorites.length} items saved
                </p>
             </div>
-            <Link href="/" className="hidden md:flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted hover:text-foreground transition-colors">
+            <Link href="/" className="hidden md:flex items-center gap-2 text-[10px] font-medium uppercase tracking-wider text-muted hover:text-foreground transition-colors">
               <ArrowLeft size={14} /> Back to market
             </Link>
           </div>
@@ -80,8 +80,8 @@ export default function FavoritesPage() {
                    <Heart size={40} className="text-muted opacity-20" />
                 </div>
                 <div className="space-y-4">
-                   <h2 className="text-2xl font-black uppercase tracking-tight">Your wishlist is empty</h2>
-                   <p className="text-sm text-muted font-bold max-w-xs mx-auto leading-relaxed uppercase tracking-wide opacity-60">
+                   <h2 className="text-2xl font-medium uppercase tracking-tight">Your wishlist is empty</h2>
+                   <p className="text-sm text-muted font-normal max-w-xs mx-auto leading-relaxed uppercase tracking-wide opacity-60">
                      Find products you love and click the heart icon to save them for later.
                    </p>
                 </div>
@@ -89,7 +89,7 @@ export default function FavoritesPage() {
                    <motion.button
                      whileHover={{ scale: 1.05 }}
                      whileTap={{ scale: 0.95 }}
-                     className="px-8 py-4 bg-primary text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl shadow-xl shadow-primary/20"
+                     className="px-8 py-4 bg-primary text-white text-[10px] font-medium uppercase tracking-wider rounded-2xl shadow-xl shadow-primary/20"
                    >
                      Start Exploring
                    </motion.button>

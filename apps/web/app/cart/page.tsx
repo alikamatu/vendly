@@ -69,10 +69,10 @@ function CartLine({
       </div>
       <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div className="min-w-0">
-          <h3 className="text-xs sm:text-sm font-black text-foreground uppercase tracking-tight line-clamp-2">
+          <h3 className="text-xs sm:text-sm font-medium text-foreground uppercase tracking-tight line-clamp-2">
             {item.title}
           </h3>
-          <p className="text-[10px] sm:text-xs font-bold text-primary mt-0.5">
+          <p className="text-[10px] sm:text-xs font-normal text-primary mt-0.5">
             GH₵{price.toLocaleString()} each
           </p>
         </div>
@@ -86,7 +86,7 @@ function CartLine({
             >
               <Minus className="w-3.5 h-3.5" />
             </button>
-            <span className="min-w-[1.5rem] text-center text-xs font-black tabular-nums">
+            <span className="min-w-[1.5rem] text-center text-xs font-medium tabular-nums">
               {item.quantity}
             </span>
             <button
@@ -98,7 +98,7 @@ function CartLine({
               <Plus className="w-3.5 h-3.5" />
             </button>
           </div>
-          <span className="text-xs font-black text-foreground min-w-[4rem] text-right">
+          <span className="text-xs font-medium text-foreground min-w-[4rem] text-right">
             GH₵{subtotal.toLocaleString()}
           </span>
           <button
@@ -149,7 +149,7 @@ export default function CartPage() {
       <main className="max-w-3xl mx-auto px-4 sm:px-6 md:px-8 pt-20 sm:pt-24 pb-28 sm:pb-24">
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-xs font-bold text-muted hover:text-foreground transition-colors mb-6"
+          className="inline-flex items-center gap-2 text-xs font-normal text-muted hover:text-foreground transition-colors mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
           Continue shopping
@@ -168,13 +168,13 @@ export default function CartPage() {
                   <Info className="w-4 h-4 text-primary" />
                 </div>
                 <div>
-                  <h4 className="text-[10px] font-black uppercase tracking-wider leading-none mb-1">Session Summary</h4>
-                  <p className="text-[9px] text-muted font-bold uppercase tracking-widest">{itemCount} items • {groupedByVendor.length} stores</p>
+                  <h4 className="text-[10px] font-medium uppercase tracking-wider leading-none mb-1">Session Summary</h4>
+                  <p className="text-[9px] text-muted font-normal uppercase tracking-wider">{itemCount} items • {groupedByVendor.length} stores</p>
                 </div>
               </div>
               <div className="text-right pl-6 border-l border-primary/20">
-                <p className="text-[10px] font-black text-muted uppercase tracking-widest leading-none mb-1">Global Total</p>
-                <p className="text-base font-black text-primary">GH₵{totalPrice.toLocaleString()}</p>
+                <p className="text-[10px] font-medium text-muted uppercase tracking-wider leading-none mb-1">Global Total</p>
+                <p className="text-base font-medium text-primary">GH₵{totalPrice.toLocaleString()}</p>
               </div>
             </motion.div>
           )}
@@ -192,12 +192,12 @@ export default function CartPage() {
               <div className="w-20 h-20 mx-auto rounded-3xl bg-surface border-2 border-dashed border-border flex items-center justify-center mb-6">
                 <ShoppingCart className="w-10 h-10 text-muted" />
               </div>
-              <h2 className="text-lg sm:text-xl font-black uppercase tracking-tight">Your cart is empty</h2>
+              <h2 className="text-lg sm:text-xl font-medium uppercase tracking-tight">Your cart is empty</h2>
               <p className="text-xs text-muted font-medium mt-2 max-w-xs mx-auto">
                 Add items from independent sellers to start building your order.
               </p>
               <Link href="/" className="inline-block mt-8">
-                <Button size="lg" className="rounded-2xl font-black uppercase tracking-widest text-xs">
+                <Button size="lg" className="rounded-2xl font-medium uppercase tracking-wider text-xs">
                   <ShoppingBag className="w-4 h-4" /> Browse products
                 </Button>
               </Link>
@@ -226,20 +226,20 @@ export default function CartPage() {
                         {group.logoUrl ? (
                           <img src={group.logoUrl} alt="" className="w-full h-full object-cover" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-sm font-black text-muted uppercase">
+                          <div className="w-full h-full flex items-center justify-center text-sm font-medium text-muted uppercase">
                             {group.storeName[0]}
                           </div>
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h3 className="text-sm font-black uppercase tracking-tight truncate leading-none mb-1">
+                        <h3 className="text-sm font-medium uppercase tracking-tight truncate leading-none mb-1">
                           {group.storeName}
                         </h3>
-                        <p className="text-[10px] font-bold text-muted">@{group.storeLink}</p>
+                        <p className="text-[10px] font-normal text-muted">@{group.storeLink}</p>
                       </div>
                       <div className="text-right hidden sm:block pr-4">
-                        <p className="text-[9px] font-black text-muted uppercase tracking-widest leading-none mb-1">Store Stats</p>
-                        <p className="text-[11px] font-black">{group.totalItems} items</p>
+                        <p className="text-[9px] font-medium text-muted uppercase tracking-wider leading-none mb-1">Store Stats</p>
+                        <p className="text-[11px] font-medium">{group.totalItems} items</p>
                       </div>
                       <Link
                         href={`/s/${group.storeLink}`}
@@ -263,8 +263,8 @@ export default function CartPage() {
                     <div className="mt-8 pt-6 border-t border-border/50 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                       <div className="flex items-center gap-8">
                         <div>
-                          <p className="text-[10px] font-bold text-muted uppercase tracking-widest leading-none mb-1.5">Subtotal</p>
-                          <p className="text-sm font-black text-foreground">
+                          <p className="text-[10px] font-normal text-muted uppercase tracking-wider leading-none mb-1.5">Subtotal</p>
+                          <p className="text-sm font-medium text-foreground">
                             GH₵{group.totalPrice.toLocaleString()}
                           </p>
                         </div>
@@ -274,7 +274,7 @@ export default function CartPage() {
                         size="lg"
                         disabled={isCheckingOut === group.storeLink}
                         onClick={() => handleCheckoutClick(group)}
-                        className="rounded-2xl px-10 font-black uppercase tracking-widest text-[10px] h-12 shadow-xl shadow-primary/10"
+                        className="rounded-2xl px-10 font-medium uppercase tracking-wider text-[10px] h-12 shadow-xl shadow-primary/10"
                       >
                         {isCheckingOut === group.storeLink ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -291,12 +291,12 @@ export default function CartPage() {
               <div className="pt-12 pb-20 text-center border-t border-border/50">
                 <div className="max-w-xs mx-auto space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-muted uppercase tracking-widest">Total items ordered</span>
-                    <span className="text-xs font-black">{itemCount}</span>
+                    <span className="text-xs font-normal text-muted uppercase tracking-wider">Total items ordered</span>
+                    <span className="text-xs font-medium">{itemCount}</span>
                   </div>
                   <div className="flex items-center justify-between pb-4">
-                    <span className="text-sm font-black uppercase tracking-tight">Combined Cart Balance</span>
-                    <span className="text-xl font-black text-primary">GH₵{totalPrice.toLocaleString()}</span>
+                    <span className="text-sm font-medium uppercase tracking-tight">Combined Cart Balance</span>
+                    <span className="text-xl font-medium text-primary">GH₵{totalPrice.toLocaleString()}</span>
                   </div>
                 </div>
                 <p className="text-[10px] text-muted italic mt-6 px-4">

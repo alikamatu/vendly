@@ -28,22 +28,22 @@ export default function TermsPage() {
     <div className="max-w-2xl mx-auto space-y-6">
       <Link 
         href="/dashboard/settings"
-        className="inline-flex items-center gap-2 text-xs font-bold text-muted hover:text-foreground transition-colors group mb-2"
+        className="inline-flex items-center gap-2 text-xs font-normal text-muted hover:text-foreground transition-colors group mb-2"
       >
         <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
         Back to Settings
       </Link>
 
       <div className="px-2">
-        <h2 className="text-md font-black tracking-tight uppercase">Terms & Conditions</h2>
+        <h2 className="text-md font-medium tracking-tight uppercase">Terms & Conditions</h2>
         <p className="text-xs text-muted font-medium mt-1">Review the legal guidelines for selling on Vendly</p>
       </div>
 
       <div className="space-y-6 pb-10">
         <Card className="p-6 md:p-10 border-none shadow-sm space-y-10" hoverEffect={false}>
           <div className="space-y-4">
-             <h1 className="text-xl font-black text-foreground">Vendly Seller Agreement</h1>
-             <p className="text-[10px] text-muted font-bold uppercase tracking-widest bg-border/20 inline-block px-3 py-1 rounded-full">Last Updated: February 2026</p>
+             <h1 className="text-xl font-medium text-foreground">Vendly Seller Agreement</h1>
+             <p className="text-[10px] text-muted font-normal uppercase tracking-wider bg-border/20 inline-block px-3 py-1 rounded-full">Last Updated: February 2026</p>
           </div>
 
           <div className="space-y-8">
@@ -51,7 +51,7 @@ export default function TermsPage() {
               <div key={idx} className="space-y-3">
                 <div className="flex items-center gap-3">
                    <section.icon className="w-4 h-4 text-primary" />
-                   <h3 className="text-xs font-black uppercase text-foreground">{section.title}</h3>
+                   <h3 className="text-xs font-medium uppercase text-foreground">{section.title}</h3>
                 </div>
                 <p className="text-xs text-muted leading-relaxed font-medium">
                   {section.content}

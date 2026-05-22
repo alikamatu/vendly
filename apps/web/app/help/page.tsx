@@ -91,10 +91,10 @@ export default function HelpCenterPage() {
 
       <main className="max-w-6xl mx-auto px-4 md:px-8 pt-10 md:pt-16 pb-24 md:pb-32 space-y-10">
         <header className="space-y-3 text-center">
-          <p className="text-[10px] font-black uppercase tracking-[0.25em] text-primary">
+          <p className="text-[10px] font-medium uppercase tracking-wider text-primary">
             Support
           </p>
-          <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight">
+          <h1 className="text-3xl md:text-5xl font-medium tracking-tight">
             How can we help?
           </h1>
           <p className="text-sm md:text-base text-muted leading-relaxed max-w-2xl mx-auto">
@@ -114,7 +114,7 @@ export default function HelpCenterPage() {
                   <Icon className="w-5 h-5" />
                 </span>
                 <div>
-                  <h2 className="text-sm font-extrabold tracking-tight">{title}</h2>
+                  <h2 className="text-sm font-medium tracking-tight">{title}</h2>
                   <p className="text-[11px] text-muted leading-snug">{description}</p>
                 </div>
               </div>
@@ -123,7 +123,7 @@ export default function HelpCenterPage() {
                   <li key={l.label + l.href}>
                     <Link
                       href={l.href}
-                      className="inline-flex items-center gap-1.5 text-[12px] font-bold text-foreground/80 hover:text-primary transition-colors"
+                      className="inline-flex items-center gap-1.5 text-[12px] font-normal text-foreground/80 hover:text-primary transition-colors"
                     >
                       {l.label}
                       <ArrowRight className="w-3 h-3 opacity-60" />
@@ -137,7 +137,7 @@ export default function HelpCenterPage() {
 
         <div className="rounded-3xl border border-border bg-gradient-to-br from-primary/10 to-transparent p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center gap-4 justify-between">
           <div className="space-y-1.5">
-            <h3 className="text-lg font-extrabold tracking-tight">
+            <h3 className="text-lg font-medium tracking-tight">
               Still need a hand?
             </h3>
             <p className="text-[12px] text-muted">
@@ -147,14 +147,14 @@ export default function HelpCenterPage() {
           <div className="flex gap-2">
             <Link
               href="/faq"
-              className="inline-flex items-center gap-1.5 h-11 px-5 rounded-2xl border border-border bg-surface text-[11px] font-black uppercase tracking-widest hover:bg-background transition-colors"
+              className="inline-flex items-center gap-1.5 h-11 px-5 rounded-2xl border border-border bg-surface text-[11px] font-medium uppercase tracking-wider hover:bg-background transition-colors"
             >
               <HelpCircle className="w-3.5 h-3.5" />
               Browse FAQ
             </Link>
             <Link
               href="/contact"
-              className="inline-flex items-center gap-1.5 h-11 px-5 rounded-2xl bg-primary text-white text-[11px] font-black uppercase tracking-widest hover:opacity-90 transition-opacity"
+              className="inline-flex items-center gap-1.5 h-11 px-5 rounded-2xl bg-primary text-white text-[11px] font-medium uppercase tracking-wider hover:opacity-90 transition-opacity"
             >
               <Mail className="w-3.5 h-3.5" />
               Contact support

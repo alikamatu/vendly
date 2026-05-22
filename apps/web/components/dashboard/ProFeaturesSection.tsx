@@ -21,25 +21,25 @@ export default function ProFeaturesSection() {
     <section className="space-y-4">
       <header className="flex items-center justify-between gap-3 px-1">
         <div className="space-y-0.5">
-          <p className="text-[10px] font-black text-[var(--color-accent)] uppercase tracking-[0.2em] inline-flex items-center gap-1.5">
+          <p className="text-[10px] font-medium text-[var(--color-accent)] uppercase tracking-wider inline-flex items-center gap-1.5">
             <Sparkles className="w-3 h-3" />
             Vendly Pro
           </p>
-          <h3 className="text-sm font-black uppercase tracking-tight text-[var(--color-foreground)]">
+          <h3 className="text-sm font-medium uppercase tracking-tight text-[var(--color-foreground)]">
             Pro features
           </h3>
         </div>
         {!isPro && (
           <Link
             href="/dashboard/settings"
-            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-xl bg-[var(--color-accent)] text-white text-[11px] font-black uppercase tracking-wider hover:opacity-90 transition-opacity"
+            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-xl bg-[var(--color-accent)] text-white text-[11px] font-medium uppercase tracking-wider hover:opacity-90 transition-opacity"
           >
             <Sparkles className="w-3.5 h-3.5" />
             Upgrade
           </Link>
         )}
         {isPro && (
-          <span className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full bg-emerald-500/10 text-emerald-600 text-[10px] font-black uppercase tracking-wider">
+          <span className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full bg-emerald-500/10 text-emerald-600 text-[10px] font-medium uppercase tracking-wider">
             <Sparkles className="w-3 h-3" />
             Active
           </span>

@@ -72,7 +72,7 @@ export default function LocationStep({
         <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-[var(--color-accent)]/10 text-[var(--color-accent)]">
           <MapPin className="w-7 h-7" />
         </div>
-        <h2 className="text-lg md:text-xl font-extrabold tracking-tight text-[var(--color-foreground)]">
+        <h2 className="text-lg md:text-xl font-medium tracking-tight text-[var(--color-foreground)]">
           Set Your Location
         </h2>
         <p className="text-xs text-[var(--color-muted)] font-medium max-w-sm mx-auto leading-relaxed">
@@ -92,7 +92,7 @@ export default function LocationStep({
         />
 
         <div className="space-y-2">
-          <label className="text-[11px] font-bold text-[var(--color-muted)] uppercase tracking-widest pl-1">
+          <label className="text-[11px] font-normal text-[var(--color-muted)] uppercase tracking-wider pl-1">
             Area / Neighborhood{" "}
             <span className="text-[var(--color-muted)]/60 normal-case font-medium">
               (optional)
@@ -115,7 +115,7 @@ export default function LocationStep({
         <Button
           onClick={onBack}
           variant="secondary"
-          className="sm:flex-1 h-12 sm:h-13 text-sm font-bold rounded-2xl"
+          className="sm:flex-1 h-12 sm:h-13 text-sm font-normal rounded-2xl"
         >
           <ChevronLeft className="w-4 h-4 mr-1" /> Back
         </Button>
@@ -123,7 +123,7 @@ export default function LocationStep({
           onClick={handleSubmit}
           isLoading={isLoading}
           disabled={!canProceed}
-          className="sm:flex-[2] h-12 sm:h-13 text-sm font-bold rounded-2xl disabled:opacity-40"
+          className="sm:flex-[2] h-12 sm:h-13 text-sm font-normal rounded-2xl disabled:opacity-40"
         >
           Continue <ChevronRight className="w-4 h-4 ml-1" />
         </Button>

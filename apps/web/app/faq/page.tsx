@@ -104,10 +104,10 @@ export default function FAQPage() {
       <DashboardHeader title="FAQ" />
       <main className="max-w-3xl mx-auto px-4 md:px-8 pt-10 md:pt-16 pb-24 md:pb-32 space-y-8">
         <header className="space-y-3">
-          <p className="text-[10px] font-black uppercase tracking-[0.25em] text-primary">
+          <p className="text-[10px] font-medium uppercase tracking-wider text-primary">
             Help
           </p>
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
+          <h1 className="text-3xl md:text-4xl font-medium tracking-tight">
             Frequently asked questions
           </h1>
           <p className="text-sm text-muted leading-relaxed">
@@ -123,7 +123,7 @@ export default function FAQPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search FAQs..."
-            className="w-full h-11 pl-9 pr-3 rounded-2xl bg-surface border border-border text-[12px] font-bold outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40"
+            className="w-full h-11 pl-9 pr-3 rounded-2xl bg-surface border border-border text-[12px] font-normal outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40"
           />
         </div>
 
@@ -153,7 +153,7 @@ function FaqItem({ item }: { item: QA }) {
         aria-expanded={open}
         className="w-full px-4 md:px-5 py-4 flex items-center justify-between gap-4 text-left hover:bg-surface/50 transition-colors"
       >
-        <span className="text-sm font-bold text-foreground">{item.q}</span>
+        <span className="text-sm font-normal text-foreground">{item.q}</span>
         <ChevronDown
           className={`w-4 h-4 text-muted flex-shrink-0 transition-transform ${
             open ? "rotate-180" : ""

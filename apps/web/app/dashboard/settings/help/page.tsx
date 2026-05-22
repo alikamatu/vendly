@@ -145,8 +145,8 @@ function FaqAccordion({ item }: { item: FaqItem }) {
           <Icon className="w-3.5 h-3.5 text-[var(--color-muted)]" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-[var(--color-foreground)] leading-snug">{item.q}</p>
-          <span className="text-[10px] font-bold text-[var(--color-muted)] uppercase tracking-wide">{item.tag}</span>
+          <p className="text-sm font-normal text-[var(--color-foreground)] leading-snug">{item.q}</p>
+          <span className="text-[10px] font-normal text-[var(--color-muted)] uppercase tracking-wide">{item.tag}</span>
         </div>
         <motion.div
           animate={{ rotate: open ? 180 : 0 }}
@@ -220,17 +220,17 @@ function ReportForm() {
         <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center">
           <Check className="w-7 h-7 text-emerald-500" />
         </div>
-        <p className="text-base font-black text-[var(--color-foreground)]">Report submitted</p>
+        <p className="text-base font-medium text-[var(--color-foreground)]">Report submitted</p>
         <p className="text-[11px] text-[var(--color-muted)] max-w-xs">
           Your email client should have opened. If not, send directly to{" "}
-          <a href="mailto:support@vendly.app" className="font-bold text-[var(--color-accent)] underline">
+          <a href="mailto:support@vendly.app" className="font-normal text-[var(--color-accent)] underline">
             support@vendly.app
           </a>
         </p>
         <button
           type="button"
           onClick={() => setStatus("idle")}
-          className="text-[11px] font-bold text-[var(--color-muted)] hover:text-[var(--color-foreground)] underline mt-1"
+          className="text-[11px] font-normal text-[var(--color-muted)] hover:text-[var(--color-foreground)] underline mt-1"
         >
           Send another report
         </button>
@@ -284,7 +284,7 @@ function ReportForm() {
         <Button
           type="submit"
           disabled={status === "sending" || !topic || message.trim().length < 10}
-          className="h-11 px-6 rounded-2xl text-xs font-black uppercase tracking-widest"
+          className="h-11 px-6 rounded-2xl text-xs font-medium uppercase tracking-wider"
         >
           {status === "sending" ? (
             <span className="flex items-center gap-2">
@@ -322,7 +322,7 @@ function Section({
         <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${iconBg}`}>
           <Icon className={`w-3.5 h-3.5 ${iconColor}`} />
         </div>
-        <p className="text-[10px] font-black text-[var(--color-muted)] uppercase tracking-widest">{title}</p>
+        <p className="text-[10px] font-medium text-[var(--color-muted)] uppercase tracking-wider">{title}</p>
       </div>
       <div className="bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)] overflow-hidden">
         {children}
@@ -339,14 +339,14 @@ export default function HelpPage() {
       {/* ── Back ── */}
       <Link
         href="/dashboard/settings"
-        className="inline-flex items-center gap-2 text-xs font-bold text-[var(--color-muted)] hover:text-[var(--color-foreground)] transition-colors group"
+        className="inline-flex items-center gap-2 text-xs font-normal text-[var(--color-muted)] hover:text-[var(--color-foreground)] transition-colors group"
       >
         <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
         Settings
       </Link>
 
       <div>
-        <h1 className="text-lg font-black tracking-tight text-[var(--color-foreground)]">Help & Support</h1>
+        <h1 className="text-lg font-medium tracking-tight text-[var(--color-foreground)]">Help & Support</h1>
         <p className="text-[11px] text-[var(--color-muted)] font-medium mt-0.5">
           Find answers, contact us, or report a problem
         </p>
@@ -367,7 +367,7 @@ export default function HelpPage() {
                 <opt.icon className={`w-4 h-4 ${opt.color}`} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-[var(--color-foreground)]">{opt.label}</p>
+                <p className="text-sm font-normal text-[var(--color-foreground)]">{opt.label}</p>
                 <p className="text-[11px] text-[var(--color-muted)]">{opt.desc}</p>
               </div>
               <ChevronDown className="w-4 h-4 text-[var(--color-muted)] -rotate-90 flex-shrink-0" />

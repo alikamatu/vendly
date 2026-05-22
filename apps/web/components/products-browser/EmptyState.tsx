@@ -14,7 +14,7 @@ export default function EmptyState({ onReset }: EmptyStateProps) {
         <SearchX className="w-6 h-6" />
       </div>
       <div className="space-y-2 max-w-sm mx-auto">
-        <h3 className="text-base md:text-lg font-extrabold tracking-tight text-[var(--color-foreground)]">
+        <h3 className="text-base md:text-lg font-medium tracking-tight text-[var(--color-foreground)]">
           No products match your filters
         </h3>
         <p className="text-[12px] text-[var(--color-muted)] leading-relaxed">
@@ -24,7 +24,7 @@ export default function EmptyState({ onReset }: EmptyStateProps) {
       </div>
       <button
         onClick={onReset}
-        className="inline-flex items-center justify-center h-10 px-5 rounded-xl bg-[var(--color-foreground)] text-[var(--color-background)] text-[11px] font-black uppercase tracking-widest hover:opacity-90 transition-opacity"
+        className="inline-flex items-center justify-center h-10 px-5 rounded-xl bg-[var(--color-foreground)] text-[var(--color-background)] text-[11px] font-medium uppercase tracking-wider hover:opacity-90 transition-opacity"
       >
         Clear all filters
       </button>

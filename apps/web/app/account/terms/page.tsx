@@ -42,14 +42,14 @@ export default function TermsPage() {
       {/* Back */}
       <Link
         href="/account"
-        className="inline-flex items-center gap-2 text-[11px] font-black text-[var(--color-muted)] hover:text-[var(--color-foreground)] uppercase tracking-widest transition-colors group"
+        className="inline-flex items-center gap-2 text-[11px] font-medium text-[var(--color-muted)] hover:text-[var(--color-foreground)] uppercase tracking-wider transition-colors group"
       >
         <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
         Account
       </Link>
 
       <div>
-        <h1 className="text-lg font-black tracking-tight">Terms & Conditions</h1>
+        <h1 className="text-lg font-medium tracking-tight">Terms & Conditions</h1>
         <p className="text-[11px] text-[var(--color-muted)] mt-0.5">User agreement and platform policies</p>
       </div>
 
@@ -59,7 +59,7 @@ export default function TermsPage() {
           <FileText className="w-5 h-5 text-amber-500" />
         </div>
         <div>
-          <p className="text-sm font-black text-[var(--color-foreground)]">Vendly User Agreement</p>
+          <p className="text-sm font-medium text-[var(--color-foreground)]">Vendly User Agreement</p>
           <p className="text-[11px] text-[var(--color-muted)] mt-0.5">Last updated: May 2026</p>
           <p className="text-[11px] text-[var(--color-muted)] mt-2 leading-relaxed">
             By using Vendly you agree to these terms. Please read them carefully. If you do not agree, do not use the platform.
@@ -75,7 +75,7 @@ export default function TermsPage() {
             <div key={s.title} className="p-5 space-y-2">
               <div className="flex items-center gap-2.5">
                 <Icon className="w-4 h-4 text-[var(--color-accent)] flex-shrink-0" />
-                <h2 className="text-[12px] font-black uppercase tracking-wide text-[var(--color-foreground)]">
+                <h2 className="text-[12px] font-medium uppercase tracking-wide text-[var(--color-foreground)]">
                   {s.title}
                 </h2>
               </div>
@@ -89,7 +89,7 @@ export default function TermsPage() {
       <div className="bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)] p-4">
         <p className="text-[11px] text-[var(--color-muted)] leading-relaxed italic">
           By continuing to use Vendly, you acknowledge that you have read and agree to these terms. Questions? Email us at{" "}
-          <a href="mailto:legal@vendly.app" className="font-bold text-[var(--color-accent)] not-italic hover:underline">
+          <a href="mailto:legal@vendly.app" className="font-normal text-[var(--color-accent)] not-italic hover:underline">
             legal@vendly.app
           </a>
         </p>

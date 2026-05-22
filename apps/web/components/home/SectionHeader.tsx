@@ -14,11 +14,11 @@ export default function SectionHeader({ eyebrow, title, description, action }: S
     <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
       <div className="space-y-2">
         {eyebrow && (
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.4em] text-primary font-black">
+          <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-primary font-medium">
             {eyebrow}
           </div>
         )}
-        <h2 className="text-2xl md:text-4xl uppercase tracking-tight font-extrabold text-foreground">
+        <h2 className="text-2xl md:text-4xl uppercase tracking-tight font-medium text-foreground">
           {title}
         </h2>
         {description && (

@@ -56,7 +56,7 @@ function initials(name: string) {
 function Group({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <p className="px-1 text-[10px] font-black text-[var(--color-muted)] uppercase tracking-widest">
+      <p className="px-1 text-[10px] font-medium text-[var(--color-muted)] uppercase tracking-wider">
         {label}
       </p>
       <div className="bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)] overflow-hidden divide-y divide-[var(--color-border)]/50">
@@ -93,7 +93,7 @@ function Row({
         </div>
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <p className="text-[13px] font-bold text-[var(--color-foreground)] leading-tight">
+            <p className="text-[13px] font-normal text-[var(--color-foreground)] leading-tight">
               {label}
             </p>
             {badge}
@@ -129,8 +129,8 @@ function SellerCTA({ status }: { status: "PENDING" | "APPROVED" | "REJECTED" | n
         </div>
         <div className="space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-sm font-black text-[var(--color-foreground)]">Verification in review</p>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600">
+            <p className="text-sm font-medium text-[var(--color-foreground)]">Verification in review</p>
+            <span className="text-[10px] font-normal px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600">
               Under Review
             </span>
           </div>
@@ -150,7 +150,7 @@ function SellerCTA({ status }: { status: "PENDING" | "APPROVED" | "REJECTED" | n
             <XCircle className="w-5 h-5 text-red-500" />
           </div>
           <div className="space-y-0.5">
-            <p className="text-sm font-black text-[var(--color-foreground)]">Verification not approved</p>
+            <p className="text-sm font-medium text-[var(--color-foreground)]">Verification not approved</p>
             <p className="text-[11px] text-[var(--color-muted)] leading-relaxed">
               Review our seller policies and resubmit with valid documentation.
             </p>
@@ -158,7 +158,7 @@ function SellerCTA({ status }: { status: "PENDING" | "APPROVED" | "REJECTED" | n
         </div>
         <Link
           href="/seller-verification"
-          className="flex items-center justify-center h-11 rounded-2xl bg-red-500 text-white text-xs font-black uppercase tracking-widest hover:bg-red-600 active:scale-[0.98] transition-all"
+          className="flex items-center justify-center h-11 rounded-2xl bg-red-500 text-white text-xs font-medium uppercase tracking-wider hover:bg-red-600 active:scale-[0.98] transition-all"
         >
           Reapply
         </Link>
@@ -174,7 +174,7 @@ function SellerCTA({ status }: { status: "PENDING" | "APPROVED" | "REJECTED" | n
           <Star className="w-5 h-5 text-[var(--color-accent)]" />
         </div>
         <div className="space-y-0.5">
-          <p className="text-sm font-black text-[var(--color-foreground)]">Start selling on Vendly</p>
+          <p className="text-sm font-medium text-[var(--color-foreground)]">Start selling on Vendly</p>
           <p className="text-[11px] text-[var(--color-muted)] leading-relaxed">
             Join young entrepreneurs, list products and grow your business — all in one place.
           </p>
@@ -182,7 +182,7 @@ function SellerCTA({ status }: { status: "PENDING" | "APPROVED" | "REJECTED" | n
       </div>
       <Link
         href="/seller-verification"
-        className="flex items-center justify-center h-11 rounded-2xl bg-[var(--color-accent)] text-white text-xs font-black uppercase tracking-widest hover:opacity-90 active:scale-[0.98] transition-all"
+        className="flex items-center justify-center h-11 rounded-2xl bg-[var(--color-accent)] text-white text-xs font-medium uppercase tracking-wider hover:opacity-90 active:scale-[0.98] transition-all"
       >
         Start selling
       </Link>
@@ -221,13 +221,13 @@ export default function AccountPage() {
         <div className="flex items-center gap-4">
           {/* Avatar */}
           <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${grad} flex items-center justify-center flex-shrink-0 shadow-lg`}>
-            <span className="text-xl font-black text-white select-none">
+            <span className="text-xl font-medium text-white select-none">
               {initials(user.full_name)}
             </span>
           </div>
 
           <div className="flex-1 min-w-0">
-            <p className="text-[15px] font-black text-[var(--color-foreground)] truncate leading-tight">
+            <p className="text-[15px] font-medium text-[var(--color-foreground)] truncate leading-tight">
               {user.full_name}
             </p>
             <p className="text-[11px] text-[var(--color-muted)] truncate mt-0.5">{user.email}</p>
@@ -236,18 +236,18 @@ export default function AccountPage() {
             )}
             <div className="flex items-center gap-2 flex-wrap mt-1.5">
               {/* Role */}
-              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide ${isSeller ? "bg-emerald-500/10 text-emerald-600" : "bg-blue-500/10 text-blue-600"
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wide ${isSeller ? "bg-emerald-500/10 text-emerald-600" : "bg-blue-500/10 text-blue-600"
                 }`}>
                 {isSeller && <BadgeCheck className="w-3 h-3" />}
                 {isSeller ? "Seller" : "Buyer"}
               </span>
               {/* Verified */}
               {user.is_verified ? (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-normal bg-emerald-500/10 text-emerald-600">
                   <CheckCircle2 className="w-3 h-3" /> Verified
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-normal bg-amber-500/10 text-amber-600">
                   <MailWarning className="w-3 h-3" /> Unverified
                 </span>
               )}
@@ -256,7 +256,7 @@ export default function AccountPage() {
 
           <Link
             href="/account/profile"
-            className="flex-shrink-0 px-3 h-8 rounded-xl border border-[var(--color-border)] text-[11px] font-bold text-[var(--color-muted)] hover:border-[var(--color-accent)]/50 hover:text-[var(--color-accent)] transition-all flex items-center whitespace-nowrap"
+            className="flex-shrink-0 px-3 h-8 rounded-xl border border-[var(--color-border)] text-[11px] font-normal text-[var(--color-muted)] hover:border-[var(--color-accent)]/50 hover:text-[var(--color-accent)] transition-all flex items-center whitespace-nowrap"
           >
             Edit
           </Link>
@@ -368,7 +368,7 @@ export default function AccountPage() {
             <LogOut className="w-4 h-4 text-red-500" />
           </div>
           <div>
-            <p className="text-[13px] font-bold text-red-500 leading-tight">Sign Out</p>
+            <p className="text-[13px] font-normal text-red-500 leading-tight">Sign Out</p>
             <p className="text-[11px] text-red-400 leading-tight mt-0.5">Log out of your account</p>
           </div>
         </button>

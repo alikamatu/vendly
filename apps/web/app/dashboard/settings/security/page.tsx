@@ -53,14 +53,14 @@ export default function SecuritySettingsPage() {
     <div className="max-w-2xl mx-auto space-y-6">
       <Link 
         href="/dashboard/settings"
-        className="inline-flex items-center gap-2 text-xs font-bold text-muted hover:text-foreground transition-colors group mb-2"
+        className="inline-flex items-center gap-2 text-xs font-normal text-muted hover:text-foreground transition-colors group mb-2"
       >
         <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
         Back to Settings
       </Link>
 
       <div className="px-2">
-        <h2 className="text-md font-black tracking-tight uppercase">Security & Privacy</h2>
+        <h2 className="text-md font-medium tracking-tight uppercase">Security & Privacy</h2>
         <p className="text-xs text-muted font-medium mt-1">Protect your account and manage authentication</p>
       </div>
 
@@ -71,13 +71,13 @@ export default function SecuritySettingsPage() {
              <div className="p-2 rounded-xl bg-primary/10 text-primary">
                 <Key className="w-4 h-4" />
              </div>
-             <h3 className="text-sm font-black uppercase">Change Password</h3>
+             <h3 className="text-sm font-medium uppercase">Change Password</h3>
           </div>
 
           <form onSubmit={handlePasswordSubmit}>
             <Card className="p-6 md:p-8 space-y-4 border-none shadow-sm" hoverEffect={false}>
               <div className="space-y-2">
-                <label className="text-[10px] font-bold text-muted uppercase tracking-widest px-1">Current Password</label>
+                <label className="text-[10px] font-normal text-muted uppercase tracking-wider px-1">Current Password</label>
                 <div className="relative">
                   <Input 
                     type={showCurrent ? "text" : "password"}
@@ -85,7 +85,7 @@ export default function SecuritySettingsPage() {
                     onChange={(e) => setPasswordData({...passwordData, current_password: e.target.value})}
                     placeholder="••••••••"
                     required
-                    className="h-12 bg-background/50 text-xs font-bold pr-12"
+                    className="h-12 bg-background/50 text-xs font-normal pr-12"
                   />
                   <button 
                     type="button"
@@ -99,7 +99,7 @@ export default function SecuritySettingsPage() {
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-muted uppercase tracking-widest px-1">New Password</label>
+                  <label className="text-[10px] font-normal text-muted uppercase tracking-wider px-1">New Password</label>
                   <div className="relative">
                     <Input 
                       type={showNew ? "text" : "password"}
@@ -107,20 +107,20 @@ export default function SecuritySettingsPage() {
                       onChange={(e) => setPasswordData({...passwordData, new_password: e.target.value})}
                       placeholder="••••••••"
                       required
-                      className="h-12 bg-background/50 text-xs font-bold"
+                      className="h-12 bg-background/50 text-xs font-normal"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-muted uppercase tracking-widest px-1">Confirm New Password</label>
+                  <label className="text-[10px] font-normal text-muted uppercase tracking-wider px-1">Confirm New Password</label>
                   <Input 
                     type="password"
                     value={passwordData.confirm_password}
                     onChange={(e) => setPasswordData({...passwordData, confirm_password: e.target.value})}
                     placeholder="••••••••"
                     required
-                    className="h-12 bg-background/50 text-xs font-bold"
+                    className="h-12 bg-background/50 text-xs font-normal"
                   />
                 </div>
               </div>
@@ -133,14 +133,14 @@ export default function SecuritySettingsPage() {
                     message.type === "success" ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"
                   }`}
                 >
-                  <p className="text-[10px] font-bold">{message.text}</p>
+                  <p className="text-[10px] font-normal">{message.text}</p>
                 </motion.div>
               )}
 
               <Button 
                 type="submit" 
                 disabled={isLoading}
-                className="w-full h-12 rounded-xl mt-4 text-[10px] font-black uppercase tracking-widest"
+                className="w-full h-12 rounded-xl mt-4 text-[10px] font-medium uppercase tracking-wider"
               >
                 {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Update Password"}
               </Button>
@@ -154,12 +154,12 @@ export default function SecuritySettingsPage() {
              <div className="p-2 rounded-xl bg-purple-500/10 text-purple-500">
                 <Smartphone className="w-4 h-4" />
              </div>
-             <h3 className="text-sm font-black uppercase">Two-Factor Auth</h3>
+             <h3 className="text-sm font-medium uppercase">Two-Factor Auth</h3>
           </div>
 
           <Card className="p-6 md:p-8 flex items-center justify-between border-none shadow-sm" hoverEffect={false}>
              <div className="space-y-1">
-                <p className="text-xs font-bold">Authenticator App</p>
+                <p className="text-xs font-normal">Authenticator App</p>
                 <p className="text-[10px] text-muted font-medium">Add an extra layer of security to your account.</p>
              </div>
              <div className="opacity-40 grayscale">

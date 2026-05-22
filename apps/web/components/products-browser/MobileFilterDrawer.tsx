@@ -63,7 +63,7 @@ export default function MobileFilterDrawer({
             <header className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-[var(--color-border)]/60">
               <div className="flex items-center gap-3">
                 <span className="block w-10 h-1 rounded-full bg-[var(--color-border)] absolute left-1/2 -translate-x-1/2 top-2" />
-                <h2 className="text-sm font-black tracking-tight text-[var(--color-foreground)]">
+                <h2 className="text-sm font-medium tracking-tight text-[var(--color-foreground)]">
                   Filters
                 </h2>
               </div>
@@ -83,13 +83,13 @@ export default function MobileFilterDrawer({
             <footer className="flex items-center gap-2 px-5 py-3 border-t border-[var(--color-border)]/60 bg-[var(--color-surface)]">
               <button
                 onClick={state.clearAll}
-                className="flex-1 h-11 rounded-xl border border-[var(--color-border)] text-[12px] font-black uppercase tracking-wider text-[var(--color-foreground)] hover:bg-[var(--color-background)] transition-colors"
+                className="flex-1 h-11 rounded-xl border border-[var(--color-border)] text-[12px] font-medium uppercase tracking-wider text-[var(--color-foreground)] hover:bg-[var(--color-background)] transition-colors"
               >
                 Reset
               </button>
               <button
                 onClick={onClose}
-                className="flex-[2] h-11 rounded-xl bg-[var(--color-foreground)] text-[var(--color-background)] text-[12px] font-black uppercase tracking-wider hover:opacity-90 transition-opacity"
+                className="flex-[2] h-11 rounded-xl bg-[var(--color-foreground)] text-[var(--color-background)] text-[12px] font-medium uppercase tracking-wider hover:opacity-90 transition-opacity"
               >
                 Show {state.meta.total} results
               </button>

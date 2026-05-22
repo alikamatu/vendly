@@ -51,7 +51,7 @@ export default function ProductFilters({
       {/* Search Result Bar & Filter Toggle */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="hidden md:block">
-           <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-primary mb-1">
+           <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-primary mb-1">
              <LayoutGrid size={12} />
              Marketplace
            </div>
@@ -70,7 +70,7 @@ export default function ProductFilters({
              <select 
                value={sortBy}
                onChange={(e) => onSortChange(e.target.value)}
-               className="bg-transparent text-[11px] font-black uppercase tracking-widest outline-none cursor-pointer"
+               className="bg-transparent text-[11px] font-medium uppercase tracking-wider outline-none cursor-pointer"
              >
                {sortOptions.map(opt => (
                  <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -91,7 +91,7 @@ export default function ProductFilters({
       <div className="hidden md:flex items-center gap-2 overflow-x-auto pb-4 scrollbar-hide no-scrollbar -mx-4 px-4">
         <button
           onClick={() => onCategoryChange(null)}
-          className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border ${
+          className={`px-6 py-3 rounded-2xl text-[10px] font-medium uppercase tracking-wider transition-all whitespace-nowrap border ${
             currentCategory === null 
               ? "bg-primary text-red-500 border-primary shadow-lg shadow-primary/20" 
               : "bg-surface text-muted border-border/50 hover:border-primary/30"
@@ -103,7 +103,7 @@ export default function ProductFilters({
           <button
             key={cat.id || cat.name}
             onClick={() => onCategoryChange(cat.name)}
-            className={`px-6 py-3 rounded-2xl text-[10px] uppercase tracking-widest transition-all whitespace-nowrap border ${
+            className={`px-6 py-3 rounded-2xl text-[10px] uppercase tracking-wider transition-all whitespace-nowrap border ${
               currentCategory === cat.name
                 ? "bg-primary text-red-500 border-primary shadow-lg shadow-primary/20"
                 : "bg-surface text-muted border-border/50 hover:border-primary/30"
@@ -164,7 +164,7 @@ export default function ProductFilters({
                      <div className="max-w-4xl mx-auto space-y-12">
                         {/* Sort Options (Mobile Only) */}
                         <section className="space-y-6 md:hidden">
-                           <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-primary/60">
+                           <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-wider text-primary/60">
                               <SortAsc size={14} />
                               Order By
                            </div>
@@ -173,7 +173,7 @@ export default function ProductFilters({
                                 <button
                                   key={opt.value}
                                   onClick={() => onSortChange(opt.value)}
-                                  className={`w-full text-left p-4 rounded-3xl text-[11px] font-black uppercase tracking-widest transition-all border ${
+                                  className={`w-full text-left p-4 rounded-3xl text-[11px] font-medium uppercase tracking-wider transition-all border ${
                                     sortBy === opt.value ? "bg-primary/5 border-primary text-primary" : "bg-transparent border-border/50 text-muted"
                                   }`}
                                 >
@@ -185,14 +185,14 @@ export default function ProductFilters({
 
                         {/* Categories Section */}
                         <section className="space-y-6">
-                           <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-primary/60">
+                           <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.3em] text-primary/60">
                               <Tag size={14} />
                               Browse Categories
                            </div>
                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                              <button
                                onClick={() => onCategoryChange(null)}
-                               className={`w-full text-left p-5 rounded-3xl text-[11px] font-black uppercase tracking-widest transition-all border ${
+                               className={`w-full text-left p-5 rounded-3xl text-[11px] font-medium uppercase tracking-wider transition-all border ${
                                  currentCategory === null ? "bg-primary/5 border-primary text-primary" : "bg-transparent border-border/50 text-muted hover:bg-surface"
                                }`}
                              >
@@ -202,7 +202,7 @@ export default function ProductFilters({
                                <button
                                  key={cat.id}
                                  onClick={() => onCategoryChange(cat.name)}
-                                 className={`w-full text-left p-5 rounded-3xl text-[11px] font-black uppercase tracking-widest transition-all border ${
+                                 className={`w-full text-left p-5 rounded-3xl text-[11px] font-medium uppercase tracking-wider transition-all border ${
                                    currentCategory === cat.name ? "bg-primary/5 border-primary text-primary" : "bg-transparent border-border/50 text-muted hover:bg-surface"
                                  }`}
                                >
@@ -214,28 +214,28 @@ export default function ProductFilters({
 
                         {/* Price Range Section */}
                         <section className="space-y-8">
-                           <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-primary/60">
+                           <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.3em] text-primary/60">
                               <CreditCard size={14} />
                               Budget Range (GH₵)
                            </div>
                            <div className="grid grid-cols-2 gap-6">
                               <div className="space-y-3">
-                                 <label className="text-[10px] font-black uppercase text-muted tracking-[0.2em] pl-2">Min Price</label>
+                                 <label className="text-[10px] font-medium uppercase text-muted tracking-wider pl-2">Min Price</label>
                                  <input 
                                    type="number"
                                    value={priceRange[0]}
                                    onChange={(e) => onPriceChange([Number(e.target.value), priceRange[1]])}
-                                   className="w-full h-16 bg-surface/50 border-2 border-border/50 rounded-3xl px-8 text-sm font-bold outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/5 transition-all"
+                                   className="w-full h-16 bg-surface/50 border-2 border-border/50 rounded-3xl px-8 text-sm font-normal outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/5 transition-all"
                                    placeholder="0"
                                  />
                               </div>
                               <div className="space-y-3">
-                                 <label className="text-[10px] font-black uppercase text-muted tracking-[0.2em] pl-2">Max Price</label>
+                                 <label className="text-[10px] font-medium uppercase text-muted tracking-wider pl-2">Max Price</label>
                                  <input 
                                    type="number"
                                    value={priceRange[1]}
                                    onChange={(e) => onPriceChange([priceRange[0], Number(e.target.value)])}
-                                   className="w-full h-16 bg-surface/50 border-2 border-border/50 rounded-3xl px-8 text-sm font-bold outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/5 transition-all"
+                                   className="w-full h-16 bg-surface/50 border-2 border-border/50 rounded-3xl px-8 text-sm font-normal outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/5 transition-all"
                                    placeholder="Any"
                                  />
                               </div>
@@ -248,7 +248,7 @@ export default function ProductFilters({
                   <div className="absolute bottom-0 inset-x-0 p-8 md:p-10 pt-4 bg-gradient-to-t from-background via-background to-transparent shrink-0">
                      <Button 
                        onClick={() => setIsMobileMenuOpen(false)}
-                       className="w-full h-16 md:h-20 rounded-[2.5rem] uppercase tracking-widest shadow-2xl shadow-primary/20"
+                       className="w-full h-16 md:h-20 rounded-[2.5rem] uppercase tracking-wider shadow-2xl shadow-primary/20"
                      >
                        Show {resultsCount} Products
                      </Button>

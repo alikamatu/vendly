@@ -21,7 +21,7 @@ export default function Button({
   const base =
     "inline-flex items-center justify-center gap-2 rounded-xl font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent/50 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm";
   const variants: Record<string, string> = {
-    primary: "bg-red-500 text-white font-bold hover:bg-red-600 shadow-xl shadow-red-500/20 active:scale-95",
+    primary: "bg-red-500 text-white font-normal hover:bg-red-600 shadow-xl shadow-red-500/20 active:scale-95",
     secondary: "bg-surface text-foreground hover:bg-border/40 border border-border shadow-sm active:scale-95",
     ghost: "text-muted hover:text-foreground hover:bg-surface active:scale-95 shadow-none hover:shadow-none",
     danger: "bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white shadow-none active:scale-95",

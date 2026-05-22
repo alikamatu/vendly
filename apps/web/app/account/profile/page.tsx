@@ -45,7 +45,7 @@ function avatarGradient(name: string) {
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
-    <label className="block text-[11px] font-black text-[var(--color-muted)] uppercase tracking-widest mb-1.5">
+    <label className="block text-[11px] font-medium text-[var(--color-muted)] uppercase tracking-wider mb-1.5">
       {children}
     </label>
   );
@@ -144,38 +144,38 @@ export default function AccountProfilePage() {
       {/* Back */}
       <Link
         href="/account"
-        className="inline-flex items-center gap-2 text-[11px] font-black text-[var(--color-muted)] hover:text-[var(--color-foreground)] uppercase tracking-widest transition-colors group"
+        className="inline-flex items-center gap-2 text-[11px] font-medium text-[var(--color-muted)] hover:text-[var(--color-foreground)] uppercase tracking-wider transition-colors group"
       >
         <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
         Account
       </Link>
 
       <div>
-        <h1 className="text-lg font-black tracking-tight">Personal Info</h1>
+        <h1 className="text-lg font-medium tracking-tight">Personal Info</h1>
         <p className="text-[11px] text-[var(--color-muted)] mt-0.5">Update your name, school and profile</p>
       </div>
 
       {/* Avatar card */}
       <div className="bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)] p-5 flex items-center gap-4">
         <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${grad} flex items-center justify-center flex-shrink-0 shadow-lg`}>
-          <span className="text-xl font-black text-white select-none">{inits}</span>
+          <span className="text-xl font-medium text-white select-none">{inits}</span>
         </div>
         <div className="flex-1 min-w-0 space-y-1.5">
-          <p className="text-[15px] font-black truncate">{user.full_name}</p>
+          <p className="text-[15px] font-medium truncate">{user.full_name}</p>
           <p className="text-[11px] text-[var(--color-muted)] truncate">{user.email}</p>
           <div className="flex flex-wrap gap-2">
-            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide ${
+            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wide ${
               user.role === "SELLER" ? "bg-emerald-500/10 text-emerald-600" : "bg-blue-500/10 text-blue-600"
             }`}>
               {user.role === "SELLER" && <BadgeCheck className="w-3 h-3" />}
               {user.role === "SELLER" ? "Seller" : "Buyer"}
             </span>
             {user.is_verified ? (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-normal bg-emerald-500/10 text-emerald-600">
                 <CheckCircle2 className="w-3 h-3" /> Verified
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-normal bg-amber-500/10 text-amber-600">
                 <MailWarning className="w-3 h-3" /> Email unverified
               </span>
             )}
@@ -247,7 +247,7 @@ export default function AccountProfilePage() {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full h-14 rounded-2xl bg-[var(--color-foreground)] text-[var(--color-background)] font-black uppercase tracking-widest text-sm hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="w-full h-14 rounded-2xl bg-[var(--color-foreground)] text-[var(--color-background)] font-medium uppercase tracking-wider text-sm hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {isLoading ? (
             <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</>
@@ -259,7 +259,7 @@ export default function AccountProfilePage() {
 
       {/* Quick links */}
       <div className="space-y-1.5">
-        <p className="px-1 text-[10px] font-black text-[var(--color-muted)] uppercase tracking-widest">Quick Links</p>
+        <p className="px-1 text-[10px] font-medium text-[var(--color-muted)] uppercase tracking-wider">Quick Links</p>
         <div className="bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)] divide-y divide-[var(--color-border)]/50 overflow-hidden">
           <Link
             href="/account/security"
@@ -269,7 +269,7 @@ export default function AccountProfilePage() {
               <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center">
                 <Shield className="w-4 h-4 text-emerald-500" />
               </div>
-              <span className="text-[13px] font-bold">Change Password</span>
+              <span className="text-[13px] font-normal">Change Password</span>
             </div>
             <ChevronRight className="w-4 h-4 text-[var(--color-muted)] group-hover:text-[var(--color-foreground)] transition-colors" />
           </Link>
@@ -283,9 +283,9 @@ export default function AccountProfilePage() {
                 <div className="w-8 h-8 rounded-xl bg-[var(--color-accent)]/10 flex items-center justify-center">
                   <Star className="w-4 h-4 text-[var(--color-accent)]" />
                 </div>
-                <span className="text-[13px] font-bold">Start selling</span>
+                <span className="text-[13px] font-normal">Start selling</span>
                 {user.approval_status === "PENDING" && (
-                  <span className="text-[10px] font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] font-normal text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full">
                     Pending
                   </span>
                 )}

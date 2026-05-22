@@ -44,17 +44,17 @@ function ProductListRow({ product }: ProductListRowProps) {
 
       <div className="flex-1 min-w-0 space-y-1">
         <div className="flex items-start gap-2">
-          <h3 className="text-sm font-bold text-[var(--color-foreground)] truncate flex-1">
+          <h3 className="text-sm font-normal text-[var(--color-foreground)] truncate flex-1">
             {product.title}
           </h3>
           {product.is_featured && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-amber-500/15 text-amber-600 flex-shrink-0">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-medium uppercase bg-amber-500/15 text-amber-600 flex-shrink-0">
               <Sparkles className="w-2.5 h-2.5" />
               Hot
             </span>
           )}
           {discount != null && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-500/15 text-emerald-600 flex-shrink-0">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-medium uppercase bg-emerald-500/15 text-emerald-600 flex-shrink-0">
               <BadgePercent className="w-2.5 h-2.5" />−{discount}%
             </span>
           )}
@@ -73,7 +73,7 @@ function ProductListRow({ product }: ProductListRowProps) {
       </div>
 
       <div className="text-right flex-shrink-0 space-y-0.5">
-        <p className="text-sm font-black text-[var(--color-foreground)] tabular-nums">
+        <p className="text-sm font-medium text-[var(--color-foreground)] tabular-nums">
           GH₵{Number(product.price).toLocaleString()}
         </p>
         {product.original_price != null && discount != null && (

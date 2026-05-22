@@ -28,7 +28,7 @@ export default function ResultsHeader({
   return (
     <div className="flex items-center justify-between gap-3 flex-wrap">
       <p className="text-[12px] text-[var(--color-muted)] inline-flex items-center gap-2">
-        <span className="font-black text-[var(--color-foreground)] tabular-nums">
+        <span className="font-medium text-[var(--color-foreground)] tabular-nums">
           {total.toLocaleString()}
         </span>
         product{total === 1 ? "" : "s"}
@@ -39,7 +39,7 @@ export default function ResultsHeader({
         <button
           type="button"
           onClick={onOpenFilters}
-          className="lg:hidden inline-flex items-center gap-1.5 h-10 px-3.5 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] text-[12px] font-bold text-[var(--color-foreground)] hover:border-[var(--color-accent)]/40 transition-colors"
+          className="lg:hidden inline-flex items-center gap-1.5 h-10 px-3.5 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] text-[12px] font-normal text-[var(--color-foreground)] hover:border-[var(--color-accent)]/40 transition-colors"
         >
           <SlidersHorizontal className="w-3.5 h-3.5" />
           Filters

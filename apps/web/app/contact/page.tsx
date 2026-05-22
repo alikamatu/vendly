@@ -35,8 +35,8 @@ export default function ContactPage() {
       <main className="max-w-5xl mx-auto px-4 md:px-8 pt-10 md:pt-16 pb-24 grid grid-cols-1 lg:grid-cols-5 gap-10">
         <aside className="lg:col-span-2 space-y-6">
           <div className="space-y-2">
-            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-primary">Get in touch</p>
-            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">We're here to help.</h1>
+            <p className="text-[10px] font-medium uppercase tracking-wider text-primary">Get in touch</p>
+            <h1 className="text-3xl md:text-4xl font-medium tracking-tight">We're here to help.</h1>
             <p className="text-sm text-muted leading-relaxed">
               Fill out the form and we'll respond within 24 hours, or reach us directly via
               any of the channels below.
@@ -53,7 +53,7 @@ export default function ContactPage() {
 
         <form onSubmit={submit} className="lg:col-span-3 space-y-3" noValidate>
           {submitted && (
-            <div className="flex items-center gap-2 p-3 rounded-2xl bg-emerald-500/10 text-emerald-600 text-[12px] font-bold">
+            <div className="flex items-center gap-2 p-3 rounded-2xl bg-emerald-500/10 text-emerald-600 text-[12px] font-normal">
               <CheckCircle2 className="w-4 h-4" />
               Message sent — we'll be in touch soon.
             </div>
@@ -84,7 +84,7 @@ export default function ContactPage() {
             error={errors.subject}
           />
           <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted px-1">
+            <label className="text-[10px] font-medium uppercase tracking-wider text-muted px-1">
               Message
             </label>
             <textarea
@@ -96,12 +96,12 @@ export default function ContactPage() {
                 errors.message ? "border-red-500/50" : "border-border focus:border-primary/40"
               }`}
             />
-            {errors.message && <p className="text-[10px] font-bold text-red-500 px-1">{errors.message}</p>}
+            {errors.message && <p className="text-[10px] font-normal text-red-500 px-1">{errors.message}</p>}
           </div>
 
           <button
             type="submit"
-            className="inline-flex items-center gap-2 h-11 px-5 rounded-2xl bg-primary text-white text-[12px] font-black uppercase tracking-widest hover:opacity-90 transition-opacity"
+            className="inline-flex items-center gap-2 h-11 px-5 rounded-2xl bg-primary text-white text-[12px] font-medium uppercase tracking-wider hover:opacity-90 transition-opacity"
           >
             <Send className="w-3.5 h-3.5" />
             Send message
@@ -129,8 +129,8 @@ function ContactRow({
         <Icon className="w-4 h-4" />
       </span>
       <span className="flex flex-col">
-        <span className="text-[10px] font-black uppercase tracking-widest text-muted">{label}</span>
-        <span className="text-[13px] font-bold text-foreground">{value}</span>
+        <span className="text-[10px] font-medium uppercase tracking-wider text-muted">{label}</span>
+        <span className="text-[13px] font-normal text-foreground">{value}</span>
       </span>
     </span>
   );
@@ -166,7 +166,7 @@ function Field({
 }) {
   return (
     <div className="space-y-1">
-      <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted px-1 block">
+      <label className="text-[10px] font-medium uppercase tracking-wider text-muted px-1 block">
         {label}
       </label>
       <input
@@ -175,11 +175,11 @@ function Field({
         autoComplete={autoComplete}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={`w-full h-11 rounded-2xl border bg-surface px-4 text-[13px] font-bold outline-none focus:ring-2 focus:ring-primary/30 transition-all ${
+        className={`w-full h-11 rounded-2xl border bg-surface px-4 text-[13px] font-normal outline-none focus:ring-2 focus:ring-primary/30 transition-all ${
           error ? "border-red-500/50" : "border-border focus:border-primary/40"
         }`}
       />
-      {error && <p className="text-[10px] font-bold text-red-500 px-1">{error}</p>}
+      {error && <p className="text-[10px] font-normal text-red-500 px-1">{error}</p>}
     </div>
   );
 }

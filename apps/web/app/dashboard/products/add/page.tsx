@@ -78,7 +78,7 @@ function Section({
           <Icon className="w-4 h-4 text-[var(--color-accent)]" />
         </div>
         <div>
-          <p className="text-sm font-bold text-[var(--color-foreground)]">{title}</p>
+          <p className="text-sm font-normal text-[var(--color-foreground)]">{title}</p>
           {subtitle && (
             <p className="text-[11px] text-[var(--color-muted)] mt-0.5">{subtitle}</p>
           )}
@@ -102,7 +102,7 @@ function FieldLabel({
 }) {
   return (
     <div className="flex items-center justify-between mb-1.5">
-      <label className="text-[11px] font-bold text-[var(--color-muted)] uppercase tracking-wider">
+      <label className="text-[11px] font-normal text-[var(--color-muted)] uppercase tracking-wider">
         {children}
         {required && <span className="text-red-500 ml-1">*</span>}
       </label>
@@ -686,7 +686,7 @@ export default function AddProductPage() {
           <ArrowLeft className="w-4 h-4 text-[var(--color-foreground)]" />
         </Link>
         <div>
-          <h1 className="text-lg font-black tracking-tight text-[var(--color-foreground)]">
+          <h1 className="text-lg font-medium tracking-tight text-[var(--color-foreground)]">
             Add Product
           </h1>
           <p className="text-[11px] text-[var(--color-muted)] font-medium">
@@ -731,7 +731,7 @@ export default function AddProductPage() {
                     </span>
                   </button>
                   {idx === 0 && (
-                    <span className="absolute bottom-1.5 left-1.5 text-[9px] font-bold bg-black/60 text-white px-2 py-0.5 rounded-full">
+                    <span className="absolute bottom-1.5 left-1.5 text-[9px] font-normal bg-black/60 text-white px-2 py-0.5 rounded-full">
                       Cover
                     </span>
                   )}
@@ -756,12 +756,12 @@ export default function AddProductPage() {
                 {isCompressing ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    <span className="text-[10px] font-bold">Optimising…</span>
+                    <span className="text-[10px] font-normal">Optimising…</span>
                   </>
                 ) : (
                   <>
                     <Plus className="w-5 h-5" />
-                    <span className="text-[10px] font-bold">Add Photo</span>
+                    <span className="text-[10px] font-normal">Add Photo</span>
                   </>
                 )}
               </button>
@@ -813,7 +813,7 @@ export default function AddProductPage() {
                 className="w-full h-16 rounded-2xl border-2 border-dashed border-[var(--color-border)] flex items-center justify-center gap-3 text-[var(--color-muted)] hover:border-[var(--color-accent)]/50 hover:text-[var(--color-accent)] transition-all active:scale-[0.99]"
               >
                 <Video className="w-5 h-5" />
-                <span className="text-[11px] font-bold">Upload a short video · max 60 MB</span>
+                <span className="text-[11px] font-normal">Upload a short video · max 60 MB</span>
               </button>
             )}
             <input
@@ -886,16 +886,16 @@ export default function AddProductPage() {
             <div className="flex items-start gap-3 p-3 rounded-2xl bg-[var(--color-accent)]/8 border border-[var(--color-accent)]/20">
               <Sparkles className="w-4 h-4 text-[var(--color-accent)] flex-shrink-0 mt-0.5" />
               <div className="space-y-0.5">
-                <p className="text-[11px] font-bold text-[var(--color-foreground)]">
+                <p className="text-[11px] font-normal text-[var(--color-foreground)]">
                   Smart suggestion for {formData.category}
                 </p>
                 <p className="text-[11px] text-[var(--color-muted)]">
                   Price around{" "}
-                  <span className="font-bold text-[var(--color-foreground)]">
+                  <span className="font-normal text-[var(--color-foreground)]">
                     GH₵{recommendation.medianPrice.toFixed(2)}
                   </span>{" "}
                   · Stock around{" "}
-                  <span className="font-bold text-[var(--color-foreground)]">
+                  <span className="font-normal text-[var(--color-foreground)]">
                     {recommendation.avgQuantity}
                   </span>{" "}
                   units
@@ -903,7 +903,7 @@ export default function AddProductPage() {
                 {recommendation.topTags.length > 0 && (
                   <p className="text-[11px] text-[var(--color-muted)]">
                     Popular tags:{" "}
-                    <span className="font-bold text-[var(--color-foreground)]">
+                    <span className="font-normal text-[var(--color-foreground)]">
                       {recommendation.topTags.join(", ")}
                     </span>
                   </p>
@@ -917,7 +917,7 @@ export default function AddProductPage() {
             <div>
               <FieldLabel required>Price (GH₵)</FieldLabel>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-muted)] text-sm font-bold select-none">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-muted)] text-sm font-normal select-none">
                   ₵
                 </span>
                 <FormInput
@@ -961,7 +961,7 @@ export default function AddProductPage() {
           <div>
             <FieldLabel>Original Price (optional, GH₵)</FieldLabel>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-muted)] text-sm font-bold select-none">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-muted)] text-sm font-normal select-none">
                 ₵
               </span>
               <FormInput
@@ -990,7 +990,7 @@ export default function AddProductPage() {
               const pct = Math.round(((orig - cur) / orig) * 100);
               return (
                 <p className="text-[11px] mt-1.5 inline-flex items-center gap-2">
-                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 font-bold">
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 font-normal">
                     −{pct}%
                   </span>
                   <span className="text-[var(--color-muted)]">
@@ -1019,7 +1019,7 @@ export default function AddProductPage() {
                     setFormData((prev) => ({ ...prev, condition: value }))
                   }
                   className={[
-                    "h-11 rounded-2xl border text-sm font-bold transition-all duration-150 active:scale-95",
+                    "h-11 rounded-2xl border text-sm font-normal transition-all duration-150 active:scale-95",
                     formData.condition === value
                       ? "border-[var(--color-accent)] bg-[var(--color-accent)]/10 text-[var(--color-accent)]"
                       : "border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-muted)] hover:border-[var(--color-accent)]/40",
@@ -1177,7 +1177,7 @@ export default function AddProductPage() {
                         tagInput: t,
                       }))
                     }
-                    className="px-2.5 py-1 rounded-full border border-[var(--color-border)] text-[10px] font-bold text-[var(--color-muted)] hover:border-[var(--color-accent)]/40 hover:text-[var(--color-accent)] transition-all"
+                    className="px-2.5 py-1 rounded-full border border-[var(--color-border)] text-[10px] font-normal text-[var(--color-muted)] hover:border-[var(--color-accent)]/40 hover:text-[var(--color-accent)] transition-all"
                   >
                     + {t}
                   </button>
@@ -1191,7 +1191,7 @@ export default function AddProductPage() {
               {formData.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--color-accent)]/10 text-[var(--color-accent)] text-[11px] font-bold rounded-full"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--color-accent)]/10 text-[var(--color-accent)] text-[11px] font-normal rounded-full"
                 >
                   {tag}
                   <button
@@ -1246,7 +1246,7 @@ export default function AddProductPage() {
                   <div>
                     <p
                       className={[
-                        "text-[11px] font-bold",
+                        "text-[11px] font-normal",
                         formData.status === value
                           ? "text-[var(--color-foreground)]"
                           : "text-[var(--color-muted)]",
@@ -1284,7 +1284,7 @@ export default function AddProductPage() {
                 />
                 <span
                   className={[
-                    "text-sm font-bold",
+                    "text-sm font-normal",
                     formData.is_featured
                       ? "text-amber-600"
                       : "text-[var(--color-foreground)]",
@@ -1292,13 +1292,13 @@ export default function AddProductPage() {
                 >
                   Hot Sales Promotion
                 </span>
-                <span className="text-[10px] font-bold text-[var(--color-muted)]">
+                <span className="text-[10px] font-normal text-[var(--color-muted)]">
                   (GH₵7)
                 </span>
               </span>
               <span
                 className={[
-                  "text-[11px] font-bold px-2.5 py-1 rounded-full",
+                  "text-[11px] font-normal px-2.5 py-1 rounded-full",
                   formData.is_featured
                     ? "bg-amber-500/20 text-amber-600"
                     : "bg-[var(--color-border)] text-[var(--color-muted)]",
@@ -1322,7 +1322,7 @@ export default function AddProductPage() {
             <Button
               type="submit"
               disabled={!canSubmit}
-              className="w-full h-14 rounded-2xl font-black uppercase tracking-widest text-sm shadow-lg shadow-black/10"
+              className="w-full h-14 rounded-2xl font-medium uppercase tracking-wider text-sm shadow-lg shadow-black/10"
             >
               {isLoading ? (
                 <span className="flex items-center gap-2">

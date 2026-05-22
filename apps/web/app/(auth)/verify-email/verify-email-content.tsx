@@ -61,7 +61,7 @@ export default function VerifyEmailContent() {
               >
                 <CheckCircle size={40} />
               </motion.div>
-              <h1 className="text-2xl font-bold">Email Verified!</h1>
+              <h1 className="text-2xl font-normal">Email Verified!</h1>
               <Alert variant="success" message={message} />
               <a href="/register?mode=login">
                 <Button variant="primary" size="lg" className="mt-4">
@@ -85,7 +85,7 @@ export default function VerifyEmailContent() {
               >
                 <XCircle size={40} />
               </motion.div>
-              <h1 className="text-2xl font-bold">Verification Failed</h1>
+              <h1 className="text-2xl font-normal">Verification Failed</h1>
               <Alert variant="error" message={message} />
               <a href="/register">
                 <Button variant="secondary" size="lg" className="mt-4">

@@ -88,35 +88,35 @@ export default function SellerProductCard({ product, promotionState = "idle", on
           <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
             <div>
               <div className="flex items-start justify-between gap-2">
-                <h3 className="text-xs font-black text-foreground truncate uppercase tracking-tight">
+                <h3 className="text-xs font-medium text-foreground truncate uppercase tracking-tight">
                   {product.title}
                 </h3>
-                <span className={`text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest ${statusColors[product.status] || "bg-muted/10 text-muted"}`}>
+                <span className={`text-[8px] font-medium px-2 py-0.5 rounded-full uppercase tracking-wider ${statusColors[product.status] || "bg-muted/10 text-muted"}`}>
                   {product.status.replace('_', ' ')}
                 </span>
               </div>
-              <p className="text-[10px] text-muted font-bold mt-1 uppercase tracking-wider">
+              <p className="text-[10px] text-muted font-normal mt-1 uppercase tracking-wider">
                 {product.category} • GH₵{parseFloat(product.price).toLocaleString()}
               </p>
               {product.is_featured && (
-                <p className="text-[9px] font-black mt-1 text-amber-600 uppercase tracking-wider inline-flex items-center gap-1">
+                <p className="text-[9px] font-medium mt-1 text-amber-600 uppercase tracking-wider inline-flex items-center gap-1">
                   <Flame className="w-3 h-3" />
                   Hot Sales
                 </p>
               )}
               {!product.is_featured && promotionState === "verifying" && (
-                <p className="text-[9px] font-black mt-1 text-blue-500 uppercase tracking-wider">
+                <p className="text-[9px] font-medium mt-1 text-blue-500 uppercase tracking-wider">
                   Verifying Payment...
                 </p>
               )}
               {!product.is_featured && promotionState === "failed" && (
-                <p className="text-[9px] font-black mt-1 text-red-500 uppercase tracking-wider">
+                <p className="text-[9px] font-medium mt-1 text-red-500 uppercase tracking-wider">
                   Verification Failed
                 </p>
               )}
             </div>
 
-            <div className="flex items-center gap-4 text-[9px] font-black uppercase tracking-widest text-muted/60">
+            <div className="flex items-center gap-4 text-[9px] font-medium uppercase tracking-wider text-muted/60">
               <span className="flex items-center gap-1">
                 <Package className="w-3 h-3" /> {product.quantity_available} in stock
               </span>
@@ -168,14 +168,14 @@ export default function SellerProductCard({ product, promotionState = "idle", on
               <AlertCircle className="w-5 h-5 text-red-500" />
             </div>
             <div className="space-y-1">
-              <p className="text-[10px] font-black uppercase tracking-widest">Remove Product?</p>
-              <p className="text-[9px] text-muted font-bold uppercase tracking-wider italic">Action cannot be reversed</p>
+              <p className="text-[10px] font-medium uppercase tracking-wider">Remove Product?</p>
+              <p className="text-[9px] text-muted font-normal uppercase tracking-wider italic">Action cannot be reversed</p>
             </div>
             <div className="flex gap-2 w-full max-w-[160px]">
               <Button 
                 variant="secondary" 
                 size="sm" 
-                className="flex-1 h-8 rounded-xl text-[9px] font-black uppercase tracking-widest border-border/50"
+                className="flex-1 h-8 rounded-xl text-[9px] font-medium uppercase tracking-wider border-border/50"
                 onClick={() => setShowDeleteConfirm(false)}
               >
                 No
@@ -183,7 +183,7 @@ export default function SellerProductCard({ product, promotionState = "idle", on
               <Button 
                 variant="primary" 
                 size="sm" 
-                className="flex-1 h-8 rounded-xl text-[9px] font-black uppercase tracking-widest bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/20"
+                className="flex-1 h-8 rounded-xl text-[9px] font-medium uppercase tracking-wider bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/20"
                 onClick={() => {
                   onDelete(product.id);
                   setShowDeleteConfirm(false);
