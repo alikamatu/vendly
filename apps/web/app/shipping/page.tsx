@@ -39,7 +39,7 @@ export default function ShippingPage() {
           title: "Pickup",
           body: (
             <p>
-              Many sellers offer free in-person pickup at their campus location. Choose
+              Many sellers offer free in-person pickup at their local pickup location. Choose
               <em> Pickup</em> at checkout and the seller will share the location and a
               meet-up window via WhatsApp.
             </p>

@@ -44,7 +44,7 @@ export default function AuthModal() {
 
       <div className="mt-8 text-center">
         <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">
-          Secure • SSL Encrypted • Campus Verified
+          Secure • SSL Encrypted • Identity Verified
         </p>
       </div>
     </Modal>

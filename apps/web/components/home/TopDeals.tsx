@@ -33,7 +33,7 @@ export default function TopDeals({ products, minDiscount = 20, limit = 20 }: Top
         </>
       }
       title={`Top Deals · ${minDiscount}% off or more`}
-      description="Limited-time markdowns from verified campus sellers. Going fast."
+      description="Limited-time markdowns from verified sellers. Going fast."
     />
   );
 }

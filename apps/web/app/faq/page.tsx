@@ -24,7 +24,7 @@ const QA_LIST: QA[] = [
         <a className="text-primary underline" href="/seller-verification">
           Become a Seller
         </a>{" "}
-        and upload your student verification document. Approvals usually take 24–48
+        and upload your business verification document. Approvals usually take 24–48
         hours.
       </>
     ),

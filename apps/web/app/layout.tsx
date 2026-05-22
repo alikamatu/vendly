@@ -19,9 +19,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Vendly — Marketplace for Verified Entrepreneurs",
+  title: "Vendly — Marketplace for Young Entrepreneurs & Small Businesses",
   description:
-    "Discover and shop from trusted, verified entrepreneurs all in one place.",
+    "Discover and shop from trusted, verified young entrepreneurs and independent businesses — all in one place.",
 };
 
 import { FavoriteProvider } from "../lib/contexts/favorite-context";

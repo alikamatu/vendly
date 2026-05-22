@@ -17,7 +17,8 @@ export const registerSchema = z
         'Password must contain uppercase, lowercase, and a number or special character'
       ),
     confirmPassword: z.string().min(1, 'Please confirm your password'),
-    school: z.string().min(2, 'School name is required'),
+    // `school` is the legacy backend field name; UI labels it as Business name.
+    school: z.string().min(2, 'Business name is required'),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Passwords do not match',

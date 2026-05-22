@@ -290,7 +290,7 @@ export default function StoreOrdersPage() {
               <Package className="w-12 h-12 text-muted mx-auto opacity-10" />
               <div className="space-y-1">
                 <p className="text-[11px] text-muted font-black uppercase tracking-[0.2em]">{searchTerm ? "No orders found" : "No store orders"}</p>
-                <p className="text-[9px] text-muted/60 font-medium uppercase tracking-widest italic">{searchTerm ? "Try adjusting your search" : "Wait for campus customers to find your products"}</p>
+                <p className="text-[9px] text-muted/60 font-medium uppercase tracking-widest italic">{searchTerm ? "Try adjusting your search" : "Wait for customers to find your products"}</p>
               </div>
             </div>
           )}

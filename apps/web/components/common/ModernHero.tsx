@@ -46,9 +46,9 @@ export default function ModernHero() {
                   <span className="text-primary">not harder.</span>
                 </h1>
                 <p className="text-base md:text-lg text-black max-w-lg mx-auto lg:mx-0 leading-relaxed">
-                  Tired of managing sales in DMs? Vendly gives you a premium
-                  store in seconds. Professional, fast, and built for verified
-                  entrepreneurs.
+                  Tired of running your business in DMs? Vendly gives young
+                  entrepreneurs and small businesses a premium storefront in
+                  seconds — professional, fast, and built to grow.
                 </p>
               </div>
 

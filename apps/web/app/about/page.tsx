@@ -3,7 +3,7 @@ import LegalPage from "@/components/legal/LegalPage";
 
 export const metadata: Metadata = {
   title: "About Vendly",
-  description: "The campus-first marketplace for verified student entrepreneurs.",
+  description: "The marketplace for verified young entrepreneurs and small businesses.",
 };
 
 export default function AboutPage() {
@@ -11,16 +11,16 @@ export default function AboutPage() {
     <LegalPage
       eyebrow="Company"
       title="About Vendly"
-      description="Vendly is a campus-first marketplace built so verified student entrepreneurs can sell with the same trust, polish, and tools as professional retailers."
+      description="Vendly is a curated marketplace built so verified young entrepreneurs and small businesses can sell with the same trust, polish, and tools as professional retailers."
       sections={[
         {
           title: "Why we built this",
           body: (
             <p>
-              Talented student sellers were running businesses in Instagram DMs and
+              Talented independent sellers were running businesses in Instagram DMs and
               WhatsApp threads — losing sales to lost messages and getting burned by
               scammy buyers. Vendly gives them a real storefront, real payments, and real
-              buyer protection, without losing the personal feel of campus commerce.
+              buyer protection, without losing the personal feel of independent commerce.
             </p>
           ),
         },
@@ -30,7 +30,7 @@ export default function AboutPage() {
             <ul className="list-disc pl-5 space-y-1.5">
               <li>A discovery-first marketplace with categories, brands, deals, and search.</li>
               <li>Pro membership for sellers who want featured placement and analytics.</li>
-              <li>Native delivery and pickup workflows that match how students actually buy.</li>
+              <li>Native delivery and pickup workflows that match how people actually buy.</li>
               <li>Buyer protection backed by Paystack escrow and our support team.</li>
             </ul>
           ),
@@ -39,8 +39,8 @@ export default function AboutPage() {
           title: "Where we operate",
           body: (
             <p>
-              We're live across Ghanaian universities and expanding to West African
-              campuses through 2026. Want Vendly at your school?{" "}
+              We're live across Ghana and expanding to other West African
+              markets through 2026. Want Vendly in your city?{" "}
               <a className="text-primary underline" href="/contact">Get in touch</a>.
             </p>
           ),

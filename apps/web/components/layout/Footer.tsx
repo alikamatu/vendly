@@ -102,7 +102,7 @@ export default function Footer() {
               </span>
             </Link>
             <p className="text-[13px] text-muted leading-relaxed max-w-sm">
-              The campus marketplace for verified student entrepreneurs. Shop, sell,
+              The independent marketplace for verified young entrepreneurs. Shop, sell,
               and grow — all in one place.
             </p>
             <NewsletterForm />
@@ -144,7 +144,7 @@ export default function Footer() {
             </span>
             <span className="inline-flex items-center gap-1.5 font-bold">
               <Sparkles className="w-3.5 h-3.5 text-primary" />
-              Made for campuses
+              Built for young businesses
             </span>
           </div>
         </div>

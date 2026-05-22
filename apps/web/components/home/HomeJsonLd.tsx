@@ -32,7 +32,7 @@ export default function HomeJsonLd({ categories }: HomeJsonLdProps) {
       "@type": "ListItem",
       position: index + 1,
       name: cat.name,
-      description: `Browse and buy verified ${cat.name} products from trusted student entrepreneurs.`,
+      description: `Browse and buy verified ${cat.name} products from trusted young entrepreneurs.`,
       url: `${origin}/#marketplace`,
     })),
   };

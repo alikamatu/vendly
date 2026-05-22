@@ -194,7 +194,7 @@ export default function CartPage() {
               </div>
               <h2 className="text-lg sm:text-xl font-black uppercase tracking-tight">Your cart is empty</h2>
               <p className="text-xs text-muted font-medium mt-2 max-w-xs mx-auto">
-                Add items from campus sellers to start building your order.
+                Add items from independent sellers to start building your order.
               </p>
               <Link href="/" className="inline-block mt-8">
                 <Button size="lg" className="rounded-2xl font-black uppercase tracking-widest text-xs">

@@ -166,7 +166,7 @@ function SellerCTA({ status }: { status: "PENDING" | "APPROVED" | "REJECTED" | n
       badge: null,
       badgeText: null,
       title: "Start selling on Vendly",
-      body: "Join hundreds of student entrepreneurs. List products, manage orders, and grow your business — all in one place.",
+      body: "Join hundreds of young entrepreneurs. List products, manage orders, and grow your business — all in one place.",
       cta: { label: "Become a Seller", href: "/seller-verification" },
     },
   };
@@ -315,7 +315,7 @@ export default function SettingsPage() {
       </div>
 
       <p className="text-center text-[10px] text-[var(--color-muted)] pb-2">
-        Vendly · v1.0 · Made with ♥ for student entrepreneurs
+        Vendly · v1.0 · Made with ♥ for young entrepreneurs
       </p>
     </div>
   );

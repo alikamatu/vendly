@@ -51,7 +51,7 @@ function CategoryShowcase({
           </>
         }
         title="Shop by Category"
-        description="Find exactly what you need with our beautifully curated catalog, tailored for the campus community."
+        description="Find exactly what you need with our beautifully curated catalog, tailored for the Vendly community."
         action={
           <Link
             href="/categories"

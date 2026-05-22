@@ -335,7 +335,7 @@ export default function ProductDetailsPage() {
           >
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-primary text-[10px] font-black uppercase tracking-[0.2em]">
-                <Sparkles className="w-3 h-3 inline mr-1" /> Campus Favorite
+                <Sparkles className="w-3 h-3 inline mr-1" /> Trending Now
               </span>
               {product.category && (
                 <span className="px-3 py-1 rounded-full bg-surface border border-border/50 text-[10px] font-bold text-muted uppercase tracking-wider">

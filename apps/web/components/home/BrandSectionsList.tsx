@@ -40,8 +40,8 @@ export default function BrandSectionsList({
             Shop by Brand
           </>
         }
-        title="Top Campus Brands"
-        description="Explore highly-rated brands chosen by student sellers, ranked by what's in stock right now."
+        title="Top Vendly Brands"
+        description="Explore highly-rated brands chosen by independent sellers, ranked by what's in stock right now."
       />
 
       <div className="space-y-14">

@@ -84,7 +84,7 @@ export default function CategoryGalleryPage() {
     "@context": "https://schema.org",
     "@type": "ItemList",
     "name": "Category & Brand Showcase - Vendly",
-    "description": "Explore all product categories, special brands, and verified student entrepreneur lists.",
+    "description": "Explore all product categories, special brands, and verified young entrepreneur lists.",
     "itemListElement": categoriesWithDetails.map((cat, idx) => ({
       "@type": "ListItem",
       "position": idx + 1,
@@ -127,7 +127,7 @@ export default function CategoryGalleryPage() {
           Categories & Brands
         </h1>
         <p className="text-sm text-muted-foreground max-w-xl leading-relaxed">
-          Discover a rich ecosystem of campus-verified brands and categories. Easily narrow down your search by selecting a brand tag or category cards below.
+          Discover a rich ecosystem of verified brands and categories. Easily narrow down your search by selecting a brand tag or category cards below.
         </p>
       </section>
 
@@ -225,7 +225,7 @@ export default function CategoryGalleryPage() {
               General Brand Directory
             </h2>
             <p className="text-xs text-muted-foreground">
-              Browse some of the most popular associated brands on the campus marketplace.
+              Browse some of the most popular associated brands on the independent marketplace.
             </p>
           </div>
 

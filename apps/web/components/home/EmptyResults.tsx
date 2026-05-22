@@ -12,7 +12,7 @@ interface EmptyResultsProps {
 export default function EmptyResults({
   onClear,
   title = "No items match your filters",
-  description = "Try adjusting your price range or category to find more amazing campus deals.",
+  description = "Try adjusting your price range or category to find more amazing great deals.",
   actionLabel = "Clear all filters",
 }: EmptyResultsProps) {
   return (
