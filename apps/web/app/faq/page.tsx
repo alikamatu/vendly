@@ -22,7 +22,7 @@ const QA_LIST: QA[] = [
       <>
         Visit{" "}
         <a className="text-primary underline" href="/seller-verification">
-          Become a Seller
+          Start selling
         </a>{" "}
         and upload your business verification document. Approvals usually take 24–48
         hours.

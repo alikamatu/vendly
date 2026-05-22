@@ -160,14 +160,14 @@ function SellerCTA({ status }: { status: "PENDING" | "APPROVED" | "REJECTED" | n
       cta: { label: "Reapply now", href: "/seller-verification" },
     },
     null: {
-      icon: Star,
+      icon: Store,
       iconBg: "bg-[var(--color-accent)]/10",
       iconColor: "text-[var(--color-accent)]",
       badge: null,
       badgeText: null,
-      title: "Start selling on Vendly",
-      body: "Join hundreds of young entrepreneurs. List products, manage orders, and grow your business — all in one place.",
-      cta: { label: "Become a Seller", href: "/seller-verification" },
+      title: "Open your storefront",
+      body: "List products, accept payments, ship to customers nationwide. Built for young entrepreneurs and growing businesses.",
+      cta: { label: "Get started", href: "/seller-verification" },
     },
   };
 

@@ -46,12 +46,12 @@ function CategoryShowcase({
       <SectionHeader
         eyebrow={
           <>
-            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-ping" />
-            Explore Collections
+            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+            Browse the catalog
           </>
         }
-        title="Shop by Category"
-        description="Find exactly what you need with our beautifully curated catalog, tailored for the Vendly community."
+        title="Shop by category"
+        description="A curated catalog from verified young entrepreneurs and small businesses."
         action={
           <Link
             href="/categories"

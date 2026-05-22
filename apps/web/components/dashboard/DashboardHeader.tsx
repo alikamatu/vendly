@@ -103,14 +103,14 @@ export default function DashboardHeader({
           </Link>
         )}
 
-        {/* Special "Become a Seller" for regular Users */}
+        {/* Start selling CTA for non-seller users */}
         {user &&
           !isSeller &&
           user.role !== "ADMIN" &&
           user?.approval_status !== "APPROVED" && (
             <Link href="/seller-verification" className="hidden sm:inline-flex">
-              <button className="ml-1 px-4 py-2 bg-red-500 text-white text-[10px] uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
-                Become a Seller
+              <button className="ml-1 px-4 py-2 bg-primary text-white text-[10px] uppercase tracking-widest font-black rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
+                Start selling
               </button>
             </Link>
           )}
@@ -157,8 +157,11 @@ export default function DashboardHeader({
             <UserMenu />
           ) : (
             <div className="flex items-center gap-2">
-              <Link href="/register" className="px-4 py-2 bg-primary text-primary text-[10px] uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
-                Sign Up
+              <Link href="/login" className="hidden sm:inline-flex px-3 py-2 text-foreground/80 hover:text-foreground text-[10px] font-bold uppercase tracking-widest transition-colors">
+                Sign in
+              </Link>
+              <Link href="/register" className="px-4 py-2 bg-primary text-white font-black text-[10px] uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
+                Sign up
               </Link>
             </div>
           )}

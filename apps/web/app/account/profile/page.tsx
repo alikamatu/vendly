@@ -283,7 +283,7 @@ export default function AccountProfilePage() {
                 <div className="w-8 h-8 rounded-xl bg-[var(--color-accent)]/10 flex items-center justify-center">
                   <Star className="w-4 h-4 text-[var(--color-accent)]" />
                 </div>
-                <span className="text-[13px] font-bold">Become a Seller</span>
+                <span className="text-[13px] font-bold">Start selling</span>
                 {user.approval_status === "PENDING" && (
                   <span className="text-[10px] font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full">
                     Pending

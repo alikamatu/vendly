@@ -184,7 +184,7 @@ function SellerCTA({ status }: { status: "PENDING" | "APPROVED" | "REJECTED" | n
         href="/seller-verification"
         className="flex items-center justify-center h-11 rounded-2xl bg-[var(--color-accent)] text-white text-xs font-black uppercase tracking-widest hover:opacity-90 active:scale-[0.98] transition-all"
       >
-        Become a Seller
+        Start selling
       </Link>
     </div>
   );

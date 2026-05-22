@@ -331,7 +331,7 @@ export default function ProfileSettingsPage() {
                   <Star className="w-4 h-4 text-[var(--color-accent)]" />
                 </div>
                 <div>
-                  <span className="text-sm font-bold text-[var(--color-foreground)]">Become a Seller</span>
+                  <span className="text-sm font-bold text-[var(--color-foreground)]">Start selling</span>
                   {user.approval_status === "PENDING" && (
                     <span className="ml-2 text-[10px] font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full">
                       Pending

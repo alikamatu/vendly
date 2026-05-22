@@ -34,10 +34,10 @@ export default function ModernHero() {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.2 }}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-white text-[10px] uppercase tracking-widest"
+                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/15 text-white text-[10px] uppercase tracking-[0.18em] font-bold backdrop-blur-sm"
               >
-                <Sparkles size={14} className="text-primary" />
-                The Future of Verified Entrepreneurship
+                <span className="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Verified marketplace for modern businesses
               </motion.div>
 
               <div className="space-y-4">
@@ -74,22 +74,37 @@ export default function ModernHero() {
                 </Link>
               </div>
 
-              {/* Trust Indicators */}
-              <div className="flex flex-wrap justify-center lg:justify-start gap-6 pt-8 text-white">
-                {[
-                  { text: "Fast Setup", icon: Zap },
-                  { text: "Secure Payments", icon: ShieldCheck },
-                ].map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center gap-2 text-white"
-                  >
-                    <item.icon className="w-4 h-4 text-primary/60" />
-                    <span className="text-[9px] uppercase tracking-[0.15em]">
-                      {item.text}
-                    </span>
+              {/* Social proof + trust signals */}
+              <div className="pt-8 space-y-4">
+                <div className="flex items-center gap-3 justify-center lg:justify-start">
+                  <div className="flex -space-x-2">
+                    {["bg-amber-400", "bg-rose-400", "bg-emerald-400", "bg-sky-400"].map(
+                      (c, i) => (
+                        <div
+                          key={i}
+                          className={`w-7 h-7 rounded-full border-2 border-black ${c}`}
+                        />
+                      ),
+                    )}
                   </div>
-                ))}
+                  <p className="text-[11px] text-white font-bold">
+                    <span className="text-primary">1,000+</span> entrepreneurs trust Vendly
+                  </p>
+                </div>
+                <div className="flex flex-wrap justify-center lg:justify-start gap-x-6 gap-y-2 text-white">
+                  {[
+                    { text: "Live in 60 seconds", icon: Zap },
+                    { text: "Paystack secured", icon: ShieldCheck },
+                    { text: "0% setup fee", icon: ArrowRight },
+                  ].map((item, idx) => (
+                    <div key={idx} className="flex items-center gap-1.5">
+                      <item.icon className="w-3.5 h-3.5 text-primary/70" />
+                      <span className="text-[10px] uppercase tracking-[0.15em] font-bold">
+                        {item.text}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -101,7 +116,7 @@ export default function ModernHero() {
               className="hidden lg:block relative"
             >
               <div className="relative w-full aspect-square max-w-[440px] ml-auto">
-                {/* Visual Card 1 */}
+                {/* Visual Card 1 — premium storefront */}
                 <motion.div
                   animate={{ y: [0, -10, 0] }}
                   transition={{
@@ -109,21 +124,25 @@ export default function ModernHero() {
                     repeat: Infinity,
                     ease: "easeInOut",
                   }}
-                  className="absolute top-0 right-0 w-64 p-6 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-xl shadow-2xl"
+                  className="absolute top-0 right-0 w-64 p-6 rounded-3xl bg-white/10 border border-white/15 backdrop-blur-xl shadow-2xl"
                 >
-                  <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center text-primary mb-4">
-                    <Zap size={24} />
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center text-primary">
+                      <Zap className="w-4 h-4" />
+                    </div>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400">
+                      ● Live
+                    </span>
                   </div>
-                  <h3 className="text-white text-sm uppercase tracking-wider">
-                    Instant Setup
+                  <h3 className="text-white text-sm font-extrabold uppercase tracking-tight">
+                    Storefront ready in seconds
                   </h3>
-                  <p className="text-black text-[10px] mt-2 leading-relaxed">
-                    Your store is live the moment you sign up. No technical
-                    skills required.
+                  <p className="text-white/70 text-[11px] mt-2 leading-relaxed">
+                    Branded shop, custom URL, mobile-first checkout. No code, no plugins.
                   </p>
                 </motion.div>
 
-                {/* Visual Card 2 */}
+                {/* Visual Card 2 — sales dashboard preview */}
                 <motion.div
                   animate={{ y: [0, 10, 0] }}
                   transition={{
@@ -134,15 +153,19 @@ export default function ModernHero() {
                   }}
                   className="absolute bottom-4 left-0 w-64 p-6 rounded-3xl bg-primary shadow-2xl shadow-primary/30"
                 >
-                  <div className="w-12 h-12 rounded-xl bg-black/10 flex items-center justify-center text-white mb-4">
-                    <ArrowRight size={24} />
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-black/15 flex items-center justify-center text-white">
+                      <ArrowRight className="w-4 h-4" />
+                    </div>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-white/80">
+                      Today
+                    </span>
                   </div>
-                  <h3 className="text-white text-sm uppercase tracking-wider">
-                    Zero Fees
+                  <h3 className="text-white text-sm font-extrabold uppercase tracking-tight">
+                    GH₵12,480 in sales
                   </h3>
-                  <p className="text-black text-[10px] mt-2 leading-relaxed">
-                    Start selling for free. We only grow when you grow. Built
-                    for the modern entrepreneur economy.
+                  <p className="text-white/85 text-[11px] mt-2 leading-relaxed">
+                    +24% vs last week. Real-time analytics built for ambitious operators.
                   </p>
                 </motion.div>
 
