@@ -16,10 +16,14 @@ import GlobalSearch from "../layout/GlobalSearch";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useAuthModal } from "@/lib/contexts/auth-modal-context";
+import { usePathname } from "next/navigation";
+import PrimaryNav from "../layout/PrimaryNav";
 
 interface DashboardHeaderProps {
   title: string;
   onMenuToggle?: () => void;
+  /** Hide the categories/brands mega-nav row (e.g. inside the seller dashboard). */
+  hidePrimaryNav?: boolean;
 }
 
 import UserMenu from "../layout/UserMenu";
@@ -27,17 +31,22 @@ import UserMenu from "../layout/UserMenu";
 export default function DashboardHeader({
   title,
   onMenuToggle,
+  hidePrimaryNav,
 }: DashboardHeaderProps) {
   const [isSearchOpen, setIsSearchOpen] = React.useState(false);
   const { theme, setTheme } = useTheme();
   const { user } = useAuth();
   const { openRegister } = useAuthModal();
   const { itemCount } = useCart();
+  const pathname = usePathname();
   const isDark = theme === "dark";
 
   const isSeller = user?.role === "SELLER";
+  // Auto-hide mega nav inside the seller dashboard (it has its own sidebar)
+  const showPrimaryNav = !hidePrimaryNav && !pathname?.startsWith("/dashboard");
 
   return (
+    <>
     <header className="sticky top-0 z-30 flex h-20 items-center justify-between border-b border-border bg-background px-4 md:px-8">
       <div className="flex items-center gap-4">
         {isSeller && (
@@ -160,5 +169,7 @@ export default function DashboardHeader({
         onClose={() => setIsSearchOpen(false)}
       />
     </header>
+    {showPrimaryNav && <PrimaryNav />}
+    </>
   );
 }

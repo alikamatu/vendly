@@ -25,6 +25,7 @@ export const metadata: Metadata = {
 };
 
 import { FavoriteProvider } from "../lib/contexts/favorite-context";
+import SiteFooter from "../components/layout/SiteFooter";
 
 export default function RootLayout({
   children,
@@ -43,6 +44,7 @@ export default function RootLayout({
                 <CartProvider>
                   <StoreGuard>
                     {children}
+                    <SiteFooter />
                     <AuthModal />
                   </StoreGuard>
                 </CartProvider>

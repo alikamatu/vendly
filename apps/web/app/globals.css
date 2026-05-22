@@ -74,6 +74,19 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 400;
 }
 
+/* Lucide icons: thinner, more refined strokes site-wide.
+   SVG presentation attributes have lower precedence than CSS so this
+   wins over the inline `stroke-width="2"` lucide-react ships. */
+svg.lucide {
+  stroke-width: 1.5;
+}
+/* Slightly thicker on tiny icons for legibility */
+svg.lucide[width="12"],
+svg.lucide[width="10"],
+svg.lucide[width="14"] {
+  stroke-width: 1.75;
+}
+
 /* Utility tokens for components */
 .btn-primary {
   background: var(--color-primary);
