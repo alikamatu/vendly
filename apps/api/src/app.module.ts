@@ -18,6 +18,7 @@ import { CategoryModule } from './category/category.module';
 import { BrandModule } from './brand/brand.module';
 import { SettingsModule } from './settings/settings.module';
 import { SubscriptionModule } from './subscription/subscription.module';
+import { ReviewModule } from './review/review.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ApiResponseInterceptor } from './common/interceptors/api-response.interceptor';
 
@@ -33,8 +34,9 @@ import { ApiResponseInterceptor } from './common/interceptors/api-response.inter
         // No Redis configured → use the built-in in-memory store. Fine for
         // single-instance deploys; lossy across restarts.
         if (!url) {
-          // eslint-disable-next-line no-console
-          console.warn('[cache] REDIS_URL not set — falling back to in-memory cache');
+          console.warn(
+            '[cache] REDIS_URL not set — falling back to in-memory cache',
+          );
           return { ttl: 600000 };
         }
         try {
@@ -42,8 +44,11 @@ import { ApiResponseInterceptor } from './common/interceptors/api-response.inter
           return { store, ttl: 600000 };
         } catch (err) {
           // Don't take the whole API down if Redis is unreachable at boot.
-          // eslint-disable-next-line no-console
-          console.error('[cache] Redis unreachable, falling back to in-memory:', (err as Error)?.message);
+
+          console.error(
+            '[cache] Redis unreachable, falling back to in-memory:',
+            (err as Error)?.message,
+          );
           return { ttl: 600000 };
         }
       },
@@ -63,6 +68,7 @@ import { ApiResponseInterceptor } from './common/interceptors/api-response.inter
     BrandModule,
     SettingsModule,
     SubscriptionModule,
+    ReviewModule,
   ],
   controllers: [AppController],
   providers: [

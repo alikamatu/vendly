@@ -1,13 +1,11 @@
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
+import Footer from '@/components/layout/Footer';
+import DashboardHeader from '@/components/dashboard/DashboardHeader';
 
 export default function AccountLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--color-background)]">
-      <Header />
-      <main className="flex-1 py-8 px-4">
-        {children}
-      </main>
+    <div className="flex min-h-screen flex-col bg-[var(--color-background)]">
+      <DashboardHeader title="Account Settings" />
+      <main className="flex-1 px-4 py-8">{children}</main>
       <Footer />
     </div>
   );

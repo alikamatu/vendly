@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { motion } from "framer-motion";
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import {
   MapPin,
   MessageCircle,
@@ -14,9 +14,10 @@ import {
   CalendarDays,
   Copy,
   Check,
-} from "lucide-react";
-import Button from "@/components/ui/Button";
-import { toast } from "sonner";
+  Star,
+} from 'lucide-react';
+import Button from '@/components/ui/Button';
+import { toast } from 'sonner';
 
 export interface StorefrontHeaderData {
   store_name: string;
@@ -30,35 +31,37 @@ export interface StorefrontHeaderData {
   is_pro?: boolean;
   member_since?: string | Date | null;
   products_count?: number;
-  service_area?: "SAME_CITY" | "NEARBY_STATES" | "NATIONWIDE" | null;
+  rating_avg?: number;
+  rating_count?: number;
+  service_area?: 'SAME_CITY' | 'NEARBY_STATES' | 'NATIONWIDE' | null;
   avg_delivery_time?:
-    | "SAME_DAY"
-    | "NEXT_DAY"
-    | "TWO_TO_THREE_DAYS"
-    | "FOUR_TO_SEVEN_DAYS"
-    | "MORE_THAN_ONE_WEEK"
+    | 'SAME_DAY'
+    | 'NEXT_DAY'
+    | 'TWO_TO_THREE_DAYS'
+    | 'FOUR_TO_SEVEN_DAYS'
+    | 'MORE_THAN_ONE_WEEK'
     | null;
 }
 
-const SERVICE_AREA_LABEL: Record<NonNullable<StorefrontHeaderData["service_area"]>, string> = {
-  SAME_CITY: "Same city only",
-  NEARBY_STATES: "Nearby states",
-  NATIONWIDE: "Nationwide",
+const SERVICE_AREA_LABEL: Record<NonNullable<StorefrontHeaderData['service_area']>, string> = {
+  SAME_CITY: 'Same city only',
+  NEARBY_STATES: 'Nearby states',
+  NATIONWIDE: 'Nationwide',
 };
 
-const DELIVERY_LABEL: Record<NonNullable<StorefrontHeaderData["avg_delivery_time"]>, string> = {
-  SAME_DAY: "Same day",
-  NEXT_DAY: "Next day",
-  TWO_TO_THREE_DAYS: "2–3 days",
-  FOUR_TO_SEVEN_DAYS: "4–7 days",
-  MORE_THAN_ONE_WEEK: "1+ week",
+const DELIVERY_LABEL: Record<NonNullable<StorefrontHeaderData['avg_delivery_time']>, string> = {
+  SAME_DAY: 'Same day',
+  NEXT_DAY: 'Next day',
+  TWO_TO_THREE_DAYS: '2–3 days',
+  FOUR_TO_SEVEN_DAYS: '4–7 days',
+  MORE_THAN_ONE_WEEK: '1+ week',
 };
 
-function memberSinceLabel(value: StorefrontHeaderData["member_since"]) {
+function memberSinceLabel(value: StorefrontHeaderData['member_since']) {
   if (!value) return null;
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return null;
-  return d.toLocaleDateString(undefined, { month: "short", year: "numeric" });
+  return d.toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
 }
 
 interface StorefrontHeaderProps {
@@ -69,11 +72,11 @@ interface StorefrontHeaderProps {
 export default function StorefrontHeader({ store, productsCount }: StorefrontHeaderProps) {
   const [shared, setShared] = useState(false);
   const memberSince = memberSinceLabel(store.member_since);
-  const locationLabel = [store.area, store.location].filter(Boolean).join(" · ");
+  const locationLabel = [store.area, store.location].filter(Boolean).join(' · ');
 
   async function handleShare() {
-    const url = typeof window !== "undefined" ? window.location.href : "";
-    if (typeof navigator !== "undefined" && (navigator as any).share) {
+    const url = typeof window !== 'undefined' ? window.location.href : '';
+    if (typeof navigator !== 'undefined' && (navigator as any).share) {
       try {
         await (navigator as any).share({ title: store.store_name, url });
         return;
@@ -84,10 +87,10 @@ export default function StorefrontHeader({ store, productsCount }: StorefrontHea
     try {
       await navigator.clipboard.writeText(url);
       setShared(true);
-      toast.success("Link copied");
+      toast.success('Link copied');
       setTimeout(() => setShared(false), 1800);
     } catch {
-      toast.error("Could not copy");
+      toast.error('Could not copy');
     }
   }
 
@@ -96,8 +99,8 @@ export default function StorefrontHeader({ store, productsCount }: StorefrontHea
       toast.error("Seller hasn't shared a number yet.");
       return;
     }
-    const num = store.whatsapp_number.replace(/[^\d]/g, "");
-    window.open(`https://wa.me/${num}`, "_blank");
+    const num = store.whatsapp_number.replace(/[^\d]/g, '');
+    window.open(`https://wa.me/${num}`, '_blank');
   }
 
   return (
@@ -105,32 +108,32 @@ export default function StorefrontHeader({ store, productsCount }: StorefrontHea
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className={`relative rounded-3xl border p-5 md:p-7 mb-10 ${
+      className={`relative mb-10 rounded-3xl border p-5 md:p-7 ${
         store.is_pro
-          ? "border-[var(--color-accent)]/40 bg-gradient-to-br from-[var(--color-accent)]/8 via-[var(--color-surface)] to-[var(--color-surface)]"
-          : "border-[var(--color-border)] bg-[var(--color-surface)]"
+          ? 'border-[var(--color-accent)]/40 from-[var(--color-accent)]/8 bg-gradient-to-br via-[var(--color-surface)] to-[var(--color-surface)]'
+          : 'border-[var(--color-border)] bg-[var(--color-surface)]'
       }`}
     >
-      <div className="flex flex-col md:flex-row gap-5 md:gap-7 items-start">
+      <div className="flex flex-col items-start gap-5 md:flex-row md:gap-7">
         {/* Logo + role pill */}
-        <div className="shrink-0 flex items-start gap-3 md:block">
+        <div className="flex shrink-0 items-start gap-3 md:block">
           <div className="relative">
-            <div className="w-20 h-20 md:w-28 md:h-28 rounded-3xl overflow-hidden border border-[var(--color-border)] bg-[var(--color-background)]">
+            <div className="h-20 w-20 overflow-hidden rounded-3xl border border-[var(--color-border)] bg-[var(--color-background)] md:h-28 md:w-28">
               {store.logo_url ? (
                 <img
                   src={store.logo_url}
                   alt={store.store_name}
-                  className="w-full h-full object-cover"
+                  className="h-full w-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-[var(--color-accent)]/10 text-2xl md:text-3xl font-medium uppercase text-[var(--color-accent)]">
+                <div className="bg-[var(--color-accent)]/10 flex h-full w-full items-center justify-center text-2xl font-medium uppercase text-[var(--color-accent)] md:text-3xl">
                   {store.store_name.slice(0, 2)}
                 </div>
               )}
             </div>
             {store.is_pro && (
-              <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 px-2 py-1 rounded-full text-[9px] font-medium uppercase tracking-wider bg-[var(--color-accent)] text-white shadow-sm">
-                <Sparkles className="w-3 h-3" />
+              <span className="absolute -bottom-2 left-1/2 inline-flex -translate-x-1/2 items-center gap-1 rounded-full bg-[var(--color-accent)] px-2 py-1 text-[9px] font-medium uppercase tracking-wider text-white shadow-sm">
+                <Sparkles className="h-3 w-3" />
                 Pro
               </span>
             )}
@@ -138,38 +141,43 @@ export default function StorefrontHeader({ store, productsCount }: StorefrontHea
         </div>
 
         {/* Info */}
-        <div className="flex-1 min-w-0 space-y-3">
+        <div className="min-w-0 flex-1 space-y-3">
           <div className="space-y-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-2xl md:text-3xl font-medium uppercase tracking-tight text-[var(--color-foreground)]">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-2xl font-medium uppercase tracking-tight text-[var(--color-foreground)] md:text-3xl">
                 {store.store_name}
               </h1>
               {store.is_verified && (
                 <span
                   title="Verified seller"
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-normal bg-blue-500/10 text-blue-500"
+                  className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-normal text-blue-500"
                 >
-                  <BadgeCheck className="w-3 h-3" /> Verified
+                  <BadgeCheck className="h-3 w-3" /> Verified
                 </span>
               )}
             </div>
-            <p className="text-[var(--color-accent)] text-sm font-normal tracking-tight">
+            <p className="text-sm font-normal tracking-tight text-[var(--color-accent)]">
               @{store.store_link}
             </p>
           </div>
 
           {store.bio && (
-            <p className="text-[13px] text-[var(--color-foreground)]/80 leading-relaxed max-w-2xl">
+            <p className="text-[var(--color-foreground)]/80 max-w-2xl text-[13px] leading-relaxed">
               {store.bio}
             </p>
           )}
 
           <div className="flex flex-wrap gap-2 pt-1">
-            {locationLabel && (
-              <Chip icon={MapPin}>{locationLabel}</Chip>
+            {store.rating_count !== undefined && store.rating_count > 0 && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-amber-500">
+                <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
+                {store.rating_avg !== undefined ? store.rating_avg.toFixed(1) : '0.0'} ★ (
+                {store.rating_count})
+              </span>
             )}
+            {locationLabel && <Chip icon={MapPin}>{locationLabel}</Chip>}
             <Chip icon={ShoppingBag}>
-              {productsCount} {productsCount === 1 ? "Item" : "Items"}
+              {productsCount} {productsCount === 1 ? 'Item' : 'Items'}
             </Chip>
             {store.service_area && (
               <Chip icon={Truck}>{SERVICE_AREA_LABEL[store.service_area]}</Chip>
@@ -177,29 +185,27 @@ export default function StorefrontHeader({ store, productsCount }: StorefrontHea
             {store.avg_delivery_time && (
               <Chip icon={Clock}>Delivers in {DELIVERY_LABEL[store.avg_delivery_time]}</Chip>
             )}
-            {memberSince && (
-              <Chip icon={CalendarDays}>Member since {memberSince}</Chip>
-            )}
+            {memberSince && <Chip icon={CalendarDays}>Member since {memberSince}</Chip>}
           </div>
         </div>
 
         {/* Actions */}
-        <div className="w-full md:w-auto md:max-w-[200px] flex flex-row md:flex-col gap-2">
+        <div className="flex w-full flex-row gap-2 md:w-auto md:max-w-[200px] md:flex-col">
           <Button
             variant="primary"
-            className="flex-1 md:w-full gap-2 shadow-none"
+            className="flex-1 gap-2 shadow-none md:w-full"
             onClick={openWhatsapp}
           >
-            <MessageCircle className="w-4 h-4" />
+            <MessageCircle className="h-4 w-4" />
             Contact
           </Button>
           <Button
             variant="secondary"
-            className="flex-1 md:w-full gap-2 text-[11px] uppercase font-medium tracking-wider shadow-none"
+            className="flex-1 gap-2 text-[11px] font-medium uppercase tracking-wider shadow-none md:w-full"
             onClick={handleShare}
           >
-            {shared ? <Check className="w-3 h-3" /> : <Share2 className="w-3 h-3" />}
-            {shared ? "Copied" : "Share"}
+            {shared ? <Check className="h-3 w-3" /> : <Share2 className="h-3 w-3" />}
+            {shared ? 'Copied' : 'Share'}
           </Button>
         </div>
       </div>
@@ -209,8 +215,8 @@ export default function StorefrontHeader({ store, productsCount }: StorefrontHea
 
 function Chip({ icon: Icon, children }: { icon: any; children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--color-background)] border border-[var(--color-border)] text-[10px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
-      <Icon className="w-3 h-3" />
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-1.5 text-[10px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
+      <Icon className="h-3 w-3" />
       {children}
     </span>
   );

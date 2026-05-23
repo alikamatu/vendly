@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect, useMemo, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft,
   ShoppingCart,
@@ -15,19 +15,19 @@ import {
   Heart,
   Play,
   Ruler,
-} from "lucide-react";
-import { useRouter, useParams } from "next/navigation";
-import { productApi } from "@/lib/api/product";
-import Button from "@/components/ui/Button";
-import { useCart } from "@/lib/contexts/cart-context";
-import PriceBlock from "@/components/product-detail/PriceBlock";
-import SellerCard from "@/components/product-detail/SellerCard";
-import RelatedProducts from "@/components/product-detail/RelatedProducts";
-import DashboardHeader from "@/components/dashboard/DashboardHeader";
+} from 'lucide-react';
+import { useRouter, useParams } from 'next/navigation';
+import { productApi } from '@/lib/api/product';
+import Button from '@/components/ui/Button';
+import { useCart } from '@/lib/contexts/cart-context';
+import PriceBlock from '@/components/product-detail/PriceBlock';
+import SellerCard from '@/components/product-detail/SellerCard';
+import RelatedProducts from '@/components/product-detail/RelatedProducts';
+import DashboardHeader from '@/components/dashboard/DashboardHeader';
+import { RatingStars } from '@/components/reviews/rating-stars';
+import { ProductReviewsSection } from '@/components/reviews/product-reviews-section';
 
-type MediaItem =
-  | { type: "image"; url: string }
-  | { type: "video"; url: string };
+type MediaItem = { type: 'image'; url: string } | { type: 'video'; url: string };
 
 export default function ProductDetailsPage() {
   const router = useRouter();
@@ -45,7 +45,7 @@ export default function ProductDetailsPage() {
         const data = await productApi.getProductById(id as string);
         setProduct(data);
       } catch (err) {
-        console.error("Failed to fetch product", err);
+        console.error('Failed to fetch product', err);
       } finally {
         setIsLoading(false);
       }
@@ -54,6 +54,7 @@ export default function ProductDetailsPage() {
   }, [id]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentMediaIndex(0);
   }, [id]);
 
@@ -61,14 +62,12 @@ export default function ProductDetailsPage() {
     if (!product) return [];
     const items: MediaItem[] = [];
     if (product.video_url) {
-      items.push({ type: "video", url: product.video_url });
+      items.push({ type: 'video', url: product.video_url });
     }
-    const imageUrls = Array.isArray(product.image_urls)
-      ? product.image_urls
-      : [];
-    imageUrls.forEach((url: string) => items.push({ type: "image", url }));
+    const imageUrls = Array.isArray(product.image_urls) ? product.image_urls : [];
+    imageUrls.forEach((url: string) => items.push({ type: 'image', url }));
     if (items.length === 0) {
-      items.push({ type: "image", url: "/placeholder-product.png" });
+      items.push({ type: 'image', url: '/placeholder-product.png' });
     }
     return items;
   }, [product]);
@@ -79,39 +78,37 @@ export default function ProductDetailsPage() {
     if (!product?.attributes) return [];
     const raw = product.attributes;
     const obj =
-      typeof raw === "string"
+      typeof raw === 'string'
         ? (() => {
-          try {
-            return JSON.parse(raw);
-          } catch {
-            return {};
-          }
-        })()
-        : raw && typeof raw === "object"
+            try {
+              return JSON.parse(raw);
+            } catch {
+              return {};
+            }
+          })()
+        : raw && typeof raw === 'object'
           ? raw
           : {};
     return Object.entries(obj)
-      .filter(([, value]) => value != null && String(value).trim() !== "")
+      .filter(([, value]) => value != null && String(value).trim() !== '')
       .map(([key, value]) => [key, String(value).trim()]);
   }, [product]);
 
   const formatAttributeLabel = (key: string) => {
-    return key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    return key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
   };
 
   const handleAddToCart = () => {
     if (!product?.seller) return;
     const price =
-      typeof product.price === "number"
-        ? String(product.price)
-        : (product.price ?? "0");
+      typeof product.price === 'number' ? String(product.price) : (product.price ?? '0');
     addItem({
       productId: String(product.id),
-      title: product.title ?? "Product",
+      title: product.title ?? 'Product',
       price,
-      imageUrl: product.image_urls?.[0] ?? "/placeholder-product.png",
-      storeLink: product.seller.store_link ?? "",
-      storeName: product.seller.store_name ?? "Store",
+      imageUrl: product.image_urls?.[0] ?? '/placeholder-product.png',
+      storeLink: product.seller.store_link ?? '',
+      storeName: product.seller.store_name ?? 'Store',
       logoUrl: product.seller.logo_url ?? null,
     });
     setAddedFeedback(true);
@@ -126,11 +123,11 @@ export default function ProductDetailsPage() {
   };
 
   const handleShare = async () => {
-    if (typeof window === "undefined") return;
+    if (typeof window === 'undefined') return;
     const url = window.location.href;
     if ((navigator as any).share) {
       try {
-        await (navigator as any).share({ title: product?.title ?? "Vendly product", url });
+        await (navigator as any).share({ title: product?.title ?? 'Vendly product', url });
         return;
       } catch {
         // fall through
@@ -138,7 +135,7 @@ export default function ProductDetailsPage() {
     }
     try {
       await navigator.clipboard.writeText(url);
-    } catch { }
+    } catch {}
   };
 
   const togglePlay = () => {
@@ -153,11 +150,11 @@ export default function ProductDetailsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="bg-background flex min-h-screen items-center justify-center">
         <motion.div
           animate={{ scale: [1, 1.1, 1] }}
           transition={{ repeat: Infinity, duration: 1.5 }}
-          className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full"
+          className="border-primary h-12 w-12 rounded-full border-4 border-t-transparent"
         />
       </div>
     );
@@ -165,9 +162,9 @@ export default function ProductDetailsPage() {
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-background p-8 text-center flex flex-col items-center justify-center gap-4">
+      <div className="bg-background flex min-h-screen flex-col items-center justify-center gap-4 p-8 text-center">
         <h2 className="text-xl font-medium uppercase">Product not found</h2>
-        <Button onClick={() => router.push("/")}>Back to browse</Button>
+        <Button onClick={() => router.push('/')}>Back to browse</Button>
       </div>
     );
   }
@@ -176,56 +173,56 @@ export default function ProductDetailsPage() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="min-h-screen bg-background pb-20"
+      className="bg-background min-h-screen pb-20"
     >
       {/* Unified Navigation Header */}
-      <DashboardHeader title={product.title ?? "Product"} />
+      <DashboardHeader title={product.title ?? 'Product'} />
 
       {/* Mobile back + share + favorite strip — subtle, sits under the header */}
-      <div className="max-w-7xl mx-auto px-4 md:px-8 pt-4 flex items-center justify-between gap-2">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-4 pt-4 md:px-8">
         <button
           onClick={() => router.back()}
           aria-label="Go back"
-          className="inline-flex items-center gap-1.5 px-3 h-9 rounded-xl bg-surface hover:bg-border/20 transition-colors text-xs font-normal"
+          className="bg-surface hover:bg-border/20 inline-flex h-9 items-center gap-1.5 rounded-xl px-3 text-xs font-normal transition-colors"
         >
-          <ArrowLeft className="w-3.5 h-3.5" />
+          <ArrowLeft className="h-3.5 w-3.5" />
           Back
         </button>
         <div className="flex items-center gap-2">
           <button
             onClick={handleShare}
             aria-label="Share product"
-            className="p-2.5 rounded-xl bg-surface hover:bg-border/20 transition-colors"
+            className="bg-surface hover:bg-border/20 rounded-xl p-2.5 transition-colors"
           >
-            <Share2 className="w-4 h-4" />
+            <Share2 className="h-4 w-4" />
           </button>
           <button
             aria-label="Add to favorites"
-            className="p-2.5 rounded-xl bg-surface hover:bg-border/20 transition-colors text-red-500"
+            className="bg-surface hover:bg-border/20 rounded-xl p-2.5 text-red-500 transition-colors"
           >
-            <Heart className="w-4 h-4" />
+            <Heart className="h-4 w-4" />
           </button>
         </div>
       </div>
 
-      <main className="pt-6 md:pt-10 max-w-7xl mx-auto px-4 md:px-8 grid md:grid-cols-2 gap-8 lg:gap-16">
+      <main className="mx-auto grid max-w-7xl gap-8 px-4 pt-6 md:grid-cols-2 md:px-8 md:pt-10 lg:gap-16">
         {/* Left: Media Carousel (images + video) */}
         <div className="space-y-6">
-          <div className="relative aspect-[4/5] md:aspect-square bg-surface rounded-[2.5rem] overflow-hidden group">
+          <div className="bg-surface group relative aspect-[4/5] overflow-hidden rounded-[2.5rem] md:aspect-square">
             <AnimatePresence mode="wait">
               <motion.div
                 key={`${currentMedia?.type}-${currentMediaIndex}`}
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
-                className="w-full h-full"
+                className="h-full w-full"
               >
-                {currentMedia?.type === "video" ? (
-                  <div className="relative w-full h-full cursor-pointer" onClick={togglePlay}>
+                {currentMedia?.type === 'video' ? (
+                  <div className="relative h-full w-full cursor-pointer" onClick={togglePlay}>
                     <video
                       ref={videoRef}
                       src={currentMedia.url}
-                      className="w-full h-full object-cover"
+                      className="h-full w-full object-cover"
                       autoPlay
                       muted
                       loop
@@ -235,12 +232,10 @@ export default function ProductDetailsPage() {
                 ) : (
                   <img
                     src={
-                      currentMedia?.type === "image"
-                        ? currentMedia.url
-                        : "/placeholder-product.png"
+                      currentMedia?.type === 'image' ? currentMedia.url : '/placeholder-product.png'
                     }
                     alt={product.title}
-                    className="w-full h-full object-cover"
+                    className="h-full w-full object-cover"
                   />
                 )}
               </motion.div>
@@ -250,71 +245,63 @@ export default function ProductDetailsPage() {
               <>
                 <button
                   onClick={() =>
-                    setCurrentMediaIndex((prev) =>
-                      prev > 0 ? prev - 1 : mediaItems.length - 1,
-                    )
+                    setCurrentMediaIndex((prev) => (prev > 0 ? prev - 1 : mediaItems.length - 1))
                   }
-                  className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-2xl bg-white/90 text-black shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 rounded-2xl bg-white/90 p-3 text-black opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
                 >
-                  <ChevronLeft className="w-5 h-5" />
+                  <ChevronLeft className="h-5 w-5" />
                 </button>
                 <button
                   onClick={() =>
-                    setCurrentMediaIndex((prev) =>
-                      prev < mediaItems.length - 1 ? prev + 1 : 0,
-                    )
+                    setCurrentMediaIndex((prev) => (prev < mediaItems.length - 1 ? prev + 1 : 0))
                   }
-                  className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-2xl bg-white/90 text-black shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 rounded-2xl bg-white/90 p-3 text-black opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
                 >
-                  <ChevronRight className="w-5 h-5" />
+                  <ChevronRight className="h-5 w-5" />
                 </button>
               </>
             )}
 
             {/* Media indicators */}
-            <div className="absolute bottom-6 inset-x-0 flex justify-center gap-2">
+            <div className="absolute inset-x-0 bottom-6 flex justify-center gap-2">
               {mediaItems.map((_, idx) => (
                 <div
                   key={idx}
-                  className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentMediaIndex
-                    ? "w-8 bg-white"
-                    : "w-1.5 bg-white/50"
-                    }`}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    idx === currentMediaIndex ? 'w-8 bg-white' : 'w-1.5 bg-white/50'
+                  }`}
                 />
               ))}
             </div>
           </div>
 
           {/* Thumbnails (images + video) */}
-          <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+          <div className="scrollbar-hide flex gap-4 overflow-x-auto pb-2">
             {mediaItems.map((item, idx) => (
               <button
                 key={idx}
                 onClick={() => setCurrentMediaIndex(idx)}
-                className={`relative w-20 h-20 rounded-2xl overflow-hidden border-2 transition-all shrink-0 ${idx === currentMediaIndex
-                  ? "border-primary scale-105"
-                  : "border-transparent opacity-50"
-                  }`}
+                className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl border-2 transition-all ${
+                  idx === currentMediaIndex
+                    ? 'border-primary scale-105'
+                    : 'border-transparent opacity-50'
+                }`}
               >
-                {item.type === "video" ? (
+                {item.type === 'video' ? (
                   <>
                     <video
                       src={item.url}
-                      className="w-full h-full object-cover"
+                      className="h-full w-full object-cover"
                       muted
                       preload="metadata"
                       playsInline
                     />
                     <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                      <Play className="w-8 h-8 text-white fill-white" />
+                      <Play className="h-8 w-8 fill-white text-white" />
                     </div>
                   </>
                 ) : (
-                  <img
-                    src={item.url}
-                    alt=""
-                    className="w-full h-full object-cover"
-                  />
+                  <img src={item.url} alt="" className="h-full w-full object-cover" />
                 )}
               </button>
             ))}
@@ -331,23 +318,36 @@ export default function ProductDetailsPage() {
           >
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-primary text-[10px] font-medium uppercase tracking-wider">
-                <Sparkles className="w-3 h-3 inline mr-1" /> Trending Now
+                <Sparkles className="mr-1 inline h-3 w-3" /> Trending Now
               </span>
               {product.category && (
-                <span className="px-3 py-1 rounded-full bg-surface border border-border/50 text-[10px] font-normal text-muted uppercase tracking-wider">
+                <span className="bg-surface border-border/50 text-muted rounded-full border px-3 py-1 text-[10px] font-normal uppercase tracking-wider">
                   {product.category}
                 </span>
               )}
             </div>
-            <h1 className="text-xl font-medium tracking-tighter leading-tight uppercase">
-              {product.title ?? "Product"}
+            <h1 className="text-xl font-medium uppercase leading-tight tracking-tighter">
+              {product.title ?? 'Product'}
             </h1>
+            <a
+              href="#reviews"
+              aria-label="Jump to reviews"
+              className="hover:bg-foreground/5 -mt-1 inline-flex w-fit items-center gap-1.5 rounded-md px-1 py-0.5"
+            >
+              <RatingStars
+                value={typeof product.rating_avg === 'number' ? product.rating_avg : 0}
+                count={typeof product.rating_count === 'number' ? product.rating_count : 0}
+                size={14}
+                showValue
+                showCount
+              />
+            </a>
             <PriceBlock
               price={product.price}
               originalPrice={product.original_price}
-              currency={product.currency ? `${product.currency} ` : "GH₵"}
+              currency={product.currency ? `${product.currency} ` : 'GH₵'}
               quantityAvailable={
-                typeof product.quantity_available === "number"
+                typeof product.quantity_available === 'number'
                   ? product.quantity_available
                   : undefined
               }
@@ -361,11 +361,11 @@ export default function ProductDetailsPage() {
             transition={{ delay: 0.3 }}
             className="space-y-4"
           >
-            <div className="flex items-center gap-2 text-[10px] font-normal text-muted uppercase tracking-wider">
-              <Info className="w-4 h-4" /> Description
+            <div className="text-muted flex items-center gap-2 text-[10px] font-normal uppercase tracking-wider">
+              <Info className="h-4 w-4" /> Description
             </div>
-            <p className="text-sm font-medium text-muted leading-relaxed">
-              {product.description || "No description provided for this item."}
+            <p className="text-muted text-sm font-medium leading-relaxed">
+              {product.description || 'No description provided for this item.'}
             </p>
           </motion.div>
 
@@ -377,19 +377,19 @@ export default function ProductDetailsPage() {
               transition={{ delay: 0.35 }}
               className="space-y-4"
             >
-              <div className="flex items-center gap-2 text-[10px] font-normal text-muted uppercase tracking-wider">
-                <Ruler className="w-4 h-4" /> Details
+              <div className="text-muted flex items-center gap-2 text-[10px] font-normal uppercase tracking-wider">
+                <Ruler className="h-4 w-4" /> Details
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {attributeEntries.map(([key, value]) => (
                   <div
                     key={key}
-                    className="flex flex-wrap items-baseline justify-between gap-2 py-2 px-4 rounded-xl bg-surface/50 border border-border/50"
+                    className="bg-surface/50 border-border/50 flex flex-wrap items-baseline justify-between gap-2 rounded-xl border px-4 py-2"
                   >
-                    <span className="text-[10px] font-normal text-muted uppercase tracking-wider">
+                    <span className="text-muted text-[10px] font-normal uppercase tracking-wider">
                       {formatAttributeLabel(key)}
                     </span>
-                    <span className="text-sm font-normal text-foreground truncate max-w-[60%]">
+                    <span className="text-foreground max-w-[60%] truncate text-sm font-normal">
                       {value}
                     </span>
                   </div>
@@ -409,9 +409,9 @@ export default function ProductDetailsPage() {
               {product.tags.map((tag: string) => (
                 <span
                   key={tag}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-surface border border-border/50 rounded-xl text-[10px] font-normal text-muted hover:text-foreground hover:border-primary/30 transition-all cursor-default uppercase"
+                  className="bg-surface border-border/50 text-muted hover:text-foreground hover:border-primary/30 flex cursor-default items-center gap-1.5 rounded-xl border px-4 py-2 text-[10px] font-normal uppercase transition-all"
                 >
-                  <Tag className="w-3 h-3" /> {tag}
+                  <Tag className="h-3 w-3" /> {tag}
                 </span>
               ))}
             </motion.div>
@@ -433,11 +433,11 @@ export default function ProductDetailsPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
-            className="flex flex-col sm:flex-row gap-4 pt-4"
+            className="flex flex-col gap-4 pt-4 sm:flex-row"
           >
             <Button
               onClick={handleAddToCart}
-              className="h-16 flex-1 rounded-[2rem] font-medium uppercase tracking-wider text-xs gap-3"
+              className="h-16 flex-1 gap-3 rounded-[2rem] text-xs font-medium uppercase tracking-wider"
             >
               {addedFeedback ? (
                 <motion.span
@@ -446,7 +446,7 @@ export default function ProductDetailsPage() {
                   animate={{ scale: 1 }}
                   className="flex items-center gap-2"
                 >
-                  <Check className="w-4 h-4" /> Added to cart
+                  <Check className="h-4 w-4" /> Added to cart
                 </motion.span>
               ) : (
                 <motion.span
@@ -455,7 +455,7 @@ export default function ProductDetailsPage() {
                   animate={{ scale: 1 }}
                   className="flex items-center gap-2"
                 >
-                  <ShoppingCart className="w-4 h-4" /> Add to Cart
+                  <ShoppingCart className="h-4 w-4" /> Add to Cart
                 </motion.span>
               )}
             </Button>
@@ -463,10 +463,9 @@ export default function ProductDetailsPage() {
               variant="secondary"
               onClick={handleBuyNow}
               disabled={
-                typeof product.quantity_available === "number" &&
-                product.quantity_available <= 0
+                typeof product.quantity_available === 'number' && product.quantity_available <= 0
               }
-              className="h-16 flex-1 rounded-[2rem] font-medium uppercase tracking-wider text-xs bg-black text-primary border-none hover:bg-black/90 group"
+              className="text-primary group h-16 flex-1 rounded-[2rem] border-none bg-black text-xs font-medium uppercase tracking-wider hover:bg-black/90"
             >
               Buy Now
             </Button>
@@ -474,12 +473,18 @@ export default function ProductDetailsPage() {
         </div>
       </main>
 
-      {/* Related products */}
-      <div className="max-w-7xl mx-auto px-4 md:px-8 pb-24">
-        <RelatedProducts
-          category={product.category}
-          excludeId={String(product.id)}
+      {/* Reviews Section */}
+      <div className="border-border/40 mx-auto max-w-7xl border-t px-4 py-16 md:px-8">
+        <ProductReviewsSection
+          productId={String(product.id)}
+          productTitle={product.title ?? 'Product'}
+          sellerUserId={product.seller?.user_id}
         />
+      </div>
+
+      {/* Related products */}
+      <div className="mx-auto max-w-7xl px-4 pb-24 md:px-8">
+        <RelatedProducts category={product.category} excludeId={String(product.id)} />
       </div>
     </motion.div>
   );
