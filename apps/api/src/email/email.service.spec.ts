@@ -51,7 +51,7 @@ describe('EmailService', () => {
       'John Doe',
     );
     expect(response).toBeDefined();
-    if ('data' in response && response.data) {
+    if (response && 'data' in response && response.data) {
       expect(response.data.id).toBe('test-id');
     }
   });
@@ -62,7 +62,7 @@ describe('EmailService', () => {
       'token123',
     );
     expect(response).toBeDefined();
-    if ('data' in response && response.data) {
+    if (response && 'data' in response && response.data) {
       expect(response.data.id).toBe('test-id');
     }
   });
@@ -73,7 +73,7 @@ describe('EmailService', () => {
       'token123',
     );
     expect(response).toBeDefined();
-    if ('data' in response && response.data) {
+    if (response && 'data' in response && response.data) {
       expect(response.data.id).toBe('test-id');
     }
   });

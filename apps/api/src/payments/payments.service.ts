@@ -187,13 +187,29 @@ export class PaymentsService {
       }
       // PRO_DURATION_DAYS lives in subscription module; avoid import cycle by hardcoding 30 here.
       const PRO_DURATION_DAYS = 30;
-      await this.paymentsRepository.upgradeUserToPro(
+      const wasPro =
+        !!user.is_pro &&
+        !!user.pro_expires_at &&
+        user.pro_expires_at.getTime() > Date.now();
+      const updated = await this.paymentsRepository.upgradeUserToPro(
         user.id,
         PRO_DURATION_DAYS,
       );
       this.logger.log(
         `Pro subscription activated via webhook for user=${user.id} ref=${reference}`,
       );
+      // Fire-and-forget activation email
+      this.emailService
+        .sendProActivatedEmail(user.email, {
+          name: user.full_name || 'there',
+          proExpiresAt: updated.pro_expires_at ?? new Date(),
+          amountPaid: Number(data?.amount ?? 0) / 100 || 57,
+          reference,
+          isExtension: wasPro,
+        })
+        .catch((err) =>
+          this.logger.error(`Failed to send Pro activation email: ${err}`),
+        );
       return;
     }
 
@@ -270,76 +286,106 @@ export class PaymentsService {
     const order = await this.paymentsRepository.findOrderWithDetails(orderId);
     if (!order) return;
 
-    const items = order.items.map((item) => ({
+    const orderNumber = `ORD-${order.id.toString().slice(-6).toUpperCase()}`;
+    const customerName =
+      order.customer_name || order.buyer?.full_name || 'Customer';
+
+    // Buyer-facing items: all line items
+    const buyerItems = order.items.map((item) => ({
       title: item.product?.title || 'Unknown Product',
       quantity: item.quantity,
       price: item.price.toString(),
+      image_url: item.product?.image_urls?.[0] || null,
     }));
 
-    const orderData = {
-      orderNumber: `ORD-${order.id.toString().slice(-6).toUpperCase()}`,
-      customerName: order.customer_name || order.buyer?.full_name || 'Customer',
-      items,
+    const buyerOrderData = {
+      orderNumber,
+      date: order.created_at,
+      customerName,
+      customerEmail: order.buyer?.email,
+      customerPhone: order.customer_phone || undefined,
+      deliveryMethod: order.delivery_method || undefined,
+      deliveryLocation: order.delivery_location || undefined,
+      deliveryNotes: order.delivery_notes || undefined,
+      storeName:
+        // Buyer may have items from multiple stores; surface the first seller name
+        order.items[0]?.product?.seller?.store_name || 'Vendly seller',
+      storeLink: order.items[0]?.product?.seller?.store_link || undefined,
+      items: buyerItems,
+      subtotal: order.total_amount.toString(),
       total: order.total_amount.toString(),
-      date: new Date(order.created_at).toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      }),
+      paymentMethod: order.transaction?.provider || 'Paystack',
+      paymentReference: order.transaction?.reference || undefined,
     };
 
-    // 1. Send Order Confirmation to Buyer
+    // 1. Buyer order confirmation
     if (order.buyer?.email) {
       this.emailService
-        .sendOrderConfirmation(order.buyer.email, orderData)
-        .catch((err) => {
+        .sendOrderConfirmation(order.buyer.email, buyerOrderData)
+        .catch((err) =>
           this.logger.error(
-            `Failed to send order confirmation to buyer: ${order.buyer?.email}`,
+            `Failed to send order confirmation to ${order.buyer?.email}`,
             err,
-          );
-        });
+          ),
+        );
     }
 
-    // 2. Group items by seller and send notifications
-    const sellerItemsMap = new Map<string, typeof items>();
-    const sellerEmailMap = new Map<string, string>();
+    // 2. Per-seller alerts — each seller sees only their items + a per-store
+    //    total, so the email reads as a real order to that store.
+    const sellerGroups = new Map<
+      string,
+      {
+        email: string;
+        storeName: string;
+        storeLink?: string;
+        items: typeof buyerItems;
+      }
+    >();
 
     for (const item of order.items) {
-      const sellerUser = item.product?.seller?.user;
+      const seller = item.product?.seller;
+      const sellerUser = seller?.user;
       if (!sellerUser?.email) continue;
 
-      const sellerEmail = sellerUser.email;
-      let sellerItems = sellerItemsMap.get(sellerEmail);
-      if (!sellerItems) {
-        sellerItems = [];
-        sellerItemsMap.set(sellerEmail, sellerItems);
-        sellerEmailMap.set(sellerEmail, sellerEmail);
+      const key = sellerUser.email;
+      let group = sellerGroups.get(key);
+      if (!group) {
+        group = {
+          email: sellerUser.email,
+          storeName: seller?.store_name || 'Your store',
+          storeLink: seller?.store_link,
+          items: [],
+        };
+        sellerGroups.set(key, group);
       }
-
-      sellerItems.push({
+      group.items.push({
         title: item.product?.title || 'Unknown Product',
         quantity: item.quantity,
         price: item.price.toString(),
+        image_url: item.product?.image_urls?.[0] || null,
       });
     }
 
-    for (const [email, sellerItems] of sellerItemsMap.entries()) {
-      const sellerOrderData = {
-        ...orderData,
-        items: sellerItems,
-        total: sellerItems
-          .reduce((sum, item) => sum + Number(item.price) * item.quantity, 0)
-          .toFixed(2),
-      };
-
+    for (const group of sellerGroups.values()) {
+      const sellerTotal = group.items.reduce(
+        (sum, it) => sum + Number(it.price) * it.quantity,
+        0,
+      );
       this.emailService
-        .sendSellerOrderNotification(email, sellerOrderData)
-        .catch((err) => {
+        .sendSellerOrderNotification(group.email, {
+          ...buyerOrderData,
+          storeName: group.storeName,
+          storeLink: group.storeLink,
+          items: group.items,
+          subtotal: sellerTotal.toFixed(2),
+          total: sellerTotal.toFixed(2),
+        })
+        .catch((err) =>
           this.logger.error(
-            `Failed to send order notification to seller: ${email}`,
+            `Failed to send seller notification to ${group.email}`,
             err,
-          );
-        });
+          ),
+        );
     }
   }
 

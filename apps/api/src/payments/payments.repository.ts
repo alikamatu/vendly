@@ -78,6 +78,7 @@ export class PaymentsRepository {
       where: { id: orderId },
       include: {
         buyer: true,
+        transaction: true,
         items: {
           include: {
             product: {
@@ -105,7 +106,13 @@ export class PaymentsRepository {
   async findUserByEmail(email: string) {
     return this.prisma.user.findUnique({
       where: { email },
-      select: { id: true, email: true, pro_expires_at: true, is_pro: true },
+      select: {
+        id: true,
+        email: true,
+        full_name: true,
+        pro_expires_at: true,
+        is_pro: true,
+      },
     });
   }
 

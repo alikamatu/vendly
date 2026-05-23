@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from '../email/email.service';
 import {
   ADMIN_ORDER_STATUSES,
   AdminOrderListQueryDto,
@@ -13,7 +14,10 @@ import {
 
 @Injectable()
 export class AdminOrderService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private emailService: EmailService,
+  ) {}
 
   async list(query: AdminOrderListQueryDto) {
     const page = Math.max(parseInt(query.page || '1', 10) || 1, 1);
@@ -167,7 +171,19 @@ export class AdminOrderService {
 
     const existing = await this.prisma.order.findUnique({
       where: { id },
-      select: { id: true, status: true },
+      select: {
+        id: true,
+        status: true,
+        total_amount: true,
+        customer_name: true,
+        buyer: { select: { email: true, full_name: true } },
+        items: {
+          take: 1,
+          select: {
+            product: { select: { seller: { select: { store_name: true } } } },
+          },
+        },
+      },
     });
     if (!existing) {
       throw new NotFoundException('Order not found');
@@ -184,6 +200,27 @@ export class AdminOrderService {
       where: { id },
       data: { status: dto.status },
     });
+
+    // Notify buyer about the status change. Fire-and-forget.
+    if (existing.buyer?.email && existing.status !== dto.status) {
+      const orderNumber = `ORD-${id.slice(-6).toUpperCase()}`;
+      const storeName =
+        existing.items[0]?.product?.seller?.store_name || 'Vendly seller';
+      this.emailService
+        .sendOrderStatusUpdate(existing.buyer.email, {
+          orderNumber,
+          customerName:
+            existing.customer_name || existing.buyer.full_name || 'Customer',
+          storeName,
+          status: dto.status as any,
+          total: existing.total_amount.toString(),
+          currency: 'GHS',
+          reason: dto.reason ?? null,
+        })
+        .catch((err) =>
+          console.error('Failed to send order status email:', err),
+        );
+    }
 
     return {
       message: 'Order status updated',

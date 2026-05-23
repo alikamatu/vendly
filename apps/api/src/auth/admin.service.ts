@@ -8,6 +8,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ApproveVerificationDto } from './dto/approve-verification.dto';
 import { AdminQueryDto, ApprovalStatusFilter } from './dto/admin-query.dto';
 import { PaymentsService } from '../payments/payments.service';
+import { EmailService } from '../email/email.service';
 
 import {
   UpdateUserRoleDto,
@@ -20,6 +21,7 @@ export class AdminService {
   constructor(
     private prisma: PrismaService,
     private paymentsService: PaymentsService,
+    private emailService: EmailService,
   ) {}
 
   async getAllTransactions(query: AdminQueryDto) {
@@ -420,19 +422,38 @@ export class AdminService {
         : []),
     ]);
 
-    // Automatically create Paystack subaccount if approved
+    // Automatically create Paystack subaccount + notify seller via email
+    const user = await this.prisma.user.findUnique({
+      where: { id: approval.user_id },
+      select: { email: true, full_name: true },
+    });
+
     if (dto.status === 'APPROVED') {
       const seller = await this.prisma.sellerProfile.findUnique({
         where: { user_id: approval.user_id },
       });
 
       if (seller) {
-        // Fire and forget or handle error? The task says "Failure does not crash system".
-        // createSubaccount already handles its own errors and retries.
+        // createSubaccount handles its own errors + retries.
         this.paymentsService.createSubaccount(seller.id).catch((err) => {
           console.error('Failed to trigger subaccount creation:', err);
         });
       }
+
+      // Approval email — store_link comes from the seller profile if it exists.
+      if (user?.email) {
+        this.emailService
+          .sendSellerApprovedEmail(
+            user.email,
+            user.full_name,
+            seller?.store_link || '',
+          )
+          .catch((err) => console.error('Failed to send approval email:', err));
+      }
+    } else if (dto.status === 'REJECTED' && user?.email) {
+      this.emailService
+        .sendSellerRejectedEmail(user.email, user.full_name, dto.reason)
+        .catch((err) => console.error('Failed to send rejection email:', err));
     }
 
     return {
