@@ -169,6 +169,7 @@ export class OrderService {
           include: {
             product: {
               select: {
+                id: true,
                 title: true,
                 image_urls: true,
                 video_url: true,
@@ -246,6 +247,7 @@ export class OrderService {
           include: {
             product: {
               select: {
+                id: true,
                 title: true,
                 image_urls: true,
                 video_url: true,
