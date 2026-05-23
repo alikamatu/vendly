@@ -3,11 +3,13 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1000';
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    const msg = Array.isArray(errorData.message) ? errorData.message[0] : errorData.message || 'Something went wrong';
+    const msg = Array.isArray(errorData.message)
+      ? errorData.message[0]
+      : errorData.message || 'Something went wrong';
     throw new Error(msg);
   }
   const json = await response.json();
-  return (json && typeof json === 'object' && 'data' in json) ? json.data : json;
+  return json && typeof json === 'object' && 'data' in json ? json.data : json;
 }
 
 function authHeaders(token: string) {
@@ -72,7 +74,11 @@ export const authApi = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token }),
     });
-    return handleResponse<{ message: string }>(res);
+    return handleResponse<{
+      message: string;
+      access_token?: string;
+      user?: any;
+    }>(res);
   },
 
   async forgotPassword(email: string) {

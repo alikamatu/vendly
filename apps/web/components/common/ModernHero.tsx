@@ -1,79 +1,80 @@
-"use client";
+'use client';
 
-import { motion } from "framer-motion";
-import { ArrowRight, Zap, ShieldCheck } from "lucide-react";
-import Link from "next/link";
-import Button from "../ui/Button";
-import { useAuth } from "@/lib/contexts/auth-context";
-import Container from "./Container";
+import { motion } from 'framer-motion';
+import { ArrowRight } from 'lucide-react';
+import Link from 'next/link';
+import Button from '../ui/Button';
+import { useAuth } from '@/lib/contexts/auth-context';
+import Container from './Container';
 
 export default function ModernHero() {
   const { user } = useAuth();
 
   // Only display if user is not a seller
-  if (user?.role === "SELLER") return null;
+  if (user?.role === 'SELLER') return null;
 
   return (
-    <section className="relative w-full pt-4 pb-12 md:pt-8 md:pb-24 overflow-hidden bg-background">
+    <section className="bg-background relative w-full overflow-hidden pb-12 pt-4 md:pb-24 md:pt-8">
       <Container>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-          className="relative overflow-hidden rounded-[2.5rem] md:rounded-[4rem] bg-zinc-900"
+          transition={{ duration: 0.8, ease: 'easeOut' }}
+          className="relative overflow-hidden rounded-[2.5rem] bg-zinc-900 md:rounded-[4rem]"
         >
           {/* Decorative Gradients */}
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/20 blur-[120px] -z-10 translate-x-1/2 -translate-y-1/2" />
-          <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-blue-500/10 blur-[100px] -z-10 -translate-x-1/4 translate-y-1/4" />
+          <div className="bg-primary/20 absolute right-0 top-0 -z-10 h-[500px] w-[500px] -translate-y-1/2 translate-x-1/2 blur-[120px]" />
+          <div className="absolute bottom-0 left-0 -z-10 h-[300px] w-[300px] -translate-x-1/4 translate-y-1/4 bg-blue-500/10 blur-[100px]" />
 
-          <div className="relative z-10 px-6 py-16 md:px-16 md:py-24 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center bg-[url('/images/45757.jpg')] bg-cover bg-bottom">
+          <div className="relative z-10 grid grid-cols-1 items-center gap-12 bg-[url('/images/423323.jpeg')] bg-cover bg-bottom px-6 py-16 md:px-16 md:py-24 lg:grid-cols-2">
             {/* Left Side: Content */}
             <div className="space-y-8 text-center lg:text-left">
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.2 }}
-                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 text-white text-[10px] uppercase tracking-wider font-normal backdrop-blur-sm"
+                className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1.5 text-[10px] font-normal uppercase tracking-wider text-black backdrop-blur-sm"
               >
-                <span className="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="inline-flex h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
                 Verified marketplace for modern businesses
               </motion.div>
 
               <div className="space-y-5">
-                <h1 className="text-4xl md:text-5xl lg:text-6xl tracking-tight leading-[1.05] text-white">
-                  Sell smarter,<br />
+                <h1 className="text-4xl leading-[1.05] tracking-tight text-black md:text-5xl lg:text-6xl">
+                  Sell smarter,
+                  <br />
                   <span className="text-primary">not harder.</span>
                 </h1>
-                <p className="text-base md:text-lg text-white/80 max-w-lg mx-auto lg:mx-0 leading-relaxed">
-                  Tired of running your business in DMs? Vendly gives young
-                  entrepreneurs and small businesses a premium storefront in
-                  seconds — professional, fast, and built to grow.
+                <p className="mx-auto max-w-lg text-base leading-relaxed text-black/80 md:text-lg lg:mx-0">
+                  Tired of running your business in DMs? Vendly gives young entrepreneurs and small
+                  businesses a premium storefront in seconds — professional, fast, and built to
+                  grow.
                 </p>
               </div>
 
-              <div className="flex flex-col sm:flex-row justify-center lg:justify-start gap-3 pt-1">
+              <div className="flex flex-col justify-center gap-3 pt-1 sm:flex-row lg:justify-start">
                 <Link href="/seller-verification">
                   <Button
                     variant="primary"
                     size="lg"
-                    className="w-full sm:w-auto rounded-xl px-8 border-none group shadow-xl shadow-primary/20"
+                    className="shadow-primary/20 group w-full rounded-xl border-none px-8 shadow-xl sm:w-auto"
                   >
                     Get started free
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                   </Button>
                 </Link>
                 <Link href="/products" className="w-full sm:w-auto">
                   <Button
                     variant="ghost"
                     size="lg"
-                    className="w-full sm:w-auto rounded-xl text-white hover:bg-white/10 border border-white/15 bg-transparent"
+                    className="w-full rounded-xl border border-white/15 bg-black text-white hover:bg-white/10 sm:w-auto"
                   >
                     Browse market
                   </Button>
                 </Link>
               </div>
 
-              {/* Social proof + trust signals */}
+              {/* Social proof + trust signals
               <div className="pt-8 space-y-4">
                 <div className="flex items-center gap-3 justify-center lg:justify-start">
                   <div className="flex -space-x-2">
@@ -86,11 +87,11 @@ export default function ModernHero() {
                       ),
                     )}
                   </div>
-                  <p className="text-[11px] text-white font-normal">
+                  <p className="text-[11px] text-black font-normal">
                     <span className="text-primary">1,000+</span> entrepreneurs trust Vendly
                   </p>
                 </div>
-                <div className="flex flex-wrap justify-center lg:justify-start gap-x-5 gap-y-2 text-white/80">
+                <div className="flex flex-wrap justify-center lg:justify-start gap-x-5 gap-y-2 text-black/80">
                   {[
                     { text: "Live in 60 seconds", icon: Zap },
                     { text: "Paystack secured", icon: ShieldCheck },
@@ -102,74 +103,10 @@ export default function ModernHero() {
                     </div>
                   ))}
                 </div>
-              </div>
+              </div> */}
             </div>
 
             {/* Right Side: Minimal Visual */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 1, delay: 0.4 }}
-              className="hidden lg:block relative"
-            >
-              <div className="relative w-full aspect-square max-w-[440px] ml-auto">
-                {/* Visual Card 1 — premium storefront */}
-                <motion.div
-                  animate={{ y: [0, -10, 0] }}
-                  transition={{
-                    duration: 4,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                  className="absolute top-0 right-0 w-64 p-6 rounded-3xl bg-white/10 border border-white/15 backdrop-blur-xl shadow-2xl"
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center text-primary">
-                      <Zap className="w-4 h-4" />
-                    </div>
-                    <span className="text-[9px] font-medium uppercase tracking-wider text-emerald-400">
-                      ● Live
-                    </span>
-                  </div>
-                  <h3 className="text-white text-sm font-medium uppercase tracking-tight">
-                    Storefront ready in seconds
-                  </h3>
-                  <p className="text-white/70 text-[11px] mt-2 leading-relaxed">
-                    Branded shop, custom URL, mobile-first checkout. No code, no plugins.
-                  </p>
-                </motion.div>
-
-                {/* Visual Card 2 — sales dashboard preview */}
-                <motion.div
-                  animate={{ y: [0, 10, 0] }}
-                  transition={{
-                    duration: 4,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                    delay: 1,
-                  }}
-                  className="absolute bottom-4 left-0 w-64 p-6 rounded-3xl bg-primary shadow-2xl shadow-primary/30"
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="w-10 h-10 rounded-xl bg-black/15 flex items-center justify-center text-white">
-                      <ArrowRight className="w-4 h-4" />
-                    </div>
-                    <span className="text-[9px] font-medium uppercase tracking-wider text-white/80">
-                      Today
-                    </span>
-                  </div>
-                  <h3 className="text-white text-sm font-medium uppercase tracking-tight">
-                    GH₵12,480 in sales
-                  </h3>
-                  <p className="text-white/85 text-[11px] mt-2 leading-relaxed">
-                    +24% vs last week. Real-time analytics built for ambitious operators.
-                  </p>
-                </motion.div>
-
-                {/* Ambient glow behind cards */}
-                <div className="absolute inset-0 bg-primary/5 blur-[80px] -z-10 rounded-full" />
-              </div>
-            </motion.div>
           </div>
         </motion.div>
       </Container>

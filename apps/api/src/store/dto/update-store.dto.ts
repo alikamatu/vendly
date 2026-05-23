@@ -58,19 +58,26 @@ export class UpdateStoreDto {
   @IsOptional()
   account_number?: string;
 
-  @IsNumber()
+  @IsString()
   @IsOptional()
-  location_id?: number;
+  location_id?: any;
 
   @IsString()
   @IsOptional()
   area?: string;
 
-  @IsArray()
   @IsOptional()
-  accepted_payment_methods?: string[];
+  accepted_payment_methods?: any;
 
   @IsString()
   @IsOptional()
   payment_timing?: any;
+
+  @IsString()
+  @IsOptional()
+  service_area?: any;
+
+  @IsString()
+  @IsOptional()
+  avg_delivery_time?: any;
 }

@@ -129,7 +129,11 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: {
-        seller_profile: true,
+        seller_profile: {
+          include: {
+            structured_location: true,
+          },
+        },
         admin_approvals: {
           orderBy: { created_at: 'desc' },
           take: 1,
@@ -159,7 +163,29 @@ export class AuthService {
             store_link: user.seller_profile.store_link,
             bio: user.seller_profile.bio,
             logo_url: user.seller_profile.logo_url,
+            location: user.seller_profile.location,
+            location_id: user.seller_profile.location_id,
+            area: user.seller_profile.area,
+            delivery_policies: user.seller_profile.delivery_policies,
+            business_hours: user.seller_profile.business_hours,
+            whatsapp_number: user.seller_profile.whatsapp_number,
+            social_links: user.seller_profile.social_links,
+            accepted_payment_methods:
+              user.seller_profile.accepted_payment_methods,
+            payment_timing: user.seller_profile.payment_timing,
+            service_area: user.seller_profile.service_area,
+            avg_delivery_time: user.seller_profile.avg_delivery_time,
+            bank_name: user.seller_profile.bank_name,
+            bank_code: user.seller_profile.bank_code,
+            account_number: user.seller_profile.account_number,
             onboarding_completed: user.seller_profile.onboarding_completed,
+            structured_location: user.seller_profile.structured_location
+              ? {
+                  id: user.seller_profile.structured_location.id,
+                  region: user.seller_profile.structured_location.region,
+                  city: user.seller_profile.structured_location.city,
+                }
+              : null,
           }
         : null,
       created_at: user.created_at,
@@ -263,6 +289,13 @@ export class AuthService {
         email_verification_token: dto.token,
         email_verification_expires: { gt: new Date() },
       },
+      include: {
+        seller_profile: true,
+        admin_approvals: {
+          orderBy: { created_at: 'desc' },
+          take: 1,
+        },
+      },
     });
 
     if (!user) {
@@ -285,7 +318,36 @@ export class AuthService {
         console.error('Failed to send welcome email after verification', err);
       });
 
-    return { message: 'Email verified successfully. You can now log in.' };
+    const payload = {
+      sub: user.id.toString(),
+      email: user.email,
+      role: user.role,
+    };
+    const latestApproval = user.admin_approvals[0] || null;
+
+    return {
+      message: 'Email verified successfully. You can now log in.',
+      access_token: this.jwtService.sign(payload),
+      user: {
+        id: user.id.toString(),
+        full_name: user.full_name,
+        email: user.email,
+        role: user.role,
+        is_verified: true,
+        approval_status: latestApproval?.status || null,
+        has_verification_doc: !!user.verification_doc,
+        seller_profile: user.seller_profile
+          ? {
+              id: user.seller_profile.id.toString(),
+              store_name: user.seller_profile.store_name,
+              store_link: user.seller_profile.store_link,
+              bio: user.seller_profile.bio,
+              logo_url: user.seller_profile.logo_url,
+              onboarding_completed: user.seller_profile.onboarding_completed,
+            }
+          : null,
+      },
+    };
   }
 
   async forgotPassword(dto: ForgotPasswordDto) {

@@ -19,11 +19,25 @@ export interface User {
     bio: string | null;
     logo_url: string | null;
     location: string | null;
+    location_id: string | null;
+    area: string | null;
     delivery_policies: string | null;
     business_hours: string | null;
     whatsapp_number: string | null;
     social_links: any | null;
+    accepted_payment_methods: string[];
+    payment_timing: string | null;
+    service_area: string | null;
+    avg_delivery_time: string | null;
+    bank_name: string | null;
+    bank_code: string | null;
+    account_number: string | null;
     onboarding_completed: boolean;
+    structured_location?: {
+      id: string;
+      region: string;
+      city: string;
+    } | null;
   } | null;
 }
 
@@ -34,10 +48,16 @@ interface AuthContextValue {
   isLoading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (data: { full_name: string; email: string; password: string; school: string }) => Promise<{ message: string }>;
+  register: (data: {
+    full_name: string;
+    email: string;
+    password: string;
+    school: string;
+  }) => Promise<{ message: string }>;
   logout: () => void;
   clearError: () => void;
   refreshUser: () => Promise<void>;
+  setAuthData: (token: string, user: User) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -54,6 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const stored = localStorage.getItem('vendly_token');
     if (stored) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setToken(stored);
       authApi
         .getMe(stored)
@@ -85,19 +106,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const register = useCallback(async (data: { full_name: string; email: string; password: string; school: string }) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const res = await authApi.register(data);
-      return res;
-    } catch (err: any) {
-      setError(err.message || 'Registration failed');
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const register = useCallback(
+    async (data: { full_name: string; email: string; password: string; school: string }) => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const res = await authApi.register(data);
+        return res;
+      } catch (err: any) {
+        setError(err.message || 'Registration failed');
+        throw err;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [],
+  );
 
   const logout = useCallback(() => {
     if (token) {
@@ -120,9 +144,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [token]);
 
+  const setAuthData = useCallback((newToken: string, newUser: User) => {
+    localStorage.setItem('vendly_token', newToken);
+    setToken(newToken);
+    setUser(newUser);
+  }, []);
+
   return (
     <AuthContext.Provider
-      value={{ user, token, isAuthenticated, isLoading, error, login, register, logout, clearError, refreshUser }}
+      value={{
+        user,
+        token,
+        isAuthenticated,
+        isLoading,
+        error,
+        login,
+        register,
+        logout,
+        clearError,
+        refreshUser,
+        setAuthData,
+      }}
     >
       {children}
     </AuthContext.Provider>

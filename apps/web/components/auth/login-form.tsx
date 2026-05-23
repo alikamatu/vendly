@@ -7,7 +7,7 @@ import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
 import ProgressBar from '@/components/ui/ProgressBar';
 import { Mail, Lock } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/contexts/auth-context';
 
 interface LoginFormProps {
@@ -18,6 +18,8 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
   const { form, onSubmit, isLoading, error, clearError } = useLoginForm();
   const { user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = searchParams.get('next');
   const {
     register,
     formState: { errors },
@@ -38,10 +40,10 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       if (onSuccess) {
         onSuccess();
       } else {
-        router.push('/');
+        router.push(next || '/');
       }
     }
-  }, [user, isLoading, router, onSuccess]);
+  }, [user, isLoading, router, onSuccess, next]);
 
   return (
     <div className="w-full">
@@ -69,7 +71,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         </div>
 
         <div className="text-left">
-          <a href="/forgot-password" className="text-xs text-accent hover:underline transition">
+          <a href="/forgot-password" className="text-accent text-xs transition hover:underline">
             Forgot password?
           </a>
         </div>

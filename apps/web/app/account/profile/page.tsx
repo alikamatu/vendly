@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft,
   User,
@@ -16,23 +16,23 @@ import {
   MailWarning,
   Star,
   ChevronRight,
-} from "lucide-react";
-import Link from "next/link";
-import { useAuth } from "@/lib/contexts/auth-context";
-import { authApi } from "@/lib/api/auth";
-import { sanitizeText } from "@/lib/utils/sanitize";
+} from 'lucide-react';
+import Link from 'next/link';
+import { useAuth } from '@/lib/contexts/auth-context';
+import { authApi } from '@/lib/api/auth';
+import { sanitizeText } from '@/lib/utils/sanitize';
 
 // ─── Gradient helper ──────────────────────────────────────────────────────────
 
 const GRADIENTS = [
-  "from-violet-500 to-purple-600",
-  "from-blue-500 to-cyan-500",
-  "from-emerald-500 to-teal-600",
-  "from-orange-500 to-amber-500",
-  "from-rose-500 to-pink-600",
-  "from-cyan-500 to-blue-500",
-  "from-indigo-500 to-violet-600",
-  "from-amber-500 to-orange-600",
+  'from-violet-500 to-purple-600',
+  'from-blue-500 to-cyan-500',
+  'from-emerald-500 to-teal-600',
+  'from-orange-500 to-amber-500',
+  'from-rose-500 to-pink-600',
+  'from-cyan-500 to-blue-500',
+  'from-indigo-500 to-violet-600',
+  'from-amber-500 to-orange-600',
 ];
 
 function avatarGradient(name: string) {
@@ -45,7 +45,7 @@ function avatarGradient(name: string) {
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
-    <label className="block text-[11px] font-medium text-[var(--color-muted)] uppercase tracking-wider mb-1.5">
+    <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
       {children}
     </label>
   );
@@ -73,15 +73,17 @@ function TextInput({
       disabled={disabled}
       maxLength={maxLength}
       className={[
-        "w-full h-12 px-4 rounded-2xl border border-[var(--color-border)]",
-        "bg-[var(--color-background)] text-[var(--color-foreground)] text-base",
-        "placeholder:text-[var(--color-muted)]/50",
-        "outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15",
-        "transition-all duration-150",
-        disabled ? "opacity-50 cursor-not-allowed bg-[var(--color-surface)]" : "",
+        'border-[var(--color-border)]/80 h-12 w-full rounded-2xl border px-4',
+        'bg-[var(--color-background)] text-[13px] font-normal text-[var(--color-foreground)]',
+        'placeholder:text-[var(--color-muted)]/40',
+        'focus:ring-[var(--color-accent)]/10 outline-none focus:border-[var(--color-accent)] focus:ring-4',
+        'shadow-xs transition-all duration-200',
+        disabled
+          ? 'bg-[var(--color-surface)]/50 cursor-not-allowed opacity-60'
+          : 'hover:border-[var(--color-border)]',
       ]
         .filter(Boolean)
-        .join(" ")}
+        .join(' ')}
     />
   );
 }
@@ -91,15 +93,17 @@ function TextInput({
 export default function AccountProfilePage() {
   const { user, token, refreshUser } = useAuth();
 
-  const [name, setName] = useState("");
-  const [school, setSchool] = useState("");
+  const [name, setName] = useState('');
+  const [school, setSchool] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   useEffect(() => {
     if (user) {
-      setName(user.full_name ?? "");
-      setSchool(user.school ?? "");
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setName(user.full_name ?? '');
+
+      setSchool(user.school ?? '');
     }
   }, [user]);
 
@@ -111,7 +115,7 @@ export default function AccountProfilePage() {
     const cleanSchool = sanitizeText(school, 200).trim();
 
     if (cleanName.length < 2) {
-      setMsg({ ok: false, text: "Full name must be at least 2 characters." });
+      setMsg({ ok: false, text: 'Full name must be at least 2 characters.' });
       return;
     }
 
@@ -121,9 +125,9 @@ export default function AccountProfilePage() {
     try {
       await authApi.updateProfile(token, { full_name: cleanName, school: cleanSchool });
       await refreshUser();
-      setMsg({ ok: true, text: "Profile saved successfully!" });
+      setMsg({ ok: true, text: 'Profile saved successfully!' });
     } catch (err: any) {
-      setMsg({ ok: false, text: err.message ?? "Failed to save. Please try again." });
+      setMsg({ ok: false, text: err.message ?? 'Failed to save. Please try again.' });
     } finally {
       setIsLoading(false);
     }
@@ -133,50 +137,63 @@ export default function AccountProfilePage() {
 
   const grad = avatarGradient(user.full_name);
   const inits = user.full_name
-    .split(" ")
+    .split(' ')
     .map((n) => n[0])
     .slice(0, 2)
-    .join("")
+    .join('')
     .toUpperCase();
 
   return (
-    <div className="max-w-lg mx-auto space-y-5 pb-16">
+    <div className="mx-auto max-w-lg space-y-5 pb-16">
       {/* Back */}
       <Link
         href="/account"
-        className="inline-flex items-center gap-2 text-[11px] font-medium text-[var(--color-muted)] hover:text-[var(--color-foreground)] uppercase tracking-wider transition-colors group"
+        className="group inline-flex items-center gap-2 text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted)] transition-colors hover:text-[var(--color-foreground)]"
       >
-        <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+        <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
         Account
       </Link>
 
       <div>
         <h1 className="text-lg font-medium tracking-tight">Personal Info</h1>
-        <p className="text-[11px] text-[var(--color-muted)] mt-0.5">Update your name, school and profile</p>
+        <p className="mt-0.5 text-[11px] text-[var(--color-muted)]">
+          Update your name, school and profile
+        </p>
       </div>
 
       {/* Avatar card */}
-      <div className="bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)] p-5 flex items-center gap-4">
-        <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${grad} flex items-center justify-center flex-shrink-0 shadow-lg`}>
-          <span className="text-xl font-medium text-white select-none">{inits}</span>
+      <div className="border-[var(--color-border)]/80 shadow-xs flex items-center gap-5 rounded-3xl border bg-[var(--color-surface)] p-5 transition-all duration-300 hover:border-[var(--color-border)] hover:shadow-sm">
+        <div className="group/avatar relative flex-shrink-0">
+          <div
+            className={`h-16 w-16 rounded-2xl bg-gradient-to-br ${grad} flex items-center justify-center shadow-md transition-transform duration-300 group-hover/avatar:scale-[1.03]`}
+          >
+            <span className="select-none text-xl font-medium text-white">{inits}</span>
+          </div>
+          <div className="pointer-events-none absolute inset-0 rounded-2xl border-2 border-white/20" />
         </div>
-        <div className="flex-1 min-w-0 space-y-1.5">
-          <p className="text-[15px] font-medium truncate">{user.full_name}</p>
-          <p className="text-[11px] text-[var(--color-muted)] truncate">{user.email}</p>
-          <div className="flex flex-wrap gap-2">
-            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wide ${
-              user.role === "SELLER" ? "bg-emerald-500/10 text-emerald-600" : "bg-blue-500/10 text-blue-600"
-            }`}>
-              {user.role === "SELLER" && <BadgeCheck className="w-3 h-3" />}
-              {user.role === "SELLER" ? "Seller" : "Buyer"}
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <p className="truncate text-base font-semibold leading-tight tracking-tight text-[var(--color-foreground)]">
+            {user.full_name}
+          </p>
+          <p className="truncate text-[11px] text-[var(--color-muted)]">{user.email}</p>
+          <div className="flex flex-wrap gap-1.5 pt-0.5">
+            <span
+              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
+                user.role === 'SELLER'
+                  ? 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/5 dark:text-emerald-400'
+                  : 'bg-blue-500/10 text-blue-600 dark:bg-blue-500/5 dark:text-blue-400'
+              }`}
+            >
+              {user.role === 'SELLER' && <BadgeCheck className="h-3 w-3" />}
+              {user.role === 'SELLER' ? 'Seller' : 'Buyer'}
             </span>
             {user.is_verified ? (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-normal bg-emerald-500/10 text-emerald-600">
-                <CheckCircle2 className="w-3 h-3" /> Verified
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-600 dark:bg-emerald-500/5 dark:text-emerald-400">
+                <CheckCircle2 className="h-3 w-3" /> Verified
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-normal bg-amber-500/10 text-amber-600">
-                <MailWarning className="w-3 h-3" /> Email unverified
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-600 dark:bg-amber-500/5 dark:text-amber-400">
+                <MailWarning className="h-3 w-3" /> Email unverified
               </span>
             )}
           </div>
@@ -185,11 +202,13 @@ export default function AccountProfilePage() {
 
       {/* Edit form */}
       <form onSubmit={handleSave} className="space-y-4">
-        <div className="bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)] p-5 space-y-4">
+        <div className="space-y-4 rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
           {/* Full name */}
           <div>
             <FieldLabel>
-              <span className="flex items-center gap-1.5"><User className="w-3.5 h-3.5" /> Full Name</span>
+              <span className="flex items-center gap-1.5">
+                <User className="h-3.5 w-3.5" /> Full Name
+              </span>
             </FieldLabel>
             <TextInput
               value={name}
@@ -202,11 +221,13 @@ export default function AccountProfilePage() {
           {/* Email — read-only */}
           <div>
             <FieldLabel>
-              <span className="flex items-center gap-1.5"><Mail className="w-3.5 h-3.5" /> Email Address</span>
+              <span className="flex items-center gap-1.5">
+                <Mail className="h-3.5 w-3.5" /> Email Address
+              </span>
             </FieldLabel>
             <TextInput value={user.email} disabled />
-            <p className="mt-1.5 text-[10px] text-[var(--color-muted)] flex items-center gap-1 pl-1">
-              <Shield className="w-3 h-3 flex-shrink-0" />
+            <p className="mt-1.5 flex items-center gap-1 pl-1 text-[10px] text-[var(--color-muted)]">
+              <Shield className="h-3 w-3 flex-shrink-0" />
               Email cannot be changed here. Contact support if needed.
             </p>
           </div>
@@ -214,7 +235,9 @@ export default function AccountProfilePage() {
           {/* School */}
           <div>
             <FieldLabel>
-              <span className="flex items-center gap-1.5"><GraduationCap className="w-3.5 h-3.5" /> School / University</span>
+              <span className="flex items-center gap-1.5">
+                <GraduationCap className="h-3.5 w-3.5" /> School / University
+              </span>
             </FieldLabel>
             <TextInput
               value={school}
@@ -232,13 +255,17 @@ export default function AccountProfilePage() {
               initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
-              className={`flex items-center gap-3 px-4 py-3 rounded-2xl border text-sm font-medium ${
+              className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-medium ${
                 msg.ok
-                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600"
-                  : "bg-red-500/10 border-red-500/30 text-red-600"
+                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600'
+                  : 'border-red-500/30 bg-red-500/10 text-red-600'
               }`}
             >
-              {msg.ok ? <Check className="w-4 h-4 flex-shrink-0" /> : <AlertCircle className="w-4 h-4 flex-shrink-0" />}
+              {msg.ok ? (
+                <Check className="h-4 w-4 flex-shrink-0" />
+              ) : (
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+              )}
               {msg.text}
             </motion.div>
           )}
@@ -247,50 +274,54 @@ export default function AccountProfilePage() {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full h-14 rounded-2xl bg-[var(--color-foreground)] text-[var(--color-background)] font-medium uppercase tracking-wider text-sm hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-foreground)] text-sm font-medium uppercase tracking-wider text-[var(--color-background)] transition-all hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isLoading ? (
-            <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</>
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" /> Saving…
+            </>
           ) : (
-            "Save Changes"
+            'Save Changes'
           )}
         </button>
       </form>
 
       {/* Quick links */}
       <div className="space-y-1.5">
-        <p className="px-1 text-[10px] font-medium text-[var(--color-muted)] uppercase tracking-wider">Quick Links</p>
-        <div className="bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)] divide-y divide-[var(--color-border)]/50 overflow-hidden">
+        <p className="px-1 text-[10px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
+          Quick Links
+        </p>
+        <div className="divide-[var(--color-border)]/50 divide-y overflow-hidden rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)]">
           <Link
             href="/account/security"
-            className="flex items-center justify-between px-4 py-3.5 hover:bg-[var(--color-background)] transition-colors group"
+            className="group flex items-center justify-between px-4 py-3.5 transition-colors hover:bg-[var(--color-background)]"
           >
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                <Shield className="w-4 h-4 text-emerald-500" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500/10">
+                <Shield className="h-4 w-4 text-emerald-500" />
               </div>
               <span className="text-[13px] font-normal">Change Password</span>
             </div>
-            <ChevronRight className="w-4 h-4 text-[var(--color-muted)] group-hover:text-[var(--color-foreground)] transition-colors" />
+            <ChevronRight className="h-4 w-4 text-[var(--color-muted)] transition-colors group-hover:text-[var(--color-foreground)]" />
           </Link>
 
-          {user.role === "USER" && user.approval_status !== "APPROVED" && (
+          {user.role === 'USER' && user.approval_status !== 'APPROVED' && (
             <Link
               href="/seller-verification"
-              className="flex items-center justify-between px-4 py-3.5 hover:bg-[var(--color-background)] transition-colors group"
+              className="group flex items-center justify-between px-4 py-3.5 transition-colors hover:bg-[var(--color-background)]"
             >
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-[var(--color-accent)]/10 flex items-center justify-center">
-                  <Star className="w-4 h-4 text-[var(--color-accent)]" />
+                <div className="bg-[var(--color-accent)]/10 flex h-8 w-8 items-center justify-center rounded-xl">
+                  <Star className="h-4 w-4 text-[var(--color-accent)]" />
                 </div>
                 <span className="text-[13px] font-normal">Start selling</span>
-                {user.approval_status === "PENDING" && (
-                  <span className="text-[10px] font-normal text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full">
+                {user.approval_status === 'PENDING' && (
+                  <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-normal text-amber-500">
                     Pending
                   </span>
                 )}
               </div>
-              <ChevronRight className="w-4 h-4 text-[var(--color-muted)] group-hover:text-[var(--color-foreground)] transition-colors" />
+              <ChevronRight className="h-4 w-4 text-[var(--color-muted)] transition-colors group-hover:text-[var(--color-foreground)]" />
             </Link>
           )}
         </div>

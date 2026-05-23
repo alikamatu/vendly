@@ -43,7 +43,6 @@ export class StoreService {
       const uploadResult = await this.cloudinaryService.uploadImage(
         logoFile,
         'store-logos',
-        { vectorize: true },
       );
       logo_url = uploadResult.secure_url;
     }
@@ -83,13 +82,65 @@ export class StoreService {
       throw new ConflictException('Store not found');
     }
 
-    const data: any = { ...dto };
+    const data: any = {};
+
+    // Copy simple string fields
+    const stringFields = [
+      'store_name',
+      'store_link',
+      'bio',
+      'whatsapp_number',
+      'location',
+      'area',
+      'delivery_policies',
+      'business_hours',
+      'bank_name',
+      'bank_code',
+      'account_number',
+      'payment_timing',
+      'service_area',
+      'avg_delivery_time',
+    ];
+    for (const key of stringFields) {
+      if (dto[key] !== undefined && dto[key] !== '') {
+        data[key] = dto[key];
+      }
+    }
+
+    // Parse location_id (comes as string from FormData)
+    if (dto.location_id !== undefined && dto.location_id !== '') {
+      data.location_id = String(dto.location_id);
+    }
+
+    // Parse social_links (may arrive as JSON string from FormData)
+    if (dto.social_links !== undefined) {
+      data.social_links =
+        typeof dto.social_links === 'string'
+          ? JSON.parse(dto.social_links)
+          : dto.social_links;
+    }
+
+    // Parse accepted_payment_methods (may arrive as JSON string from FormData)
+    if (dto.accepted_payment_methods !== undefined) {
+      if (typeof dto.accepted_payment_methods === 'string') {
+        try {
+          data.accepted_payment_methods = JSON.parse(
+            dto.accepted_payment_methods,
+          );
+        } catch {
+          data.accepted_payment_methods = dto.accepted_payment_methods
+            .split(',')
+            .filter(Boolean);
+        }
+      } else {
+        data.accepted_payment_methods = dto.accepted_payment_methods;
+      }
+    }
 
     if (logoFile) {
       const uploadResult = await this.cloudinaryService.uploadImage(
         logoFile,
         'store-logos',
-        { vectorize: true },
       );
       data.logo_url = uploadResult.secure_url;
     }
@@ -116,6 +167,8 @@ export class StoreService {
         social_links: updated.social_links,
         accepted_payment_methods: updated.accepted_payment_methods,
         payment_timing: updated.payment_timing,
+        service_area: updated.service_area,
+        avg_delivery_time: updated.avg_delivery_time,
         bank_name: updated.bank_name,
         bank_code: updated.bank_code,
         account_number: updated.account_number,
@@ -232,10 +285,7 @@ export class StoreService {
       where: {
         user: {
           is_pro: true,
-          OR: [
-            { pro_expires_at: null },
-            { pro_expires_at: { gt: now } },
-          ],
+          OR: [{ pro_expires_at: null }, { pro_expires_at: { gt: now } }],
         },
       },
       include: {
@@ -257,6 +307,138 @@ export class StoreService {
       products_count: s._count.products,
       is_pro: true,
     }));
+  }
+
+  async getPublicStores(query: {
+    search?: string;
+    location?: string;
+    is_pro?: boolean;
+    sort?: 'newest' | 'products' | 'alphabetical' | 'default';
+    page?: number;
+    limit?: number;
+  }) {
+    const page = Math.max(1, query.page || 1);
+    const limit = Math.min(50, Math.max(1, query.limit || 12));
+    const skip = (page - 1) * limit;
+
+    const whereClause: any = {};
+
+    // Search query on store_name or bio
+    if (query.search) {
+      whereClause.OR = [
+        { store_name: { contains: query.search, mode: 'insensitive' } },
+        { bio: { contains: query.search, mode: 'insensitive' } },
+      ];
+    }
+
+    // Filter by location or area
+    if (query.location) {
+      whereClause.OR = [
+        ...(whereClause.OR || []),
+        { location: { contains: query.location, mode: 'insensitive' } },
+        { area: { contains: query.location, mode: 'insensitive' } },
+      ];
+    }
+
+    // Filter by pro status
+    if (query.is_pro !== undefined) {
+      const now = new Date();
+      if (query.is_pro) {
+        whereClause.user = {
+          is_pro: true,
+          OR: [{ pro_expires_at: null }, { pro_expires_at: { gt: now } }],
+        };
+      } else {
+        whereClause.user = {
+          OR: [{ is_pro: false }, { pro_expires_at: { lt: now } }],
+        };
+      }
+    }
+
+    // Determine ordering
+    let orderBy: any = {};
+    if (query.sort === 'newest') {
+      orderBy = { created_at: 'desc' };
+    } else if (query.sort === 'products') {
+      orderBy = { products: { _count: 'desc' } };
+    } else if (query.sort === 'alphabetical') {
+      orderBy = { store_name: 'asc' };
+    } else {
+      // Default: Pro first, then products count descending
+      // Prisma does not support multi-level sorting by complex relation count natively in a single object in some versions,
+      // so sorting by products count is a solid default.
+      orderBy = { products: { _count: 'desc' } };
+    }
+
+    const [stores, total] = await Promise.all([
+      this.prisma.sellerProfile.findMany({
+        where: whereClause,
+        include: {
+          user: {
+            select: {
+              is_pro: true,
+              pro_expires_at: true,
+              is_verified: true,
+            },
+          },
+          _count: {
+            select: { products: true },
+          },
+          products: {
+            where: {
+              status: { in: ['active', 'published'] },
+            },
+            select: {
+              id: true,
+              title: true,
+              price: true,
+              image_urls: true,
+            },
+            take: 3,
+          },
+        },
+        orderBy,
+        skip,
+        take: limit,
+      }),
+      this.prisma.sellerProfile.count({
+        where: whereClause,
+      }),
+    ]);
+
+    const now = new Date();
+    const mappedStores = stores.map((s) => {
+      const proActive =
+        !!s.user?.is_pro &&
+        (!s.user.pro_expires_at || s.user.pro_expires_at > now);
+
+      return {
+        id: s.id.toString(),
+        store_name: s.store_name,
+        store_link: s.store_link,
+        logo_url: s.logo_url,
+        bio: s.bio,
+        location: s.location,
+        area: s.area,
+        products_count: s._count.products,
+        is_pro: proActive,
+        is_verified: s.user?.is_verified ?? false,
+        products: s.products.map((p) => ({
+          id: p.id.toString(),
+          title: p.title,
+          price: Number(p.price),
+          image_url: p.image_urls?.[0] || null,
+        })),
+      };
+    });
+
+    return {
+      stores: mappedStores,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async getStoreByLink(link: string) {

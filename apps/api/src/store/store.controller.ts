@@ -92,4 +92,29 @@ export class StoreController {
     const n = limit ? Math.min(Math.max(parseInt(limit, 10) || 6, 1), 24) : 6;
     return this.storeService.getTopProVendors(n);
   }
+
+  @Get()
+  // Public endpoint - list and filter all public stores
+  async getPublicStores(
+    @Query('search') search?: string,
+    @Query('location') location?: string,
+    @Query('is_pro') is_pro?: string,
+    @Query('sort') sort?: 'newest' | 'products' | 'alphabetical' | 'default',
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const isProBool =
+      is_pro === 'true' ? true : is_pro === 'false' ? false : undefined;
+    const pageNum = page ? parseInt(page, 10) || 1 : 1;
+    const limitNum = limit ? parseInt(limit, 10) || 12 : 12;
+
+    return this.storeService.getPublicStores({
+      search,
+      location,
+      is_pro: isProBool,
+      sort,
+      page: pageNum,
+      limit: limitNum,
+    });
+  }
 }

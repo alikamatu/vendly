@@ -27,8 +27,8 @@ async function bootstrap() {
   app.use(compression());
 
   // Enable CORS
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-  const adminUrl = process.env.ADMIN_URL || 'http://localhost:3001';
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+  const adminUrl = process.env.ADMIN_URL || 'http://localhost:3002';
 
   app.enableCors({
     origin: [frontendUrl, adminUrl],
