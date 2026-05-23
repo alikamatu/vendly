@@ -343,6 +343,13 @@ export class AuthService {
       },
     });
 
+    // Security notice — fire & forget so the response isn't blocked.
+    this.emailService
+      .sendPasswordChangedEmail(user.email, user.full_name)
+      .catch((err) =>
+        console.error('Failed to send password-changed email:', err),
+      );
+
     return {
       message:
         'Password reset successful. You can now log in with your new password.',

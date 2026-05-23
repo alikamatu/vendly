@@ -47,3 +47,7 @@ services:
         sync: false
       - key: RESEND_FROM_EMAIL
         sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: CRON_SECRET
+        sync: false

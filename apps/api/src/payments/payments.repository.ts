@@ -103,6 +103,50 @@ export class PaymentsRepository {
     });
   }
 
+  async findUserById(id: string) {
+    return this.prisma.user.findUnique({
+      where: { id },
+      select: { id: true, email: true, full_name: true },
+    });
+  }
+
+  /**
+   * Returns products from an order whose remaining stock has fallen at or
+   * below `threshold`. Used after inventory decrement to ping sellers about
+   * items that need restocking. Includes seller email + store name.
+   */
+  async findLowStockProductsForOrder(orderId: string, threshold = 5) {
+    const items = await this.prisma.orderItem.findMany({
+      where: { order_id: orderId },
+      include: {
+        product: {
+          select: {
+            id: true,
+            title: true,
+            quantity_available: true,
+            image_urls: true,
+            seller: {
+              select: {
+                store_name: true,
+                user: { select: { email: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return items
+      .map((it) => it.product)
+      .filter((p) => p != null && p.quantity_available <= threshold) as Array<{
+        id: string;
+        title: string;
+        quantity_available: number;
+        image_urls: string[];
+        seller: { store_name: string; user: { email: string | null } | null } | null;
+      }>;
+  }
+
   async findUserByEmail(email: string) {
     return this.prisma.user.findUnique({
       where: { email },

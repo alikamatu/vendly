@@ -152,6 +152,44 @@ export class SubscriptionService {
     return updated;
   }
 
+  /**
+   * Sends a "Pro expiring soon" email to anyone whose membership ends within
+   * the next `days` days (default 3). Idempotent-by-day at the trigger level:
+   * the caller (cron) should fire this once per day. Returns the number of
+   * emails attempted so the operator can audit.
+   */
+  async sendExpiryReminders(days = 3): Promise<{ sent: number; total: number }> {
+    const now = new Date();
+    const horizon = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+
+    const users = await this.prisma.user.findMany({
+      where: {
+        is_pro: true,
+        pro_expires_at: { gt: now, lte: horizon },
+      },
+      select: { email: true, full_name: true, pro_expires_at: true },
+    });
+
+    let sent = 0;
+    for (const u of users) {
+      if (!u.email || !u.pro_expires_at) continue;
+      try {
+        await this.emailService.sendProExpiringEmail(
+          u.email,
+          u.full_name || 'there',
+          u.pro_expires_at,
+        );
+        sent += 1;
+      } catch (err) {
+        this.logger.error(`Pro expiring email failed for ${u.email}: ${err}`);
+      }
+    }
+    this.logger.log(
+      `Pro expiry sweep: ${sent}/${users.length} sent (horizon=${days}d)`,
+    );
+    return { sent, total: users.length };
+  }
+
   async upgradeUserToProByEmail(email: string, reference?: string) {
     if (!email) return null;
     const user = await this.prisma.user.findUnique({

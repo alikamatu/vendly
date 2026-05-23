@@ -111,6 +111,14 @@ export class PaymentsService {
               err,
             );
           });
+
+          // Low-stock alerts (fire-and-forget)
+          this.triggerLowStockAlerts(transaction.order_id).catch((err) => {
+            this.logger.error(
+              `Failed to send low-stock alerts for order ${transaction.order_id}`,
+              err,
+            );
+          });
         }
       }
     }
@@ -277,9 +285,37 @@ export class PaymentsService {
       );
     });
 
+    // Low-stock alerts (fire-and-forget)
+    this.triggerLowStockAlerts(transaction.order_id).catch((err) => {
+      this.logger.error(
+        `Failed to send low-stock alerts for order ${transaction.order_id}`,
+        err,
+      );
+    });
+
     this.logger.log(
       `Transaction and Order updated successfully for reference: ${reference}`,
     );
+  }
+
+  private async triggerLowStockAlerts(orderId: string) {
+    const low = await this.paymentsRepository.findLowStockProductsForOrder(
+      orderId,
+    );
+    for (const product of low) {
+      const email = product.seller?.user?.email;
+      if (!email) continue;
+      this.emailService
+        .sendLowStockEmail(email, product.seller?.store_name || 'Your store', {
+          id: product.id,
+          title: product.title,
+          quantity: product.quantity_available,
+          image_url: product.image_urls?.[0] || null,
+        })
+        .catch((err) =>
+          this.logger.error(`Failed to send low-stock email: ${err}`),
+        );
+    }
   }
 
   private async triggerOrderEmails(orderId: string) {
@@ -419,6 +455,32 @@ export class PaymentsService {
       provider_ref: data.transfer_code?.toString(),
       processed_at: new Date(),
     });
+
+    // Notify the seller — fire-and-forget.
+    try {
+      const payout = await this.paymentsRepository.getPayoutById(payoutId);
+      const seller = payout?.seller;
+      if (!seller) return;
+      const sellerUser = await this.paymentsRepository.findUserById(
+        seller.user_id,
+      );
+      if (!sellerUser?.email) return;
+      this.emailService
+        .sendPayoutSentEmail(sellerUser.email, {
+          storeName: seller.store_name,
+          amount: payout.amount.toString(),
+          currency: payout.currency || 'GHS',
+          reference: payout.reference,
+          bankName: seller.bank_name || undefined,
+          accountLastFour: seller.account_number?.slice(-4) || undefined,
+          processedAt: payout.processed_at ?? new Date(),
+        })
+        .catch((err) =>
+          this.logger.error(`Failed to send payout email: ${err}`),
+        );
+    } catch (err) {
+      this.logger.error(`processTransferSuccess email path failed: ${err}`);
+    }
   }
 
   private async processTransferFailed(data: any) {

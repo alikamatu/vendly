@@ -171,6 +171,19 @@ export class AdminService {
       data: { is_suspended: !user.is_suspended },
     });
 
+    // Only notify on transition to suspended. Unsuspending doesn't need a heavy email.
+    if (updated.is_suspended && user.email) {
+      this.emailService
+        .sendAccountSuspendedEmail(
+          user.email,
+          user.full_name,
+          dto.reason || 'Policy violation. Contact support for details.',
+        )
+        .catch((err) =>
+          console.error('Failed to send suspension email:', err),
+        );
+    }
+
     return {
       message: `User ${updated.is_suspended ? 'suspended' : 'unsuspended'} successfully`,
       is_suspended: updated.is_suspended,
