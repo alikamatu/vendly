@@ -13,6 +13,7 @@ import { InitializePaymentDto } from './dto/initialize-payment.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/guards/roles.decorator';
+import { actorFromReq } from '../audit/audit-log.service';
 
 @Controller('payments')
 export class PaymentsController {
@@ -94,15 +95,15 @@ export class PaymentsController {
   @Post('payouts/run')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
-  async runManualQueue() {
-    return this.paymentsService.runManualPayoutQueue();
+  async runManualQueue(@Req() req: any) {
+    return this.paymentsService.runManualPayoutQueue(actorFromReq(req));
   }
 
   @Post('payouts/:id/retry')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SELLER', 'ADMIN')
-  async retryPayout(@Param('id') id: string) {
-    return this.paymentsService.retryPayout(id);
+  async retryPayout(@Param('id') id: string, @Req() req: any) {
+    return this.paymentsService.retryPayout(id, actorFromReq(req));
   }
 
   @Get('history')

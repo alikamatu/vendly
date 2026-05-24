@@ -14,6 +14,7 @@ import paystackConfig from './config/paystack.config';
 import { PaymentsRepository } from './payments.repository';
 import { InitializePaymentDto } from './dto/initialize-payment.dto';
 import { EmailService } from '../email/email.service';
+import { Actor, AuditLogService } from '../audit/audit-log.service';
 
 interface PaymentProvider {
   initializeTransaction(dto: InitializePaymentDto): Promise<any>;
@@ -31,6 +32,7 @@ export class PaymentsService {
     private readonly httpService: HttpService,
     private readonly paymentsRepository: PaymentsRepository,
     private readonly emailService: EmailService,
+    private readonly auditLogs: AuditLogService,
     @Inject(paystackConfig.KEY)
     private readonly paystackCfg: ConfigType<typeof paystackConfig>,
   ) {}
@@ -127,25 +129,48 @@ export class PaymentsService {
   }
 
   async handleWebhook(payload: any, signature: string, rawBody?: Buffer) {
-    if (!this.verifySignature(payload, signature, rawBody)) {
+    // Paystack signs the exact bytes it sent. Re-serialising the parsed JSON
+    // is brittle (key order, escaping) and silently flips signatures from
+    // valid to invalid, so refuse to verify without the raw body.
+    if (!rawBody || !Buffer.isBuffer(rawBody)) {
+      this.logger.error('Paystack webhook missing raw body — refusing');
+      throw new BadRequestException('Raw body required');
+    }
+    if (!this.verifySignature(signature, rawBody)) {
       this.logger.error('Invalid Paystack signature');
       throw new BadRequestException('Invalid signature');
     }
 
     const { event, data } = payload;
-    const eventId =
-      data?.id?.toString() ??
-      data?.reference ??
-      `${event}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    this.logger.log(`Received Paystack webhook: ${event}`);
-
-    const existingLog =
-      await this.paymentsRepository.findPaymentLogByEventId(eventId);
-    if (existingLog) {
-      return { received: true, duplicate: true };
+    // The dedupe key has to be deterministic across replays — falling back
+    // to `Date.now()`/`Math.random()` defeated the whole protection. If
+    // Paystack can't give us a stable id we bail out loudly instead of
+    // silently re-processing.
+    const eventId: string | null =
+      (data?.id != null ? String(data.id) : null) ??
+      (data?.reference ? String(data.reference) : null);
+    if (!eventId) {
+      this.logger.error(
+        `Paystack webhook missing stable event id (event=${event}); cannot dedupe`,
+      );
+      throw new BadRequestException('Missing event id');
     }
 
-    await this.paymentsRepository.createPaymentLog(event, payload, eventId);
+    this.logger.log(`Received Paystack webhook: ${event} id=${eventId}`);
+
+    // Atomic dedupe: rely on the unique constraint on payment_logs.event_id
+    // so concurrent duplicate deliveries can't both pass the pre-check and
+    // then both run the side effects.
+    try {
+      await this.paymentsRepository.createPaymentLog(event, payload, eventId);
+    } catch (err: any) {
+      // Prisma P2002 = unique constraint violation → we've already seen it.
+      if (err?.code === 'P2002') {
+        this.logger.log(`Duplicate Paystack webhook ignored: ${eventId}`);
+        return { received: true, duplicate: true };
+      }
+      throw err;
+    }
 
     if (event === 'charge.success') {
       await this.processChargeSuccess(data);
@@ -160,18 +185,24 @@ export class PaymentsService {
     return { received: true };
   }
 
-  private verifySignature(
-    payload: any,
-    signature: string,
-    rawBody?: Buffer,
-  ): boolean {
-    const bodyPayload = rawBody ?? Buffer.from(JSON.stringify(payload));
-    const hash = crypto
+  private verifySignature(signature: string, rawBody: Buffer): boolean {
+    if (!signature || typeof signature !== 'string') return false;
+    const expected = crypto
       .createHmac('sha512', this.paystackCfg.secretKey)
-      .update(bodyPayload)
+      .update(rawBody)
       .digest('hex');
 
-    return hash === signature;
+    // Constant-time compare guards against signature-oracle timing attacks.
+    // Buffers must be equal length or timingSafeEqual throws.
+    const a = Buffer.from(expected, 'hex');
+    let b: Buffer;
+    try {
+      b = Buffer.from(signature, 'hex');
+    } catch {
+      return false;
+    }
+    if (a.length !== b.length) return false;
+    return crypto.timingSafeEqual(a, b);
   }
 
   private async processChargeSuccess(data: any) {
@@ -742,13 +773,32 @@ export class PaymentsService {
     });
   }
 
-  async retryPayout(id: string) {
+  async retryPayout(id: string, actor?: Actor) {
     const payout = await this.paymentsRepository.getPayoutById(id);
     if (!payout) throw new NotFoundException('Payout not found');
-    return this.paymentsRepository.updatePayoutStatus(id, 'PROCESSING');
+    const updated = await this.paymentsRepository.updatePayoutStatus(
+      id,
+      'PROCESSING',
+    );
+    this.auditLogs.record({
+      actorId: actor?.id,
+      actorRole: actor?.role,
+      action: 'payout.retry',
+      entityType: 'payout',
+      entityId: id,
+      before: { status: (payout as any).status },
+      after: { status: 'PROCESSING' },
+      metadata: {
+        amount: (payout as any).amount?.toString?.(),
+        seller_id: (payout as any).seller_id,
+      },
+      ip: actor?.ip,
+      userAgent: actor?.userAgent,
+    });
+    return updated;
   }
 
-  async runManualPayoutQueue() {
+  async runManualPayoutQueue(actor?: Actor) {
     const queue = await this.paymentsRepository.listPayouts({
       status: 'PENDING',
       page: 1,
@@ -761,6 +811,19 @@ export class PaymentsService {
         }),
       ),
     );
+    this.auditLogs.record({
+      actorId: actor?.id,
+      actorRole: actor?.role,
+      action: 'payout.run_queue',
+      entityType: 'payout',
+      entityId: null,
+      metadata: {
+        processed: results.length,
+        ids: queue.items.map((i: any) => i.id),
+      },
+      ip: actor?.ip,
+      userAgent: actor?.userAgent,
+    });
     return {
       processed: results.length,
     };

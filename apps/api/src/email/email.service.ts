@@ -21,6 +21,9 @@ import {
   OrderStatusEmailData,
   ProActivatedData,
   PayoutEmailData,
+  getContactFormAdminAlertEmail,
+  getNewsletterWelcomeEmail,
+  getSellerVerificationAdminAlertEmail,
 } from './email-templates';
 
 @Injectable()
@@ -235,4 +238,128 @@ export class EmailService {
       'account-suspended',
     );
   }
+
+  // ─── Contact & Newsletter ────────────────────────────────────────────────
+
+  sendContactFormAdminAlert(data: { name: string; email: string; subject: string; message: string }) {
+    // Send to the support email address
+    const adminEmail = this.configService.get<string>('SUPPORT_EMAIL') || 'support@vendly.com';
+    return this.deliver(
+      adminEmail,
+      `New Contact Request: ${data.subject}`,
+      getContactFormAdminAlertEmail(data),
+      'contact-form',
+    );
+  }
+
+  sendSellerVerificationAdminAlert(data: {
+    userName: string;
+    userEmail: string;
+    userPhone?: string | null;
+    type: string;
+    verificationData: string;
+    submittedAt: Date;
+  }) {
+    const adminEmail =
+      this.configService.get<string>('ADMIN_NOTIFY_EMAIL') ||
+      this.configService.get<string>('SUPPORT_EMAIL') ||
+      'support@vendly.com';
+    return this.deliver(
+      adminEmail,
+      `New seller verification: ${data.userName}`,
+      getSellerVerificationAdminAlertEmail(data, this.links),
+      'seller-verification-admin-alert',
+    );
+  }
+
+  sendNewsletterWelcome(to: string) {
+    return this.deliver(
+      to,
+      'Welcome to the Vendly Newsletter',
+      getNewsletterWelcomeEmail(to, this.links),
+      'newsletter-welcome',
+    );
+  }
+
+  /**
+   * Forwards a customer "I can't remember my email" request to the support
+   * inbox. Two messages: one to support (containing the lookup details +
+   * matching account hints) and one to the user confirming their request
+   * was received (only when an email was supplied).
+   */
+  async sendAccountLookupSupportTicket(args: {
+    fullName: string;
+    businessName?: string;
+    phone?: string;
+    knownEmail?: string;
+    note?: string;
+    matches: Array<{ id: string; email: string; created_at: Date }>;
+  }) {
+    const supportInbox =
+      this.configService.get<string>('SUPPORT_EMAIL') ||
+      'support@vendly.app';
+
+    const matchesHtml = args.matches.length
+      ? `<ul>${args.matches
+          .map(
+            (m) =>
+              `<li><strong>${escapeHtml(maskEmail(m.email))}</strong> · id ${m.id} · joined ${m.created_at.toISOString().slice(0, 10)}</li>`,
+          )
+          .join('')}</ul>`
+      : '<p><em>No matching accounts found in the database.</em></p>';
+
+    const supportHtml = `
+      <h2>Account-lookup request</h2>
+      <p>A user can't remember which email they registered with.</p>
+      <table cellpadding="6" style="border-collapse:collapse">
+        <tr><td><b>Name</b></td><td>${escapeHtml(args.fullName)}</td></tr>
+        <tr><td><b>Business</b></td><td>${escapeHtml(args.businessName || '—')}</td></tr>
+        <tr><td><b>Phone</b></td><td>${escapeHtml(args.phone || '—')}</td></tr>
+        <tr><td><b>Email they tried</b></td><td>${escapeHtml(args.knownEmail || '—')}</td></tr>
+      </table>
+      ${args.note ? `<p><b>Note:</b> ${escapeHtml(args.note)}</p>` : ''}
+      <h3>Possible matches</h3>
+      ${matchesHtml}
+    `;
+    await this.deliver(
+      supportInbox,
+      `Account lookup request — ${args.fullName}`,
+      supportHtml,
+      'support-account-lookup',
+    );
+
+    if (args.knownEmail) {
+      const ackHtml = `
+        <p>Hi ${escapeHtml(args.fullName.split(' ')[0] || 'there')},</p>
+        <p>Thanks for reaching out. Our support team has your request and will
+        reply to this email shortly to help you recover access to your Vendly
+        account.</p>
+        <p>If you remember any other details in the meantime, just reply to
+        this message.</p>
+        <p>— The Vendly Support team</p>
+      `;
+      await this.deliver(
+        args.knownEmail,
+        "We've got your account-lookup request",
+        ackHtml,
+        'support-account-lookup-ack',
+      );
+    }
+  }
+}
+
+function escapeHtml(s: string) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function maskEmail(email: string) {
+  const [local, domain] = email.split('@');
+  if (!domain) return email;
+  if (local.length <= 2) return `${local[0]}***@${domain}`;
+  return `${local.slice(0, 2)}***@${domain}`;
 }

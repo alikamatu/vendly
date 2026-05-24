@@ -19,6 +19,7 @@ import {
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { Roles } from './guards/roles.decorator';
+import { actorFromReq } from '../audit/audit-log.service';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -68,7 +69,12 @@ export class AdminController {
     @Body() dto: ApproveVerificationDto,
     @Req() req,
   ) {
-    return this.adminService.approveOrReject(id, req.user.id, dto);
+    return this.adminService.approveOrReject(
+      id,
+      req.user.id,
+      dto,
+      actorFromReq(req),
+    );
   }
 
   @Get('users')
@@ -82,25 +88,75 @@ export class AdminController {
   }
 
   @Patch('users/:id/role')
-  async updateRole(@Param('id') id: string, @Body() dto: UpdateUserRoleDto) {
-    return this.adminService.updateUserRole(id, dto);
+  async updateRole(
+    @Param('id') id: string,
+    @Body() dto: UpdateUserRoleDto,
+    @Req() req,
+  ) {
+    return this.adminService.updateUserRole(id, dto, actorFromReq(req));
   }
 
   @Patch('users/:id/toggle-suspension')
   async toggleSuspension(
     @Param('id') id: string,
     @Body() dto: ToggleSuspensionDto,
+    @Req() req,
   ) {
-    return this.adminService.toggleUserSuspension(id, dto);
+    return this.adminService.toggleUserSuspension(id, dto, actorFromReq(req));
   }
 
   @Patch('users/:id/warn')
-  async warn(@Param('id') id: string, @Body() dto: WarnUserDto) {
-    return this.adminService.warnUser(id, dto);
+  async warn(@Param('id') id: string, @Body() dto: WarnUserDto, @Req() req) {
+    return this.adminService.warnUser(id, dto, actorFromReq(req));
   }
 
   @Patch('users/:id/delete') // Or @Delete, but using Patch for soft-admin actions if preferred, though actual delete is implemented
-  async deleteUser(@Param('id') id: string) {
-    return this.adminService.deleteUser(id);
+  async deleteUser(@Param('id') id: string, @Req() req) {
+    return this.adminService.deleteUser(id, actorFromReq(req));
+  }
+
+  // ───────────────── 2FA reset + Pro management ─────────────────
+
+  @Patch('users/:id/disable-2fa')
+  async forceDisable2fa(@Param('id') id: string) {
+    return this.adminService.forceDisable2fa(id);
+  }
+
+  @Patch('users/:id/pro')
+  async setProStatus(
+    @Param('id') id: string,
+    @Body() body: { is_pro: boolean; duration_days?: number },
+  ) {
+    return this.adminService.setProStatus(id, body);
+  }
+
+  // ───────────────── Returns ─────────────────
+
+  @Get('returns')
+  async listReturns(@Query() query: any) {
+    return this.adminService.listReturns(query);
+  }
+
+  @Patch('returns/:id')
+  async updateReturn(
+    @Param('id') id: string,
+    @Body() body: { status: 'APPROVED' | 'REJECTED' | 'COMPLETED'; admin_note?: string },
+  ) {
+    return this.adminService.updateReturnStatus(id, body);
+  }
+
+  // ───────────────── Reviews ─────────────────
+
+  @Get('reviews')
+  async listReviews(@Query() query: any) {
+    return this.adminService.listReviews(query);
+  }
+
+  @Patch('reviews/:id/moderate')
+  async moderateReview(
+    @Param('id') id: string,
+    @Body() body: { action: 'hide' | 'show' | 'delete' | 'dismiss_flags' },
+  ) {
+    return this.adminService.moderateReview(id, body);
   }
 }

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-yet';
 import { AppController } from './app.controller';
@@ -19,6 +20,11 @@ import { BrandModule } from './brand/brand.module';
 import { SettingsModule } from './settings/settings.module';
 import { SubscriptionModule } from './subscription/subscription.module';
 import { ReviewModule } from './review/review.module';
+import { AddressModule } from './address/address.module';
+import { ContactModule } from './contact/contact.module';
+import { NotificationModule } from './notification/notification.module';
+import { AuditModule } from './audit/audit.module';
+import { PrismaModule } from './prisma/prisma.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ApiResponseInterceptor } from './common/interceptors/api-response.interceptor';
 
@@ -56,6 +62,7 @@ import { ApiResponseInterceptor } from './common/interceptors/api-response.inter
     ThrottlerModule.forRoot({
       throttlers: [{ ttl: 60000, limit: 10 }], // ttl in milliseconds
     }),
+    ScheduleModule.forRoot(),
     AuthModule,
     StoreModule,
     ProductModule,
@@ -69,6 +76,11 @@ import { ApiResponseInterceptor } from './common/interceptors/api-response.inter
     SettingsModule,
     SubscriptionModule,
     ReviewModule,
+    AddressModule,
+    ContactModule,
+    NotificationModule,
+    PrismaModule,
+    AuditModule,
   ],
   controllers: [AppController],
   providers: [

@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { Actor, AuditLogService } from '../audit/audit-log.service';
 import {
   AdminBulkAction,
   AdminBulkActionDto,
@@ -30,7 +31,10 @@ const SELLER_INCLUDE = {
 
 @Injectable()
 export class AdminProductService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private auditLogs: AuditLogService,
+  ) {}
 
   async list(query: AdminProductListQueryDto) {
     const page = query.page ?? 1;
@@ -146,32 +150,53 @@ export class AdminProductService {
     });
   }
 
-  async updateStatus(id: string, dto: AdminUpdateStatusDto) {
-    await this.getById(id);
-    if (dto.reason) {
-      // TODO: persist to a moderation_log table when added to the schema.
-      console.warn(
-        `[admin] product ${id.toString()} status -> ${dto.status} reason: ${dto.reason}`,
-      );
-    }
-    return this.prisma.product.update({
+  async updateStatus(id: string, dto: AdminUpdateStatusDto, actor: Actor) {
+    const before = await this.getById(id);
+    const updated = await this.prisma.product.update({
       where: { id },
       data: { status: dto.status },
       include: SELLER_INCLUDE,
     });
+    this.auditLogs.record({
+      actorId: actor.id,
+      actorRole: actor.role,
+      action: 'product.status_change',
+      entityType: 'product',
+      entityId: id,
+      reason: dto.reason,
+      before: { status: before.status },
+      after: { status: dto.status },
+      metadata: { seller_id: before.seller_id, title: before.title },
+      ip: actor.ip,
+      userAgent: actor.userAgent,
+    });
+    return updated;
   }
 
-  async setFeatured(id: string, dto: AdminFeatureDto) {
-    await this.getById(id);
-    return this.prisma.product.update({
+  async setFeatured(id: string, dto: AdminFeatureDto, actor: Actor) {
+    const before = await this.getById(id);
+    const updated = await this.prisma.product.update({
       where: { id },
       data: { is_featured: dto.is_featured },
       include: SELLER_INCLUDE,
     });
+    this.auditLogs.record({
+      actorId: actor.id,
+      actorRole: actor.role,
+      action: dto.is_featured ? 'product.feature' : 'product.unfeature',
+      entityType: 'product',
+      entityId: id,
+      before: { is_featured: before.is_featured },
+      after: { is_featured: dto.is_featured },
+      metadata: { seller_id: before.seller_id, title: before.title },
+      ip: actor.ip,
+      userAgent: actor.userAgent,
+    });
+    return updated;
   }
 
-  async remove(id: string) {
-    await this.getById(id);
+  async remove(id: string, actor: Actor) {
+    const before = await this.getById(id);
 
     const orderItemCount = await this.prisma.orderItem.count({
       where: { product_id: id },
@@ -185,10 +210,25 @@ export class AdminProductService {
       this.prisma.product.delete({ where: { id } }),
     ]);
 
+    this.auditLogs.record({
+      actorId: actor.id,
+      actorRole: actor.role,
+      action: 'product.delete',
+      entityType: 'product',
+      entityId: id,
+      before: {
+        title: before.title,
+        status: before.status,
+        seller_id: before.seller_id,
+      },
+      ip: actor.ip,
+      userAgent: actor.userAgent,
+    });
+
     return { message: 'Product deleted successfully' };
   }
 
-  async bulk(dto: AdminBulkActionDto) {
+  async bulk(dto: AdminBulkActionDto, actor: Actor) {
     const ids = dto.ids.map((id) => id);
 
     if (dto.action === AdminBulkAction.DELETE) {
@@ -206,6 +246,7 @@ export class AdminProductService {
         this.prisma.favorite.deleteMany({ where: { product_id: { in: ids } } }),
         this.prisma.product.deleteMany({ where: { id: { in: ids } } }),
       ]);
+      this.auditBulk(actor, 'delete', ids);
       return { updated: result[1].count };
     }
 
@@ -223,6 +264,7 @@ export class AdminProductService {
           data: { status: value },
         }),
       ]);
+      this.auditBulk(actor, 'status_change', ids, { status: value });
       return { updated: result[0].count };
     }
 
@@ -236,9 +278,25 @@ export class AdminProductService {
           data: { is_featured: dto.value },
         }),
       ]);
+      this.auditBulk(actor, dto.value ? 'feature' : 'unfeature', ids);
       return { updated: result[0].count };
     }
 
     throw new BadRequestException('Unknown bulk action');
+  }
+
+  /** Internal helper. Bulk operations don't currently audit per-row to keep
+   *  table volume reasonable — we log one row per bulk call instead. */
+  private auditBulk(actor: Actor, action: string, ids: string[], extra?: any) {
+    this.auditLogs.record({
+      actorId: actor.id,
+      actorRole: actor.role,
+      action: `product.bulk_${action}`,
+      entityType: 'product',
+      entityId: null,
+      metadata: { ids, count: ids.length, ...extra },
+      ip: actor.ip,
+      userAgent: actor.userAgent,
+    });
   }
 }

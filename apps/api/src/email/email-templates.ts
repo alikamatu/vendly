@@ -712,3 +712,79 @@ export const getAccountSuspendedEmail = (name: string, reason: string) =>
       ${secondaryButton('Email support', `mailto:${BRAND.supportEmail}`)}
     `,
   });
+
+// 15. Contact Form Admin Alert
+export const getContactFormAdminAlertEmail = (
+  d: { name: string; email: string; subject: string; message: string },
+) =>
+  shell({
+    title: `New Contact Request: ${d.subject}`,
+    preheader: `Message from ${d.name} (${d.email})`,
+    content: `
+      <div style="margin-bottom:16px;">${statusPill('New message', 'info')}</div>
+      ${eyebrow('Contact Form')}
+      ${H1(`New message from ${escape(d.name)}`)}
+      ${card(`
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+          ${kvRow('Name', escape(d.name))}
+          ${kvRow('Email', escape(d.email))}
+          ${kvRow('Subject', escape(d.subject))}
+        </table>
+      `)}
+      <div style="padding: 16px; background: ${BRAND.background}; border-radius: 8px; margin-top: 16px;">
+        <p style="margin:0; font-size:14px; line-height:1.6; white-space:pre-wrap;">${escape(d.message)}</p>
+      </div>
+      ${button('Reply to ' + escape(d.name), `mailto:${escape(d.email)}`)}
+    `,
+  });
+
+export const getSellerVerificationAdminAlertEmail = (
+  d: {
+    userName: string;
+    userEmail: string;
+    userPhone?: string | null;
+    type: string;
+    verificationData: string;
+    submittedAt: Date;
+  },
+  links: EmailLinks = { baseUrl: 'https://vendly.com' },
+) =>
+  shell({
+    title: `New seller verification: ${d.userName}`,
+    preheader: `${d.userName} submitted a ${d.type} verification request`,
+    content: `
+      <div style="margin-bottom:16px;">${statusPill('Pending review', 'warning')}</div>
+      ${eyebrow('Seller Verification')}
+      ${H1(`New verification request`)}
+      ${P(`${escape(d.userName)} just submitted a seller verification request. Review it in the admin dashboard.`)}
+      ${card(`
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+          ${kvRow('Name', escape(d.userName))}
+          ${kvRow('Email', escape(d.userEmail))}
+          ${kvRow('Phone', escape(d.userPhone || '—'))}
+          ${kvRow('Method', escape(d.type))}
+          ${kvRow('Submitted', escape(d.submittedAt.toISOString()))}
+          ${kvRow('Data', escape(d.verificationData || '—'))}
+        </table>
+      `)}
+      ${button('Review in dashboard', `${links.baseUrl}/vendly/verifications`)}
+    `,
+  });
+
+// 16. Newsletter Welcome
+export const getNewsletterWelcomeEmail = (
+  email: string,
+  links: EmailLinks = { baseUrl: 'https://vendly.com' },
+) =>
+  shell({
+    title: 'Welcome to the Vendly Newsletter',
+    preheader: 'You are on the list for updates, deals, and seller tips.',
+    content: `
+      <div style="margin-bottom:16px;">${statusPill('Subscribed', 'success')}</div>
+      ${eyebrow('Newsletter')}
+      ${H1(`You're on the list.`)}
+      ${P(`Thanks for subscribing to the Vendly newsletter. We'll keep you posted with the latest updates, special deals, and tips to grow your business.`)}
+      ${button('Start exploring', `${links.baseUrl}/products`)}
+    `,
+  });
+
