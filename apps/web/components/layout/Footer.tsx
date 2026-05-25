@@ -17,7 +17,9 @@ import {
   Globe,
   ArrowUpRight,
   CheckCircle2,
+  Loader2,
 } from "lucide-react";
+import { contactApi } from "@/lib/api/contact";
 
 interface FooterLink {
   label: string;
@@ -177,17 +179,29 @@ function LinkGroup({ title, links }: { title: string; links: FooterLink[] }) {
 function NewsletterForm() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (isSubmitting) return;
+
     setError(null);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       setError("That email doesn't look right.");
       return;
     }
-    setSubmitted(true);
-    setEmail("");
+    
+    try {
+      setIsSubmitting(true);
+      await contactApi.subscribeNewsletter(email.trim());
+      setSubmitted(true);
+      setEmail("");
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Failed to subscribe. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   if (submitted) {
@@ -224,10 +238,15 @@ function NewsletterForm() {
         />
         <button
           type="submit"
-          className="absolute right-1 top-1 bottom-1 px-3 inline-flex items-center gap-1 rounded-xl bg-primary text-white text-[11px] font-medium uppercase tracking-wider hover:opacity-90 transition-opacity"
+          disabled={isSubmitting}
+          className="absolute right-1 top-1 bottom-1 px-3 inline-flex items-center gap-1 rounded-xl bg-primary text-white text-[11px] font-medium uppercase tracking-wider hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
         >
-          <Send className="w-3 h-3" />
-          Subscribe
+          {isSubmitting ? (
+            <Loader2 className="w-3 h-3 animate-spin" />
+          ) : (
+            <Send className="w-3 h-3" />
+          )}
+          {isSubmitting ? "Wait..." : "Subscribe"}
         </button>
       </div>
       {error && <p className="text-[10px] font-normal text-red-500 px-1">{error}</p>}

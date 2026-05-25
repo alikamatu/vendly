@@ -20,6 +20,7 @@ interface DashboardHeaderProps {
 }
 
 import UserMenu from '../layout/UserMenu';
+import NotificationBell from '../layout/NotificationBell';
 
 export default function DashboardHeader({
   title,
@@ -40,7 +41,7 @@ export default function DashboardHeader({
 
   return (
     <>
-      <header className="border-border bg-background sticky top-0 z-30 flex h-20 items-center justify-between border-b px-4 md:px-8">
+      <header className="border-border bg-background sticky top-0 z-50 flex h-20 items-center justify-between border-b px-4 md:px-8">
         <div className="flex min-w-0 items-center gap-4">
           {isSeller && (
             <button
@@ -95,7 +96,7 @@ export default function DashboardHeader({
           {/* Start selling CTA for non-seller users */}
           {user && !isSeller && user.role !== 'ADMIN' && user?.approval_status !== 'APPROVED' && (
             <Link href="/seller-verification" className="hidden sm:inline-flex">
-              <button className="bg-primary ml-1 h-9 rounded-lg px-3.5 text-xs text-white shadow-sm transition-all hover:opacity-90 active:scale-[0.98]">
+              <button className="bg-red-500 ml-1 h-9 rounded-lg px-3.5 text-xs text-white shadow-sm transition-all hover:opacity-90 active:scale-[0.98]">
                 Start selling
               </button>
             </Link>
@@ -136,7 +137,10 @@ export default function DashboardHeader({
           {/* User Profile or Login */}
           <div className="flex items-center gap-3 pl-1">
             {user ? (
-              <UserMenu />
+              <>
+                <NotificationBell />
+                <UserMenu />
+              </>
             ) : (
               <div className="flex items-center gap-2">
                 <Link

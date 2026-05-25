@@ -25,6 +25,7 @@ import Textarea from "@/components/ui/Textarea";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { productApi } from "@/lib/api/product";
 import imageCompression from 'browser-image-compression';
+import VariantEditor from "@/components/dashboard/VariantEditor";
 
 export default function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -857,6 +858,10 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
            </Button>
         </div>
       </form>
+
+      <div className="mt-12 border-t border-border/40 pt-8">
+        <VariantEditor productId={id} />
+      </div>
     </div>
   );
 }

@@ -14,7 +14,8 @@ import {
   Query,
 } from '@nestjs/common';
 import { CacheInterceptor, CacheKey, CacheTTL } from '@nestjs/cache-manager';
-import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express';
+import { UploadedFile } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -48,6 +49,20 @@ export class ProductController {
       files.images || [],
       files.video?.[0],
     );
+  }
+
+  @Post('bulk-import')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SELLER')
+  @UseInterceptors(FileInterceptor('file'))
+  async bulkImport(
+    @Request() req,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) {
+      return { message: 'No file uploaded', summary: { created: 0, failed: 0, total: 0 }, results: [] };
+    }
+    return this.productService.bulkImportFromCsv(req.user.id, file.buffer);
   }
 
   @Get('categories')
@@ -290,6 +305,13 @@ export class ProductController {
   @Roles('SELLER')
   async getPromotionPaymentsHistory(@Request() req) {
     return this.productService.getPromotionPaymentsHistory(req.user.id);
+  }
+
+  @Post(':id/duplicate')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SELLER')
+  async duplicateProduct(@Request() req, @Param('id') id: string) {
+    return this.productService.duplicateProduct(req.user.id, id);
   }
 
   @Delete(':id')

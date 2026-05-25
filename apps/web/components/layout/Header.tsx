@@ -33,6 +33,7 @@ function ThemeToggle() {
 }
 
 import UserMenu from "./UserMenu";
+import NotificationBell from "./NotificationBell";
 import { useAuth } from "../../lib/contexts/auth-context";
 
 export default function Header() {
@@ -82,7 +83,10 @@ export default function Header() {
             <div className="flex items-center gap-2">
               {!isLoading &&
                 (isAuthenticated ? (
-                  <UserMenu />
+                  <>
+                    <NotificationBell />
+                    <UserMenu />
+                  </>
                 ) : (
                   <>
                     <Link href="/login">

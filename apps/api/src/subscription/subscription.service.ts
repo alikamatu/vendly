@@ -1,4 +1,5 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaymentsService } from '../payments/payments.service';
@@ -6,6 +7,22 @@ import { EmailService } from '../email/email.service';
 
 export const PRO_PRICE_GHS = 57;
 export const PRO_DURATION_DAYS = 30;
+
+/** Annual plan: 12 months at 25% off → multiply by 9 instead of 12. */
+export const PRO_ANNUAL_DISCOUNT = 0.25;
+export const PRO_ANNUAL_PRICE_GHS = Math.round(
+  PRO_PRICE_GHS * 12 * (1 - PRO_ANNUAL_DISCOUNT),
+);
+export const PRO_ANNUAL_DURATION_DAYS = 365;
+
+export type ProPlan = 'monthly' | 'annual';
+
+export function planPrice(plan: ProPlan) {
+  return plan === 'annual' ? PRO_ANNUAL_PRICE_GHS : PRO_PRICE_GHS;
+}
+export function planDays(plan: ProPlan) {
+  return plan === 'annual' ? PRO_ANNUAL_DURATION_DAYS : PRO_DURATION_DAYS;
+}
 
 @Injectable()
 export class SubscriptionService {
@@ -28,37 +45,78 @@ export class SubscriptionService {
     const expired = expiresAt ? expiresAt.getTime() <= now.getTime() : true;
     const isPro = Boolean(user?.is_pro) && !expired;
 
+    // What you'd pay yearly without the discount, used in the UI to render
+    // the "save GH₵X" badge.
+    const annualUndiscounted = PRO_PRICE_GHS * 12;
+
     return {
       is_pro: isPro,
       pro_expires_at: expiresAt ? expiresAt.toISOString() : null,
       plan: isPro ? ('PRO' as const) : ('FREE' as const),
+      // Back-compat: the existing UI references `price_ghs` / `duration_days`
+      // as the monthly defaults.
       price_ghs: PRO_PRICE_GHS,
       duration_days: PRO_DURATION_DAYS,
+      plans: {
+        monthly: { price_ghs: PRO_PRICE_GHS, duration_days: PRO_DURATION_DAYS },
+        annual: {
+          price_ghs: PRO_ANNUAL_PRICE_GHS,
+          duration_days: PRO_ANNUAL_DURATION_DAYS,
+          discount_pct: Math.round(PRO_ANNUAL_DISCOUNT * 100),
+          /** Price if you bought 12 monthly cycles at full price. */
+          undiscounted_ghs: annualUndiscounted,
+          savings_ghs: annualUndiscounted - PRO_ANNUAL_PRICE_GHS,
+          /** Effective monthly rate, useful for the marketing pitch. */
+          monthly_equivalent_ghs:
+            Math.round((PRO_ANNUAL_PRICE_GHS / 12) * 100) / 100,
+        },
+      },
     };
   }
 
   async initializePro(
     user: { id: string; email: string },
     callbackUrl?: string,
+    plan: ProPlan = 'monthly',
   ) {
     if (!user?.email) {
       throw new BadRequestException('User email is required');
     }
+    if (plan !== 'monthly' && plan !== 'annual') {
+      throw new BadRequestException("plan must be 'monthly' or 'annual'");
+    }
 
-    const reference = `pro_${randomUUID().replace(/-/g, '').slice(0, 16)}_${Date.now()}`;
+    const amount = planPrice(plan);
+    // Plan code is embedded in the reference so verifyPro can pick the
+    // correct duration without trusting client input on the verify step.
+    const tag = plan === 'annual' ? 'y' : 'm';
+    const reference = `pro_${tag}_${randomUUID().replace(/-/g, '').slice(0, 14)}_${Date.now()}`;
 
     this.logger.log(
-      `Initializing Pro subscription for ${user.email} (ref=${reference})`,
+      `Initializing Pro ${plan} subscription for ${user.email} (ref=${reference}, GH₵${amount})`,
     );
 
     const data = await this.paymentsService.initializeTransaction({
       email: user.email,
-      amount: PRO_PRICE_GHS,
+      amount,
       reference,
       callbackUrl,
     });
 
-    return { ...data, reference };
+    return {
+      ...data,
+      reference,
+      plan,
+      amount_ghs: amount,
+      duration_days: planDays(plan),
+    };
+  }
+
+  /** Decodes the plan encoded in a Pro reference (defaults to monthly). */
+  private planFromReference(reference: string): ProPlan {
+    // New format: `pro_m_...` / `pro_y_...`. Old format: `pro_...` (monthly).
+    if (/^pro_y_/.test(reference)) return 'annual';
+    return 'monthly';
   }
 
   async verifyPro(reference: string, user: { id: string; email: string }) {
@@ -91,11 +149,13 @@ export class SubscriptionService {
       return { verified: false, status: 'email_mismatch' };
     }
 
-    const updated = await this.upgradeUserToPro(user.id, reference);
+    const plan = this.planFromReference(reference);
+    const updated = await this.upgradeUserToPro(user.id, reference, plan);
 
     return {
       verified: true,
       is_pro: true,
+      plan,
       pro_expires_at: updated.pro_expires_at
         ? updated.pro_expires_at.toISOString()
         : null,
@@ -104,9 +164,14 @@ export class SubscriptionService {
 
   /**
    * Upgrades the user to Pro. If their current expiry is in the future,
-   * extend from that point; otherwise extend from now. Lets users stack months.
+   * extend from that point; otherwise extend from now. Lets users stack
+   * cycles (monthly + annual stack cleanly because we just add days).
    */
-  async upgradeUserToPro(userId: string, reference?: string) {
+  async upgradeUserToPro(
+    userId: string,
+    reference?: string,
+    plan: ProPlan = 'monthly',
+  ) {
     const existing = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { pro_expires_at: true, email: true, full_name: true, is_pro: true },
@@ -121,9 +186,8 @@ export class SubscriptionService {
       existing?.pro_expires_at && existing.pro_expires_at.getTime() > now.getTime()
         ? existing.pro_expires_at
         : now;
-    const nextExpiry = new Date(
-      base.getTime() + PRO_DURATION_DAYS * 24 * 60 * 60 * 1000,
-    );
+    const days = planDays(plan);
+    const nextExpiry = new Date(base.getTime() + days * 24 * 60 * 60 * 1000);
 
     const updated = await this.prisma.user.update({
       where: { id: userId },
@@ -140,7 +204,7 @@ export class SubscriptionService {
         .sendProActivatedEmail(existing.email, {
           name: existing.full_name || 'there',
           proExpiresAt: nextExpiry,
-          amountPaid: PRO_PRICE_GHS,
+          amountPaid: planPrice(plan),
           reference,
           isExtension: wasPro,
         })
@@ -158,6 +222,12 @@ export class SubscriptionService {
    * the caller (cron) should fire this once per day. Returns the number of
    * emails attempted so the operator can audit.
    */
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  async handleCronExpiryReminders() {
+    this.logger.log('Running daily Pro expiry sweep via Cron');
+    await this.sendExpiryReminders(3);
+  }
+
   async sendExpiryReminders(days = 3): Promise<{ sent: number; total: number }> {
     const now = new Date();
     const horizon = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
@@ -200,6 +270,7 @@ export class SubscriptionService {
       this.logger.warn(`Pro webhook: user not found for email=${email}`);
       return null;
     }
-    return this.upgradeUserToPro(user.id, reference);
+    const plan = reference ? this.planFromReference(reference) : 'monthly';
+    return this.upgradeUserToPro(user.id, reference, plan);
   }
 }

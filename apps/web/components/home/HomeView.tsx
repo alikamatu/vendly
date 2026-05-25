@@ -12,6 +12,7 @@ import CategoryShowcase from "./CategoryShowcase";
 import FeaturedMarketplace from "./FeaturedMarketplace";
 import BrandSectionsList from "./BrandSectionsList";
 import RecentProducts from "./RecentProducts";
+import RecentlyViewed from "./RecentlyViewed";
 import TopDeals from "./TopDeals";
 import TopProVendors from "./TopProVendors";
 import ActiveBrandChip from "./ActiveBrandChip";
@@ -121,6 +122,10 @@ export default function HomeView() {
         <FeaturedMarketplace products={filters.featured} limit={FEATURED_LIMIT} />
 
         {!hasResults && <EmptyResults onClear={filters.clearAll} />}
+
+        {/* Always show recently viewed at the top of the marketplace area.
+            It auto-hides when empty, so it doesn't add noise for new visitors. */}
+        <RecentlyViewed limit={12} />
 
         {showBrandSections && (
           <>

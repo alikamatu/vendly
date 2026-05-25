@@ -11,10 +11,14 @@ import {
   Trash2,
   ExternalLink,
   ShoppingBag,
+  CreditCard,
+  Banknote,
+  WalletCards,
 } from "lucide-react";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
+import RecentlyViewed from "@/components/home/RecentlyViewed";
 import { useCart } from "@/lib/contexts/cart-context";
 import type { CartItem } from "@/lib/contexts/cart-context";
 
@@ -24,11 +28,14 @@ function CartLine({
   onRemove,
 }: {
   item: CartItem;
-  onUpdateQty: (productId: string, qty: number) => void;
-  onRemove: (productId: string) => void;
+  onUpdateQty: (key: string, qty: number) => void;
+  onRemove: (key: string) => void;
 }) {
   const price = parseFloat(String(item.price));
   const subtotal = price * item.quantity;
+  const itemKey = item.variantId
+    ? `${item.productId}::${item.variantId}`
+    : item.productId;
   const videoRef = React.useRef<HTMLVideoElement>(null);
 
   // Auto-play video on mount/item change
@@ -72,6 +79,11 @@ function CartLine({
           <h3 className="text-xs sm:text-sm font-medium text-foreground uppercase tracking-tight line-clamp-2">
             {item.title}
           </h3>
+          {item.variantLabel && (
+            <p className="text-[10px] text-muted mt-0.5 capitalize">
+              {item.variantLabel}
+            </p>
+          )}
           <p className="text-[10px] sm:text-xs font-normal text-primary mt-0.5">
             GH₵{price.toLocaleString()} each
           </p>
@@ -80,7 +92,7 @@ function CartLine({
           <div className="flex items-center gap-1 rounded-xl bg-background border border-border/50 p-1">
             <button
               type="button"
-              onClick={() => onUpdateQty(item.productId, item.quantity - 1)}
+              onClick={() => onUpdateQty(itemKey,item.quantity - 1)}
               className="p-2 rounded-lg text-muted hover:text-foreground hover:bg-surface transition-colors"
               aria-label="Decrease quantity"
             >
@@ -91,7 +103,7 @@ function CartLine({
             </span>
             <button
               type="button"
-              onClick={() => onUpdateQty(item.productId, item.quantity + 1)}
+              onClick={() => onUpdateQty(itemKey,item.quantity + 1)}
               className="p-2 rounded-lg text-muted hover:text-foreground hover:bg-surface transition-colors"
               aria-label="Increase quantity"
             >
@@ -103,7 +115,7 @@ function CartLine({
           </span>
           <button
             type="button"
-            onClick={() => onRemove(item.productId)}
+            onClick={() => onRemove(itemKey)}
             className="p-2 rounded-xl text-muted hover:text-red-500 hover:bg-red-500/10 transition-colors"
             aria-label="Remove"
           >
@@ -119,6 +131,7 @@ import { useAuth } from "@/lib/contexts/auth-context";
 import { useRouter } from "next/navigation";
 import { Loader2, Info } from "lucide-react";
 import { useAuthModal } from "@/lib/contexts/auth-modal-context";
+import { storeApi } from "@/lib/api/store";
 
 export default function CartPage() {
   const { groupedByVendor, itemCount, totalPrice, updateQuantity, removeItem } = useCart();
@@ -126,6 +139,19 @@ export default function CartPage() {
   const { openLogin } = useAuthModal();
   const router = useRouter();
   const [isCheckingOut, setIsCheckingOut] = React.useState<string | null>(null);
+  const [storeDetails, setStoreDetails] = React.useState<Record<string, any>>({});
+
+  React.useEffect(() => {
+    groupedByVendor.forEach((group) => {
+      if (!storeDetails[group.storeLink]) {
+        storeApi.getStoreBySlug(group.storeLink)
+          .then((store) => {
+            setStoreDetails((prev) => ({ ...prev, [group.storeLink]: store }));
+          })
+          .catch(() => {});
+      }
+    });
+  }, [groupedByVendor]);
 
   const handleCheckoutClick = async (group: any) => {
     if (!token) {
@@ -201,6 +227,12 @@ export default function CartPage() {
                   <ShoppingBag className="w-4 h-4" /> Browse products
                 </Button>
               </Link>
+              <div className="mt-16 text-left">
+                <RecentlyViewed
+                  limit={12}
+                  title="Or jump back to something you were eyeing"
+                />
+              </div>
             </motion.div>
           ) : (
             <motion.div
@@ -252,7 +284,11 @@ export default function CartPage() {
                     <div className="space-y-4">
                       {group.items.map((item) => (
                         <CartLine
-                          key={item.productId}
+                          key={
+                            item.variantId
+                              ? `${item.productId}::${item.variantId}`
+                              : item.productId
+                          }
                           item={item}
                           onUpdateQty={updateQuantity}
                           onRemove={removeItem}
@@ -270,18 +306,39 @@ export default function CartPage() {
                         </div>
                       </div>
                       
-                      <Button 
-                        size="lg"
-                        disabled={isCheckingOut === group.storeLink}
-                        onClick={() => handleCheckoutClick(group)}
-                        className="rounded-2xl px-10 font-medium uppercase tracking-wider text-[10px] h-12 shadow-xl shadow-primary/10"
-                      >
-                        {isCheckingOut === group.storeLink ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          "Go to Checkout"
+                      <div className="flex flex-col gap-4 sm:items-end">
+                        <Button 
+                          size="lg"
+                          disabled={isCheckingOut === group.storeLink}
+                          onClick={() => handleCheckoutClick(group)}
+                          className="rounded-2xl px-10 font-medium uppercase tracking-wider text-[10px] h-12 shadow-xl shadow-primary/10 w-full sm:w-auto"
+                        >
+                          {isCheckingOut === group.storeLink ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            "Go to Checkout"
+                          )}
+                        </Button>
+                        
+                        {storeDetails[group.storeLink]?.payment_timing === "UPFRONT_ONLY" && (
+                          <div className="flex items-center gap-1.5 text-[9px] font-medium text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-100 w-fit">
+                            <CreditCard className="w-3 h-3" />
+                            REQUIRES UPFRONT PAYMENT
+                          </div>
                         )}
-                      </Button>
+                        {storeDetails[group.storeLink]?.payment_timing === "DELIVERY_ONLY" && (
+                          <div className="flex items-center gap-1.5 text-[9px] font-medium text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100 w-fit">
+                            <Banknote className="w-3 h-3" />
+                            CASH ON DELIVERY ONLY
+                          </div>
+                        )}
+                        {(!storeDetails[group.storeLink]?.payment_timing || storeDetails[group.storeLink]?.payment_timing === "BOTH") && (
+                          <div className="flex items-center gap-1.5 text-[9px] font-medium text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100 w-fit">
+                            <WalletCards className="w-3 h-3" />
+                            FLEXIBLE PAYMENT OPTIONS
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </Card>
                 </motion.section>
@@ -306,6 +363,15 @@ export default function CartPage() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {itemCount > 0 && (
+          <div className="mt-16">
+            <RecentlyViewed
+              limit={12}
+              title="You also looked at these"
+            />
+          </div>
+        )}
 
       </main>
     </div>

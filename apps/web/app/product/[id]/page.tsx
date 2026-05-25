@@ -23,9 +23,15 @@ import { useCart } from '@/lib/contexts/cart-context';
 import PriceBlock from '@/components/product-detail/PriceBlock';
 import SellerCard from '@/components/product-detail/SellerCard';
 import RelatedProducts from '@/components/product-detail/RelatedProducts';
+import RecentlyViewed from '@/components/home/RecentlyViewed';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import { RatingStars } from '@/components/reviews/rating-stars';
 import { ProductReviewsSection } from '@/components/reviews/product-reviews-section';
+import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
+import VariantPicker, {
+  matchVariant,
+  type ProductVariant as Variant,
+} from '@/components/product-detail/VariantPicker';
 
 type MediaItem = { type: 'image'; url: string } | { type: 'video'; url: string };
 
@@ -36,7 +42,11 @@ export default function ProductDetailsPage() {
   const [product, setProduct] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
+  const { record: recordRecentlyViewed } = useRecentlyViewed();
   const [addedFeedback, setAddedFeedback] = useState(false);
+  const [selectedVariantAttrs, setSelectedVariantAttrs] = useState<
+    Record<string, string>
+  >({});
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -57,6 +67,18 @@ export default function ProductDetailsPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentMediaIndex(0);
   }, [id]);
+
+  useEffect(() => {
+    if (!product?.id) return;
+    recordRecentlyViewed({
+      id: product.id,
+      title: product.title,
+      price: product.price,
+      image: product.image_urls?.[0] ?? null,
+      storeName: product.seller?.store_name ?? null,
+      storeLink: product.seller?.store_link ?? null,
+    });
+  }, [product?.id, product?.title, product?.price, recordRecentlyViewed]);
 
   const mediaItems: MediaItem[] = useMemo(() => {
     if (!product) return [];
@@ -98,15 +120,47 @@ export default function ProductDetailsPage() {
     return key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
   };
 
+  const variants: Variant[] = useMemo(
+    () => (Array.isArray(product?.variants) ? product.variants : []),
+    [product],
+  );
+  const hasVariants = variants.length > 0;
+  const matchedVariant = useMemo(
+    () => (hasVariants ? matchVariant(variants, selectedVariantAttrs) : null),
+    [hasVariants, variants, selectedVariantAttrs],
+  );
+  const variantLabel = useMemo(() => {
+    const entries = Object.entries(selectedVariantAttrs);
+    if (!entries.length) return null;
+    return entries.map(([k, v]) => `${k}: ${v}`).join(' · ');
+  }, [selectedVariantAttrs]);
+  const effectivePrice =
+    matchedVariant?.price ?? product?.price ?? '0';
+  const effectiveStock = matchedVariant
+    ? matchedVariant.quantity_available
+    : product?.quantity_available;
+  const canPurchase = hasVariants
+    ? !!matchedVariant && matchedVariant.quantity_available > 0
+    : typeof product?.quantity_available !== 'number' ||
+      product.quantity_available > 0;
+
   const handleAddToCart = () => {
     if (!product?.seller) return;
+    if (hasVariants && !matchedVariant) return;
     const price =
-      typeof product.price === 'number' ? String(product.price) : (product.price ?? '0');
+      typeof effectivePrice === 'number'
+        ? String(effectivePrice)
+        : (effectivePrice ?? '0');
     addItem({
       productId: String(product.id),
+      variantId: matchedVariant?.id ?? null,
+      variantLabel,
       title: product.title ?? 'Product',
       price,
-      imageUrl: product.image_urls?.[0] ?? '/placeholder-product.png',
+      imageUrl:
+        matchedVariant?.image_url ||
+        product.image_urls?.[0] ||
+        '/placeholder-product.png',
       storeLink: product.seller.store_link ?? '',
       storeName: product.seller.store_name ?? 'Store',
       logoUrl: product.seller.logo_url ?? null,
@@ -235,6 +289,13 @@ export default function ProductDetailsPage() {
                       currentMedia?.type === 'image' ? currentMedia.url : '/placeholder-product.png'
                     }
                     alt={product.title}
+                    /* LCP: main product image — load eagerly + flag high
+                       fetch priority so the browser dispatches it before
+                       any below-the-fold work. */
+                    loading={currentMediaIndex === 0 ? 'eager' : 'lazy'}
+                    // @ts-ignore — fetchpriority is a valid DOM attr; React types lag.
+                    fetchpriority={currentMediaIndex === 0 ? 'high' : undefined}
+                    decoding="async"
                     className="h-full w-full object-cover"
                   />
                 )}
@@ -343,16 +404,34 @@ export default function ProductDetailsPage() {
               />
             </a>
             <PriceBlock
-              price={product.price}
+              price={effectivePrice}
               originalPrice={product.original_price}
               currency={product.currency ? `${product.currency} ` : 'GH₵'}
               quantityAvailable={
-                typeof product.quantity_available === 'number'
-                  ? product.quantity_available
-                  : undefined
+                typeof effectiveStock === 'number' ? effectiveStock : undefined
               }
             />
           </motion.div>
+
+          {hasVariants && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.32 }}
+              className="space-y-2"
+            >
+              <VariantPicker
+                variants={variants}
+                selected={selectedVariantAttrs}
+                onChange={setSelectedVariantAttrs}
+              />
+              {!matchedVariant && (
+                <p className="text-[11px] text-muted">
+                  Select all options to add this product to your cart.
+                </p>
+              )}
+            </motion.div>
+          )}
 
           {/* Tabs / Description */}
           <motion.div
@@ -437,6 +516,7 @@ export default function ProductDetailsPage() {
           >
             <Button
               onClick={handleAddToCart}
+              disabled={!canPurchase}
               className="h-16 flex-1 gap-3 rounded-[2rem] text-xs font-medium uppercase tracking-wider"
             >
               {addedFeedback ? (
@@ -462,9 +542,7 @@ export default function ProductDetailsPage() {
             <Button
               variant="secondary"
               onClick={handleBuyNow}
-              disabled={
-                typeof product.quantity_available === 'number' && product.quantity_available <= 0
-              }
+              disabled={!canPurchase}
               className="text-primary group h-16 flex-1 rounded-[2rem] border-none bg-black text-xs font-medium uppercase tracking-wider hover:bg-black/90"
             >
               Buy Now
@@ -479,6 +557,15 @@ export default function ProductDetailsPage() {
           productId={String(product.id)}
           productTitle={product.title ?? 'Product'}
           sellerUserId={product.seller?.user_id}
+        />
+      </div>
+
+      {/* Recently viewed (excludes the current product) */}
+      <div className="mx-auto max-w-7xl px-4 pb-4 md:px-8">
+        <RecentlyViewed
+          limit={12}
+          excludeId={String(product.id)}
+          title="Continue browsing"
         />
       </div>
 

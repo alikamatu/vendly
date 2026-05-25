@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ThemeProvider from "../lib/contexts/theme";
@@ -7,6 +7,8 @@ import { CartProvider } from "../lib/contexts/cart-context";
 import { StoreGuard } from "../components/auth/store-guard";
 import { AuthModalProvider } from "../lib/contexts/auth-modal-context";
 import AuthModal from "../components/auth/AuthModal";
+import { SITE_URL, SITE_NAME, SITE_DESCRIPTION, buildMetadata } from "@/lib/seo";
+import OrganizationJsonLd from "@/components/seo/OrganizationJsonLd";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,9 +21,74 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Vendly — Marketplace for Young Entrepreneurs & Small Businesses",
-  description:
-    "Discover and shop from trusted, verified young entrepreneurs and independent businesses — all in one place.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: `${SITE_NAME} — Marketplace for Independent Businesses`,
+    template: `%s · ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  keywords: [
+    "Vendly",
+    "marketplace",
+    "Ghana marketplace",
+    "young entrepreneurs",
+    "small business",
+    "independent sellers",
+    "online shopping Ghana",
+    "buy from local stores",
+  ],
+  authors: [{ name: SITE_NAME, url: SITE_URL }],
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
+  formatDetection: { email: false, address: false, telephone: false },
+  alternates: { canonical: SITE_URL },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    title: `${SITE_NAME} — Marketplace for Independent Businesses`,
+    description: SITE_DESCRIPTION,
+    images: [
+      {
+        url: `${SITE_URL}/opengraph-image`,
+        width: 1200,
+        height: 630,
+        alt: SITE_NAME,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${SITE_NAME} — Marketplace for Independent Businesses`,
+    description: SITE_DESCRIPTION,
+    images: [`${SITE_URL}/opengraph-image`],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+  ],
+  width: "device-width",
+  initialScale: 1,
 };
 
 import { FavoriteProvider } from "../lib/contexts/favorite-context";
@@ -34,9 +101,38 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {/*
+          Eager TCP + TLS handshakes for the two origins every page hits:
+          Cloudinary (every product image) and the API. preconnect opens the
+          socket; dns-prefetch is a cheap fallback for browsers that ignore
+          preconnect under hint pressure.
+        */}
+        <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="" />
+        <link rel="dns-prefetch" href="https://res.cloudinary.com" />
+        {process.env.NEXT_PUBLIC_API_URL && (
+          <>
+            <link
+              rel="preconnect"
+              href={process.env.NEXT_PUBLIC_API_URL}
+              crossOrigin=""
+            />
+            <link rel="dns-prefetch" href={process.env.NEXT_PUBLIC_API_URL} />
+          </>
+        )}
+        {/* Hero image — biggest paint on the home page. Preload so it lands
+            before React mounts. */}
+        <link
+          rel="preload"
+          as="image"
+          href="/images/423323.jpeg"
+          fetchPriority="high"
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <OrganizationJsonLd />
         <ThemeProvider>
           <AuthProvider>
             <AuthModalProvider>

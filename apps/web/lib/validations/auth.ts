@@ -1,32 +1,37 @@
 import { z } from 'zod';
 
 export const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(1, 'Password is required'),
+  email: z.string().email('Please enter a valid email address.'),
+  password: z.string().min(1, 'Please enter your password.'),
 });
 
 export const registerSchema = z
   .object({
-    full_name: z.string().min(2, 'Full name must be at least 2 characters'),
-    email: z.string().email('Invalid email address'),
+    full_name: z.string().min(2, 'Please enter your full name.'),
+    email: z.string().email('Please enter a valid email address.'),
     password: z
       .string()
-      .min(8, 'Password must be at least 8 characters')
+      .min(8, 'Your password needs at least 8 characters.')
       .regex(
         /((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/,
-        'Password must contain uppercase, lowercase, and a number or special character'
+        'Make your password stronger: include an uppercase letter, a lowercase letter, and a number or symbol.'
       ),
-    confirmPassword: z.string().min(1, 'Please confirm your password'),
+    confirmPassword: z.string().min(1, 'Please confirm your password.'),
     // `school` is the legacy backend field name; UI labels it as Business name.
-    school: z.string().min(2, 'Business name is required'),
+    school: z.string().min(2, 'Please tell us your business name.'),
+    accept_terms: z.literal(true, {
+      message:
+        'Please agree to the Terms of Service and Privacy Policy to create an account.',
+    }),
+    marketing_opt_in: z.boolean().optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: 'Passwords do not match',
+    message: "Those passwords don't match — please re-enter them.",
     path: ['confirmPassword'],
   });
 
 export const forgotPasswordSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  email: z.string().email('Please enter a valid email address.'),
 });
 
 export const resetPasswordSchema = z

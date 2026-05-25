@@ -20,6 +20,8 @@ import {
   CheckCircle2,
   MailWarning,
   LayoutDashboard,
+  MapPin,
+  ShieldAlert,
 } from 'lucide-react';
 import { useAuth } from '@/lib/contexts/auth-context';
 
@@ -321,6 +323,14 @@ export default function AccountPage() {
           label="Password & Security"
           sublabel="Change your password"
         />
+        <Row
+          href="/account/addresses"
+          icon={MapPin}
+          iconBg="bg-blue-500/10"
+          iconColor="text-blue-500"
+          label="Address Book"
+          sublabel="Manage delivery addresses"
+        />
       </Group>
 
       {/* ── Activity ── */}
@@ -356,7 +366,7 @@ export default function AccountPage() {
       </Group>
 
       {/* ── Legal ── */}
-      <Group label="Legal">
+      <Group label="Legal & Privacy">
         <Row
           href="/account/terms"
           icon={FileText}
@@ -364,6 +374,14 @@ export default function AccountPage() {
           iconColor="text-amber-500"
           label="Terms & Conditions"
           sublabel="User agreement and policies"
+        />
+        <Row
+          href="/account/data"
+          icon={ShieldAlert}
+          iconBg="bg-red-500/10"
+          iconColor="text-red-500"
+          label="Data & Privacy"
+          sublabel="Export data, delete account"
         />
       </Group>
 

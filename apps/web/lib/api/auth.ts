@@ -2,11 +2,21 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1000';
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    const msg = Array.isArray(errorData.message)
-      ? errorData.message[0]
-      : errorData.message || 'Something went wrong';
-    throw new Error(msg);
+    let errorData: any = {};
+    try { errorData = await response.json(); } catch {}
+    const raw = Array.isArray(errorData.message)
+      ? errorData.message.join(' ')
+      : errorData.message;
+    const status = response.status;
+    const fallback =
+      status === 401 ? 'Your session has expired. Please sign in again.' :
+      status === 429 ? "You're going a bit fast — try again in a minute." :
+      status >= 500 ? 'Our server hit a snag. Please try again in a moment.' :
+      'Something went wrong. Please try again.';
+    const msg = (typeof raw === 'string' && raw.length) ? raw : fallback;
+    const err = new Error(msg);
+    (err as any).status = status;
+    throw err;
   }
   const json = await response.json();
   return json && typeof json === 'object' && 'data' in json ? json.data : json;
@@ -20,15 +30,25 @@ function authHeaders(token: string) {
 }
 
 export const authApi = {
-  async login(email: string, password: string) {
+  async login(
+    email: string,
+    password: string,
+    opts: { totp_code?: string; totp_backup_code?: string } = {},
+  ) {
     const res = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, ...opts }),
     });
     return handleResponse<{
-      access_token: string;
-      user: {
+      // present on 2FA challenge
+      totp_required?: boolean;
+      method?: 'TOTP' | 'SMS';
+      phone_hint?: string | null;
+      message?: string;
+      // present on full success
+      access_token?: string;
+      user?: {
         id: string;
         full_name: string;
         email: string;
@@ -40,13 +60,131 @@ export const authApi = {
     }>(res);
   },
 
-  async register(data: { full_name: string; email: string; password: string; school: string }) {
+  async twoFactorStatus(token: string) {
+    const res = await fetch(`${API_URL}/auth/2fa/status`, { headers: authHeaders(token) });
+    return handleResponse<{
+      enabled: boolean;
+      method: 'TOTP' | 'SMS';
+      verified_at: string | null;
+      backup_codes_remaining: number;
+      phone_hint: string | null;
+    }>(res);
+  },
+
+  async twoFactorSmsSetup(token: string, phone: string) {
+    const res = await fetch(`${API_URL}/auth/2fa/sms/setup`, {
+      method: 'POST',
+      headers: authHeaders(token),
+      body: JSON.stringify({ phone }),
+    });
+    return handleResponse<{ message: string; sent: boolean; phone_hint: string }>(res);
+  },
+
+  async twoFactorSmsEnable(token: string, code: string) {
+    const res = await fetch(`${API_URL}/auth/2fa/sms/enable`, {
+      method: 'POST',
+      headers: authHeaders(token),
+      body: JSON.stringify({ code }),
+    });
+    return handleResponse<{ message: string; backup_codes: string[] }>(res);
+  },
+
+  async twoFactorSmsResend(email: string, password: string) {
+    const res = await fetch(`${API_URL}/auth/2fa/sms/resend`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    return handleResponse<{ sent: boolean; phone_hint: string }>(res);
+  },
+
+  async twoFactorSetup(token: string) {
+    const res = await fetch(`${API_URL}/auth/2fa/setup`, {
+      method: 'POST',
+      headers: authHeaders(token),
+    });
+    return handleResponse<{ secret: string; otpauth_url: string }>(res);
+  },
+
+  async twoFactorEnable(token: string, code: string) {
+    const res = await fetch(`${API_URL}/auth/2fa/enable`, {
+      method: 'POST',
+      headers: authHeaders(token),
+      body: JSON.stringify({ code }),
+    });
+    return handleResponse<{ message: string; backup_codes: string[] }>(res);
+  },
+
+  async twoFactorDisable(
+    token: string,
+    body: { password: string; totp_code?: string; backup_code?: string },
+  ) {
+    const res = await fetch(`${API_URL}/auth/2fa/disable`, {
+      method: 'POST',
+      headers: authHeaders(token),
+      body: JSON.stringify(body),
+    });
+    return handleResponse<{ message: string }>(res);
+  },
+
+  async twoFactorRegenerateBackup(token: string, password: string) {
+    const res = await fetch(`${API_URL}/auth/2fa/backup-codes/regenerate`, {
+      method: 'POST',
+      headers: authHeaders(token),
+      body: JSON.stringify({ password }),
+    });
+    return handleResponse<{ backup_codes: string[] }>(res);
+  },
+
+  async register(data: {
+    full_name: string;
+    email: string;
+    password: string;
+    school: string;
+    accept_terms: boolean;
+    marketing_opt_in?: boolean;
+  }) {
     const res = await fetch(`${API_URL}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
     return handleResponse<{ message: string }>(res);
+  },
+
+  async resendVerification(email: string) {
+    const res = await fetch(`${API_URL}/auth/resend-verification`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    return handleResponse<{ message: string }>(res);
+  },
+
+  async findAccount(body: {
+    full_name: string;
+    business_name?: string;
+    phone?: string;
+    contact_email?: string;
+    note?: string;
+  }) {
+    const res = await fetch(`${API_URL}/auth/find-account`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return handleResponse<{ message: string }>(res);
+  },
+
+  /**
+   * Returns the URL the browser should be sent to in order to start the
+   * Google OAuth handshake. The API then redirects back to
+   * `/auth/callback#token=...` on success or `/login?oauth_error=...` on
+   * failure.
+   */
+  googleStartUrl(next?: string): string {
+    const qs = next ? `?next=${encodeURIComponent(next)}` : '';
+    return `${API_URL}/auth/oauth/google/start${qs}`;
   },
 
   async getMe(token: string) {
@@ -141,5 +279,21 @@ export const authApi = {
       body: JSON.stringify(data),
     });
     return handleResponse<{ message: string; user: any }>(res);
+  },
+
+  async exportData(token: string) {
+    const res = await fetch(`${API_URL}/auth/export-data`, {
+      method: 'GET',
+      headers: authHeaders(token),
+    });
+    return handleResponse<any>(res);
+  },
+
+  async deleteAccount(token: string) {
+    const res = await fetch(`${API_URL}/auth/account`, {
+      method: 'DELETE',
+      headers: authHeaders(token),
+    });
+    return handleResponse<{ message: string }>(res);
   },
 };

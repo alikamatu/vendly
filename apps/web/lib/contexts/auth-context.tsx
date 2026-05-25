@@ -47,12 +47,27 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-  login: (email: string, password: string) => Promise<void>;
+  /**
+   * Resolves with `{ totp_required: true }` when the server demands a 2FA
+   * code; the caller should re-invoke `login` passing `opts.totp_code` or
+   * `opts.totp_backup_code`. Resolves with `void` on full success.
+   */
+  login: (
+    email: string,
+    password: string,
+    opts?: { totp_code?: string; totp_backup_code?: string },
+  ) => Promise<{
+    totp_required?: boolean;
+    method?: 'TOTP' | 'SMS';
+    phone_hint?: string | null;
+  } | void>;
   register: (data: {
     full_name: string;
     email: string;
     password: string;
     school: string;
+    accept_terms: boolean;
+    marketing_opt_in?: boolean;
   }) => Promise<{ message: string }>;
   logout: () => void;
   clearError: () => void;
@@ -90,24 +105,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const res = await authApi.login(email, password);
-      localStorage.setItem('vendly_token', res.access_token);
-      setToken(res.access_token);
-      setUser(res.user as User);
-    } catch (err: any) {
-      setError(err.message || 'Login failed');
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const login = useCallback(
+    async (
+      email: string,
+      password: string,
+      opts: { totp_code?: string; totp_backup_code?: string } = {},
+    ) => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const res = await authApi.login(email, password, opts);
+        if (res.totp_required) {
+          // No token issued — caller should now collect a code and retry.
+          return {
+            totp_required: true,
+            method: res.method,
+            phone_hint: res.phone_hint ?? null,
+          };
+        }
+        if (!res.access_token || !res.user) {
+          throw new Error(res.message || 'Login failed');
+        }
+        localStorage.setItem('vendly_token', res.access_token);
+        setToken(res.access_token);
+        setUser(res.user as User);
+        return;
+      } catch (err: any) {
+        setError(err.message || 'Login failed');
+        throw err;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [],
+  );
 
   const register = useCallback(
-    async (data: { full_name: string; email: string; password: string; school: string }) => {
+    async (data: {
+      full_name: string;
+      email: string;
+      password: string;
+      school: string;
+      accept_terms: boolean;
+      marketing_opt_in?: boolean;
+    }) => {
       setIsLoading(true);
       setError(null);
       try {

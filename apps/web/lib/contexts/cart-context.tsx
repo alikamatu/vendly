@@ -4,6 +4,10 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 
 export interface CartItem {
   productId: string;
+  /** Optional ProductVariant.id when the product has size/colour variants. */
+  variantId?: string | null;
+  /** Human-readable description of the chosen variant, e.g. "Size M · Red". */
+  variantLabel?: string | null;
   title: string;
   price: string;
   imageUrl: string;
@@ -12,6 +16,14 @@ export interface CartItem {
   storeLink: string;
   storeName: string;
   logoUrl?: string | null;
+}
+
+/** Composite key — items with different variantIds are distinct cart entries. */
+function cartKey(productId: string, variantId?: string | null) {
+  return variantId ? `${productId}::${variantId}` : productId;
+}
+function itemKey(i: CartItem) {
+  return cartKey(i.productId, i.variantId ?? null);
 }
 
 type CartState = CartItem[];
@@ -70,13 +82,16 @@ export function groupCartByVendor(items: CartItem[]): GroupedCart[] {
 interface CartContextValue {
   items: CartItem[];
   addItem: (item: Omit<CartItem, "quantity">) => void;
-  removeItem: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  /** productId or full composite key produced by `cartKey(productId, variantId)`. */
+  removeItem: (key: string) => void;
+  updateQuantity: (key: string, quantity: number) => void;
   clearCart: () => void;
   itemCount: number;
   totalPrice: number;
   groupedByVendor: GroupedCart[];
 }
+
+export { cartKey };
 
 const CartContext = createContext<CartContextValue | null>(null);
 
@@ -95,28 +110,37 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [items, hydrated]);
 
   const addItem = useCallback((item: Omit<CartItem, "quantity">) => {
+    const key = cartKey(item.productId, item.variantId ?? null);
     setItems((prev) => {
-      const existing = prev.find((i) => i.productId === item.productId);
+      const existing = prev.find((i) => itemKey(i) === key);
       if (existing) {
         return prev.map((i) =>
-          i.productId === item.productId ? { ...i, quantity: i.quantity + 1 } : i
+          itemKey(i) === key ? { ...i, quantity: i.quantity + 1 } : i,
         );
       }
       return [...prev, { ...item, quantity: 1 }];
     });
   }, []);
 
-  const removeItem = useCallback((productId: string) => {
-    setItems((prev) => prev.filter((i) => i.productId !== productId));
+  const removeItem = useCallback((key: string) => {
+    setItems((prev) =>
+      prev.filter((i) => itemKey(i) !== key && i.productId !== key),
+    );
   }, []);
 
-  const updateQuantity = useCallback((productId: string, quantity: number) => {
+  const updateQuantity = useCallback((key: string, quantity: number) => {
     if (quantity < 1) {
-      setItems((prev) => prev.filter((i) => i.productId !== productId));
+      setItems((prev) =>
+        prev.filter((i) => itemKey(i) !== key && i.productId !== key),
+      );
       return;
     }
     setItems((prev) =>
-      prev.map((i) => (i.productId === productId ? { ...i, quantity } : i))
+      prev.map((i) =>
+        itemKey(i) === key || i.productId === key
+          ? { ...i, quantity }
+          : i,
+      ),
     );
   }, []);
 

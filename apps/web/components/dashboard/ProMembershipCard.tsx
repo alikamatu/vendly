@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { Sparkles, CheckCircle2, Loader2, ChevronRight } from "lucide-react";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { useProStatus } from "@/hooks/useProStatus";
-import { subscriptionApi, PRO_PRICE_GHS } from "@/lib/api/subscription";
+import { subscriptionApi, PRO_PRICE_GHS, type ProPlan } from "@/lib/api/subscription";
 import { toast } from "sonner";
 
 const PRO_PERKS = [
@@ -23,6 +23,7 @@ export default function ProMembershipCard() {
   const searchParams = useSearchParams();
   const { status, isLoading, reload } = useProStatus();
   const [starting, setStarting] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<ProPlan>("annual");
 
   // Verify after Paystack redirect: ?subscription=pro&reference=pro_xxx
   const verifyingRef = useRef(false);
@@ -49,13 +50,13 @@ export default function ProMembershipCard() {
     })();
   }, [searchParams, token, pathname, router, reload, refreshUser]);
 
-  async function startUpgrade() {
+  async function startUpgrade(plan: ProPlan = selectedPlan) {
     if (!token) return;
     setStarting(true);
     try {
       const origin = typeof window !== "undefined" ? window.location.origin : "";
       const callbackUrl = `${origin}${pathname}?subscription=pro`;
-      const res = await subscriptionApi.initializePro(token, callbackUrl);
+      const res = await subscriptionApi.initializePro(token, callbackUrl, plan);
       const url = res.data?.authorization_url;
       if (!url) throw new Error("No checkout URL returned");
       // Paystack appends ?reference= to the callback for us, so we don't need to attach it manually.
@@ -81,6 +82,19 @@ export default function ProMembershipCard() {
   const expiresLabel = expires
     ? expires.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })
     : null;
+
+  const monthly = status?.plans?.monthly ?? {
+    price_ghs: PRO_PRICE_GHS,
+    duration_days: 30,
+  };
+  const annual = status?.plans?.annual;
+  const selectedAmount =
+    selectedPlan === "annual" && annual ? annual.price_ghs : monthly.price_ghs;
+  const ctaLabel = isPro
+    ? selectedPlan === "annual"
+      ? "Extend +1 year"
+      : "Extend +1 month"
+    : `Upgrade · GH₵${selectedAmount}${selectedPlan === "annual" ? "/yr" : "/mo"}`;
 
   return (
     <motion.div
@@ -119,14 +133,14 @@ export default function ProMembershipCard() {
             </div>
             <p className="text-[11px] text-[var(--color-muted)] leading-snug">
               {isPro && expiresLabel
-                ? `Renews on ${expiresLabel}. Tap to extend by another month.`
-                : `Unlock premium tools for GH₵${PRO_PRICE_GHS}/month. Cancel anytime.`}
+                ? `Your Pro is active through ${expiresLabel}. Pick a plan to extend.`
+                : `Unlock premium tools. Choose monthly or save with annual.`}
             </p>
           </div>
         </div>
 
         <button
-          onClick={startUpgrade}
+          onClick={() => startUpgrade()}
           disabled={starting}
           className={`flex-shrink-0 inline-flex items-center gap-1.5 h-10 px-4 rounded-2xl text-xs font-medium transition-all
             ${
@@ -141,16 +155,82 @@ export default function ProMembershipCard() {
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
               Starting…
             </>
-          ) : isPro ? (
-            <>
-              Extend <ChevronRight className="w-3.5 h-3.5" />
-            </>
           ) : (
             <>
-              Upgrade · GH₵{PRO_PRICE_GHS}
+              {ctaLabel}
               <ChevronRight className="w-3.5 h-3.5" />
             </>
           )}
+        </button>
+      </div>
+
+      {/* Plan picker */}
+      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={() => setSelectedPlan("monthly")}
+          className={`text-left p-3 rounded-2xl border transition ${
+            selectedPlan === "monthly"
+              ? "border-[var(--color-accent)] bg-[var(--color-accent)]/5"
+              : "border-[var(--color-border)] hover:border-[var(--color-foreground)]/30"
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] uppercase tracking-wider text-[var(--color-muted)]">
+              Monthly
+            </span>
+            {selectedPlan === "monthly" && (
+              <CheckCircle2 className="w-3.5 h-3.5 text-[var(--color-accent)]" />
+            )}
+          </div>
+          <div className="mt-1 text-sm font-medium">
+            GH₵{monthly.price_ghs}
+            <span className="text-[11px] font-normal text-[var(--color-muted)]">
+              {" "}/ month
+            </span>
+          </div>
+          <div className="text-[10px] text-[var(--color-muted)] mt-0.5">
+            Pay as you go. Cancel anytime.
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setSelectedPlan("annual")}
+          className={`text-left p-3 rounded-2xl border transition relative ${
+            selectedPlan === "annual"
+              ? "border-[var(--color-accent)] bg-[var(--color-accent)]/5"
+              : "border-[var(--color-border)] hover:border-[var(--color-foreground)]/30"
+          }`}
+        >
+          {annual && (
+            <span className="absolute -top-2 right-3 text-[9px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500 text-white">
+              Save {annual.discount_pct}%
+            </span>
+          )}
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] uppercase tracking-wider text-[var(--color-muted)]">
+              Annual
+            </span>
+            {selectedPlan === "annual" && (
+              <CheckCircle2 className="w-3.5 h-3.5 text-[var(--color-accent)]" />
+            )}
+          </div>
+          <div className="mt-1 text-sm font-medium">
+            GH₵{annual ? annual.price_ghs : monthly.price_ghs * 9}
+            <span className="text-[11px] font-normal text-[var(--color-muted)]">
+              {" "}/ year
+            </span>
+          </div>
+          <div className="text-[10px] text-[var(--color-muted)] mt-0.5">
+            {annual ? (
+              <>
+                Just GH₵{annual.monthly_equivalent_ghs}/mo · save GH₵{annual.savings_ghs}
+              </>
+            ) : (
+              <>Best value — 12 months upfront</>
+            )}
+          </div>
         </button>
       </div>
 

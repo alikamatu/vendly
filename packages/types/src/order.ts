@@ -2,9 +2,14 @@ export type OrderStatus =
   | 'PENDING'
   | 'CONFIRMED'
   | 'PROCESSING'
+  | 'PROCESSED'
+  | 'ON THE WAY'
+  | 'AVAILABLE FOR PICKUP'
   | 'SHIPPED'
   | 'DELIVERED'
   | 'CANCELLED'
+  | 'RETURN_REQUESTED'
+  | 'RETURNED'
   | 'REFUNDED';
 
 export type OrderItem = {
