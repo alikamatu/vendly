@@ -7,8 +7,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { CloudinaryService } from '../common/cloudinary.service';
-import { Prisma } from '@prisma/client';
+import { Prisma, Role } from '@prisma/client';
 import { PaymentsService } from '../payments/payments.service';
+import { AuditLogService } from '../audit/audit-log.service';
 
 type Decimal = Prisma.Decimal;
 const Decimal = Prisma.Decimal;
@@ -40,6 +41,7 @@ export class ProductService {
     private prisma: PrismaService,
     private cloudinaryService: CloudinaryService,
     private paymentsService: PaymentsService,
+    private auditLogs: AuditLogService,
   ) {}
 
   async createProduct(
@@ -184,6 +186,20 @@ export class ProductService {
         is_featured: false,
         attributes: parsedAttributes,
       } as any,
+    });
+
+    this.auditLogs.record({
+      actorId: userId,
+      actorRole: Role.SELLER,
+      action: 'product.create',
+      entityType: 'product',
+      entityId: (product as any).id.toString(),
+      after: {
+        title: (product as any).title,
+        price: (product as any).price.toString(),
+        status: (product as any).status,
+      },
+      metadata: { seller_id: seller.id },
     });
 
     return {
@@ -449,12 +465,15 @@ export class ProductService {
   }
 
   async getProductById(id: string) {
-    const product = await this.prisma.product.findUnique({
+    const product: any = await (this.prisma.product as any).findUnique({
       where: { id },
       include: {
         seller: {
           select: {
             id: true,
+            // Needed by the seller dashboard's ownership check on the
+            // manage page (/dashboard/products/[id]).
+            user_id: true,
             store_name: true,
             logo_url: true,
             store_link: true,
@@ -471,6 +490,10 @@ export class ProductService {
               },
             },
           },
+        },
+        variants: {
+          where: { is_active: true },
+          orderBy: { created_at: 'asc' },
         },
       },
     });
@@ -705,12 +728,101 @@ export class ProductService {
       },
     });
 
+    this.auditLogs.record({
+      actorId: userId,
+      actorRole: Role.SELLER,
+      action: 'product.update',
+      entityType: 'product',
+      entityId: id,
+      before: {
+        title: product.title,
+        price: product.price.toString(),
+        status: product.status,
+        quantity_available: product.quantity_available,
+      },
+      after: {
+        title: updatedProduct.title,
+        price: updatedProduct.price.toString(),
+        status: updatedProduct.status,
+        quantity_available: updatedProduct.quantity_available,
+      },
+    });
+
     return {
       message: 'Product updated successfully',
       product: {
         id: updatedProduct.id.toString(),
         title: updatedProduct.title,
         price: updatedProduct.price.toString(),
+      },
+    };
+  }
+
+  /**
+   * Clone a product. The copy is created as a draft with " (Copy)"
+   * appended to the title (and "(Copy 2)", "(Copy 3)" etc. if the seller
+   * keeps duplicating). Variants are intentionally NOT copied — duplicated
+   * products are meant to be tweaked, and most sellers want a clean slate
+   * for SKUs / stock.
+   */
+  async duplicateProduct(userId: string, id: string) {
+    const source: any = await (this.prisma.product as any).findUnique({
+      where: { id },
+      include: { seller: true },
+    });
+    if (!source) throw new NotFoundException('Product not found');
+    if (source.seller.user_id !== userId) {
+      throw new BadRequestException(
+        'You do not have permission to duplicate this product',
+      );
+    }
+
+    // Generate a non-colliding "(Copy N)" title.
+    const baseTitle = source.title.replace(/\s*\(Copy(?:\s+\d+)?\)\s*$/i, '');
+    let nextTitle = `${baseTitle} (Copy)`;
+    let n = 2;
+    // Cap the loop just in case.
+    while (
+      (await this.prisma.product.findFirst({
+        where: {
+          seller_id: source.seller_id,
+          title: { equals: nextTitle, mode: 'insensitive' },
+        },
+        select: { id: true },
+      })) &&
+      n < 50
+    ) {
+      nextTitle = `${baseTitle} (Copy ${n})`;
+      n++;
+    }
+
+    const copy = await (this.prisma.product as any).create({
+      data: {
+        seller_id: source.seller_id,
+        title: nextTitle,
+        description: source.description,
+        price: source.price,
+        original_price: source.original_price,
+        currency: source.currency,
+        condition: source.condition,
+        quantity_available: source.quantity_available,
+        // Always draft so the seller reviews before going live.
+        status: 'draft',
+        category: source.category,
+        brand: source.brand,
+        image_urls: source.image_urls || [],
+        video_url: source.video_url,
+        tags: source.tags || [],
+        is_featured: false,
+        attributes: source.attributes || {},
+      },
+    });
+
+    return {
+      message: 'Product duplicated as draft. Edit it before publishing.',
+      product: {
+        id: copy.id.toString(),
+        title: copy.title,
       },
     };
   }
@@ -735,6 +847,19 @@ export class ProductService {
     // 2. Delete product
     await this.prisma.product.delete({
       where: { id },
+    });
+
+    this.auditLogs.record({
+      actorId: userId,
+      actorRole: Role.SELLER,
+      action: 'product.delete',
+      entityType: 'product',
+      entityId: id,
+      before: {
+        title: product.title,
+        status: product.status,
+        seller_id: product.seller_id,
+      },
     });
 
     return { message: 'Product deleted successfully' };
@@ -1020,4 +1145,210 @@ export class ProductService {
       take: 20, // Limit suggestions
     });
   }
+
+  /**
+   * Bulk-import products from a CSV buffer. Sellers create products without
+   * media; images are added later via the edit page. Returns row-level
+   * results so the UI can show what landed and what was rejected.
+   *
+   * Expected columns (header row required):
+   *   title, price, original_price, currency, condition,
+   *   quantity_available, category, brand, tags, description, status
+   * `tags` is pipe-separated (e.g. "red|cotton|summer").
+   */
+  async bulkImportFromCsv(userId: string, csvBuffer: Buffer) {
+    const seller = await this.prisma.sellerProfile.findUnique({
+      where: { user_id: userId },
+    });
+    if (!seller) {
+      throw new NotFoundException('Seller profile not found.');
+    }
+
+    const text = csvBuffer.toString('utf8').replace(/^﻿/, '');
+    const rows = parseCsv(text);
+    if (rows.length < 2) {
+      throw new BadRequestException(
+        'CSV must contain a header row and at least one product row.',
+      );
+    }
+
+    const header = rows[0].map((c) => c.trim().toLowerCase());
+    const REQUIRED = ['title', 'price', 'category'];
+    const missing = REQUIRED.filter((c) => !header.includes(c));
+    if (missing.length) {
+      throw new BadRequestException(
+        `CSV is missing required columns: ${missing.join(', ')}`,
+      );
+    }
+    const idx = (name: string) => header.indexOf(name);
+
+    const results: Array<{
+      row: number;
+      ok: boolean;
+      productId?: string;
+      title?: string;
+      error?: string;
+    }> = [];
+    const seenTitles = new Set<string>();
+    let created = 0;
+    let failed = 0;
+
+    for (let r = 1; r < rows.length; r++) {
+      const row = rows[r];
+      if (row.every((c) => !c || !c.trim())) continue; // skip blank rows
+      const rowNum = r + 1; // header is row 1 in human-counted CSVs
+
+      try {
+        const title = normalizeTextInput(row[idx('title')] || '');
+        if (!title) throw new Error('title is required');
+        const priceStr = (row[idx('price')] || '').trim();
+        if (!priceStr) throw new Error('price is required');
+        const price = new Decimal(priceStr);
+        if (price.lessThanOrEqualTo(0)) throw new Error('price must be > 0');
+
+        const category = (row[idx('category')] || '').trim();
+        if (!category) throw new Error('category is required');
+
+        if (seenTitles.has(title.toLowerCase())) {
+          throw new Error('duplicate title within the CSV');
+        }
+        seenTitles.add(title.toLowerCase());
+
+        const existing = await this.prisma.product.findFirst({
+          where: {
+            seller_id: seller.id,
+            title: { equals: title, mode: 'insensitive' },
+          },
+          select: { id: true },
+        });
+        if (existing) throw new Error('product with this title already exists');
+
+        const originalPriceStr =
+          idx('original_price') >= 0
+            ? (row[idx('original_price')] || '').trim()
+            : '';
+        let originalPrice: Decimal | null = null;
+        if (originalPriceStr) {
+          const op = new Decimal(originalPriceStr);
+          if (op.lessThanOrEqualTo(price)) {
+            throw new Error('original_price must be greater than price');
+          }
+          originalPrice = op;
+        }
+
+        const tagsRaw =
+          idx('tags') >= 0 ? (row[idx('tags')] || '').trim() : '';
+        const tags = normalizeTags(
+          tagsRaw ? tagsRaw.split(/[|;]/).map((s) => s) : [],
+        );
+
+        const qty =
+          idx('quantity_available') >= 0
+            ? parseInt(row[idx('quantity_available')] || '1', 10)
+            : 1;
+
+        const product = await this.prisma.product.create({
+          data: {
+            seller_id: seller.id,
+            title,
+            description:
+              idx('description') >= 0
+                ? (row[idx('description')] || '').trim() || null
+                : null,
+            price: price as any,
+            original_price: originalPrice as any,
+            currency:
+              (idx('currency') >= 0 && (row[idx('currency')] || '').trim()) ||
+              'GHS',
+            condition:
+              (idx('condition') >= 0 && (row[idx('condition')] || '').trim()) ||
+              'new',
+            quantity_available: isNaN(qty) || qty < 0 ? 1 : qty,
+            status:
+              (idx('status') >= 0 && (row[idx('status')] || '').trim()) ||
+              'draft',
+            category,
+            brand:
+              idx('brand') >= 0 ? (row[idx('brand')] || '').trim() || null : null,
+            image_urls: [],
+            tags,
+            is_featured: false,
+            attributes: {},
+          } as any,
+        });
+
+        results.push({
+          row: rowNum,
+          ok: true,
+          productId: (product as any).id.toString(),
+          title,
+        });
+        created++;
+      } catch (err: any) {
+        results.push({
+          row: rowNum,
+          ok: false,
+          error: err?.message || 'Unknown error',
+        });
+        failed++;
+      }
+    }
+
+    return {
+      summary: { created, failed, total: created + failed },
+      results,
+    };
+  }
+}
+
+/**
+ * Minimal RFC-4180-ish CSV parser. Handles double-quoted fields, escaped
+ * quotes (""), commas inside quotes, and \r\n / \n line endings. No external
+ * dependency.
+ */
+function parseCsv(input: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let field = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < input.length; i++) {
+    const c = input[i];
+
+    if (inQuotes) {
+      if (c === '"') {
+        if (input[i + 1] === '"') {
+          field += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        field += c;
+      }
+      continue;
+    }
+
+    if (c === '"') {
+      inQuotes = true;
+    } else if (c === ',') {
+      row.push(field);
+      field = '';
+    } else if (c === '\n' || c === '\r') {
+      // handle \r\n
+      if (c === '\r' && input[i + 1] === '\n') i++;
+      row.push(field);
+      rows.push(row);
+      row = [];
+      field = '';
+    } else {
+      field += c;
+    }
+  }
+  // last field / row (no trailing newline)
+  if (field !== '' || row.length > 0) {
+    row.push(field);
+    rows.push(row);
+  }
+  return rows;
 }

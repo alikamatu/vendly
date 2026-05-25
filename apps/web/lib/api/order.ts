@@ -11,7 +11,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
 }
 
 export const orderApi = {
-  async createOrder(token: string, storeLink: string, items: { productId: string; quantity: number }[], checkoutDetails: {
+  async createOrder(token: string, storeLink: string, items: { productId: string; variantId?: string | null; quantity: number }[], checkoutDetails: {
     customerName: string;
     customerPhone: string;
     deliveryMethod: string;
@@ -93,7 +93,7 @@ export const orderApi = {
       order_status: string;
     }>(response);
   },
-  
+
   async retryPayment(token: string, orderId: string) {
     const response = await fetch(`${API_URL}/orders/${orderId}/retry-payment`, {
       method: "POST",
@@ -103,5 +103,61 @@ export const orderApi = {
     });
 
     return handleResponse<{ authorization_url: string; reference: string }>(response);
+  },
+
+  async cancelOrder(token: string, orderId: string, reason?: string) {
+    const response = await fetch(`${API_URL}/orders/${orderId}/cancel`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ reason: reason ?? "" }),
+    });
+    return handleResponse<{ message: string; status: string }>(response);
+  },
+
+  async getBuyerOrderDetails(token: string, orderId: string) {
+    const response = await fetch(`${API_URL}/orders/buyer/${orderId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    return handleResponse<any>(response);
+  },
+
+  async createReturnRequest(
+    token: string,
+    orderId: string,
+    data: { reason: string; description: string; photo_urls?: string[] },
+  ) {
+    const response = await fetch(`${API_URL}/orders/${orderId}/return`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+
+    return handleResponse<any>(response);
+  },
+
+  async updateReturnRequestStatus(
+    token: string,
+    orderId: string,
+    data: { status: 'APPROVED' | 'REJECTED'; sellerResponse?: string },
+  ) {
+    const response = await fetch(`${API_URL}/orders/${orderId}/return/status`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+
+    return handleResponse<any>(response);
   },
 };

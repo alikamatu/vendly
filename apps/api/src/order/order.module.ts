@@ -6,9 +6,10 @@ import { AdminOrderService } from './admin-order.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { EmailModule } from '../email/email.module';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
-  imports: [PrismaModule, PaymentsModule, EmailModule],
+  imports: [PrismaModule, PaymentsModule, EmailModule, NotificationModule],
   controllers: [OrderController, AdminOrderController],
   providers: [OrderService, AdminOrderService],
   exports: [OrderService],

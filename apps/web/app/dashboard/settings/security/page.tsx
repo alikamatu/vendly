@@ -9,6 +9,7 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { authApi } from "@/lib/api/auth";
+import TwoFactorPanel from "@/components/settings/TwoFactorPanel";
 
 export default function SecuritySettingsPage() {
   const { token } = useAuth();
@@ -148,27 +149,7 @@ export default function SecuritySettingsPage() {
           </form>
         </section>
 
-        {/* 2FA Mock Section */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-3 px-2">
-             <div className="p-2 rounded-xl bg-purple-500/10 text-purple-500">
-                <Smartphone className="w-4 h-4" />
-             </div>
-             <h3 className="text-sm font-medium uppercase">Two-Factor Auth</h3>
-          </div>
-
-          <Card className="p-6 md:p-8 flex items-center justify-between border-none shadow-sm" hoverEffect={false}>
-             <div className="space-y-1">
-                <p className="text-xs font-normal">Authenticator App</p>
-                <p className="text-[10px] text-muted font-medium">Add an extra layer of security to your account.</p>
-             </div>
-             <div className="opacity-40 grayscale">
-                <div className="w-10 h-6 bg-border/50 rounded-full relative cursor-not-allowed">
-                  <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full"></div>
-                </div>
-             </div>
-          </Card>
-        </section>
+        <TwoFactorPanel />
       </div>
     </div>
   );

@@ -15,7 +15,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 @Controller('orders')
 @UseGuards(JwtAuthGuard)
 export class OrderController {
-  constructor(private readonly orderService: OrderService) {}
+  constructor(private readonly orderService: OrderService) { }
 
   @Post()
   async createOrder(@Req() req: any, @Body() dto: CreateOrderDto) {
@@ -25,6 +25,11 @@ export class OrderController {
   @Get('buyer')
   async getBuyerOrders(@Req() req: any) {
     return this.orderService.getBuyerOrders(req.user.id);
+  }
+
+  @Get('buyer/:id')
+  async getBuyerOrderDetails(@Req() req: any, @Param('id') id: string) {
+    return this.orderService.getBuyerOrderById(req.user.id, id);
   }
 
   @Get('seller')
@@ -62,5 +67,37 @@ export class OrderController {
   @Post(':id/retry-payment')
   async retryPayment(@Req() req: any, @Param('id') id: string) {
     return this.orderService.reinitializeOrderPayment(req.user.id, id);
+  }
+
+  @Post(':id/cancel')
+  async cancelOrder(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body('reason') reason?: string,
+  ) {
+    return this.orderService.cancelOrderByBuyer(req.user.id, id, reason);
+  }
+
+  @Post(':id/return')
+  async createReturnRequest(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() dto: { reason: string; description: string; photo_urls?: string[] },
+  ) {
+    return this.orderService.createReturnRequest(req.user.id, id, dto);
+  }
+
+  @Post(':id/return/status')
+  async updateReturnRequestStatus(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() dto: { status: 'APPROVED' | 'REJECTED'; sellerResponse?: string },
+  ) {
+    return this.orderService.updateReturnRequestStatus(
+      req.user.id,
+      id,
+      dto.status,
+      dto.sellerResponse,
+    );
   }
 }

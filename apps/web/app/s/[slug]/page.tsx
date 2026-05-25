@@ -10,6 +10,7 @@ import { productApi } from "@/lib/api/product";
 import ProductCard from "@/components/products/ProductCard";
 import Button from "@/components/ui/Button";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import RecentlyViewed from "@/components/home/RecentlyViewed";
 import StorefrontHeader from "@/components/store/StorefrontHeader";
 
 export default function StorePage() {
@@ -109,6 +110,10 @@ export default function StorePage() {
               </motion.div>
             )}
           </AnimatePresence>
+
+          <div className="mt-16">
+            <RecentlyViewed limit={12} title="Pick up where you left off" />
+          </div>
         </div>
       </div>
     </div>

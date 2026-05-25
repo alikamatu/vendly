@@ -21,15 +21,6 @@ export function FavoriteProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const { openLogin } = useAuthModal();
 
-  useEffect(() => {
-    if (user) {
-      loadFavorites();
-    } else {
-      setFavorites([]);
-      setIsLoading(false);
-    }
-  }, [user]);
-
   const loadFavorites = async () => {
     try {
       setIsLoading(true);
@@ -42,6 +33,15 @@ export function FavoriteProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (user) {
+      loadFavorites();
+    } else {
+      setFavorites([]);
+      setIsLoading(false);
+    }
+  }, [user]);
 
   const toggleFavorite = async (productId: string) => {
     if (!user) {

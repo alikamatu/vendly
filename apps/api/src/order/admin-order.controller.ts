@@ -5,9 +5,11 @@ import {
   Param,
   Body,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { AdminOrderService } from './admin-order.service';
+import { actorFromReq } from '../audit/audit-log.service';
 import {
   AdminOrderListQueryDto,
   AdminUpdateOrderStatusDto,
@@ -41,7 +43,8 @@ export class AdminOrderController {
   async updateStatus(
     @Param('id') id: string,
     @Body() dto: AdminUpdateOrderStatusDto,
+    @Req() req,
   ) {
-    return this.adminOrderService.updateStatus(id, dto);
+    return this.adminOrderService.updateStatus(id, dto, actorFromReq(req));
   }
 }

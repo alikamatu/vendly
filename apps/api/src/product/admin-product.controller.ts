@@ -8,9 +8,11 @@ import {
   Param,
   Body,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { AdminProductService } from './admin-product.service';
+import { actorFromReq } from '../audit/audit-log.service';
 import {
   AdminBulkActionDto,
   AdminFeatureDto,
@@ -34,8 +36,8 @@ export class AdminProductController {
   }
 
   @Post('bulk')
-  async bulk(@Body() dto: AdminBulkActionDto) {
-    return this.adminProductService.bulk(dto);
+  async bulk(@Body() dto: AdminBulkActionDto, @Req() req) {
+    return this.adminProductService.bulk(dto, actorFromReq(req));
   }
 
   @Get(':id')
@@ -55,17 +57,22 @@ export class AdminProductController {
   async updateStatus(
     @Param('id') id: string,
     @Body() dto: AdminUpdateStatusDto,
+    @Req() req,
   ) {
-    return this.adminProductService.updateStatus(id, dto);
+    return this.adminProductService.updateStatus(id, dto, actorFromReq(req));
   }
 
   @Patch(':id/feature')
-  async feature(@Param('id') id: string, @Body() dto: AdminFeatureDto) {
-    return this.adminProductService.setFeatured(id, dto);
+  async feature(
+    @Param('id') id: string,
+    @Body() dto: AdminFeatureDto,
+    @Req() req,
+  ) {
+    return this.adminProductService.setFeatured(id, dto, actorFromReq(req));
   }
 
   @Delete(':id')
-  async remove(@Param('id') id: string) {
-    return this.adminProductService.remove(id);
+  async remove(@Param('id') id: string, @Req() req) {
+    return this.adminProductService.remove(id, actorFromReq(req));
   }
 }

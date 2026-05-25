@@ -15,6 +15,7 @@ import { SubscriptionService } from './subscription.service';
 
 interface InitializeProBody {
   callback_url?: string;
+  plan?: 'monthly' | 'annual';
 }
 
 @Controller('subscriptions')
@@ -35,6 +36,7 @@ export class SubscriptionController {
     return this.subscriptionService.initializePro(
       { id: req.user.id, email: req.user.email },
       body?.callback_url,
+      body?.plan,
     );
   }
 

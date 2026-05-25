@@ -366,5 +366,43 @@ export const productApi = {
     });
 
     return handleResponse<{ message: string }>(res);
-  }
+  },
+
+  async duplicateProduct(token: string, id: string) {
+    const res = await fetch(`${API_URL}/products/${id}/duplicate`, {
+      method: 'POST',
+      headers: authHeaders(token),
+    });
+    return handleResponse<{
+      message: string;
+      product: { id: string; title: string };
+    }>(res);
+  },
+
+  /**
+   * Lightweight status-only patch — uses the existing PUT endpoint but only
+   * sends the `status` field so we don't have to round-trip the whole form.
+   */
+  async updateStatus(token: string, id: string, status: string) {
+    const fd = new FormData();
+    fd.append('status', status);
+    const res = await fetch(`${API_URL}/products/${id}`, {
+      method: 'PUT',
+      headers: authHeaders(token),
+      body: fd,
+    });
+    return handleResponse<{ message: string; product: any }>(res);
+  },
+
+  /** Same trick for stock — single-field PUT to skip the full form. */
+  async updateStock(token: string, id: string, quantity_available: number) {
+    const fd = new FormData();
+    fd.append('quantity_available', String(quantity_available));
+    const res = await fetch(`${API_URL}/products/${id}`, {
+      method: 'PUT',
+      headers: authHeaders(token),
+      body: fd,
+    });
+    return handleResponse<{ message: string; product: any }>(res);
+  },
 };

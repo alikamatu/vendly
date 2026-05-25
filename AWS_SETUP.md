@@ -93,7 +93,7 @@ docker push YOUR_ACCOUNT_ID.dkr.ecr.eu-west-1.amazonaws.com/vendly-api:latest
 5. Service name: `vendly-api-service`
 6. Port: `1000`
 7. CPU: 1 vCPU / Memory: 2 GB
-8. **Environment variables** — add all variables from `.env.aws.example`
+8. **Environment variables** — add all variables from `apps/api/.env.aws.example`
 9. **Networking**:
    - Enable **VPC connector** pointing to your `vendly-vpc` private subnets
    - Assign `vendly-apprunner-sg` security group
@@ -109,7 +109,7 @@ docker push YOUR_ACCOUNT_ID.dkr.ecr.eu-west-1.amazonaws.com/vendly-api:latest
 3. Select the `main` branch
 4. **Build settings**:
    - Root directory: `apps/web`
-   - Build command: `npm run build`
+   - Build command: `pnpm build`
    - Output directory: `.next`
 5. **Environment variables**:
    ```

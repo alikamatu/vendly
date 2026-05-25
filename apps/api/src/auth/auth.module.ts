@@ -11,6 +11,8 @@ import { EmailModule } from '../email/email.module';
 import { CloudinaryModule } from '../common/cloudinary.module';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { PaymentsModule } from '../payments/payments.module';
+import { SmsClient } from './arkesel.client';
+import { OAuthService } from './oauth.service';
 
 @Module({
   imports: [
@@ -29,7 +31,7 @@ import { PaymentsModule } from '../payments/payments.module';
     }),
   ],
   controllers: [AuthController, AdminController],
-  providers: [AuthService, AdminService, JwtStrategy],
+  providers: [AuthService, AdminService, JwtStrategy, SmsClient, OAuthService],
   exports: [AuthService, JwtStrategy],
 })
 export class AuthModule {}

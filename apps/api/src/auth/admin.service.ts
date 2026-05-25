@@ -9,6 +9,7 @@ import { ApproveVerificationDto } from './dto/approve-verification.dto';
 import { AdminQueryDto, ApprovalStatusFilter } from './dto/admin-query.dto';
 import { PaymentsService } from '../payments/payments.service';
 import { EmailService } from '../email/email.service';
+import { Actor, AuditLogService } from '../audit/audit-log.service';
 
 import {
   UpdateUserRoleDto,
@@ -22,6 +23,7 @@ export class AdminService {
     private prisma: PrismaService,
     private paymentsService: PaymentsService,
     private emailService: EmailService,
+    private auditLogs: AuditLogService,
   ) {}
 
   async getAllTransactions(query: AdminQueryDto) {
@@ -150,7 +152,7 @@ export class AdminService {
     };
   }
 
-  async updateUserRole(id: string, dto: UpdateUserRoleDto) {
+  async updateUserRole(id: string, dto: UpdateUserRoleDto, actor: Actor) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new NotFoundException('User not found');
 
@@ -159,10 +161,26 @@ export class AdminService {
       data: { role: dto.role },
     });
 
+    this.auditLogs.record({
+      actorId: actor.id,
+      actorRole: actor.role,
+      action: 'user.role_change',
+      entityType: 'user',
+      entityId: id,
+      before: { role: user.role },
+      after: { role: dto.role },
+      ip: actor.ip,
+      userAgent: actor.userAgent,
+    });
+
     return { message: `User role updated to ${dto.role}` };
   }
 
-  async toggleUserSuspension(id: string, dto: ToggleSuspensionDto) {
+  async toggleUserSuspension(
+    id: string,
+    dto: ToggleSuspensionDto,
+    actor: Actor,
+  ) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new NotFoundException('User not found');
 
@@ -184,13 +202,26 @@ export class AdminService {
         );
     }
 
+    this.auditLogs.record({
+      actorId: actor.id,
+      actorRole: actor.role,
+      action: updated.is_suspended ? 'user.suspend' : 'user.unsuspend',
+      entityType: 'user',
+      entityId: id,
+      reason: dto.reason,
+      before: { is_suspended: user.is_suspended },
+      after: { is_suspended: updated.is_suspended },
+      ip: actor.ip,
+      userAgent: actor.userAgent,
+    });
+
     return {
       message: `User ${updated.is_suspended ? 'suspended' : 'unsuspended'} successfully`,
       is_suspended: updated.is_suspended,
     };
   }
 
-  async warnUser(id: string, dto: WarnUserDto) {
+  async warnUser(id: string, dto: WarnUserDto, actor: Actor) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new NotFoundException('User not found');
 
@@ -199,13 +230,26 @@ export class AdminService {
       data: { warnings: { increment: 1 } },
     });
 
+    this.auditLogs.record({
+      actorId: actor.id,
+      actorRole: actor.role,
+      action: 'user.warn',
+      entityType: 'user',
+      entityId: id,
+      reason: dto.reason,
+      before: { warnings: user.warnings },
+      after: { warnings: updated.warnings },
+      ip: actor.ip,
+      userAgent: actor.userAgent,
+    });
+
     return {
       message: `Warning issued. Total warnings: ${updated.warnings}`,
       warnings: updated.warnings,
     };
   }
 
-  async deleteUser(id: string) {
+  async deleteUser(id: string, actor: Actor) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new NotFoundException('User not found');
 
@@ -214,6 +258,21 @@ export class AdminService {
       this.prisma.sellerProfile.deleteMany({ where: { user_id: id } }),
       this.prisma.user.delete({ where: { id } }),
     ]);
+
+    this.auditLogs.record({
+      actorId: actor.id,
+      actorRole: actor.role,
+      action: 'user.delete',
+      entityType: 'user',
+      entityId: id,
+      before: {
+        email: user.email,
+        role: user.role,
+        is_suspended: user.is_suspended,
+      },
+      ip: actor.ip,
+      userAgent: actor.userAgent,
+    });
 
     return { message: 'User and associated data deleted successfully' };
   }
@@ -399,6 +458,7 @@ export class AdminService {
     approvalId: string,
     adminId: string,
     dto: ApproveVerificationDto,
+    actor?: Actor,
   ) {
     const approval = await this.prisma.adminApproval.findUnique({
       where: { id: approvalId },
@@ -469,6 +529,23 @@ export class AdminService {
         .catch((err) => console.error('Failed to send rejection email:', err));
     }
 
+    this.auditLogs.record({
+      actorId: actor?.id ?? adminId,
+      actorRole: actor?.role ?? Role.ADMIN,
+      action:
+        dto.status === 'APPROVED'
+          ? 'approval.approve'
+          : 'approval.reject',
+      entityType: 'approval',
+      entityId: approvalId,
+      reason: dto.reason,
+      before: { status: approval.status },
+      after: { status: dto.status, reviewed_by: adminId },
+      metadata: { user_id: approval.user_id, type: approval.type },
+      ip: actor?.ip,
+      userAgent: actor?.userAgent,
+    });
+
     return {
       id: updated.id.toString(),
       status: updated.status,
@@ -538,13 +615,24 @@ export class AdminService {
         warnings: true,
         created_at: true,
         verification_doc: true,
+        // 2FA / OAuth / Pro — needed by the admin user-detail page.
+        totp_enabled: true,
+        totp_method: true,
+        totp_verified_at: true,
+        phone_e164: true,
+        phone_verified_at: true,
+        oauth_provider: true,
+        avatar_url: true,
+        terms_accepted_at: true,
+        is_pro: true,
+        pro_expires_at: true,
         seller_profile: {
           include: {
             structured_location: true,
           },
         },
-      },
-    });
+      } as any,
+    }) as any;
 
     if (!user) throw new NotFoundException('User not found');
 
@@ -693,5 +781,209 @@ export class AdminService {
       },
       feed: feed.slice(0, 10),
     };
+  }
+
+  // ───────────────── 2FA admin reset / Pro toggle ─────────────────
+
+  /**
+   * Force-disable 2FA for a user. Used when someone lost their phone +
+   * backup codes and contacted support. The audit trail lives in the
+   * platform's notification feed (we also drop them an in-app note).
+   */
+  async forceDisable2fa(userId: string) {
+    const u = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!u) throw new NotFoundException('User not found');
+    await (this.prisma.user as any).update({
+      where: { id: userId },
+      data: {
+        totp_enabled: false,
+        totp_secret: null,
+        totp_verified_at: null,
+        totp_backup_codes: [],
+        totp_method: 'TOTP',
+        sms_code_hash: null,
+        sms_code_expires_at: null,
+        phone_verified_at: null,
+      },
+    });
+    return { message: '2FA disabled. The user should re-enroll on their next sign-in.' };
+  }
+
+  async setProStatus(
+    userId: string,
+    args: { is_pro: boolean; duration_days?: number },
+  ) {
+    const u = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!u) throw new NotFoundException('User not found');
+
+    if (!args.is_pro) {
+      const updated = await (this.prisma.user as any).update({
+        where: { id: userId },
+        data: { is_pro: false, pro_expires_at: null },
+        select: { id: true, is_pro: true, pro_expires_at: true },
+      });
+      return { ...updated, id: updated.id.toString() };
+    }
+
+    const days = Math.max(1, Math.floor(args.duration_days ?? 30));
+    const now = new Date();
+    const baseDate =
+      (u as any).pro_expires_at && (u as any).pro_expires_at.getTime() > now.getTime()
+        ? (u as any).pro_expires_at
+        : now;
+    const nextExpiry = new Date(baseDate.getTime() + days * 24 * 60 * 60 * 1000);
+    const updated = await (this.prisma.user as any).update({
+      where: { id: userId },
+      data: { is_pro: true, pro_expires_at: nextExpiry },
+      select: { id: true, is_pro: true, pro_expires_at: true },
+    });
+    return { ...updated, id: updated.id.toString() };
+  }
+
+  // ───────────────── Returns admin ─────────────────
+
+  async listReturns(query: {
+    status?: string;
+    page?: string;
+    limit?: string;
+    search?: string;
+  }) {
+    const page = Math.max(parseInt(query.page || '1', 10) || 1, 1);
+    const limit = Math.min(
+      Math.max(parseInt(query.limit || '20', 10) || 20, 1),
+      100,
+    );
+    const skip = (page - 1) * limit;
+    const where: any = {};
+    if (query.status) where.status = query.status;
+    if (query.search?.trim()) {
+      where.OR = [
+        { reason: { contains: query.search, mode: 'insensitive' } },
+        { description: { contains: query.search, mode: 'insensitive' } },
+      ];
+    }
+    const [items, total] = await Promise.all([
+      this.prisma.returnRequest.findMany({
+        where,
+        include: {
+          buyer: { select: { id: true, full_name: true, email: true } },
+          order: {
+            select: {
+              id: true,
+              status: true,
+              total_amount: true,
+              created_at: true,
+              items: {
+                take: 1,
+                select: {
+                  product: {
+                    select: {
+                      title: true,
+                      image_urls: true,
+                      seller: { select: { store_name: true } },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        } as any,
+        orderBy: { created_at: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.returnRequest.count({ where }),
+    ]);
+    return { items, total, page, limit };
+  }
+
+  async updateReturnStatus(
+    id: string,
+    args: { status: 'APPROVED' | 'REJECTED' | 'COMPLETED'; admin_note?: string },
+  ) {
+    const ret = await this.prisma.returnRequest.findUnique({ where: { id } });
+    if (!ret) throw new NotFoundException('Return request not found');
+    const updated = await this.prisma.returnRequest.update({
+      where: { id },
+      data: {
+        status: args.status as any,
+        ...(args.admin_note ? { admin_notes: args.admin_note } : {}),
+      } as any,
+    });
+    return updated;
+  }
+
+  // ───────────────── Reviews admin ─────────────────
+
+  async listReviews(query: {
+    flagged?: string;
+    rating?: string;
+    page?: string;
+    limit?: string;
+    search?: string;
+  }) {
+    const page = Math.max(parseInt(query.page || '1', 10) || 1, 1);
+    const limit = Math.min(
+      Math.max(parseInt(query.limit || '20', 10) || 20, 1),
+      100,
+    );
+    const skip = (page - 1) * limit;
+    const where: any = {};
+    if (query.flagged === 'true') {
+      where.flags = { some: {} };
+    }
+    if (query.rating) {
+      const r = parseInt(query.rating, 10);
+      if (!isNaN(r)) where.rating = r;
+    }
+    if (query.search?.trim()) {
+      where.comment = { contains: query.search, mode: 'insensitive' };
+    }
+    const [items, total] = await Promise.all([
+      this.prisma.review.findMany({
+        where,
+        include: {
+          buyer: { select: { id: true, full_name: true, email: true } },
+          product: { select: { id: true, title: true, image_urls: true } },
+          flags: {
+            select: {
+              id: true,
+              reason: true,
+              notes: true,
+              created_at: true,
+              reporter: { select: { full_name: true, email: true } },
+            },
+            orderBy: { created_at: 'desc' },
+          },
+        },
+        orderBy: { created_at: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.review.count({ where }),
+    ]);
+    return { items, total, page, limit };
+  }
+
+  async moderateReview(
+    id: string,
+    args: { action: 'hide' | 'show' | 'delete' | 'dismiss_flags' },
+  ) {
+    const review = await this.prisma.review.findUnique({ where: { id } });
+    if (!review) throw new NotFoundException('Review not found');
+    if (args.action === 'delete') {
+      await this.prisma.review.delete({ where: { id } });
+      return { deleted: true };
+    }
+    if (args.action === 'dismiss_flags') {
+      await this.prisma.reviewFlag.deleteMany({ where: { review_id: id } });
+      return { dismissed: true };
+    }
+    const status = args.action === 'hide' ? 'HIDDEN' : 'PUBLISHED';
+    const updated = await (this.prisma.review as any).update({
+      where: { id },
+      data: { status },
+    });
+    return updated;
   }
 }

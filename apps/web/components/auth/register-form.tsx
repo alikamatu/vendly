@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { useRegisterForm } from '@/hooks/useAuth';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
 import ProgressBar from '@/components/ui/ProgressBar';
 import PasswordStrength from '@/components/auth/PasswordStrength';
+import GoogleSignInButton from '@/components/auth/GoogleSignInButton';
 import { Mail, Lock, User as UserIcon, CheckCircle, Building } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -25,12 +27,13 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await onSubmit(e);
-      setSuccess(true);
-      // We don't call onSuccess() here because we want the user to see the "Check your email" screen.
-      // The user can close the modal manually or via a "Close" button we provide there.
+      const ok = await onSubmit(e);
+      // Only show the "check your email" screen when the API call really
+      // completed. `onSubmit` returns false when react-hook-form's resolver
+      // rejected the input — those errors are shown inline beside each field.
+      if (ok) setSuccess(true);
     } catch {
-      // error handled by context
+      // API error already surfaced via the auth-context error state.
     }
   };
 
@@ -70,6 +73,13 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
   return (
     <div className="w-full">
       {isLoading && <ProgressBar className="mb-4" />}
+
+      <GoogleSignInButton label="Sign up with Google" />
+      <div className="my-6 flex items-center gap-3 text-[10px] uppercase tracking-wider text-foreground/40">
+        <div className="h-px flex-1 bg-border" />
+        or use your email
+        <div className="h-px flex-1 bg-border" />
+      </div>
 
       <form onSubmit={handleSubmit} className="w-full space-y-8">
         {error && <Alert variant="error" message={error} onDismiss={clearError} />}
@@ -116,11 +126,58 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
           </div>
 
           <PasswordStrength value={form.watch('password') || ''} />
+
+          {/* Terms of Service + Privacy Policy */}
+          <div className="space-y-2">
+            <label className="flex items-start gap-2 text-xs text-foreground/70 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 rounded border-border accent-accent"
+                {...register('accept_terms')}
+              />
+              <span>
+                I agree to Vendly&apos;s{' '}
+                <Link href="/terms" target="_blank" className="text-accent hover:underline">
+                  Terms of Service
+                </Link>{' '}
+                and{' '}
+                <Link href="/privacy" target="_blank" className="text-accent hover:underline">
+                  Privacy Policy
+                </Link>
+                .
+              </span>
+            </label>
+            {errors.accept_terms?.message && (
+              <p className="text-xs text-red-500 pl-6">
+                {String(errors.accept_terms.message)}
+              </p>
+            )}
+
+            <label className="flex items-start gap-2 text-xs text-foreground/60 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 rounded border-border accent-accent"
+                {...register('marketing_opt_in')}
+              />
+              <span>Send me occasional product news and seller tips. (Optional)</span>
+            </label>
+          </div>
         </div>
 
         <Button type="submit" variant="primary" className="w-full" isLoading={isLoading}>
           {isLoading ? 'Creating account...' : 'Create account'}
         </Button>
+
+        <p className="text-center text-[11px] text-foreground/50">
+          Trouble signing up?{' '}
+          <a
+            href="mailto:support@vendly.app?subject=Sign-up%20issue"
+            className="text-accent hover:underline"
+          >
+            Contact support
+          </a>
+          .
+        </p>
       </form>
     </div>
   );

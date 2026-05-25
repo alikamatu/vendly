@@ -31,6 +31,7 @@ export default function BuyerOrdersPage() {
   const [error, setError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isRetrying, setIsRetrying] = useState<string | null>(null);
+  const [isCancelling, setIsCancelling] = useState<string | null>(null);
 
   async function fetchOrders() {
     try {
@@ -104,6 +105,24 @@ export default function BuyerOrdersPage() {
     } catch (err: any) {
       setError(err.message || 'Failed to re-initialize payment');
       setIsRetrying(null);
+    }
+  };
+
+  const handleCancel = async (orderId: string) => {
+    if (!token) return;
+    const reason = window.prompt(
+      'Cancel this order? Optionally provide a reason for the seller:',
+      '',
+    );
+    if (reason === null) return; // user dismissed
+    try {
+      setIsCancelling(orderId);
+      await orderApi.cancelOrder(token, orderId, reason || undefined);
+      await fetchOrders();
+    } catch (err: any) {
+      setError(err.message || 'Failed to cancel order');
+    } finally {
+      setIsCancelling(null);
     }
   };
 
@@ -396,17 +415,39 @@ export default function BuyerOrdersPage() {
                               </Button>
                             </div>
                           )}
+                          {(order.status === 'PENDING' ||
+                            order.status === 'AWAITING_PAYMENT') && (
+                            <div className="pt-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleCancel(order.id)}
+                                isLoading={isCancelling === order.id}
+                                className="flex h-8 items-center gap-2 rounded-xl px-3 text-[9px] font-medium uppercase tracking-wider text-red-600 hover:bg-red-500/5"
+                              >
+                                <AlertCircle className="h-3 w-3" /> Cancel order
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
 
                     <div className="border-border/50 mt-6 flex items-center justify-between border-t pt-6">
-                      <p className="text-muted text-[10px] font-medium uppercase tracking-wider">
-                        Total Amount
-                      </p>
-                      <p className="text-primary text-lg font-medium">
-                        GH₵{parseFloat(order.total_amount).toLocaleString()}
-                      </p>
+                      <div>
+                        <p className="text-muted text-[10px] font-medium uppercase tracking-wider mb-1">
+                          Total Amount
+                        </p>
+                        <p className="text-primary text-lg font-medium leading-none">
+                          GH₵{parseFloat(order.total_amount).toLocaleString()}
+                        </p>
+                      </div>
+                      <Link href={`/orders/${order.id}`}>
+                        <Button variant="secondary" size="sm" className="h-9 px-5 rounded-xl text-[10px] font-medium uppercase tracking-wider gap-2">
+                          View Details
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </Button>
+                      </Link>
                     </div>
                   </Card>
                 </motion.div>

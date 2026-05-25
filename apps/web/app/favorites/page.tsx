@@ -9,6 +9,7 @@ import { ShoppingBag, Heart, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import Loading from "../loading";
+import RecentlyViewed from "@/components/home/RecentlyViewed";
 
 export default function FavoritesPage() {
   const [favorites, setFavorites] = useState<any[]>([]);
@@ -94,6 +95,12 @@ export default function FavoritesPage() {
                      Start Exploring
                    </motion.button>
                 </Link>
+                <div className="mt-12 text-left">
+                  <RecentlyViewed
+                    limit={12}
+                    title="Or revisit something from earlier"
+                  />
+                </div>
               </motion.div>
             )}
           </AnimatePresence>

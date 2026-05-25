@@ -6,6 +6,8 @@ import {
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
+import { NotificationService } from '../notification/notification.service';
+import { Actor, AuditLogService } from '../audit/audit-log.service';
 import {
   ADMIN_ORDER_STATUSES,
   AdminOrderListQueryDto,
@@ -17,6 +19,8 @@ export class AdminOrderService {
   constructor(
     private prisma: PrismaService,
     private emailService: EmailService,
+    private notifications: NotificationService,
+    private auditLogs: AuditLogService,
   ) {}
 
   async list(query: AdminOrderListQueryDto) {
@@ -164,7 +168,11 @@ export class AdminOrderService {
     return order;
   }
 
-  async updateStatus(id: string, dto: AdminUpdateOrderStatusDto) {
+  async updateStatus(
+    id: string,
+    dto: AdminUpdateOrderStatusDto,
+    actor: Actor,
+  ) {
     if (!ADMIN_ORDER_STATUSES.includes(dto.status)) {
       throw new BadRequestException('Invalid status');
     }
@@ -189,16 +197,26 @@ export class AdminOrderService {
       throw new NotFoundException('Order not found');
     }
 
-    // TODO: moderation_log table — persist admin status change + reason
-    console.warn(
-      `[admin] order ${id.toString()} status ${existing.status} -> ${dto.status}${
-        dto.reason ? ` reason="${dto.reason}"` : ''
-      }`,
-    );
-
     const updated = await this.prisma.order.update({
       where: { id },
       data: { status: dto.status },
+    });
+
+    this.auditLogs.record({
+      actorId: actor.id,
+      actorRole: actor.role,
+      action: 'order.status_change',
+      entityType: 'order',
+      entityId: id,
+      reason: dto.reason,
+      before: { status: existing.status },
+      after: { status: dto.status },
+      metadata: {
+        buyer_email: existing.buyer?.email,
+        total: existing.total_amount.toString(),
+      },
+      ip: actor.ip,
+      userAgent: actor.userAgent,
     });
 
     // Notify buyer about the status change. Fire-and-forget.
@@ -220,6 +238,29 @@ export class AdminOrderService {
         .catch((err) =>
           console.error('Failed to send order status email:', err),
         );
+
+      // In-app notification for the buyer.
+      const buyerId = await this.prisma.order
+        .findUnique({ where: { id }, select: { buyer_id: true } })
+        .then((o) => o?.buyer_id);
+      if (buyerId) {
+        const type =
+          dto.status === 'CANCELLED'
+            ? 'ORDER_CANCELLED'
+            : dto.status === 'DELIVERED'
+              ? 'ORDER_DELIVERED'
+              : 'ORDER_STATUS_CHANGED';
+        await this.notifications.create({
+          userId: buyerId,
+          type: type as any,
+          title: `Order ${orderNumber} ${dto.status.toLowerCase()}`,
+          body: dto.reason
+            ? `Status updated to ${dto.status}. ${dto.reason}`
+            : `Your order status was updated to ${dto.status}.`,
+          link: `/orders`,
+          data: { orderId: id, status: dto.status },
+        });
+      }
     }
 
     return {

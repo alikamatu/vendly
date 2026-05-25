@@ -1,11 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
-import { Mail, MessageSquare, Phone, MapPin, Send, CheckCircle2 } from "lucide-react";
+import { Mail, MessageSquare, Phone, MapPin, Send, CheckCircle2, Loader2 } from "lucide-react";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import { contactApi } from "@/lib/api/contact";
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", subject: "", message: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -18,14 +20,24 @@ export default function ContactPage() {
     return e;
   }
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (isSubmitting) return;
+
     const v = validate();
     setErrors(v);
     if (Object.keys(v).length > 0) return;
-    // TODO: wire to /api/contact or Resend
-    setSubmitted(true);
-    setForm({ name: "", email: "", subject: "", message: "" });
+
+    try {
+      setIsSubmitting(true);
+      await contactApi.submitContactForm(form);
+      setSubmitted(true);
+      setForm({ name: "", email: "", subject: "", message: "" });
+    } catch (err: any) {
+      setErrors({ message: err?.response?.data?.message || "Failed to send message. Please try again." });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -101,10 +113,15 @@ export default function ContactPage() {
 
           <button
             type="submit"
-            className="inline-flex items-center gap-2 h-11 px-5 rounded-2xl bg-primary text-white text-[12px] font-medium uppercase tracking-wider hover:opacity-90 transition-opacity"
+            disabled={isSubmitting}
+            className="inline-flex items-center gap-2 h-11 px-5 rounded-2xl bg-primary text-white text-[12px] font-medium uppercase tracking-wider hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
           >
-            <Send className="w-3.5 h-3.5" />
-            Send message
+            {isSubmitting ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Send className="w-3.5 h-3.5" />
+            )}
+            {isSubmitting ? "Sending..." : "Send message"}
           </button>
         </form>
       </main>
