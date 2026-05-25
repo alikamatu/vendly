@@ -6,6 +6,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import * as Sentry from '@sentry/nestjs';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
@@ -25,8 +26,20 @@ export class AllExceptionsFilter implements ExceptionFilter {
       message = exception.message;
     }
 
-    if (status === HttpStatus.INTERNAL_SERVER_ERROR) {
+    if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
       console.error('Unhandled Exception:', exception);
+      // Sentry's beforeSend already filters by status code, but capturing
+      // explicitly here gives us route context (path + method) on every
+      // 5xx so triage can start from the request, not just the stack.
+      Sentry.withScope((scope) => {
+        scope.setTag('http.status_code', String(status));
+        scope.setContext('request', {
+          method: request.method,
+          url: request.url,
+          headers: { 'user-agent': request.headers['user-agent'] },
+        });
+        Sentry.captureException(exception);
+      });
     }
 
     response.status(status).json({

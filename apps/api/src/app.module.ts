@@ -24,12 +24,17 @@ import { AddressModule } from './address/address.module';
 import { ContactModule } from './contact/contact.module';
 import { NotificationModule } from './notification/notification.module';
 import { AuditModule } from './audit/audit.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { SentryModule } from '@sentry/nestjs/setup';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ApiResponseInterceptor } from './common/interceptors/api-response.interceptor';
 
 @Module({
   imports: [
+    // Sentry must be the first registered module so its interceptors wrap
+    // every controller. The actual SDK was already init'd in main.ts.
+    SentryModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
     }),
@@ -81,6 +86,7 @@ import { ApiResponseInterceptor } from './common/interceptors/api-response.inter
     NotificationModule,
     PrismaModule,
     AuditModule,
+    AnalyticsModule,
   ],
   controllers: [AppController],
   providers: [

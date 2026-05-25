@@ -44,6 +44,22 @@ Run these from the monorepo root using Turborepo filters:
 
 When adding a new third-party host (analytics, payment widget, font CDN), extend the constants at the top of `next.config.ts` rather than weakening the policy.
 
+## 🐞 Error monitoring (Sentry)
+
+`@sentry/nextjs` is wired across all three runtimes:
+
+- **Client** (`sentry.client.config.ts`): browser errors + session replay on errors (sample rate 100% on error, 0% on session — cheap).
+- **Server** (`sentry.server.config.ts`): RSC, API routes, server actions.
+- **Edge** (`sentry.edge.config.ts`): middleware and edge functions.
+
+`instrumentation.ts` boots the right config per runtime and re-exports `captureRequestError` so Next 15+ server-side render failures get captured.
+
+`app/global-error.tsx` calls `Sentry.captureException` so React render-time crashes that reach the root error boundary aren't lost.
+
+Production traffic to Sentry is tunneled via `/monitoring/*` (configured in `withSentryConfig({ tunnelRoute })`) so ad blockers can't drop reports.
+
+To enable, set `NEXT_PUBLIC_SENTRY_DSN` (and optionally the build-time `SENTRY_AUTH_TOKEN`/`SENTRY_ORG`/`SENTRY_PROJECT` triplet on Vercel for source-map upload). With no DSN set, the SDK is a no-op — builds and runtime are unaffected.
+
 ## 🏗 Tech & Architecture
 
 -   **Next.js 16+ (App Router)**: Organized into 23+ dynamic routes spanning auth, storefronts, dashboards, and legal pages. Optimized performance and SEO via Server Components.

@@ -38,6 +38,8 @@
     "@nestjs/throttler": "^6.5.0",
     "@prisma/adapter-pg": "^7.4.0",
     "@prisma/client": "^7.4.0",
+    "@sentry/nestjs": "^10.53.1",
+    "@sentry/node": "^10.53.1",
     "@vendly/types": "workspace:*",
     "axios": "^1.13.6",
     "bcrypt": "^6.0.0",

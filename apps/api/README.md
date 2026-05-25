@@ -70,6 +70,14 @@ When a user submits a seller verification request (`POST /auth/submit-verificati
 
 Both are fire-and-forget — a notification failure never breaks the submission.
 
+### Sentry error monitoring
+The API initialises `@sentry/nestjs` from `src/sentry/instrument.ts`, imported as the very first line of `src/main.ts` (Sentry instruments `http` at require-time, so it has to load before any other module).
+
+- **Disabled by default**: set `SENTRY_DSN` to enable. Without it the SDK is a no-op and the API logs a one-line warning.
+- **Filtered**: 4xx HTTP responses are dropped before send (`beforeSend`). Only 5xx and uncaught exceptions reach the project.
+- **Enriched**: `AllExceptionsFilter` adds request path, method, and user agent as tags on every captured 5xx.
+- Tunable: `SENTRY_TRACES_SAMPLE_RATE` (default 0.1) and `SENTRY_PROFILES_SAMPLE_RATE` (default 0, off).
+
 ## 🗃 Database Schema & Prisma
 
 We use Prisma for type-safe database access. The schema contains 22+ models (User, SellerProfile, Product, Order, Transaction, Ledger, AdminApproval, etc.).

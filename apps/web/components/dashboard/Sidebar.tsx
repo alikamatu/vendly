@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, ShoppingBag, Package, Settings, LogOut, Store, Star } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Package, Settings, LogOut, Store, Star, Activity, TrendingUp } from 'lucide-react';
 import clsx from '@/utils/clsx';
 import { useAuth } from '@/lib/contexts/auth-context';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -12,7 +12,9 @@ const navItems = [
   { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
   { name: 'My Products', href: '/dashboard/products', icon: Package },
   { name: 'Orders', href: '/dashboard/orders', icon: ShoppingBag },
+  { name: 'Analytics', href: '/dashboard/analytics', icon: TrendingUp },
   { name: 'Reviews', href: '/dashboard/reviews', icon: Star },
+  { name: 'Activity', href: '/dashboard/activity', icon: Activity },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 

@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { AlertCircle, RefreshCcw } from "lucide-react";
+import * as Sentry from "@sentry/nextjs";
 
 export default function GlobalError({
   error,
@@ -10,6 +11,14 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  // Capture render-time exceptions that bubble up to the root error
+  // boundary. Without this, client-side React crashes wouldn't reach
+  // Sentry — they'd only show up as a blank "Critical Error" screen
+  // for the user with nothing to triage on our side.
+  useEffect(() => {
+    Sentry.captureException(error);
+  }, [error]);
+
   return (
     <html lang="en">
       <body className="bg-[#050505] text-white flex items-center justify-center min-h-screen p-6 font-sans">

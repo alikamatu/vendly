@@ -211,20 +211,22 @@ export default function DashboardPage() {
              <TrendingUp className="w-4 h-4 text-primary" />
              <h3 className="text-xs font-medium uppercase tracking-wider">Growth Engine</h3>
            </div>
-           <Card className="p-10 md:p-14 border-dashed border-2 bg-surface/20 flex flex-col items-center text-center gap-5 rounded-[2.5rem]">
-              <div className="w-16 h-16 bg-primary/5 rounded-[1.5rem] flex items-center justify-center rotate-3 transition-transform hover:rotate-0">
-                 <TrendingUp className="w-8 h-8 text-primary/40" />
-              </div>
-              <div className="space-y-2 max-w-xs mx-auto">
-                <h3 className="text-sm font-medium uppercase tracking-tight">Analytics Coming Soon</h3>
-                <p className="text-[10px] text-muted font-normal leading-relaxed uppercase tracking-wider">
-                  Detailed growth trends will be unlocked once you fulfill more orders.
-                </p>
-              </div>
-              <Button variant="secondary" size="sm" className="rounded-xl px-8 text-[9px] font-medium uppercase tracking-wider border-border/50">
-                How to Scale?
-              </Button>
-           </Card>
+           <Link href="/dashboard/analytics" className="block">
+             <Card className="p-10 md:p-14 bg-surface/40 hover:bg-surface/60 flex flex-col items-center text-center gap-5 rounded-[2.5rem] transition-colors group">
+                <div className="w-16 h-16 bg-red-500/10 rounded-[1.5rem] flex items-center justify-center rotate-3 group-hover:rotate-0 transition-transform">
+                   <TrendingUp className="w-8 h-8 text-red-500" />
+                </div>
+                <div className="space-y-2 max-w-xs mx-auto">
+                  <h3 className="text-sm font-medium uppercase tracking-tight">Open Analytics</h3>
+                  <p className="text-[10px] text-muted font-normal leading-relaxed uppercase tracking-wider">
+                    Revenue, conversion, top sellers, and where buyers fall off.
+                  </p>
+                </div>
+                <Button variant="primary" size="sm" className="rounded-xl px-8 text-[9px] font-medium uppercase tracking-wider">
+                  View insights
+                </Button>
+             </Card>
+           </Link>
         </div>
 
         <div className="space-y-4">
