@@ -45,12 +45,34 @@ export interface FunnelStage {
   note?: string;
 }
 
+/** Shape the analytics page reads to decide whether to show an upsell. */
+export class AnalyticsApiError extends Error {
+  status: number;
+  code?: string;
+  constructor(message: string, status: number, code?: string) {
+    super(message);
+    this.name = 'AnalyticsApiError';
+    this.status = status;
+    this.code = code;
+  }
+}
+
 async function unwrap<T>(res: Response): Promise<T> {
   if (!res.ok) {
     let body: any = {};
     try { body = await res.json(); } catch {}
-    const msg = Array.isArray(body?.message) ? body.message.join(' ') : body?.message;
-    throw new Error(msg || `Request failed (${res.status})`);
+    // The NestJS exception filter wraps responses as either { message: [..] }
+    // or { data: { message, code } } depending on the route. Cope with both.
+    const inner = body?.data ?? body;
+    const rawMsg = Array.isArray(inner?.message)
+      ? inner.message.join(' ')
+      : inner?.message;
+    const msg = rawMsg || body?.message || `Request failed (${res.status})`;
+    // The server attaches a machine-readable `code` (e.g. PRO_REQUIRED)
+    // on the exception body so we can branch the UI without parsing the
+    // human-readable message string.
+    const code = inner?.code || body?.code;
+    throw new AnalyticsApiError(msg, res.status, code);
   }
   const json = await res.json();
   return (json && typeof json === 'object' && 'data' in json ? json.data : json) as T;

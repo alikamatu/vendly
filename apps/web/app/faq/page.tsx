@@ -13,7 +13,7 @@ interface QA {
 const QA_LIST: QA[] = [
   {
     q: "How do I create an account?",
-    a: "Tap Sign up in the top-right, fill in your school details, and verify your email. You can shop right away.",
+    a: "Tap Sign up in the top-right, fill in your name, phone, and email, then verify your inbox. You can shop right away.",
     tags: ["account"],
   },
   {

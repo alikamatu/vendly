@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, ShieldCheck, Key, Smartphone, Eye, EyeOff, Loader2, Check, Info } from "lucide-react";
+import { ArrowLeft, ShieldCheck, Key, Smartphone, Loader2, Check, Info } from "lucide-react";
 import Link from "next/link";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
@@ -14,8 +14,6 @@ import TwoFactorPanel from "@/components/settings/TwoFactorPanel";
 export default function SecuritySettingsPage() {
   const { token } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [showCurrent, setShowCurrent] = useState(false);
-  const [showNew, setShowNew] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const [passwordData, setPasswordData] = useState({
@@ -79,44 +77,40 @@ export default function SecuritySettingsPage() {
             <Card className="p-6 md:p-8 space-y-4 border-none shadow-sm" hoverEffect={false}>
               <div className="space-y-2">
                 <label className="text-[10px] font-normal text-muted uppercase tracking-wider px-1">Current Password</label>
-                <div className="relative">
-                  <Input 
-                    type={showCurrent ? "text" : "password"}
-                    value={passwordData.current_password}
-                    onChange={(e) => setPasswordData({...passwordData, current_password: e.target.value})}
-                    placeholder="••••••••"
-                    required
-                    className="h-12 bg-background/50 text-xs font-normal pr-12"
-                  />
-                  <button 
-                    type="button"
-                    onClick={() => setShowCurrent(!showCurrent)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted hover:text-foreground transition-colors"
-                  >
-                    {showCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
+                {/* The shared Input now ships its own show/hide toggle and
+                    Caps-Lock indicator — no need for the per-field external
+                    eye buttons + showCurrent/showNew state we used to have.
+                    autoComplete tells browsers which saved password to offer. */}
+                <Input
+                  type="password"
+                  autoComplete="current-password"
+                  value={passwordData.current_password}
+                  onChange={(e) => setPasswordData({...passwordData, current_password: e.target.value})}
+                  placeholder="••••••••"
+                  required
+                  className="h-12 bg-background/50 text-xs font-normal"
+                />
               </div>
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-[10px] font-normal text-muted uppercase tracking-wider px-1">New Password</label>
-                  <div className="relative">
-                    <Input 
-                      type={showNew ? "text" : "password"}
-                      value={passwordData.new_password}
-                      onChange={(e) => setPasswordData({...passwordData, new_password: e.target.value})}
-                      placeholder="••••••••"
-                      required
-                      className="h-12 bg-background/50 text-xs font-normal"
-                    />
-                  </div>
+                  <Input
+                    type="password"
+                    autoComplete="new-password"
+                    value={passwordData.new_password}
+                    onChange={(e) => setPasswordData({...passwordData, new_password: e.target.value})}
+                    placeholder="••••••••"
+                    required
+                    className="h-12 bg-background/50 text-xs font-normal"
+                  />
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-[10px] font-normal text-muted uppercase tracking-wider px-1">Confirm New Password</label>
-                  <Input 
+                  <Input
                     type="password"
+                    autoComplete="new-password"
                     value={passwordData.confirm_password}
                     onChange={(e) => setPasswordData({...passwordData, confirm_password: e.target.value})}
                     placeholder="••••••••"

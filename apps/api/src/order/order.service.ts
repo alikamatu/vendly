@@ -9,6 +9,7 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { Prisma } from '@prisma/client';
 import { PaymentsService } from '../payments/payments.service';
 import { NotificationService } from '../notification/notification.service';
+import { SmsClient } from '../auth/arkesel.client';
 
 @Injectable()
 export class OrderService {
@@ -16,6 +17,7 @@ export class OrderService {
     private prisma: PrismaService,
     private paymentsService: PaymentsService,
     private notifications: NotificationService,
+    private sms: SmsClient,
   ) { }
 
   async createOrder(userId: string, dto: CreateOrderDto) {
@@ -79,6 +81,13 @@ export class OrderService {
       let unitPrice: Prisma.Decimal = product.price;
       let variantId: string | null = null;
 
+      // Reject orders for products that have been pulled from the catalogue.
+      if (product.status && product.status !== 'published' && product.status !== 'active') {
+        throw new BadRequestException(
+          `${product.title} is no longer available.`,
+        );
+      }
+
       if (item.variantId) {
         const variant = variants.find((v: any) => v.id === item.variantId);
         if (!variant || variant.product_id !== product.id) {
@@ -89,6 +98,11 @@ export class OrderService {
         if (!variant.is_active) {
           throw new BadRequestException('Selected variant is no longer available');
         }
+        if (variant.quantity_available <= 0) {
+          throw new BadRequestException(
+            `${product.title} is out of stock.`,
+          );
+        }
         if (variant.quantity_available < item.quantity) {
           throw new BadRequestException(
             `Only ${variant.quantity_available} of this variant available`,
@@ -97,6 +111,23 @@ export class OrderService {
         if (variant.price) unitPrice = variant.price;
         variantId = variant.id;
       } else {
+        // Product-level stock check. Without this, a buyer could place an
+        // order on a product whose `quantity_available` is already 0 or
+        // negative — the unconditional decrement below would drive it
+        // further negative. Validate up front so the seller sees a
+        // 4xx rather than a corrupted inventory count.
+        if (typeof product.quantity_available === 'number') {
+          if (product.quantity_available <= 0) {
+            throw new BadRequestException(
+              `${product.title} is out of stock.`,
+            );
+          }
+          if (product.quantity_available < item.quantity) {
+            throw new BadRequestException(
+              `Only ${product.quantity_available} of "${product.title}" left.`,
+            );
+          }
+        }
         // No variant chosen — if product has active variants, require selection.
         const hasActiveVariants = variants.some(
           (v: any) => v.product_id === product.id && v.is_active,
@@ -147,20 +178,44 @@ export class OrderService {
         },
       });
 
-      // Update quantity available only if it's NOT a Paystack order (e.g. COD)
+      // Update quantity available only if it's NOT a Paystack order (e.g. COD).
       // For Paystack, we deduct ONLY after successful payment verification.
+      //
+      // Guard against negative stock under race conditions: we run the
+      // decrement scoped to rows where the current quantity is still
+      // >= the requested amount. If `updateMany` reports zero rows
+      // updated, another concurrent order claimed the last units in the
+      // window between our validation above and this write — fail the
+      // transaction with a clean 4xx instead of letting the count slip
+      // into negative territory.
       if (!requiresPaystack) {
         for (const item of dto.items) {
           if (item.variantId) {
-            await (tx as any).productVariant.update({
-              where: { id: item.variantId },
+            const updated = await (tx as any).productVariant.updateMany({
+              where: {
+                id: item.variantId,
+                quantity_available: { gte: item.quantity },
+              },
               data: { quantity_available: { decrement: item.quantity } },
             });
+            if (updated.count === 0) {
+              throw new BadRequestException(
+                'Sorry — someone else just bought the last of that item.',
+              );
+            }
           } else {
-            await tx.product.update({
-              where: { id: item.productId },
+            const updated = await tx.product.updateMany({
+              where: {
+                id: item.productId,
+                quantity_available: { gte: item.quantity },
+              },
               data: { quantity_available: { decrement: item.quantity } },
             });
+            if (updated.count === 0) {
+              throw new BadRequestException(
+                'Sorry — that item just sold out.',
+              );
+            }
           }
         }
       }
@@ -627,7 +682,12 @@ export class OrderService {
   }) {
     const sellerUser = await this.prisma.user.findUnique({
       where: { id: args.sellerUserId },
-      select: { is_pro: true, pro_expires_at: true },
+      select: {
+        is_pro: true,
+        pro_expires_at: true,
+        phone_e164: true,
+        full_name: true,
+      },
     });
     if (!sellerUser?.is_pro) return;
     // Honor expiry if set.
@@ -645,6 +705,23 @@ export class OrderService {
       link: `/dashboard/orders`,
       data: { orderId: args.orderId, buyerId: args.buyerId },
     });
+
+    // Pro-only SMS alert. Fire-and-forget — failures shouldn't roll back
+    // order processing. Skipped silently when the seller hasn't saved a
+    // phone number yet (legacy accounts pre-dating the required-phone
+    // signup flow).
+    if (sellerUser.phone_e164) {
+      const firstName =
+        (args.buyerName || 'A customer').split(' ')[0] || 'A customer';
+      const message =
+        `Vendly: new order ${args.orderNumber} from ${firstName}. ` +
+        `Open your dashboard to fulfil it.`;
+      this.sms
+        .sendSms(sellerUser.phone_e164, message)
+        .catch((err) =>
+          console.error('Failed to send order SMS to seller', err),
+        );
+    }
   }
 
   private async notifyAllSellersForPaidOrder(orderId: string) {

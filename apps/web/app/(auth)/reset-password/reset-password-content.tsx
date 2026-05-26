@@ -108,6 +108,7 @@ export default function ResetPasswordContent() {
                     <Input
                       label="New password"
                       type="password"
+                      autoComplete="new-password"
                       placeholder="••••••••"
                       icon={<Lock size={18} />}
                       error={errors.newPassword?.message}
@@ -119,6 +120,7 @@ export default function ResetPasswordContent() {
                     <Input
                       label="Confirm new password"
                       type="password"
+                      autoComplete="new-password"
                       placeholder="••••••••"
                       icon={<Lock size={18} />}
                       error={errors.confirmPassword?.message}

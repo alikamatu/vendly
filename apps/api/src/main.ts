@@ -1,5 +1,3 @@
-// ─── Sentry must be the very first import ───────────────────────────────
-// Otherwise @sentry/nestjs misses the require-time http instrumentation.
 import './sentry/instrument';
 
 import { NestFactory } from '@nestjs/core';

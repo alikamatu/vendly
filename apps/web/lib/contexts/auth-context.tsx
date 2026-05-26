@@ -7,11 +7,17 @@ export interface User {
   id: string;
   full_name: string;
   email: string;
+  /** Business name (legacy column was "school"; UI labels it as Business). */
   school?: string;
+  /** E.164 phone number, e.g. "+233244123456". Set during signup. */
+  phone_e164?: string | null;
   role: 'USER' | 'ADMIN' | 'SELLER';
   is_verified: boolean;
   has_verification_doc: boolean;
   approval_status: 'PENDING' | 'APPROVED' | 'REJECTED' | null;
+  /** True when the user has an active Pro subscription (not expired). */
+  is_pro?: boolean;
+  pro_expires_at?: string | null;
   seller_profile?: {
     id: string;
     store_name: string;

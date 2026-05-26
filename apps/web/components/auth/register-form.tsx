@@ -9,7 +9,7 @@ import Alert from '@/components/ui/Alert';
 import ProgressBar from '@/components/ui/ProgressBar';
 import PasswordStrength from '@/components/auth/PasswordStrength';
 import GoogleSignInButton from '@/components/auth/GoogleSignInButton';
-import { Mail, Lock, User as UserIcon, CheckCircle, Building } from 'lucide-react';
+import { Mail, Lock, User as UserIcon, CheckCircle, Building, ShoppingBag, Store, Phone } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface RegisterFormProps {
@@ -21,8 +21,15 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
   const [success, setSuccess] = useState(false);
   const {
     register,
+    watch,
+    setValue,
     formState: { errors },
   } = form;
+  // Watching the field so the Business-name input shows/hides reactively.
+  // `account_type` is on the form schema; default is BUYER (set in
+  // useRegisterForm).
+  const accountType = watch('account_type');
+  const isSeller = accountType === 'SELLER';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,9 +92,50 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
         {error && <Alert variant="error" message={error} onDismiss={clearError} />}
 
         <div className="space-y-6">
+          {/* Account-type toggle — drives whether the business name field
+              is required. Buyers shop; sellers also pre-fill their store
+              name so verification can pre-populate later. Backend assigns
+              role=USER either way; SELLER role only comes after admin
+              approval of the verification submission. */}
+          <div>
+            <p className="mb-2 text-[11px] font-medium uppercase tracking-wider text-foreground/60">
+              I&apos;m signing up to
+            </p>
+            <input type="hidden" {...register('account_type')} />
+            <div className="grid grid-cols-2 gap-2 rounded-2xl border border-border bg-surface/40 p-1">
+              {[
+                { value: 'BUYER', label: 'Shop on Vendly', icon: ShoppingBag },
+                { value: 'SELLER', label: 'Sell on Vendly', icon: Store },
+              ].map((opt) => {
+                const Icon = opt.icon;
+                const active = accountType === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() =>
+                      setValue('account_type', opt.value as 'BUYER' | 'SELLER', {
+                        shouldValidate: true,
+                      })
+                    }
+                    className={`flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs font-medium transition-all ${
+                      active
+                        ? 'bg-red-500 text-white shadow-sm'
+                        : 'text-foreground/60 hover:text-foreground'
+                    }`}
+                  >
+                    <Icon size={14} />
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <Input
             label="Full name"
             icon={<UserIcon size={18} />}
+            autoComplete="name"
             error={errors.full_name?.message}
             registration={register('full_name')}
           />
@@ -95,22 +143,69 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
           <Input
             label="Email"
             type="email"
+            autoComplete="email"
+            inputMode="email"
             icon={<Mail size={18} />}
             error={errors.email?.message}
             registration={register('email')}
           />
 
-          <Input
-            label="Business name"
-            icon={<Building size={18} />}
-            error={errors.school?.message}
-            registration={register('school')}
-          />
+          {/* Phone — Ghana +233 enforced. We render +233 as a static
+              prefix and bind react-hook-form to a parallel hidden input
+              so the value the schema sees never includes the prefix or
+              a leading "0" (we strip it as the user types). Backend
+              re-normalises via libphonenumber regardless. */}
+          <div className="space-y-1.5">
+            <div className="flex items-end gap-2">
+              <div className="flex items-center gap-2 pb-2 text-sm text-foreground/70 border-b border-foreground/15 select-none">
+                <Phone size={16} className="text-foreground/40" />
+                <span className="font-medium">+233</span>
+              </div>
+              <input
+                {...register('phone', {
+                  onChange: (e) => {
+                    // Live-strip non-digits + a leading "0" so the user
+                    // never sees the invalid prefix in their own input.
+                    const v = e.target.value.replace(/\D/g, '').replace(/^0+/, '');
+                    if (v !== e.target.value) {
+                      e.target.value = v;
+                    }
+                  },
+                })}
+                type="tel"
+                inputMode="numeric"
+                autoComplete="tel-national"
+                placeholder="244 123 456"
+                aria-label="Phone number"
+                className="flex-1 bg-transparent px-0 py-2 text-foreground border-b border-foreground/15 focus:border-accent focus:outline-none transition-colors"
+              />
+            </div>
+            {errors.phone?.message ? (
+              <p className="text-xs text-red-500">
+                {String(errors.phone.message)}
+              </p>
+            ) : (
+              <p className="text-[11px] text-foreground/40">
+                We&apos;ll text you order alerts (Pro sellers) and security codes.
+              </p>
+            )}
+          </div>
+
+          {isSeller && (
+            <Input
+              label="Business name"
+              icon={<Building size={18} />}
+              autoComplete="organization"
+              error={errors.school?.message}
+              registration={register('school')}
+            />
+          )}
 
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             <Input
               label="Password"
               type="password"
+              autoComplete="new-password"
               icon={<Lock size={18} />}
               error={errors.password?.message}
               registration={register('password')}
@@ -119,6 +214,7 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
             <Input
               label="Confirm"
               type="password"
+              autoComplete="new-password"
               icon={<Lock size={18} />}
               error={errors.confirmPassword?.message}
               registration={register('confirmPassword')}

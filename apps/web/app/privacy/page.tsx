@@ -18,7 +18,7 @@ export default function PrivacyPage() {
           title: "What we collect",
           body: (
             <p>
-              We collect information you give us (name, email, school, store details,
+              We collect information you give us (name, email, phone, business name, store details,
               orders) and limited technical information (IP, device type, referrer) to
               run the platform securely. Payment data is handled by Paystack — we never
               see your full card details.

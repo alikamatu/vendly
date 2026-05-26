@@ -16,6 +16,7 @@ import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
 import { VerificationType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { parseGhanaPhone } from './phone.util';
 import { EmailService } from '../email/email.service';
 import { CloudinaryService } from '../common/cloudinary.service';
 import { RegisterDto } from './dto/register.dto';
@@ -124,12 +125,26 @@ export class AuthService {
     const verificationToken = randomBytes(32).toString('hex');
     const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
+    // Phone normalisation — single source of truth. parseGhanaPhone()
+    // strips leading "0", forces "+233" on bare digits, validates via
+    // libphonenumber-js. Reject early with a 400 so the client can show
+    // an inline error instead of swallowing a Prisma unique violation.
+    const phoneResult = parseGhanaPhone(dto.phone);
+    if (!phoneResult.ok || !phoneResult.e164) {
+      throw new BadRequestException(phoneResult.error || 'Invalid phone number.');
+    }
+
     const user = await this.prisma.user.create({
       data: {
         full_name: dto.full_name.trim(),
         email,
         password_hash: hashedPassword,
-        school: dto.school.trim(),
+        // `school` is a NOT NULL column on the User model — buyers can
+        // sign up without a business name now, so default to '' when the
+        // optional field is missing. The seller verification flow updates
+        // this when the user later upgrades to a SellerProfile.
+        school: (dto.school || '').trim(),
+        phone_e164: phoneResult.e164,
         email_verification_token: verificationToken,
         email_verification_expires: verificationExpires,
         terms_accepted_at: new Date(),
@@ -376,15 +391,24 @@ export class AuthService {
 
     const latestApproval = user.admin_approvals[0] || null;
 
+    // Pro is "active" if the flag is on and not expired. The frontend
+    // uses this single boolean rather than re-doing the date math.
+    const proActive =
+      !!user.is_pro &&
+      (!user.pro_expires_at || user.pro_expires_at.getTime() > Date.now());
+
     return {
       id: user.id.toString(),
       full_name: user.full_name,
       email: user.email,
       school: user.school,
+      phone_e164: user.phone_e164,
       role: user.role,
       is_verified: user.is_verified,
       has_verification_doc: !!user.verification_doc,
       approval_status: latestApproval?.status || null,
+      is_pro: proActive,
+      pro_expires_at: user.pro_expires_at,
       seller_profile: user.seller_profile
         ? {
             id: user.seller_profile.id.toString(),
@@ -704,6 +728,22 @@ export class AuthService {
       data.email = dto.email;
     }
 
+    // Business name. Allow empty string (e.g. buyers clearing the field).
+    if (dto.school !== undefined && dto.school !== null) {
+      data.school = String(dto.school).trim();
+    }
+
+    // Phone number. Re-normalise through libphonenumber so we never
+    // persist a half-formatted value, even if the client forgot to
+    // strip the leading "0".
+    if (dto.phone !== undefined && dto.phone !== null && dto.phone !== '') {
+      const parsed = parseGhanaPhone(dto.phone);
+      if (!parsed.ok || !parsed.e164) {
+        throw new BadRequestException(parsed.error || 'Invalid phone number.');
+      }
+      data.phone_e164 = parsed.e164;
+    }
+
     if (dto.new_password) {
       // OAuth-only users don't have a current password — let them set one
       // without the check (they verified via OAuth).
@@ -733,6 +773,8 @@ export class AuthService {
         id: updated.id.toString(),
         full_name: updated.full_name,
         email: updated.email,
+        school: updated.school,
+        phone_e164: updated.phone_e164,
       },
     };
   }

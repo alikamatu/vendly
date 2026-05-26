@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 /**
@@ -61,16 +61,38 @@ function startOfRange(range: Range): Date {
 export class AnalyticsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** Resolve the SellerProfile.id for the authenticated user. */
+  /**
+   * Resolve the SellerProfile.id for the authenticated user, and gate the
+   * call on an active Pro subscription. Analytics is a Pro-only feature
+   * — non-Pro sellers get a 403 with an upgrade-prompt message rather
+   * than empty data, so the frontend can show a clean upsell instead of
+   * guessing whether the seller has zero sales or zero permissions.
+   */
   private async sellerIdFor(userId: string): Promise<string> {
-    const seller = await this.prisma.sellerProfile.findUnique({
-      where: { user_id: userId },
-      select: { id: true },
-    });
+    const [seller, user] = await Promise.all([
+      this.prisma.sellerProfile.findUnique({
+        where: { user_id: userId },
+        select: { id: true },
+      }),
+      this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { is_pro: true, pro_expires_at: true },
+      }),
+    ]);
     if (!seller) {
       throw new NotFoundException(
         'No seller profile found. Create your store first.',
       );
+    }
+    const proActive =
+      !!user?.is_pro &&
+      (!user.pro_expires_at || user.pro_expires_at.getTime() > Date.now());
+    if (!proActive) {
+      throw new ForbiddenException({
+        code: 'PRO_REQUIRED',
+        message:
+          'Advanced analytics is a Vendly Pro feature. Upgrade to unlock revenue, conversion, and top-product insights.',
+      });
     }
     return seller.id;
   }

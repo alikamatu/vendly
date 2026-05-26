@@ -6,7 +6,8 @@ import {
   ArrowLeft,
   User,
   Mail,
-  GraduationCap,
+  Building,
+  Phone,
   Shield,
   Loader2,
   Check,
@@ -95,6 +96,8 @@ export default function AccountProfilePage() {
 
   const [name, setName] = useState('');
   const [school, setSchool] = useState('');
+  // Local-format Ghana digits only. We render +233 as a fixed prefix.
+  const [phone, setPhone] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
@@ -104,6 +107,11 @@ export default function AccountProfilePage() {
       setName(user.full_name ?? '');
 
       setSchool(user.school ?? '');
+      const stored = user.phone_e164 || '';
+      const local = stored.startsWith('+233')
+        ? stored.slice(4)
+        : stored.replace(/^\+/, '');
+      setPhone(local);
     }
   }, [user]);
 
@@ -113,9 +121,17 @@ export default function AccountProfilePage() {
 
     const cleanName = sanitizeText(name, 100).trim();
     const cleanSchool = sanitizeText(school, 200).trim();
+    const cleanPhone = phone.replace(/\D/g, '').replace(/^0+/, '');
 
     if (cleanName.length < 2) {
       setMsg({ ok: false, text: 'Full name must be at least 2 characters.' });
+      return;
+    }
+    if (cleanPhone && cleanPhone.length < 7) {
+      setMsg({
+        ok: false,
+        text: 'Phone number looks too short. Use a Ghana number, e.g. 024 412 3456.',
+      });
       return;
     }
 
@@ -123,7 +139,11 @@ export default function AccountProfilePage() {
     setMsg(null);
 
     try {
-      await authApi.updateProfile(token, { full_name: cleanName, school: cleanSchool });
+      await authApi.updateProfile(token, {
+        full_name: cleanName,
+        school: cleanSchool,
+        phone: cleanPhone ? `+233${cleanPhone}` : undefined,
+      });
       await refreshUser();
       setMsg({ ok: true, text: 'Profile saved successfully!' });
     } catch (err: any) {
@@ -157,7 +177,7 @@ export default function AccountProfilePage() {
       <div>
         <h1 className="text-lg font-medium tracking-tight">Personal Info</h1>
         <p className="mt-0.5 text-[11px] text-[var(--color-muted)]">
-          Update your name, school and profile
+          Update your name, phone, business, and profile
         </p>
       </div>
 
@@ -232,17 +252,50 @@ export default function AccountProfilePage() {
             </p>
           </div>
 
-          {/* School */}
+          {/* Phone — Ghana +233 fixed prefix, leading 0 stripped live. */}
           <div>
             <FieldLabel>
               <span className="flex items-center gap-1.5">
-                <GraduationCap className="h-3.5 w-3.5" /> School / University
+                <Phone className="h-3.5 w-3.5" /> Phone Number
+              </span>
+            </FieldLabel>
+            <div className="flex items-center gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2.5">
+              <span className="text-xs font-medium text-[var(--color-muted)] select-none">
+                +233
+              </span>
+              <input
+                type="tel"
+                inputMode="numeric"
+                autoComplete="tel-national"
+                value={phone}
+                onChange={(e) => {
+                  const v = e.target.value
+                    .replace(/\D/g, '')
+                    .replace(/^0+/, '');
+                  setPhone(v);
+                }}
+                placeholder="244 123 456"
+                maxLength={15}
+                className="flex-1 bg-transparent text-sm focus:outline-none"
+              />
+            </div>
+            <p className="mt-1.5 flex items-center gap-1 pl-1 text-[10px] text-[var(--color-muted)]">
+              <Shield className="h-3 w-3 flex-shrink-0" />
+              Used for order alerts (Pro sellers) and security codes.
+            </p>
+          </div>
+
+          {/* Business name (legacy DB column: `school`). */}
+          <div>
+            <FieldLabel>
+              <span className="flex items-center gap-1.5">
+                <Building className="h-3.5 w-3.5" /> Business Name
               </span>
             </FieldLabel>
             <TextInput
               value={school}
               onChange={setSchool}
-              placeholder="e.g. University of Ghana"
+              placeholder="e.g. Ama's Boutique"
               maxLength={200}
             />
           </div>

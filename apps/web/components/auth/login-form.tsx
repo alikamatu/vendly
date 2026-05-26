@@ -223,6 +223,8 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           <Input
             label="Email"
             type="email"
+            autoComplete="username"
+            inputMode="email"
             icon={<Mail size={18} />}
             error={errors.email?.message}
             registration={register('email')}
@@ -231,6 +233,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           <Input
             label="Password"
             type="password"
+            autoComplete="current-password"
             icon={<Lock size={18} />}
             error={errors.password?.message}
             registration={register('password')}

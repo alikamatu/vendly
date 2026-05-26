@@ -313,7 +313,7 @@ export default function AccountPage() {
           iconBg="bg-violet-500/10"
           iconColor="text-violet-500"
           label="Personal Info"
-          sublabel="Name, school, email"
+          sublabel="Name, phone, email, business"
         />
         <Row
           href="/account/security"

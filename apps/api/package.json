@@ -50,6 +50,7 @@
     "cloudinary": "^2.9.0",
     "compression": "^1.8.1",
     "helmet": "^8.1.0",
+    "libphonenumber-js": "^1.13.3",
     "multer": "^2.0.2",
     "node-cron": "^4.2.1",
     "passport": "^0.7.0",

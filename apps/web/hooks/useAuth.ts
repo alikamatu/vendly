@@ -9,6 +9,7 @@ import {
   forgotPasswordSchema,
   resetPasswordSchema,
   verificationSchema,
+  normalizeGhanaPhone,
   LoginInput,
   RegisterInput,
   ForgotPasswordInput,
@@ -92,7 +93,9 @@ export function useRegisterForm() {
       email: '',
       password: '',
       confirmPassword: '',
+      account_type: 'BUYER',
       school: '',
+      phone: '',
       // Zod requires literal `true` — we leave it false until the user ticks.
       accept_terms: false as unknown as true,
       marketing_opt_in: false,
@@ -109,7 +112,11 @@ export function useRegisterForm() {
     let succeeded = false;
     await form.handleSubmit(async (data) => {
       const { confirmPassword, ...rest } = data;
-      await registerUser(rest as any);
+      // Submit the normalised E.164 form so the backend sees a clean
+      // value. zod's superRefine already ran libphonenumber, so we
+      // know normaliseGhanaPhone returns non-null here.
+      const phone = normalizeGhanaPhone(rest.phone) || rest.phone;
+      await registerUser({ ...rest, phone } as any);
       succeeded = true;
     })(e);
     return succeeded;

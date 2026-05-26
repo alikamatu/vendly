@@ -13,7 +13,7 @@ import {
   Loader2,
   AlertCircle,
   Mail,
-  School,
+  Building,
   FileText
 } from "lucide-react";
 import Link from "next/link";
@@ -247,12 +247,14 @@ export default function OrderDetailsPage() {
                 <p className="text-xs font-normal text-muted/80 truncate">{order.buyer.email}</p>
               </div>
 
-              <div className="space-y-1">
-                <p className="text-[9px] font-medium text-muted uppercase tracking-wider flex items-center gap-2">
-                  <School className="w-3 h-3 text-primary" /> Education
-                </p>
-                <p className="text-xs font-medium uppercase">{order.buyer.school}</p>
-              </div>
+              {order.buyer.school && (
+                <div className="space-y-1">
+                  <p className="text-[9px] font-medium text-muted uppercase tracking-wider flex items-center gap-2">
+                    <Building className="w-3 h-3 text-primary" /> Business
+                  </p>
+                  <p className="text-xs font-medium uppercase">{order.buyer.school}</p>
+                </div>
+              )}
             </div>
           </Card>
 

@@ -222,7 +222,7 @@ export default function SettingsPage() {
   ];
 
   const accountGroup: SettingItem[] = [
-    { id: "profile", name: "Personal Info", desc: "Name, email, school", icon: User, href: "/dashboard/settings/profile", color: "text-violet-500", bg: "bg-violet-500/10" },
+    { id: "profile", name: "Personal Info", desc: "Name, email, phone, business", icon: User, href: "/dashboard/settings/profile", color: "text-violet-500", bg: "bg-violet-500/10" },
     { id: "security", name: "Password & Security", desc: "Change password, 2FA", icon: ShieldCheck, href: "/dashboard/settings/security", color: "text-emerald-500", bg: "bg-emerald-500/10" },
     { id: "addresses", name: "Address Book", desc: "Manage delivery addresses", icon: MapPin, href: "/account/addresses", color: "text-blue-500", bg: "bg-blue-500/10" },
   ];

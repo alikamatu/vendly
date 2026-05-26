@@ -28,12 +28,14 @@ import {
 import { useAuth } from "@/lib/contexts/auth-context";
 import {
   analyticsApi,
+  AnalyticsApiError,
   AnalyticsOverview,
   RevenuePoint,
   TopProduct,
   FunnelStage,
   Range,
 } from "@/lib/api/analytics";
+import { Sparkles, Zap, BarChart3 } from "lucide-react";
 
 /**
  * Seller analytics dashboard.
@@ -65,11 +67,16 @@ export default function SellerAnalyticsPage() {
   const [funnel, setFunnel] = useState<FunnelStage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Separate flag for the "you're not Pro" state so we render an upsell
+  // instead of the generic error block. Tripped when the API returns
+  // 403 with code: 'PRO_REQUIRED'.
+  const [proRequired, setProRequired] = useState(false);
 
   const load = useCallback(async () => {
     if (!token) return;
     setIsLoading(true);
     setError(null);
+    setProRequired(false);
     try {
       const [ov, sr, tp, fn] = await Promise.all([
         analyticsApi.overview(token, range),
@@ -82,7 +89,14 @@ export default function SellerAnalyticsPage() {
       setTopProducts(tp);
       setFunnel(fn.stages);
     } catch (err: any) {
-      setError(err.message || "Failed to load analytics");
+      if (
+        err instanceof AnalyticsApiError &&
+        (err.code === "PRO_REQUIRED" || err.status === 403)
+      ) {
+        setProRequired(true);
+      } else {
+        setError(err.message || "Failed to load analytics");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -134,20 +148,28 @@ export default function SellerAnalyticsPage() {
         </div>
       </div>
 
-      {error && (
-        <div className="border-border/40 bg-surface flex items-start gap-3 rounded-2xl border p-4">
-          <AlertCircle className="text-red-500 mt-0.5 h-4 w-4 shrink-0" />
-          <div className="flex-1">
-            <p className="text-foreground text-sm">{error}</p>
-            <button
-              onClick={load}
-              className="text-red-500 mt-1 text-xs underline"
-            >
-              Try again
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Pro upsell — replaces the rest of the page when the API responds
+          with PRO_REQUIRED so non-Pro sellers see a clean upgrade prompt
+          instead of empty KPI cards. Early-returns so we don't even try
+          to render the chart / funnel below. */}
+      {proRequired ? (
+        <ProUpsell />
+      ) : (
+        <>
+          {error && (
+            <div className="border-border/40 bg-surface flex items-start gap-3 rounded-2xl border p-4">
+              <AlertCircle className="text-red-500 mt-0.5 h-4 w-4 shrink-0" />
+              <div className="flex-1">
+                <p className="text-foreground text-sm">{error}</p>
+                <button
+                  onClick={load}
+                  className="text-red-500 mt-1 text-xs underline"
+                >
+                  Try again
+                </button>
+              </div>
+            </div>
+          )}
 
       {/* KPI grid */}
       {isLoading && !overview ? (
@@ -344,6 +366,87 @@ export default function SellerAnalyticsPage() {
             <Funnel stages={funnel} />
           )}
         </div>
+      </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Shown to non-Pro sellers when the analytics API rejects with
+ * PRO_REQUIRED. Keeps the same top-of-page chrome (header + range
+ * pills) above so the user understands what they'd be unlocking.
+ */
+function ProUpsell() {
+  const features = [
+    {
+      icon: <BarChart3 className="h-4 w-4" />,
+      title: "Revenue, orders, conversion",
+      desc: "Live KPIs across 7-day, 30-day, 90-day, and 12-month windows.",
+    },
+    {
+      icon: <TrendingUp className="h-4 w-4" />,
+      title: "Best-sellers + funnel",
+      desc: "See which products convert, where buyers fall off, and who repeats.",
+    },
+    {
+      icon: <Sparkles className="h-4 w-4" />,
+      title: "Branded share cards",
+      desc: "Portrait-mode product cards ready for Instagram and TikTok.",
+    },
+    {
+      icon: <Zap className="h-4 w-4" />,
+      title: "Priority verification + support",
+      desc: "Get verified in 24h. Skip the queue, get help by WhatsApp.",
+    },
+  ];
+  return (
+    <div className="border-border/40 bg-gradient-to-br from-red-500/5 via-surface/30 to-surface/40 rounded-[2.5rem] border p-8 md:p-12">
+      <div className="flex flex-col items-center gap-6 text-center max-w-xl mx-auto">
+        <div className="bg-red-500 text-white rounded-2xl px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest flex items-center gap-1.5 shadow-lg shadow-red-500/20">
+          <Sparkles className="h-3 w-3" /> Pro feature
+        </div>
+        <div className="space-y-3">
+          <h2 className="text-foreground text-2xl md:text-3xl font-medium tracking-tight">
+            Unlock seller analytics
+          </h2>
+          <p className="text-muted text-sm md:text-base leading-relaxed">
+            Pro sellers get the full insights stack — revenue trends, top
+            products, conversion, and the buyer funnel. Without it,
+            you&apos;re guessing.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full mt-2">
+          {features.map((f) => (
+            <div
+              key={f.title}
+              className="bg-background/60 border-border/40 rounded-2xl border p-4 text-left flex items-start gap-3"
+            >
+              <div className="bg-red-500/10 text-red-500 rounded-xl p-2 shrink-0">
+                {f.icon}
+              </div>
+              <div className="min-w-0">
+                <p className="text-foreground text-sm font-medium">
+                  {f.title}
+                </p>
+                <p className="text-muted text-xs mt-0.5 leading-snug">
+                  {f.desc}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+        <Link
+          href="/dashboard/settings"
+          className="mt-4 inline-flex items-center gap-2 rounded-full bg-red-500 px-8 py-3 text-sm font-medium text-white shadow-lg shadow-red-500/20 transition-all hover:bg-red-600 active:scale-95"
+        >
+          <Sparkles className="h-4 w-4" />
+          Upgrade to Pro
+        </Link>
+        <p className="text-muted text-[11px]">
+          Cancel anytime. Activated immediately after payment.
+        </p>
       </div>
     </div>
   );
