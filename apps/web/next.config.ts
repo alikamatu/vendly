@@ -65,6 +65,11 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Note: Next.js 16 no longer runs ESLint during `next build` (the `eslint`
+  // config key was removed). Linting lives in its own parallel CI job
+  // (`pnpm lint`), so a green build is already decoupled from outstanding
+  // lint debt (tracked in GH issue #10). Type errors still fail the build.
+
   // Trim the response time tax by GZip/Brotli'ing responses + ditching the
   // "x-powered-by" header.
   compress: true,

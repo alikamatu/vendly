@@ -1,0 +1,24 @@
+name: Setup workspace
+description: Install pnpm, Node 20, and install dependencies (frozen lockfile, cached)
+
+runs:
+  using: composite
+  steps:
+    # pnpm/action-setup reads the exact version from the root package.json
+    # `packageManager` field (pnpm@9.15.4), so the CI toolchain can never
+    # drift from local dev.
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
+
+    - name: Install Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: pnpm
+
+    # --frozen-lockfile fails if pnpm-lock.yaml is out of sync with the
+    # manifests — catching lockfile drift in CI instead of in production.
+    # The api package's postinstall runs `prisma generate`, which needs no DB.
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile

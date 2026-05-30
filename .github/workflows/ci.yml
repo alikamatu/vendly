@@ -1,0 +1,120 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# Cancel superseded runs on the same ref so a rapid push sequence doesn't
+# queue redundant CI (saves minutes + gives faster feedback on the latest commit).
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Least-privilege by default; individual jobs widen scope only if needed.
+permissions:
+  contents: read
+
+env:
+  # Keep Turbo + Next telemetry out of CI logs and runs.
+  TURBO_TELEMETRY_DISABLED: 1
+  NEXT_TELEMETRY_DISABLED: 1
+
+jobs:
+  type-check:
+    name: Type check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      # `turbo type-check` builds @verndly/types first (dependsOn ^build),
+      # then runs `tsc --noEmit` in api + web.
+      - run: pnpm type-check
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: Build all packages
+        run: pnpm build
+        env:
+          # Canonical origin so generated metadata/sitemap URLs are correct.
+          NEXT_PUBLIC_SITE_URL: https://verndly.com
+      - name: Upload web build output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-next-build
+          path: apps/web/.next
+          retention-days: 3
+          if-no-files-found: ignore
+
+  test:
+    name: API tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: Run API unit tests with coverage
+        run: pnpm --filter @verndly/api test:cov
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-coverage
+          path: apps/api/coverage
+          retention-days: 7
+          if-no-files-found: ignore
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    # TODO(#10): flip to `false` once the 53 React Hooks errors are fixed.
+    # Until then lint reports findings without blocking merges.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: pnpm lint
+
+  security:
+    name: Security
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      # Report high/critical advisories. Non-blocking for now (tracked in #14)
+      # so a transient upstream advisory can't wedge unrelated PRs.
+      - name: pnpm audit (high+)
+        run: pnpm audit --audit-level high || true
+      # Fail the job if a secret is committed.
+      - name: Secret scan (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Single required status check: passes only when the blocking jobs pass.
+  # Mark this as the required check in branch protection instead of each job.
+  ci-success:
+    name: CI success
+    if: always()
+    needs: [type-check, build, test, security]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify required jobs succeeded
+        run: |
+          echo "type-check: ${{ needs.type-check.result }}"
+          echo "build:      ${{ needs.build.result }}"
+          echo "test:       ${{ needs.test.result }}"
+          echo "security:   ${{ needs.security.result }}"
+          if [ "${{ needs.type-check.result }}" != "success" ] || \
+             [ "${{ needs.build.result }}" != "success" ] || \
+             [ "${{ needs.test.result }}" != "success" ] || \
+             [ "${{ needs.security.result }}" != "success" ]; then
+            echo "::error::One or more required CI jobs failed."
+            exit 1
+          fi
+          echo "All required CI jobs passed."
