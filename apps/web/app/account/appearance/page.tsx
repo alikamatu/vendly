@@ -39,7 +39,7 @@ export default function AppearancePage() {
 
       <div>
         <h1 className="text-lg font-medium tracking-tight">Appearance</h1>
-        <p className="text-[11px] text-[var(--color-muted)] mt-0.5">Choose how Vendly looks on your device</p>
+        <p className="text-[11px] text-[var(--color-muted)] mt-0.5">Choose how Verndly looks on your device</p>
       </div>
 
       {/* Theme cards */}

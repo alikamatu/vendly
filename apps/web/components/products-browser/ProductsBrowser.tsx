@@ -45,13 +45,13 @@ function ProductsBrowserInner() {
   // Persist view mode preference locally
   useEffect(() => {
     try {
-      const stored = localStorage.getItem("vendly_products_view") as ViewMode | null;
+      const stored = localStorage.getItem("verndly_products_view") as ViewMode | null;
       if (stored === "grid" || stored === "list") setView(stored);
     } catch {}
   }, []);
   useEffect(() => {
     try {
-      localStorage.setItem("vendly_products_view", view);
+      localStorage.setItem("verndly_products_view", view);
     } catch {}
   }, [view]);
 

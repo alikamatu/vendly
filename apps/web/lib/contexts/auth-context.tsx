@@ -93,7 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Hydrate on mount
   useEffect(() => {
-    const stored = localStorage.getItem('vendly_token');
+    const stored = localStorage.getItem('verndly_token');
     if (stored) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setToken(stored);
@@ -102,7 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .then((u) => setUser(u as User))
         .catch(() => {
           // Token expired or invalid
-          localStorage.removeItem('vendly_token');
+          localStorage.removeItem('verndly_token');
           setToken(null);
         })
         .finally(() => setIsLoading(false));
@@ -132,7 +132,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!res.access_token || !res.user) {
           throw new Error(res.message || 'Login failed');
         }
-        localStorage.setItem('vendly_token', res.access_token);
+        localStorage.setItem('verndly_token', res.access_token);
         setToken(res.access_token);
         setUser(res.user as User);
         return;
@@ -174,7 +174,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (token) {
       authApi.logout(token).catch(() => {});
     }
-    localStorage.removeItem('vendly_token');
+    localStorage.removeItem('verndly_token');
     setToken(null);
     setUser(null);
   }, [token]);
@@ -192,7 +192,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [token]);
 
   const setAuthData = useCallback((newToken: string, newUser: User) => {
-    localStorage.setItem('vendly_token', newToken);
+    localStorage.setItem('verndly_token', newToken);
     setToken(newToken);
     setUser(newUser);
   }, []);

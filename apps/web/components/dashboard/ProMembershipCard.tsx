@@ -119,7 +119,7 @@ export default function ProMembershipCard() {
           </div>
           <div className="space-y-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-sm font-medium text-[var(--color-foreground)]">Vendly Pro</h2>
+              <h2 className="text-sm font-medium text-[var(--color-foreground)]">Verndly Pro</h2>
               {isPro ? (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-normal bg-emerald-500/10 text-emerald-600">
                   <CheckCircle2 className="w-3 h-3" />

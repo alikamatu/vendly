@@ -223,7 +223,7 @@ export class AdminOrderService {
     if (existing.buyer?.email && existing.status !== dto.status) {
       const orderNumber = `ORD-${id.slice(-6).toUpperCase()}`;
       const storeName =
-        existing.items[0]?.product?.seller?.store_name || 'Vendly seller';
+        existing.items[0]?.product?.seller?.store_name || 'Verndly seller';
       this.emailService
         .sendOrderStatusUpdate(existing.buyer.email, {
           orderNumber,

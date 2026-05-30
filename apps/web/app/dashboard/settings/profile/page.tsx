@@ -183,7 +183,7 @@ function ProFeaturesCard({ isPro }: { isPro: boolean }) {
           </div>
           <div>
             <p className="text-sm font-medium text-[var(--color-foreground)]">
-              Vendly Pro
+              Verndly Pro
             </p>
             <p className="text-[11px] text-[var(--color-muted)]">
               {isPro ? "Active on your account" : "Upgrade to unlock"}

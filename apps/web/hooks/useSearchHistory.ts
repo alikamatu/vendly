@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-const STORAGE_KEY = "vendly_search_history";
+const STORAGE_KEY = "verndly_search_history";
 const MAX_ITEMS = 12;
 const MIN_LEN = 2;
 

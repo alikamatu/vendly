@@ -38,7 +38,7 @@ export class EmailService {
   private get links(): EmailLinks {
     return {
       baseUrl:
-        this.configService.get<string>('FRONTEND_URL') || 'https://vendly.com',
+        this.configService.get<string>('FRONTEND_URL') || 'https://verndly.com',
     };
   }
 
@@ -90,7 +90,7 @@ export class EmailService {
   sendWelcomeEmail(to: string, name: string) {
     return this.deliver(
       to,
-      `Welcome to Vendly, ${name.split(' ')[0] || name}`,
+      `Welcome to Verndly, ${name.split(' ')[0] || name}`,
       getWelcomeEmail(name, this.links),
       'welcome',
     );
@@ -100,7 +100,7 @@ export class EmailService {
     const url = `${this.links.baseUrl}/verify-email?token=${encodeURIComponent(token)}`;
     return this.deliver(
       to,
-      'Verify your Vendly email',
+      'Verify your Verndly email',
       getVerificationEmail(url),
       'verification',
     );
@@ -110,7 +110,7 @@ export class EmailService {
     const url = `${this.links.baseUrl}/reset-password?token=${encodeURIComponent(token)}`;
     return this.deliver(
       to,
-      'Reset your Vendly password',
+      'Reset your Verndly password',
       getPasswordResetEmail(url),
       'password-reset',
     );
@@ -119,7 +119,7 @@ export class EmailService {
   sendPasswordChangedEmail(to: string, name: string) {
     return this.deliver(
       to,
-      'Your Vendly password was changed',
+      'Your Verndly password was changed',
       getPasswordChangedEmail(name),
       'password-changed',
     );
@@ -167,7 +167,7 @@ export class EmailService {
   sendSellerApprovedEmail(to: string, name: string, storeLink: string) {
     return this.deliver(
       to,
-      `You're approved to sell on Vendly`,
+      `You're approved to sell on Verndly`,
       getSellerApprovedEmail(name, storeLink, this.links),
       'seller-approved',
     );
@@ -176,7 +176,7 @@ export class EmailService {
   sendSellerRejectedEmail(to: string, name: string, reason?: string) {
     return this.deliver(
       to,
-      'Your Vendly seller application needs another look',
+      'Your Verndly seller application needs another look',
       getSellerRejectedEmail(name, reason, this.links),
       'seller-rejected',
     );
@@ -188,8 +188,8 @@ export class EmailService {
     return this.deliver(
       to,
       data.isExtension
-        ? 'Your Vendly Pro membership was extended'
-        : 'Welcome to Vendly Pro',
+        ? 'Your Verndly Pro membership was extended'
+        : 'Welcome to Verndly Pro',
       getProActivatedEmail(data, this.links),
       'pro-activated',
     );
@@ -198,7 +198,7 @@ export class EmailService {
   sendProExpiringEmail(to: string, name: string, expiresAt: string | Date) {
     return this.deliver(
       to,
-      'Your Vendly Pro membership expires soon',
+      'Your Verndly Pro membership expires soon',
       getProExpiringEmail(name, expiresAt, this.links),
       'pro-expiring',
     );
@@ -233,7 +233,7 @@ export class EmailService {
   sendAccountSuspendedEmail(to: string, name: string, reason: string) {
     return this.deliver(
       to,
-      'Your Vendly account has been suspended',
+      'Your Verndly account has been suspended',
       getAccountSuspendedEmail(name, reason),
       'account-suspended',
     );
@@ -243,7 +243,7 @@ export class EmailService {
 
   sendContactFormAdminAlert(data: { name: string; email: string; subject: string; message: string }) {
     // Send to the support email address
-    const adminEmail = this.configService.get<string>('SUPPORT_EMAIL') || 'support@vendly.com';
+    const adminEmail = this.configService.get<string>('SUPPORT_EMAIL') || 'support@verndly.com';
     return this.deliver(
       adminEmail,
       `New Contact Request: ${data.subject}`,
@@ -263,7 +263,7 @@ export class EmailService {
     const adminEmail =
       this.configService.get<string>('ADMIN_NOTIFY_EMAIL') ||
       this.configService.get<string>('SUPPORT_EMAIL') ||
-      'support@vendly.com';
+      'support@verndly.com';
     return this.deliver(
       adminEmail,
       `New seller verification: ${data.userName}`,
@@ -275,7 +275,7 @@ export class EmailService {
   sendNewsletterWelcome(to: string) {
     return this.deliver(
       to,
-      'Welcome to the Vendly Newsletter',
+      'Welcome to the Verndly Newsletter',
       getNewsletterWelcomeEmail(to, this.links),
       'newsletter-welcome',
     );
@@ -297,7 +297,7 @@ export class EmailService {
   }) {
     const supportInbox =
       this.configService.get<string>('SUPPORT_EMAIL') ||
-      'support@vendly.app';
+      'support@verndly.com';
 
     const matchesHtml = args.matches.length
       ? `<ul>${args.matches
@@ -332,11 +332,11 @@ export class EmailService {
       const ackHtml = `
         <p>Hi ${escapeHtml(args.fullName.split(' ')[0] || 'there')},</p>
         <p>Thanks for reaching out. Our support team has your request and will
-        reply to this email shortly to help you recover access to your Vendly
+        reply to this email shortly to help you recover access to your Verndly
         account.</p>
         <p>If you remember any other details in the meantime, just reply to
         this message.</p>
-        <p>— The Vendly Support team</p>
+        <p>— The Verndly Support team</p>
       `;
       await this.deliver(
         args.knownEmail,

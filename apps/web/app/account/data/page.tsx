@@ -38,7 +38,7 @@ export default function DataPrivacyPage() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `vendly-data-export-${user.id}.json`;
+      a.download = `verndly-data-export-${user.id}.json`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);

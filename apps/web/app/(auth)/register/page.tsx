@@ -19,7 +19,7 @@ function RegisterContent() {
         <div className="flex flex-col justify-center">
           <div className="mb-8 text-center md:text-left">
             <h1 className="text-3xl font-normal tracking-tight md:text-4xl">
-              Join <span className="text-accent">Vendly</span>
+              Join <span className="text-accent">Verndly</span>
             </h1>
             <p className="mt-2 text-foreground/60">
               Create your account and start selling.
@@ -36,7 +36,7 @@ function RegisterContent() {
               <div className="absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent/30 blur-3xl" />
               <Image
                 src="/images/36121.jpg"
-                alt="Vendly marketplace illustration"
+                alt="Verndly marketplace illustration"
                 fill
                 priority
                 className="object-cover object-center"

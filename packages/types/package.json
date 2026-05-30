@@ -1,5 +1,5 @@
 {
-  "name": "@vendly/types",
+  "name": "@verndly/types",
   "version": "0.0.0",
   "private": true,
   "license": "UNLICENSED",
@@ -18,7 +18,7 @@
     "clean": "rm -rf dist"
   },
   "devDependencies": {
-    "@vendly/typescript-config": "workspace:*",
+    "@verndly/typescript-config": "workspace:*",
     "typescript": "^5.7.3"
   }
 }

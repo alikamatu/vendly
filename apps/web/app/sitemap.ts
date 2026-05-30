@@ -11,7 +11,12 @@ import { SITE_URL } from "@/lib/seo";
  */
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:1000";
 
-interface ProductSlim { id: string; updated_at?: string; created_at?: string }
+interface ProductSlim {
+  id: string;
+  updated_at?: string;
+  created_at?: string;
+  image_urls?: string[];
+}
 interface StoreSlim { store_link?: string; updated_at?: string; created_at?: string }
 interface CategorySlim { name?: string }
 
@@ -68,6 +73,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     lastModified: p.updated_at ? new Date(p.updated_at) : p.created_at ? new Date(p.created_at) : now,
     changeFrequency: "weekly" as const,
     priority: 0.7,
+    // Image-sitemap extension: surfaces product photos in Google Images and
+    // strengthens the product result. Only the primary image is listed to
+    // keep the sitemap lean.
+    ...(p.image_urls?.[0] ? { images: [p.image_urls[0]] } : {}),
   }));
 
   // Stores

@@ -39,7 +39,7 @@ const TEMPLATE_ROWS = [
     "new",
     "12",
     "Clothing",
-    "Vendly",
+    "Verndly",
     "linen|summer|menswear",
     "Lightweight breathable linen shirt.",
     "draft",
@@ -52,7 +52,7 @@ const TEMPLATE_ROWS = [
     "new",
     "30",
     "Home",
-    "Vendly",
+    "Verndly",
     "kitchen|gift",
     "Stoneware mug, dishwasher safe.",
     "draft",
@@ -96,7 +96,7 @@ export default function BulkImportPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "vendly-products-template.csv";
+    a.download = "verndly-products-template.csv";
     a.click();
     URL.revokeObjectURL(url);
   };

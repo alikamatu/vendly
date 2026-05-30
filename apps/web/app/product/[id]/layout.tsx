@@ -30,7 +30,7 @@ export async function generateMetadata({
   if (!product) {
     return buildMetadata({
       title: "Product not found",
-      description: "We couldn't find that product on Vendly.",
+      description: "We couldn't find that product on Verndly.",
       noindex: true,
       path: `/product/${id}`,
     });
@@ -40,11 +40,11 @@ export async function generateMetadata({
     .slice(0, 180);
   return buildMetadata({
     title: product.title,
-    description: description || `Shop ${product.title} on Vendly.`,
+    description: description || `Shop ${product.title} on Verndly.`,
     path: `/product/${id}`,
     image: product.image_urls?.[0],
     type: "product",
-    keywords: [product.title, product.category, product.brand, "Vendly"].filter(
+    keywords: [product.title, product.category, product.brand, "Verndly"].filter(
       Boolean,
     ) as string[],
   });

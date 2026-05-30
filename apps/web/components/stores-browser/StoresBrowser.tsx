@@ -38,7 +38,7 @@ function StoresBrowserInner() {
         <div className="relative z-10 mx-auto max-w-7xl space-y-4 px-4 text-center md:px-8">
           <div className="bg-[var(--color-accent)]/10 border-[var(--color-accent)]/20 shadow-xs inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-[var(--color-accent)]">
             <Store className="h-3.5 w-3.5" />
-            VENDLY DIRECTORY
+            VERNDLY DIRECTORY
           </div>
           <h1 className="text-3xl font-semibold leading-none tracking-tight text-[var(--color-foreground)] md:text-5xl">
             Discover Verified{' '}

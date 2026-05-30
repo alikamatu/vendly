@@ -1,6 +1,6 @@
-# Vendly API
+# Verndly API
 
-The core backend service for the Vendly platform, built with NestJS and Prisma. Admin functionality is built directly into this API rather than as a separate application.
+The core backend service for the Verndly platform, built with NestJS and Prisma. Admin functionality is built directly into this API rather than as a separate application.
 
 ## 🚀 Getting Started
 
@@ -28,18 +28,18 @@ The core backend service for the Vendly platform, built with NestJS and Prisma. 
 3.  **Database Migration & Seeding**:
     From the monorepo root:
     ```bash
-    pnpm --filter @vendly/api exec prisma generate
-    pnpm --filter @vendly/api exec prisma migrate dev
-    pnpm --filter @vendly/api run db:seed
+    pnpm --filter @verndly/api exec prisma generate
+    pnpm --filter @verndly/api exec prisma migrate dev
+    pnpm --filter @verndly/api run db:seed
     ```
 
 ## 🛠 Available Scripts
 
 Run these from the monorepo root using Turborepo filters:
--   `pnpm --filter @vendly/api dev`: Starts the development server with watch mode (port 1000).
--   `pnpm --filter @vendly/api build`: Builds the application for production using SWC.
--   `pnpm --filter @vendly/api test`: Runs unit tests.
--   `pnpm --filter @vendly/api lint`: Checks for linting errors.
+-   `pnpm --filter @verndly/api dev`: Starts the development server with watch mode (port 1000).
+-   `pnpm --filter @verndly/api build`: Builds the application for production using SWC.
+-   `pnpm --filter @verndly/api test`: Runs unit tests.
+-   `pnpm --filter @verndly/api lint`: Checks for linting errors.
 
 ## 🏗 Core Modules (18 Total)
 
@@ -83,13 +83,13 @@ The API initialises `@sentry/nestjs` from `src/sentry/instrument.ts`, imported a
 We use Prisma for type-safe database access. The schema contains 22+ models (User, SellerProfile, Product, Order, Transaction, Ledger, AdminApproval, etc.).
 The schema is located at `prisma/schema.prisma`. To update the schema:
 1.  Make changes to the `schema.prisma` file.
-2.  Run `pnpm --filter @vendly/api exec prisma migrate dev --name <migration_name>`.
+2.  Run `pnpm --filter @verndly/api exec prisma migrate dev --name <migration_name>`.
 
 ### Seeding
 Custom seed scripts are available:
-- `pnpm --filter @vendly/api run seed:admin`
-- `pnpm --filter @vendly/api run seed:categories`
-- `pnpm --filter @vendly/api run seed:locations`
+- `pnpm --filter @verndly/api run seed:admin`
+- `pnpm --filter @verndly/api run seed:categories`
+- `pnpm --filter @verndly/api run seed:locations`
 
 ## 🐳 Docker Deployment
 

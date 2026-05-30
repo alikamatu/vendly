@@ -65,7 +65,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             </div>
             <div>
               <span className="text-md text-foreground block font-medium leading-none tracking-tight">
-                Vendly
+                Verndly
               </span>
               <span className="text-muted text-[9px] font-normal uppercase tracking-wider">
                 Seller Hub

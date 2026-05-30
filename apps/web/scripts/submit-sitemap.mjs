@@ -10,7 +10,7 @@
  *     Bing, Yandex, Naver, Seznam, and Yep support it; Google does not.
  *
  * Required env:
- *   NEXT_PUBLIC_SITE_URL  (defaults to https://vendly.market)
+ *   NEXT_PUBLIC_SITE_URL  (defaults to https://verndly.com)
  *   INDEXNOW_KEY          your key (must also be served at
  *                         /<INDEXNOW_KEY>.txt from the public folder).
  *
@@ -18,7 +18,7 @@
  * never fails CI. Run it from `npm run postbuild`.
  */
 
-const SITE = (process.env.NEXT_PUBLIC_SITE_URL || "https://vendly.market").replace(/\/$/, "");
+const SITE = (process.env.NEXT_PUBLIC_SITE_URL || "https://verndly.com").replace(/\/$/, "");
 const KEY = process.env.INDEXNOW_KEY;
 
 async function main() {

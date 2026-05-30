@@ -1,5 +1,5 @@
 {
-  "extends": "@vendly/typescript-config/nestjs",
+  "extends": "@verndly/typescript-config/nestjs",
   "compilerOptions": {
     "baseUrl": "./",
     "outDir": "./dist",

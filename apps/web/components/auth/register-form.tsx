@@ -104,8 +104,8 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
             <input type="hidden" {...register('account_type')} />
             <div className="grid grid-cols-2 gap-2 rounded-2xl border border-border bg-surface/40 p-1">
               {[
-                { value: 'BUYER', label: 'Shop on Vendly', icon: ShoppingBag },
-                { value: 'SELLER', label: 'Sell on Vendly', icon: Store },
+                { value: 'BUYER', label: 'Shop on Verndly', icon: ShoppingBag },
+                { value: 'SELLER', label: 'Sell on Verndly', icon: Store },
               ].map((opt) => {
                 const Icon = opt.icon;
                 const active = accountType === opt.value;
@@ -232,7 +232,7 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
                 {...register('accept_terms')}
               />
               <span>
-                I agree to Vendly&apos;s{' '}
+                I agree to Verndly&apos;s{' '}
                 <Link href="/terms" target="_blank" className="text-accent hover:underline">
                   Terms of Service
                 </Link>{' '}
@@ -267,7 +267,7 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
         <p className="text-center text-[11px] text-foreground/50">
           Trouble signing up?{' '}
           <a
-            href="mailto:support@vendly.app?subject=Sign-up%20issue"
+            href="mailto:support@verndly.com?subject=Sign-up%20issue"
             className="text-accent hover:underline"
           >
             Contact support

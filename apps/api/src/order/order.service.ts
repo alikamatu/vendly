@@ -714,7 +714,7 @@ export class OrderService {
       const firstName =
         (args.buyerName || 'A customer').split(' ')[0] || 'A customer';
       const message =
-        `Vendly: new order ${args.orderNumber} from ${firstName}. ` +
+        `Verndly: new order ${args.orderNumber} from ${firstName}. ` +
         `Open your dashboard to fulfil it.`;
       this.sms
         .sendSms(sellerUser.phone_e164, message)

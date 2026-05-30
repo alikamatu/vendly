@@ -35,7 +35,7 @@ import { productApi } from "@/lib/api/product";
 import ShareProductCardModal from "@/components/dashboard/ShareProductCardModal";
 
 const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || "https://vendly.market";
+  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || "https://verndly.com";
 
 const STATUS_OPTIONS: Array<{ value: string; label: string; tint: string }> = [
   { value: "draft", label: "Draft", tint: "bg-orange-500/10 text-orange-600" },

@@ -14,8 +14,8 @@ import {
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 
 export const metadata: Metadata = {
-  title: "Help Center · Vendly",
-  description: "Guides, policies, and support for everything Vendly.",
+  title: "Help Center · Verndly",
+  description: "Guides, policies, and support for everything Verndly.",
 };
 
 const SECTIONS = [
@@ -44,7 +44,7 @@ const SECTIONS = [
   {
     title: "Payments & payouts",
     Icon: CreditCard,
-    description: "How money moves on Vendly.",
+    description: "How money moves on Verndly.",
     links: [
       { label: "Payment methods", href: "/faq" },
       { label: "Seller payouts", href: "/dashboard/payouts" },
@@ -64,7 +64,7 @@ const SECTIONS = [
   {
     title: "Trust & safety",
     Icon: ShieldCheck,
-    description: "Buyer protection and how we keep Vendly safe.",
+    description: "Buyer protection and how we keep Verndly safe.",
     links: [
       { label: "Buyer protection", href: "/returns" },
       { label: "Reporting an issue", href: "/contact" },
@@ -75,7 +75,7 @@ const SECTIONS = [
   {
     title: "Pro features",
     Icon: Sparkles,
-    description: "Get the most out of Vendly Pro.",
+    description: "Get the most out of Verndly Pro.",
     links: [
       { label: "What's included", href: "/dashboard/settings" },
       { label: "Storefront QR code", href: "/dashboard" },

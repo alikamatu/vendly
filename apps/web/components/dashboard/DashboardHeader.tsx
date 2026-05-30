@@ -53,7 +53,7 @@ export default function DashboardHeader({
           )}
           <Link href="/" className="group flex min-w-0 items-center gap-2">
             <div className="bg-primary shadow-primary/20 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs text-white shadow-lg transition-transform group-hover:scale-105">
-              <img src="/logos/vendly.png" alt="Ventry Logo" className="h-full w-full" />
+              <img src="/logos/verndly.png" alt="Verndly Logo" className="h-full w-full" />
             </div>
             <h1 className="text-md text-foreground min-w-0 max-w-[120px] truncate tracking-tight sm:max-w-[200px] md:max-w-[300px] lg:max-w-[450px] xl:max-w-[600px]">
               {title}

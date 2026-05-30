@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import LegalPage from "@/components/legal/LegalPage";
 
 export const metadata: Metadata = {
-  title: "Shipping & Delivery · Vendly",
-  description: "How orders move from sellers to buyers on Vendly.",
+  title: "Shipping & Delivery · Verndly",
+  description: "How orders move from sellers to buyers on Verndly.",
 };
 
 export default function ShippingPage() {
@@ -11,7 +11,7 @@ export default function ShippingPage() {
     <LegalPage
       eyebrow="Logistics"
       title="Shipping & Delivery"
-      description="Every Vendly seller sets their own delivery zone and dispatch time. Here's what to expect, and how the typical journey works."
+      description="Every Verndly seller sets their own delivery zone and dispatch time. Here's what to expect, and how the typical journey works."
       updatedAt="May 2026"
       sections={[
         {

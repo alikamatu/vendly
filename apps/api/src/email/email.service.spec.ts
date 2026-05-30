@@ -29,7 +29,7 @@ describe('EmailService', () => {
             get: jest.fn((key: string) => {
               if (key === 'RESEND_API_KEY') return 'test-key';
               if (key === 'FRONTEND_URL') return 'http://localhost:3000';
-              if (key === 'RESEND_FROM_EMAIL') return 'test@vendly.com';
+              if (key === 'RESEND_FROM_EMAIL') return 'test@verndly.com';
               return null;
             }),
           },

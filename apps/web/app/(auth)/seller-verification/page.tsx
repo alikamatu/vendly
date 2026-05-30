@@ -112,7 +112,7 @@ export default function SellerVerificationPage() {
     },
     {
       id: 'CONTACT' as const,
-      title: 'Contact Vendly',
+      title: 'Contact Verndly',
       description: 'Request manual verification via WhatsApp or Email',
       icon: MessageSquare,
       color: 'bg-emerald-500',
@@ -328,7 +328,7 @@ export default function SellerVerificationPage() {
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => window.open('mailto:support@vendly-omega.vercel.app', '_blank')}
+                                  onClick={() => window.open('mailto:support@verndly.com', '_blank')}
                                   className="flex items-center gap-4 rounded-xl bg-slate-800 p-4 shadow-lg shadow-slate-800/20 transition-transform active:scale-95"
                                 >
                                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20">

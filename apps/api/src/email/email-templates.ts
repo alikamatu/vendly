@@ -1,5 +1,5 @@
 /**
- * Vendly transactional email templates.
+ * Verndly transactional email templates.
  *
  * Conventions:
  * - Inline styles only (most email clients strip <style>).
@@ -12,12 +12,14 @@
 
 // ─── Brand tokens ────────────────────────────────────────────────────────────
 
+const SITE_URL = (process.env.SITE_URL || 'https://verndly.com').replace(/\/$/, '');
+
 const BRAND = {
-  name: 'Vendly',
+  name: 'Verndly',
   tagline: 'For young entrepreneurs and small businesses',
-  logo: 'https://vendly-omega.vercel.app/logos/vendly.png',
-  supportEmail: 'support@vendly.com',
-  whatsapp: '+233 24 000 0000',
+  logo: `${SITE_URL}/logos/verndly.png`,
+  supportEmail: process.env.SUPPORT_EMAIL || 'support@verndly.com',
+  whatsapp: process.env.SUPPORT_PHONE || '+233 53 406 5652',
   primary: '#ff6b00',
   text: '#0a0a0a',
   muted: '#6b7280',
@@ -27,7 +29,7 @@ const BRAND = {
 };
 
 export interface EmailLinks {
-  /** e.g. https://vendly.com — no trailing slash */
+  /** e.g. https://verndly.com — no trailing slash */
   baseUrl: string;
 }
 
@@ -197,9 +199,9 @@ const shell = ({ title, preheader, content, footerNote }: ShellOptions): string 
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                 <tr>
                   <td>
-                    <a href="https://vendly.com" style="text-decoration:none; color:${BRAND.text};">
-                      <img src="${BRAND.logo}" alt="Vendly" width="32" height="32" style="vertical-align:middle; border-radius:6px;">
-                      <span style="font-size:18px; vertical-align:middle; margin-left:10px; letter-spacing:-0.01em;">Vendly</span>
+                    <a href="https://verndly.com" style="text-decoration:none; color:${BRAND.text};">
+                      <img src="${BRAND.logo}" alt="Verndly" width="32" height="32" style="vertical-align:middle; border-radius:6px;">
+                      <span style="font-size:18px; vertical-align:middle; margin-left:10px; letter-spacing:-0.01em;">Verndly</span>
                     </a>
                   </td>
                   <td align="right" style="font-size:11px; color:${BRAND.muted};">${escape(BRAND.tagline)}</td>
@@ -231,8 +233,8 @@ const shell = ({ title, preheader, content, footerNote }: ShellOptions): string 
                 </tr>
                 <tr>
                   <td style="padding-top:14px; font-size:11px; color:${BRAND.muted};">
-                    © ${new Date().getFullYear()} Vendly. All rights reserved.<br>
-                    You received this email because you have an account with Vendly.
+                    © ${new Date().getFullYear()} Verndly. All rights reserved.<br>
+                    You received this email because you have an account with Verndly.
                   </td>
                 </tr>
               </table>
@@ -262,14 +264,14 @@ const eyebrow = (text: string) =>
 // ═══════════════════════════════════════════════════════════════════════════
 
 // 1. Welcome (buyer)
-export const getWelcomeEmail = (name: string, links: EmailLinks = { baseUrl: 'https://vendly.com' }) =>
+export const getWelcomeEmail = (name: string, links: EmailLinks = { baseUrl: 'https://verndly.com' }) =>
   shell({
-    title: `Welcome to Vendly, ${name}`,
-    preheader: `You're in. Here's how to get the most out of Vendly.`,
+    title: `Welcome to Verndly, ${name}`,
+    preheader: `You're in. Here's how to get the most out of Verndly.`,
     content: `
       ${eyebrow('Welcome')}
-      ${H1(`Welcome to Vendly, ${escape(name.split(' ')[0] || name)}.`)}
-      ${P(`Vendly is the curated marketplace for verified young entrepreneurs and small businesses across Ghana. You can shop, save your favourites, and (whenever you're ready) open your own storefront.`)}
+      ${H1(`Welcome to Verndly, ${escape(name.split(' ')[0] || name)}.`)}
+      ${P(`Verndly is the curated marketplace for verified young entrepreneurs and small businesses across Ghana. You can shop, save your favourites, and (whenever you're ready) open your own storefront.`)}
       ${button('Start exploring', `${links.baseUrl}/products`)}
       ${divider()}
       <p style="margin:0 0 8px; font-size:13px; color:${BRAND.muted};">A quick tour:</p>
@@ -285,7 +287,7 @@ export const getWelcomeEmail = (name: string, links: EmailLinks = { baseUrl: 'ht
 // 2. Email verification
 export const getVerificationEmail = (url: string) =>
   shell({
-    title: 'Verify your Vendly email',
+    title: 'Verify your Verndly email',
     preheader: 'Confirm your email so we can secure your account.',
     content: `
       ${eyebrow('Confirm email')}
@@ -294,19 +296,19 @@ export const getVerificationEmail = (url: string) =>
       ${button('Verify email', url)}
       ${P(`If the button doesn't work, copy and paste this link into your browser:<br><a href="${escape(url)}" style="color:${BRAND.primary}; word-break:break-all;">${escape(url)}</a>`)}
       ${divider()}
-      <p style="font-size:12px; color:${BRAND.muted};">Didn't sign up for Vendly? You can safely ignore this email — no account will be created without verification.</p>
+      <p style="font-size:12px; color:${BRAND.muted};">Didn't sign up for Verndly? You can safely ignore this email — no account will be created without verification.</p>
     `,
   });
 
 // 3. Password reset request
 export const getPasswordResetEmail = (url: string) =>
   shell({
-    title: 'Reset your Vendly password',
+    title: 'Reset your Verndly password',
     preheader: 'A password reset was requested for your account.',
     content: `
       ${eyebrow('Reset password')}
       ${H1('Reset your password')}
-      ${P(`We got a request to reset your Vendly password. Tap below to choose a new one. The link expires in 60 minutes.`)}
+      ${P(`We got a request to reset your Verndly password. Tap below to choose a new one. The link expires in 60 minutes.`)}
       ${button('Reset password', url)}
       ${P(`If the button doesn't work, copy and paste this link into your browser:<br><a href="${escape(url)}" style="color:${BRAND.primary}; word-break:break-all;">${escape(url)}</a>`)}
       ${divider()}
@@ -317,12 +319,12 @@ export const getPasswordResetEmail = (url: string) =>
 // 4. Password changed confirmation
 export const getPasswordChangedEmail = (name: string) =>
   shell({
-    title: 'Your Vendly password was changed',
+    title: 'Your Verndly password was changed',
     preheader: 'Your account password was just updated.',
     content: `
       ${eyebrow('Security notice')}
       ${H1('Your password was changed')}
-      ${P(`Hi ${escape(name.split(' ')[0] || name)}, this is a confirmation that your Vendly password was just updated at ${formatDateTime(new Date())}.`)}
+      ${P(`Hi ${escape(name.split(' ')[0] || name)}, this is a confirmation that your Verndly password was just updated at ${formatDateTime(new Date())}.`)}
       ${card(
         `<p style="margin:0; font-size:13px; color:${BRAND.text};"><strong>Didn't change your password?</strong><br>Email <a href="mailto:${BRAND.supportEmail}" style="color:${BRAND.primary};">${BRAND.supportEmail}</a> immediately and we'll secure your account.</p>`,
         '#dc2626',
@@ -398,7 +400,7 @@ const renderOrderSummaryBlock = (o: OrderEmailData): string => {
 // 5. Order confirmation (buyer)
 export const getOrderConfirmationEmail = (
   o: OrderEmailData,
-  links: EmailLinks = { baseUrl: 'https://vendly.com' },
+  links: EmailLinks = { baseUrl: 'https://verndly.com' },
 ) =>
   shell({
     title: `Order #${o.orderNumber} confirmed`,
@@ -417,7 +419,7 @@ export const getOrderConfirmationEmail = (
 // 6. New order alert (seller)
 export const getSellerOrderAlertEmail = (
   o: OrderEmailData,
-  links: EmailLinks = { baseUrl: 'https://vendly.com' },
+  links: EmailLinks = { baseUrl: 'https://verndly.com' },
 ) =>
   shell({
     title: `New order #${o.orderNumber}`,
@@ -495,7 +497,7 @@ const STATUS_COPY: Record<
 
 export const getOrderStatusEmail = (
   o: OrderStatusEmailData,
-  links: EmailLinks = { baseUrl: 'https://vendly.com' },
+  links: EmailLinks = { baseUrl: 'https://verndly.com' },
 ) => {
   const copy = STATUS_COPY[o.status] || {
     eyebrow: 'Order update',
@@ -531,16 +533,16 @@ export const getOrderStatusEmail = (
 export const getSellerApprovedEmail = (
   name: string,
   storeLink: string,
-  links: EmailLinks = { baseUrl: 'https://vendly.com' },
+  links: EmailLinks = { baseUrl: 'https://verndly.com' },
 ) =>
   shell({
-    title: "You're approved to sell on Vendly",
+    title: "You're approved to sell on Verndly",
     preheader: 'Your store is live. Time to add your first product.',
     content: `
       <div style="margin-bottom:16px;">${statusPill('Approved', 'success')}</div>
       ${eyebrow('Verification approved')}
       ${H1(`You're a verified seller, ${escape(name.split(' ')[0] || name)}.`)}
-      ${P(`Welcome to Vendly. Your store is live at <a href="${links.baseUrl}/s/${escape(storeLink)}" style="color:${BRAND.primary};">${links.baseUrl.replace(/^https?:\/\//, '')}/s/${escape(storeLink)}</a>.`)}
+      ${P(`Welcome to Verndly. Your store is live at <a href="${links.baseUrl}/s/${escape(storeLink)}" style="color:${BRAND.primary};">${links.baseUrl.replace(/^https?:\/\//, '')}/s/${escape(storeLink)}</a>.`)}
       ${button('Open your dashboard', `${links.baseUrl}/dashboard`)}
       ${divider()}
       <p style="margin:0 0 8px; font-size:13px; color:${BRAND.muted};">First moves:</p>
@@ -558,7 +560,7 @@ export const getSellerApprovedEmail = (
 export const getSellerRejectedEmail = (
   name: string,
   reason?: string,
-  links: EmailLinks = { baseUrl: 'https://vendly.com' },
+  links: EmailLinks = { baseUrl: 'https://verndly.com' },
 ) =>
   shell({
     title: 'Your seller application needs another look',
@@ -567,7 +569,7 @@ export const getSellerRejectedEmail = (
       <div style="margin-bottom:16px;">${statusPill('Not approved', 'error')}</div>
       ${eyebrow('Verification update')}
       ${H1(`We need a bit more from you, ${escape(name.split(' ')[0] || name)}.`)}
-      ${P(`Thanks for applying to sell on Vendly. Unfortunately we weren't able to approve your application this round.`)}
+      ${P(`Thanks for applying to sell on Verndly. Unfortunately we weren't able to approve your application this round.`)}
       ${reason ? card(`<p style="margin:0; font-size:13px;"><strong>Reviewer note:</strong> ${escape(reason)}</p>`, '#dc2626') : ''}
       ${P(`You're welcome to reapply once you've addressed the points above. Take your time — a strong application moves faster on the next round.`)}
       ${button('Resubmit your application', `${links.baseUrl}/seller-verification`)}
@@ -586,19 +588,19 @@ export interface ProActivatedData {
 
 export const getProActivatedEmail = (
   d: ProActivatedData,
-  links: EmailLinks = { baseUrl: 'https://vendly.com' },
+  links: EmailLinks = { baseUrl: 'https://verndly.com' },
 ) =>
   shell({
-    title: d.isExtension ? 'Vendly Pro extended' : 'Welcome to Vendly Pro',
+    title: d.isExtension ? 'Verndly Pro extended' : 'Welcome to Verndly Pro',
     preheader: `Pro perks unlock right now. Your membership runs through ${formatDate(d.proExpiresAt)}.`,
     content: `
       <div style="margin-bottom:16px;">${statusPill('Pro active', 'success')}</div>
       ${eyebrow(d.isExtension ? 'Membership extended' : 'Welcome to Pro')}
-      ${H1(d.isExtension ? `Pro is extended through ${formatDate(d.proExpiresAt)}.` : `Welcome to Vendly Pro, ${escape(d.name.split(' ')[0] || d.name)}.`)}
+      ${H1(d.isExtension ? `Pro is extended through ${formatDate(d.proExpiresAt)}.` : `Welcome to Verndly Pro, ${escape(d.name.split(' ')[0] || d.name)}.`)}
       ${P(`Your Pro perks are live right now. Use them to ship more, sell faster, and stand out in search.`)}
       ${card(`
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-          ${kvRow('Plan', 'Vendly Pro')}
+          ${kvRow('Plan', 'Verndly Pro')}
           ${kvRow('Amount', money(d.amountPaid))}
           ${d.reference ? kvRow('Reference', `<span style="font-family: ui-monospace, monospace; font-size:12px;">${escape(d.reference)}</span>`) : ''}
           ${kvRow('Active until', escape(formatDate(d.proExpiresAt)))}
@@ -620,16 +622,16 @@ export const getProActivatedEmail = (
 export const getProExpiringEmail = (
   name: string,
   expiresAt: string | Date,
-  links: EmailLinks = { baseUrl: 'https://vendly.com' },
+  links: EmailLinks = { baseUrl: 'https://verndly.com' },
 ) =>
   shell({
-    title: 'Your Vendly Pro membership expires soon',
+    title: 'Your Verndly Pro membership expires soon',
     preheader: `Renew before ${formatDate(expiresAt)} to keep your Pro perks active.`,
     content: `
       <div style="margin-bottom:16px;">${statusPill('Expiring soon', 'warning')}</div>
       ${eyebrow('Renew Pro')}
       ${H1(`Your Pro membership expires ${formatDate(expiresAt)}.`)}
-      ${P(`Hi ${escape(name.split(' ')[0] || name)} — your Vendly Pro membership ends in a few days. Renew now to keep featured placement, stock alerts, and your QR code active without a gap.`)}
+      ${P(`Hi ${escape(name.split(' ')[0] || name)} — your Verndly Pro membership ends in a few days. Renew now to keep featured placement, stock alerts, and your QR code active without a gap.`)}
       ${button('Renew for GH₵57', `${links.baseUrl}/dashboard/settings`)}
       ${secondaryButton('Compare plans', `${links.baseUrl}/help`)}
     `,
@@ -648,7 +650,7 @@ export interface PayoutEmailData {
 
 export const getPayoutSentEmail = (
   d: PayoutEmailData,
-  links: EmailLinks = { baseUrl: 'https://vendly.com' },
+  links: EmailLinks = { baseUrl: 'https://verndly.com' },
 ) =>
   shell({
     title: `Payout sent — ${money(d.amount, d.currency)}`,
@@ -676,7 +678,7 @@ export const getPayoutSentEmail = (
 export const getLowStockEmail = (
   storeName: string,
   product: { id: string; title: string; quantity: number; image_url?: string | null },
-  links: EmailLinks = { baseUrl: 'https://vendly.com' },
+  links: EmailLinks = { baseUrl: 'https://verndly.com' },
 ) =>
   shell({
     title: `Low stock — ${product.title}`,
@@ -700,13 +702,13 @@ export const getLowStockEmail = (
 // 14. Account suspended / warning
 export const getAccountSuspendedEmail = (name: string, reason: string) =>
   shell({
-    title: 'Your Vendly account has been suspended',
+    title: 'Your Verndly account has been suspended',
     preheader: 'Action required — your account is currently restricted.',
     content: `
       <div style="margin-bottom:16px;">${statusPill('Suspended', 'error')}</div>
       ${eyebrow('Account notice')}
       ${H1('Your account has been suspended.')}
-      ${P(`Hi ${escape(name.split(' ')[0] || name)}, we've temporarily suspended your Vendly account.`)}
+      ${P(`Hi ${escape(name.split(' ')[0] || name)}, we've temporarily suspended your Verndly account.`)}
       ${card(`<p style="margin:0; font-size:13px;"><strong>Reason:</strong> ${escape(reason)}</p>`, '#dc2626')}
       ${P(`If you believe this is a mistake or want to appeal, reply to this email and our trust team will review your case within 48 hours.`)}
       ${secondaryButton('Email support', `mailto:${BRAND.supportEmail}`)}
@@ -747,7 +749,7 @@ export const getSellerVerificationAdminAlertEmail = (
     verificationData: string;
     submittedAt: Date;
   },
-  links: EmailLinks = { baseUrl: 'https://vendly.com' },
+  links: EmailLinks = { baseUrl: 'https://verndly.com' },
 ) =>
   shell({
     title: `New seller verification: ${d.userName}`,
@@ -767,23 +769,23 @@ export const getSellerVerificationAdminAlertEmail = (
           ${kvRow('Data', escape(d.verificationData || '—'))}
         </table>
       `)}
-      ${button('Review in dashboard', `${links.baseUrl}/vendly/verifications`)}
+      ${button('Review in dashboard', `${links.baseUrl}/verndly/verifications`)}
     `,
   });
 
 // 16. Newsletter Welcome
 export const getNewsletterWelcomeEmail = (
   email: string,
-  links: EmailLinks = { baseUrl: 'https://vendly.com' },
+  links: EmailLinks = { baseUrl: 'https://verndly.com' },
 ) =>
   shell({
-    title: 'Welcome to the Vendly Newsletter',
+    title: 'Welcome to the Verndly Newsletter',
     preheader: 'You are on the list for updates, deals, and seller tips.',
     content: `
       <div style="margin-bottom:16px;">${statusPill('Subscribed', 'success')}</div>
       ${eyebrow('Newsletter')}
       ${H1(`You're on the list.`)}
-      ${P(`Thanks for subscribing to the Vendly newsletter. We'll keep you posted with the latest updates, special deals, and tips to grow your business.`)}
+      ${P(`Thanks for subscribing to the Verndly newsletter. We'll keep you posted with the latest updates, special deals, and tips to grow your business.`)}
       ${button('Start exploring', `${links.baseUrl}/products`)}
     `,
   });

@@ -15,8 +15,10 @@ export default function OrganizationJsonLd() {
           "@type": "Organization",
           name: SITE_NAME,
           url: SITE_URL,
-          logo: `${SITE_URL}/logos/vendly.png`,
+          logo: `${SITE_URL}/logos/verndly.png`,
           description: SITE_DESCRIPTION,
+          // Add live social profiles here (Instagram, X, TikTok, LinkedIn…)
+          // so Google can build the brand Knowledge Panel and link them.
           sameAs: [],
         },
         {
@@ -28,7 +30,7 @@ export default function OrganizationJsonLd() {
             "@type": "SearchAction",
             target: {
               "@type": "EntryPoint",
-              urlTemplate: `${SITE_URL}/products?search={search_term_string}`,
+              urlTemplate: `${SITE_URL}/products?q={search_term_string}`,
             },
             "query-input": "required name=search_term_string",
           },

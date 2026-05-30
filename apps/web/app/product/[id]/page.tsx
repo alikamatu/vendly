@@ -181,7 +181,7 @@ export default function ProductDetailsPage() {
     const url = window.location.href;
     if ((navigator as any).share) {
       try {
-        await (navigator as any).share({ title: product?.title ?? 'Vendly product', url });
+        await (navigator as any).share({ title: product?.title ?? 'Verndly product', url });
         return;
       } catch {
         // fall through

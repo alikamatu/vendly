@@ -38,6 +38,12 @@ export default function ProductJsonLd({ product }: { product: ProductSchemaInput
     typeof product.quantity_available === "number"
       ? product.quantity_available > 0
       : true;
+  // Google's Offer schema wants a price-validity horizon; without it Search
+  // Console flags "missing field priceValidUntil". Roll it 1 year forward so
+  // the product rich result stays eligible without manual upkeep.
+  const priceValidUntil = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
   return (
     <JsonLd
       data={{
@@ -58,6 +64,7 @@ export default function ProductJsonLd({ product }: { product: ProductSchemaInput
           url,
           price: String(product.price),
           priceCurrency: (product.currency || "GHS").toUpperCase(),
+          priceValidUntil,
           availability: inStock
             ? "https://schema.org/InStock"
             : "https://schema.org/OutOfStock",

@@ -41,7 +41,7 @@ export default function Error({
       >
         <h2 className="text-md font-normal text-foreground">Something went wrong</h2>
         <p className="text-xs text-muted leading-relaxed font-medium">
-          Vendly encountered an unexpected error. Don't worry, your data is safe.
+          Verndly encountered an unexpected error. Don't worry, your data is safe.
         </p>
         {error.digest && (
            <p className="text-[10px] font-mono text-muted/50 bg-border/20 py-1 rounded-md px-2 truncate">

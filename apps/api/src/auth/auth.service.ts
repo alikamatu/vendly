@@ -537,7 +537,7 @@ export class AuthService {
       this.twilio
         .sendSms(
           adminPhone,
-          `Vendly: new seller verification from ${user.full_name} (${user.email}) via ${dto.type}. Review in dashboard.`,
+          `Verndly: new seller verification from ${user.full_name} (${user.email}) via ${dto.type}. Review in dashboard.`,
         )
         .catch((err) =>
           console.error('Failed to send admin verification SMS', err),
@@ -833,7 +833,7 @@ export class AuthService {
         where: { id: userId },
         data: {
           full_name: 'Deleted User',
-          email: `deleted_${userId}@vendly.com`,
+          email: `deleted_${userId}@verndly.com`,
           password_hash: '',
           school: 'Unknown',
           is_suspended: true,
@@ -887,7 +887,7 @@ export class AuthService {
       where: { id: userId },
       data: { totp_secret: secret },
     });
-    const issuer = this.configService.get<string>('APP_NAME') || 'Vendly';
+    const issuer = this.configService.get<string>('APP_NAME') || 'Verndly';
     return {
       secret, // shown once; user can also paste manually if QR fails
       otpauth_url: buildOtpAuthUrl({
@@ -1125,7 +1125,7 @@ export class AuthService {
 
     const send = await this.twilio.sendSms(
       phone,
-      `Your Vendly verification code is ${code}. It expires in 5 minutes.`,
+      `Your Verndly verification code is ${code}. It expires in 5 minutes.`,
     );
 
     return {
@@ -1213,7 +1213,7 @@ export class AuthService {
     });
     await this.twilio.sendSms(
       user.phone_e164,
-      `Your Vendly login code is ${code}. It expires in 5 minutes.`,
+      `Your Verndly login code is ${code}. It expires in 5 minutes.`,
     );
     return { sent: true, phone_hint: maskPhone(user.phone_e164) };
   }

@@ -148,7 +148,7 @@ export default function PrimaryNav() {
               name="q"
               type="search"
               inputMode="search"
-              placeholder="Search Vendly…"
+              placeholder="Search Verndly…"
               className="h-9 w-full pl-9 pr-3 rounded-xl bg-surface border border-border text-[12px] font-normal outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-all"
             />
           </form>
@@ -376,9 +376,9 @@ function MobileDrawer({
             <header className="h-16 px-5 flex items-center justify-between border-b border-border">
               <Link href="/" onClick={onClose} className="flex items-center gap-2">
                 <div className="w-8 h-8 bg-primary rounded-lg overflow-hidden">
-                  <img src="/logos/vendly.png" alt="" className="w-full h-full" />
+                  <img src="/logos/verndly.png" alt="" className="w-full h-full" />
                 </div>
-                <span className="text-base font-medium uppercase">Vendly</span>
+                <span className="text-base font-medium uppercase">Verndly</span>
               </Link>
               <button
                 onClick={onClose}
@@ -416,7 +416,7 @@ function MobileDrawer({
                   ))}
                   <div className="my-3 border-t border-border" />
                   <DrawerRow icon={ShoppingBag} label="My orders" href="/orders" onClick={onClose} />
-                  <DrawerRow icon={TrendingUp} label="Sell on Vendly" href="/seller-verification" onClick={onClose} />
+                  <DrawerRow icon={TrendingUp} label="Sell on Verndly" href="/seller-verification" onClick={onClose} />
                   <DrawerRow icon={HelpCircle} label="Help & support" href="/help" onClick={onClose} />
                 </ul>
               )}

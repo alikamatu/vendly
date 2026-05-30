@@ -1,4 +1,4 @@
-# Render blueprint for the Vendly NestJS API.
+# Render blueprint for the Verndly NestJS API.
 # https://render.com/docs/blueprint-spec
 #
 # Render's default Node detection runs `npm install` at the repo root, which
@@ -8,16 +8,16 @@
 
 services:
   - type: web
-    name: vendly-api
+    name: verndly-api
     runtime: node
     plan: free
     rootDir: .
     buildCommand: |
       npm install -g pnpm@9.15.4
-      pnpm install --frozen-lockfile --filter @vendly/api...
-      pnpm --filter @vendly/api exec prisma generate
-      pnpm --filter @vendly/api run build
-    startCommand: pnpm --filter @vendly/api exec node dist/main.js
+      pnpm install --frozen-lockfile --filter @verndly/api...
+      pnpm --filter @verndly/api exec prisma generate
+      pnpm --filter @verndly/api run build
+    startCommand: pnpm --filter @verndly/api exec node dist/main.js
     healthCheckPath: /
     autoDeploy: true
     envVars:
@@ -57,7 +57,7 @@ services:
       - key: ARKESEL_API_KEY
         sync: false
       - key: ARKESEL_SENDER_ID
-        value: Vendly
+        value: Verndly
       - key: ARKESEL_SANDBOX
         value: "false"
       # Where seller-verification submissions notify (email + SMS).

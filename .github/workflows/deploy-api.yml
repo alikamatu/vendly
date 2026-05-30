@@ -1,4 +1,4 @@
-name: Deploy Vendly API to AWS
+name: Deploy Verndly API to AWS
 
 on:
   push:
@@ -8,8 +8,8 @@ on:
 
 env:
   AWS_REGION: eu-west-1
-  ECR_REPOSITORY: vendly-api
-  APP_RUNNER_SERVICE: vendly-api-service
+  ECR_REPOSITORY: verndly-api
+  APP_RUNNER_SERVICE: verndly-api-service
 
 jobs:
   deploy:

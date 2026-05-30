@@ -189,7 +189,7 @@ function SellerCTA({ status }: { status: 'PENDING' | 'APPROVED' | 'REJECTED' | n
         </div>
         <div className="space-y-0.5">
           <p className="text-sm font-medium text-[var(--color-foreground)]">
-            Start selling on Vendly
+            Start selling on Verndly
           </p>
           <p className="text-[11px] leading-relaxed text-[var(--color-muted)]">
             Join young entrepreneurs, list products and grow your business — all in one place.

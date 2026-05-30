@@ -42,7 +42,7 @@ const SELL_LINKS: FooterLink[] = [
 ];
 
 const COMPANY_LINKS: FooterLink[] = [
-  { label: "About Vendly", href: "/about" },
+  { label: "About Verndly", href: "/about" },
   { label: "Contact us", href: "/contact" },
   { label: "FAQ", href: "/faq" },
   { label: "Help center", href: "/help" },
@@ -56,10 +56,10 @@ const LEGAL_LINKS: FooterLink[] = [
 ];
 
 const SOCIALS = [
-  { label: "Instagram", href: "https://instagram.com/vendly", Icon: Instagram },
-  { label: "Twitter / X", href: "https://twitter.com/vendly", Icon: Twitter },
-  { label: "Facebook", href: "https://facebook.com/vendly", Icon: Facebook },
-  { label: "YouTube", href: "https://youtube.com/@vendly", Icon: Youtube },
+  { label: "Instagram", href: "https://instagram.com/verndly", Icon: Instagram },
+  { label: "Twitter / X", href: "https://twitter.com/verndly", Icon: Twitter },
+  { label: "Facebook", href: "https://facebook.com/verndly", Icon: Facebook },
+  { label: "YouTube", href: "https://youtube.com/@verndly", Icon: Youtube },
 ];
 
 const TRUST = [
@@ -97,10 +97,10 @@ export default function Footer() {
           <div className="lg:col-span-4 space-y-5">
             <Link href="/" className="inline-flex items-center gap-2 group">
               <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20 overflow-hidden">
-                <img src="/logos/vendly.png" alt="Vendly" className="w-full h-full" />
+                <img src="/logos/verndly.png" alt="Verndly" className="w-full h-full" />
               </div>
               <span className="text-lg font-medium uppercase tracking-tight text-foreground">
-                Vendly
+                Verndly
               </span>
             </Link>
             <p className="text-[13px] text-muted leading-relaxed max-w-sm">
@@ -137,7 +137,7 @@ export default function Footer() {
       <div className="border-t border-border">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-[11px] text-muted">
           <p className="font-normal">
-            © {new Date().getFullYear()} Vendly. All rights reserved.
+            © {new Date().getFullYear()} Verndly. All rights reserved.
           </p>
           <div className="flex items-center gap-4 flex-wrap">
             <span className="inline-flex items-center gap-1.5 font-normal">

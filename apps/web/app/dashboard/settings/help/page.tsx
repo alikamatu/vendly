@@ -42,14 +42,14 @@ const FAQS: FaqItem[] = [
     tag: "Orders",
   },
   {
-    q: "How do I become a seller on Vendly?",
+    q: "How do I become a seller on Verndly?",
     a: "Tap 'Become a Seller' in your Settings. You'll need to complete identity verification by submitting a National ID and proof of business activity. Our team reviews applications within 24–48 hours.",
     icon: Store,
     tag: "Selling",
   },
   {
     q: "What payment methods are accepted?",
-    a: "Vendly accepts Mobile Money (MTN, Vodafone, AirtelTigo), bank transfer, and cash on delivery depending on the seller's settings. You'll see available payment options at checkout.",
+    a: "Verndly accepts Mobile Money (MTN, Vodafone, AirtelTigo), bank transfer, and cash on delivery depending on the seller's settings. You'll see available payment options at checkout.",
     icon: CreditCard,
     tag: "Payments",
   },
@@ -67,7 +67,7 @@ const FAQS: FaqItem[] = [
   },
   {
     q: "Can I change my email address?",
-    a: "Email changes require identity verification to protect your account. Please contact our support team via the form below or by emailing support@vendly.app. We'll guide you through the process securely.",
+    a: "Email changes require identity verification to protect your account. Please contact our support team via the form below or by emailing support@verndly.com. We'll guide you through the process securely.",
     icon: Mail,
     tag: "Account",
   },
@@ -79,7 +79,7 @@ const FAQS: FaqItem[] = [
   },
   {
     q: "Is my personal information safe?",
-    a: "Yes. Vendly encrypts your data in transit (TLS) and at rest. We never sell your personal data to third parties. You can review our full privacy policy in the Terms & Conditions section.",
+    a: "Yes. Verndly encrypts your data in transit (TLS) and at rest. We never sell your personal data to third parties. You can review our full privacy policy in the Terms & Conditions section.",
     icon: ShieldCheck,
     tag: "Privacy",
   },
@@ -95,25 +95,25 @@ const CONTACT_OPTIONS = [
     icon: MessageCircle,
     color: "text-emerald-500",
     bg: "bg-emerald-500/10",
-    href: "https://wa.me/233000000000?text=Hi%20Vendly%20Support",
+    href: "https://wa.me/233534065652?text=Hi%20Verndly%20Support",
   },
   {
     id: "email",
     label: "Email Support",
-    desc: "support@vendly.app · within 24hrs",
+    desc: "support@verndly.com · within 24hrs",
     icon: Mail,
     color: "text-blue-500",
     bg: "bg-blue-500/10",
-    href: "mailto:support@vendly.app",
+    href: "mailto:support@verndly.com",
   },
   {
     id: "phone",
     label: "Call Us",
-    desc: "+233 00 000 0000 · Mon–Fri 9am–5pm",
+    desc: "+233 53 406 5652 · Mon–Fri 9am–5pm",
     icon: Phone,
     color: "text-violet-500",
     bg: "bg-violet-500/10",
-    href: "tel:+233000000000",
+    href: "tel:+233534065652",
   },
 ];
 
@@ -199,8 +199,8 @@ function ReportForm() {
     const body = encodeURIComponent(
       `From: ${user?.full_name ?? "Guest"} <${user?.email ?? ""}>\nTopic: ${topic}\n\n${cleanMessage}`
     );
-    const subject = encodeURIComponent(`[Vendly Support] ${topic}`);
-    window.location.href = `mailto:support@vendly.app?subject=${subject}&body=${body}`;
+    const subject = encodeURIComponent(`[Verndly Support] ${topic}`);
+    window.location.href = `mailto:support@verndly.com?subject=${subject}&body=${body}`;
 
     // Optimistic success
     setTimeout(() => {
@@ -223,8 +223,8 @@ function ReportForm() {
         <p className="text-base font-medium text-[var(--color-foreground)]">Report submitted</p>
         <p className="text-[11px] text-[var(--color-muted)] max-w-xs">
           Your email client should have opened. If not, send directly to{" "}
-          <a href="mailto:support@vendly.app" className="font-normal text-[var(--color-accent)] underline">
-            support@vendly.app
+          <a href="mailto:support@verndly.com" className="font-normal text-[var(--color-accent)] underline">
+            support@verndly.com
           </a>
         </p>
         <button
@@ -395,7 +395,7 @@ export default function HelpPage() {
 
       {/* ── App version footer ── */}
       <p className="text-center text-[10px] text-[var(--color-muted)]">
-        Vendly v1.0 · support@vendly.app
+        Verndly v1.0 · support@verndly.com
       </p>
     </div>
   );

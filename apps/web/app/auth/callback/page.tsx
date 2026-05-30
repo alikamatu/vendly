@@ -32,7 +32,7 @@ function CallbackInner() {
       return;
     }
 
-    localStorage.setItem("vendly_token", token);
+    localStorage.setItem("verndly_token", token);
     // Strip the hash so the token doesn't linger in the address bar.
     window.history.replaceState(null, "", window.location.pathname);
     setStatus("success");
@@ -72,7 +72,7 @@ function CallbackInner() {
                 Back to sign in
               </Link>
               <a
-                href="mailto:support@vendly.app?subject=Sign-in%20issue"
+                href="mailto:support@verndly.com?subject=Sign-in%20issue"
                 className="text-xs text-muted hover:underline"
               >
                 Contact support

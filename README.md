@@ -1,6 +1,6 @@
-# Vendly — The Marketplace for Verified Entrepreneurs
+# Verndly — The Marketplace for Verified Entrepreneurs
 
-Vendly is a comprehensive marketplace platform designed specifically for verified entrepreneurs to manage their sales, showcase products, and scale their businesses professionally. By shifting away from informal DM-based commerce, Vendly provides a premium, trust-driven ecosystem for both sellers and buyers.
+Verndly is a comprehensive marketplace platform designed specifically for verified entrepreneurs to manage their sales, showcase products, and scale their businesses professionally. By shifting away from informal DM-based commerce, Verndly provides a premium, trust-driven ecosystem for both sellers and buyers.
 
 ![Node](https://img.shields.io/badge/Node.js-v20+-green)
 ![pnpm](https://img.shields.io/badge/pnpm-v9+-orange)
@@ -20,9 +20,9 @@ The project is structured as a monorepo (powered by Turborepo and pnpm workspace
 ### Shared Packages
 | Package | Description |
 |---------|-------------|
-| `@vendly/types` | Shared TypeScript interfaces and types across Web and API. |
-| `@vendly/eslint-config` | Shared ESLint configurations (base, next, nest). |
-| `@vendly/typescript-config` | Shared TypeScript configurations. |
+| `@verndly/types` | Shared TypeScript interfaces and types across Web and API. |
+| `@verndly/eslint-config` | Shared ESLint configurations (base, next, nest). |
+| `@verndly/typescript-config` | Shared TypeScript configurations. |
 
 ## ✨ Core Features
 
@@ -66,8 +66,8 @@ The project is structured as a monorepo (powered by Turborepo and pnpm workspace
 
 1.  **Clone the repository**:
     ```bash
-    git clone https://github.com/alikamatu/vendly.git
-    cd vendly
+    git clone https://github.com/alikamatu/verndly.git
+    cd verndly
     ```
 
 2.  **Install dependencies**:
@@ -85,9 +85,9 @@ The project is structured as a monorepo (powered by Turborepo and pnpm workspace
 
 4.  **Database Migration & Seeding** (Run from root):
     ```bash
-    pnpm --filter @vendly/api exec prisma generate
-    pnpm --filter @vendly/api exec prisma migrate dev
-    pnpm --filter @vendly/api run db:seed
+    pnpm --filter @verndly/api exec prisma generate
+    pnpm --filter @verndly/api exec prisma migrate dev
+    pnpm --filter @verndly/api run db:seed
     ```
 
 5.  **Running Locally**:

@@ -9,21 +9,13 @@ interface HomeJsonLdProps {
 
 /** Server-renders structured data for SEO. */
 export default function HomeJsonLd({ categories }: HomeJsonLdProps) {
-  const origin = typeof window !== "undefined" ? window.location.origin : "https://vendly.com";
+  const origin = typeof window !== "undefined" ? window.location.origin : "https://verndly.com";
 
-  const site = {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    name: "Vendly",
-    url: origin,
-    description: "Discover and shop from trusted, verified entrepreneurs all in one place.",
-    potentialAction: {
-      "@type": "SearchAction",
-      target: { "@type": "EntryPoint", urlTemplate: `${origin}/?q={search_term_string}` },
-      "query-input": "required name=search_term_string",
-    },
-  };
-
+  // NOTE: the site-wide WebSite + SearchAction schema is emitted once from
+  // OrganizationJsonLd (root layout). We deliberately do NOT repeat it here —
+  // two WebSite nodes on one page muddy Google's entity resolution. This
+  // component only contributes the home page's category ItemList, with each
+  // item pointing at its real, crawlable category listing URL.
   const cats = {
     "@context": "https://schema.org",
     "@type": "ItemList",
@@ -33,14 +25,11 @@ export default function HomeJsonLd({ categories }: HomeJsonLdProps) {
       position: index + 1,
       name: cat.name,
       description: `Browse and buy verified ${cat.name} products from trusted young entrepreneurs.`,
-      url: `${origin}/#marketplace`,
+      url: `${origin}/products?category=${encodeURIComponent(cat.name)}`,
     })),
   };
 
   return (
-    <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(site) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(cats) }} />
-    </>
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(cats) }} />
   );
 }

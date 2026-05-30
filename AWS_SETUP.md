@@ -1,4 +1,4 @@
-# Vendly AWS Hosting Setup Guide
+# Verndly AWS Hosting Setup Guide
 
 ## Architecture Summary
 
@@ -19,7 +19,7 @@ RDS and ElastiCache must be inside a private VPC so they're never exposed to the
 
 1. Go to **VPC → Create VPC**
 2. Select **VPC and more** (creates subnets + route tables automatically)
-3. Name: `vendly-vpc`
+3. Name: `verndly-vpc`
 4. CIDR: `10.0.0.0/16`
 5. Create **2 private subnets** (for RDS + ElastiCache) and **2 public subnets** (for App Runner egress)
 6. Enable **DNS hostnames** ✓
@@ -31,17 +31,17 @@ RDS and ElastiCache must be inside a private VPC so they're never exposed to the
 1. Go to **RDS → Create database**
 2. Engine: **PostgreSQL 16**
 3. Template: **Free tier** (dev) or **Production** (prod)
-4. DB instance identifier: `vendly-db`
-5. Master username: `vendly_user`
+4. DB instance identifier: `verndly-db`
+5. Master username: `verndly_user`
 6. Master password: generate a strong password and save it in Secrets Manager
 7. Instance: `db.t3.micro` (dev) / `db.t3.small` (prod)
 8. Storage: 20 GB gp3, enable autoscaling
 9. **Connectivity**:
-   - VPC: `vendly-vpc`
+   - VPC: `verndly-vpc`
    - Public access: **No** (private only)
-   - Create a security group: `vendly-rds-sg`
+   - Create a security group: `verndly-rds-sg`
      - Inbound: PostgreSQL (5432) from App Runner security group only
-10. Database name: `vendly`
+10. Database name: `verndly`
 11. Create and copy the endpoint — goes into `DATABASE_URL`
 
 ---
@@ -50,12 +50,12 @@ RDS and ElastiCache must be inside a private VPC so they're never exposed to the
 
 1. Go to **ElastiCache → Create cluster**
 2. Choose **Redis OSS**
-3. Cluster mode: **Disabled** (simpler, sufficient for Vendly's load)
-4. Name: `vendly-cache`
+3. Cluster mode: **Disabled** (simpler, sufficient for Verndly's load)
+4. Name: `verndly-cache`
 5. Node type: `cache.t3.micro`
 6. Replicas: 0 (dev) / 1 (prod)
 7. **Subnet group**: create one using your private subnets from Step 1
-8. **Security group**: `vendly-redis-sg`
+8. **Security group**: `verndly-redis-sg`
    - Inbound: Redis (6379) from App Runner security group only
 9. Enable **encryption in transit** (TLS) — this is why the URL uses `rediss://`
 10. Copy the **Primary Endpoint** — goes into `REDIS_URL`
@@ -68,7 +68,7 @@ Your existing `app.module.ts` already uses `cache-manager-redis-yet` with `redis
 
 ```bash
 # Create ECR repository
-aws ecr create-repository --repository-name vendly-api --region eu-west-1
+aws ecr create-repository --repository-name verndly-api --region eu-west-1
 
 # Authenticate Docker to ECR
 aws ecr get-login-password --region eu-west-1 | \
@@ -77,9 +77,9 @@ aws ecr get-login-password --region eu-west-1 | \
 
 # Build and push
 cd apps/api
-docker build -t vendly-api .
-docker tag vendly-api:latest YOUR_ACCOUNT_ID.dkr.ecr.eu-west-1.amazonaws.com/vendly-api:latest
-docker push YOUR_ACCOUNT_ID.dkr.ecr.eu-west-1.amazonaws.com/vendly-api:latest
+docker build -t verndly-api .
+docker tag verndly-api:latest YOUR_ACCOUNT_ID.dkr.ecr.eu-west-1.amazonaws.com/verndly-api:latest
+docker push YOUR_ACCOUNT_ID.dkr.ecr.eu-west-1.amazonaws.com/verndly-api:latest
 ```
 
 ---
@@ -88,15 +88,15 @@ docker push YOUR_ACCOUNT_ID.dkr.ecr.eu-west-1.amazonaws.com/vendly-api:latest
 
 1. Go to **App Runner → Create service**
 2. Source: **Container registry → Amazon ECR**
-3. Select your `vendly-api` image
+3. Select your `verndly-api` image
 4. Deployment trigger: **Automatic** (re-deploys on new ECR push)
-5. Service name: `vendly-api-service`
+5. Service name: `verndly-api-service`
 6. Port: `1000`
 7. CPU: 1 vCPU / Memory: 2 GB
 8. **Environment variables** — add all variables from `apps/api/.env.aws.example`
 9. **Networking**:
-   - Enable **VPC connector** pointing to your `vendly-vpc` private subnets
-   - Assign `vendly-apprunner-sg` security group
+   - Enable **VPC connector** pointing to your `verndly-vpc` private subnets
+   - Assign `verndly-apprunner-sg` security group
    - This allows App Runner to reach RDS and ElastiCache privately
 10. Create service and copy the App Runner URL → goes into `BACKEND_URL`
 
@@ -140,9 +140,9 @@ The workflow in `.github/workflows/deploy-api.yml` will then:
 
 | SG | Inbound rule | Source |
 |---|---|---|
-| `vendly-rds-sg` | TCP 5432 | `vendly-apprunner-sg` |
-| `vendly-redis-sg` | TCP 6379 | `vendly-apprunner-sg` |
-| `vendly-apprunner-sg` | TCP 443 (HTTPS) | `0.0.0.0/0` |
+| `verndly-rds-sg` | TCP 5432 | `verndly-apprunner-sg` |
+| `verndly-redis-sg` | TCP 6379 | `verndly-apprunner-sg` |
+| `verndly-apprunner-sg` | TCP 443 (HTTPS) | `0.0.0.0/0` |
 
 ---
 

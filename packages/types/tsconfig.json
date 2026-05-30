@@ -1,5 +1,5 @@
 {
-  "extends": "@vendly/typescript-config/base",
+  "extends": "@verndly/typescript-config/base",
   "compilerOptions": {
     "module": "commonjs",
     "outDir": "./dist",

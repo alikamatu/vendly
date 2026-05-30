@@ -10,12 +10,12 @@ export default function TermsPage() {
     {
       title: "Seller Conduct",
       icon: CheckCircle2,
-      content: "As a seller on Vendly, you agree to provide accurate product information, maintain inventory reliability, and fulfill orders within the specified timeframe. Misrepresentation of goods is strictly prohibited."
+      content: "As a seller on Verndly, you agree to provide accurate product information, maintain inventory reliability, and fulfill orders within the specified timeframe. Misrepresentation of goods is strictly prohibited."
     },
     {
       title: "Prohibited Items",
       icon: ShieldAlert,
-      content: "Sellers may not list illegal substances, weapons, counterfeit goods, or items that violate intellectual property rights. Vendly reserves the right to remove any listing and suspend accounts that violate these policies."
+      content: "Sellers may not list illegal substances, weapons, counterfeit goods, or items that violate intellectual property rights. Verndly reserves the right to remove any listing and suspend accounts that violate these policies."
     },
     {
       title: "Payments & Fees",
@@ -36,13 +36,13 @@ export default function TermsPage() {
 
       <div className="px-2">
         <h2 className="text-md font-medium tracking-tight uppercase">Terms & Conditions</h2>
-        <p className="text-xs text-muted font-medium mt-1">Review the legal guidelines for selling on Vendly</p>
+        <p className="text-xs text-muted font-medium mt-1">Review the legal guidelines for selling on Verndly</p>
       </div>
 
       <div className="space-y-6 pb-10">
         <Card className="p-6 md:p-10 border-none shadow-sm space-y-10" hoverEffect={false}>
           <div className="space-y-4">
-             <h1 className="text-xl font-medium text-foreground">Vendly Seller Agreement</h1>
+             <h1 className="text-xl font-medium text-foreground">Verndly Seller Agreement</h1>
              <p className="text-[10px] text-muted font-normal uppercase tracking-wider bg-border/20 inline-block px-3 py-1 rounded-full">Last Updated: February 2026</p>
           </div>
 
@@ -62,7 +62,7 @@ export default function TermsPage() {
 
           <div className="pt-10 border-t border-border/50">
              <p className="text-xs text-muted font-medium bg-surface/50 p-4 rounded-2xl italic">
-               By continuing to use Vendly as a seller, you acknowledge that you have read and agree to these terms. Failure to comply may result in account termination.
+               By continuing to use Verndly as a seller, you acknowledge that you have read and agree to these terms. Failure to comply may result in account termination.
              </p>
           </div>
         </Card>

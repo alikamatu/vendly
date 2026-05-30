@@ -6,8 +6,8 @@ import Link from "next/link";
 const SECTIONS = [
   {
     icon: Users,
-    title: "Who Can Use Vendly",
-    body: "Vendly is open to anyone who creates an account with a valid email address. Sellers must additionally complete identity verification before listing products. You must be at least 16 years old to register.",
+    title: "Who Can Use Verndly",
+    body: "Verndly is open to anyone who creates an account with a valid email address. Sellers must additionally complete identity verification before listing products. You must be at least 16 years old to register.",
   },
   {
     icon: CheckCircle2,
@@ -17,7 +17,7 @@ const SECTIONS = [
   {
     icon: ShieldAlert,
     title: "Prohibited Items",
-    body: "You may not list illegal substances, weapons, counterfeit goods, stolen items, or anything that violates intellectual property rights. Vendly may remove any listing and suspend accounts without notice for violations of this policy.",
+    body: "You may not list illegal substances, weapons, counterfeit goods, stolen items, or anything that violates intellectual property rights. Verndly may remove any listing and suspend accounts without notice for violations of this policy.",
   },
   {
     icon: CreditCard,
@@ -32,7 +32,7 @@ const SECTIONS = [
   {
     icon: Scale,
     title: "Dispute Resolution",
-    body: "If a dispute arises between a buyer and seller, contact us at support@vendly.app. We act as mediators but are not liable for individual transaction outcomes. We reserve the right to make final decisions on disputes brought to our attention.",
+    body: "If a dispute arises between a buyer and seller, contact us at support@verndly.com. We act as mediators but are not liable for individual transaction outcomes. We reserve the right to make final decisions on disputes brought to our attention.",
   },
 ];
 
@@ -59,10 +59,10 @@ export default function TermsPage() {
           <FileText className="w-5 h-5 text-amber-500" />
         </div>
         <div>
-          <p className="text-sm font-medium text-[var(--color-foreground)]">Vendly User Agreement</p>
+          <p className="text-sm font-medium text-[var(--color-foreground)]">Verndly User Agreement</p>
           <p className="text-[11px] text-[var(--color-muted)] mt-0.5">Last updated: May 2026</p>
           <p className="text-[11px] text-[var(--color-muted)] mt-2 leading-relaxed">
-            By using Vendly you agree to these terms. Please read them carefully. If you do not agree, do not use the platform.
+            By using Verndly you agree to these terms. Please read them carefully. If you do not agree, do not use the platform.
           </p>
         </div>
       </div>
@@ -88,9 +88,9 @@ export default function TermsPage() {
       {/* Footer note */}
       <div className="bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)] p-4">
         <p className="text-[11px] text-[var(--color-muted)] leading-relaxed italic">
-          By continuing to use Vendly, you acknowledge that you have read and agree to these terms. Questions? Email us at{" "}
-          <a href="mailto:legal@vendly.app" className="font-normal text-[var(--color-accent)] not-italic hover:underline">
-            legal@vendly.app
+          By continuing to use Verndly, you acknowledge that you have read and agree to these terms. Questions? Email us at{" "}
+          <a href="mailto:support@verndly.com" className="font-normal text-[var(--color-accent)] not-italic hover:underline">
+            support@verndly.com
           </a>
         </p>
       </div>

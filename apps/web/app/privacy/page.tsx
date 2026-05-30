@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import LegalPage from "@/components/legal/LegalPage";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy · Vendly",
-  description: "How Vendly collects, uses, and protects your data.",
+  title: "Privacy Policy · Verndly",
+  description: "How Verndly collects, uses, and protects your data.",
 };
 
 export default function PrivacyPage() {
@@ -61,8 +61,8 @@ export default function PrivacyPage() {
             <p>
               You can access, correct, export, or delete your data at any time from your
               account settings. Email{" "}
-              <a className="text-primary underline" href="mailto:privacy@vendly.com">
-                privacy@vendly.com
+              <a className="text-primary underline" href="mailto:support@verndly.com">
+                support@verndly.com
               </a>{" "}
               for help.
             </p>

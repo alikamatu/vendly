@@ -46,7 +46,7 @@ export default function ModernHero() {
                   <span className="text-primary">not harder.</span>
                 </h1>
                 <p className="mx-auto max-w-lg text-base leading-relaxed text-black/80 md:text-lg lg:mx-0">
-                  Tired of running your business in DMs? Vendly gives young entrepreneurs and small
+                  Tired of running your business in DMs? Verndly gives young entrepreneurs and small
                   businesses a premium storefront in seconds — professional, fast, and built to
                   grow.
                 </p>
@@ -88,7 +88,7 @@ export default function ModernHero() {
                     )}
                   </div>
                   <p className="text-[11px] text-black font-normal">
-                    <span className="text-primary">1,000+</span> entrepreneurs trust Vendly
+                    <span className="text-primary">1,000+</span> entrepreneurs trust Verndly
                   </p>
                 </div>
                 <div className="flex flex-wrap justify-center lg:justify-start gap-x-5 gap-y-2 text-black/80">

@@ -147,10 +147,10 @@ export default function FindAccountPage() {
         <p className="text-center text-[11px] text-foreground/50">
           Prefer to email us directly?{" "}
           <a
-            href="mailto:support@vendly.app?subject=Forgot%20my%20email"
+            href="mailto:support@verndly.com?subject=Forgot%20my%20email"
             className="text-accent hover:underline"
           >
-            support@vendly.app
+            support@verndly.com
           </a>
         </p>
       </div>

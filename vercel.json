@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "cd ../.. && npm install -g pnpm@9.15.4 && pnpm install --frozen-lockfile --filter @vendly/web...",
-  "buildCommand": "cd ../.. && pnpm --filter @vendly/web exec next build",
+  "installCommand": "cd ../.. && npm install -g pnpm@9.15.4 && pnpm install --frozen-lockfile --filter @verndly/web...",
+  "buildCommand": "cd ../.. && pnpm --filter @verndly/web exec next build",
   "framework": "nextjs"
 }

@@ -4,6 +4,13 @@ import React, { useState } from "react";
 import { Mail, MessageSquare, Phone, MapPin, Send, CheckCircle2, Loader2 } from "lucide-react";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { contactApi } from "@/lib/api/contact";
+import {
+  SUPPORT_EMAIL,
+  SUPPORT_PHONE_DISPLAY,
+  SUPPORT_TEL_HREF,
+  SUPPORT_WHATSAPP_HREF,
+  supportMailto,
+} from "@/lib/contact";
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
@@ -56,9 +63,9 @@ export default function ContactPage() {
           </div>
 
           <ul className="space-y-3">
-            <ContactRow icon={Mail} label="Email" value="hello@vendly.com" href="mailto:hello@vendly.com" />
-            <ContactRow icon={MessageSquare} label="WhatsApp" value="+233 24 000 0000" href="https://wa.me/233240000000" />
-            <ContactRow icon={Phone} label="Phone" value="+233 24 000 0000" href="tel:+233240000000" />
+            <ContactRow icon={Mail} label="Email" value={SUPPORT_EMAIL} href={supportMailto()} />
+            <ContactRow icon={MessageSquare} label="WhatsApp" value={SUPPORT_PHONE_DISPLAY} href={SUPPORT_WHATSAPP_HREF} />
+            <ContactRow icon={Phone} label="Phone" value={SUPPORT_PHONE_DISPLAY} href={SUPPORT_TEL_HREF} />
             <ContactRow icon={MapPin} label="HQ" value="Accra, Ghana" />
           </ul>
         </aside>

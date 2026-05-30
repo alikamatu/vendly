@@ -1,5 +1,5 @@
 {
-  "name": "vendly",
+  "name": "verndly",
   "version": "0.0.0",
   "private": true,
   "scripts": {
@@ -30,10 +30,10 @@
   "packageManager": "pnpm@9.15.4",
   "lint-staged": {
     "apps/api/**/*.{ts,js,mjs}": [
-      "pnpm --filter @vendly/api exec eslint --fix"
+      "pnpm --filter @verndly/api exec eslint --fix"
     ],
     "apps/web/**/*.{ts,tsx,js,jsx,mjs}": [
-      "pnpm --filter @vendly/web exec eslint --fix"
+      "pnpm --filter @verndly/web exec eslint --fix"
     ],
     "**/*.{ts,tsx,js,jsx,mjs,json,css,md}": [
       "prettier --write"

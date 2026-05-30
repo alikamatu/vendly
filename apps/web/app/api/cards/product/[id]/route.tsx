@@ -10,8 +10,8 @@ import { join } from "path";
  *
  * Returns a 1200×630 PNG with:
  *  - Product photo (left half)
- *  - Vendly logo (top-right corner of the info panel)
- *  - Seller logo + store name (below the Vendly branding)
+ *  - Verndly logo (top-right corner of the info panel)
+ *  - Seller logo + store name (below the Verndly branding)
  *  - Product title + price
  *  - "Shop now" CTA
  *
@@ -81,7 +81,7 @@ async function fetchImageAsDataUri(url: string): Promise<string | null> {
   try {
     const res = await fetch(url, {
       cache: "no-store",
-      headers: { "User-Agent": "Vendly-Card-Renderer/1.0" },
+      headers: { "User-Agent": "Verndly-Card-Renderer/1.0" },
     });
     if (!res.ok) return null;
     const ct = res.headers.get("content-type") || "image/jpeg";
@@ -92,10 +92,10 @@ async function fetchImageAsDataUri(url: string): Promise<string | null> {
   }
 }
 
-/** Read the Vendly logo from public/logos/vendly.png and return a data URI. */
-function getVendlyLogoDataUri(): string | null {
+/** Read the Verndly logo from public/logos/verndly.png and return a data URI. */
+function getVerndlyLogoDataUri(): string | null {
   try {
-    const logoPath = join(process.cwd(), "public", "logos", "vendly.png");
+    const logoPath = join(process.cwd(), "public", "logos", "verndly.png");
     const buf = readFileSync(logoPath);
     return `data:image/png;base64,${buf.toString("base64")}`;
   } catch {
@@ -183,11 +183,11 @@ export async function GET(
     ? await fetchImageAsDataUri(sellerLogoUrl)
     : null;
 
-  // Inline the Vendly logo from /public/logos/vendly.png
-  const vendlyLogoData = getVendlyLogoDataUri();
+  // Inline the Verndly logo from /public/logos/verndly.png
+  const verndlyLogoData = getVerndlyLogoDataUri();
 
   const priceLabel = formatPrice(product.price, product.currency);
-  const storeName = product.seller?.store_name || "Vendly seller";
+  const storeName = product.seller?.store_name || "Verndly seller";
   const isPro = Boolean(product.seller?.user?.is_pro);
   // Trim the title manually since satori's line-clamp is brittle.
   const safeTitle =
@@ -299,9 +299,9 @@ export async function GET(
                 </div>
               )}
 
-              {/* Top-left: Vendly logo. Sits over a subtle dark chip so it
+              {/* Top-left: Verndly logo. Sits over a subtle dark chip so it
                   stays legible on bright product shots. */}
-              {vendlyLogoData && (
+              {verndlyLogoData && (
                 <div
                   style={{
                     position: "absolute",
@@ -316,8 +316,8 @@ export async function GET(
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={vendlyLogoData}
-                    alt="Vendly"
+                    src={verndlyLogoData}
+                    alt="Verndly"
                     style={{ height: 28 * S, objectFit: "contain" }}
                   />
                 </div>
@@ -454,7 +454,7 @@ export async function GET(
                       display: "flex",
                     }}
                   >
-                    {(product.seller?.location || "Vendly").toString().slice(0, 40)}
+                    {(product.seller?.location || "Verndly").toString().slice(0, 40)}
                   </div>
                   <div
                     style={{

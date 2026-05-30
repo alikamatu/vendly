@@ -256,7 +256,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         <p className="text-center text-[11px] text-foreground/50">
           Need help?{' '}
           <a
-            href="mailto:support@vendly.app?subject=Sign-in%20issue"
+            href="mailto:support@verndly.com?subject=Sign-in%20issue"
             className="text-accent hover:underline"
           >
             Contact support

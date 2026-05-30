@@ -347,7 +347,7 @@ export default function BuyerOrderDetailPage() {
                     Returns & Refunds
                   </h3>
                   <p className="text-muted mt-2 text-xs font-normal max-w-md leading-relaxed">
-                    If there is an issue with your order, you can request a return within 7 days of delivery. Protected by Vendly Buyer Protection.
+                    If there is an issue with your order, you can request a return within 7 days of delivery. Protected by Verndly Buyer Protection.
                   </p>
                 </div>
 

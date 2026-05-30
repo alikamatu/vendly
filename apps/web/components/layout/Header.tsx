@@ -48,7 +48,7 @@ export default function Header() {
             href="/"
             className="text-xl font-medium uppercase tracking-tighter hover:text-primary transition-colors"
           >
-            Ventry
+            Verndly
           </Link>
 
           <div className="flex items-center gap-3">

@@ -33,13 +33,13 @@ export async function generateMetadata({
     });
   }
   return buildMetadata({
-    title: `${store.store_name} on Vendly`,
+    title: `${store.store_name} on Verndly`,
     description:
       store.bio?.slice(0, 180) ||
-      `Shop directly from ${store.store_name} — verified seller on Vendly.`,
+      `Shop directly from ${store.store_name} — verified seller on Verndly.`,
     path: `/s/${slug}`,
     image: store.logo_url,
-    keywords: [store.store_name, store.location, "Vendly seller"].filter(
+    keywords: [store.store_name, store.location, "Verndly seller"].filter(
       Boolean,
     ) as string[],
   });
@@ -65,7 +65,7 @@ export default async function StoreLayout({
               name: store.store_name,
               url: `${SITE_URL}/s/${slug}`,
               image: store.logo_url || undefined,
-              description: store.bio || `Vendly storefront for ${store.store_name}`,
+              description: store.bio || `Verndly storefront for ${store.store_name}`,
               address: store.location
                 ? {
                     "@type": "PostalAddress",

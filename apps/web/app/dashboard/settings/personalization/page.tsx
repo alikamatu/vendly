@@ -28,7 +28,7 @@ export default function PersonalizationPage() {
 
       <div className="px-2">
         <h2 className="text-md font-medium tracking-tight uppercase">Personalization</h2>
-        <p className="text-xs text-muted font-medium mt-1">Customize your Vendly experience and display</p>
+        <p className="text-xs text-muted font-medium mt-1">Customize your Verndly experience and display</p>
       </div>
 
       <div className="space-y-6">

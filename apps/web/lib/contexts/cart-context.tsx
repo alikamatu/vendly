@@ -28,7 +28,7 @@ function itemKey(i: CartItem) {
 
 type CartState = CartItem[];
 
-const STORAGE_KEY = "vendly_cart";
+const STORAGE_KEY = "verndly_cart";
 
 function loadCart(): CartState {
   if (typeof window === "undefined") return [];

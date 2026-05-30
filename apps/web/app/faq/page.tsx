@@ -36,7 +36,7 @@ const QA_LIST: QA[] = [
     tags: ["payment"],
   },
   {
-    q: "How does Vendly Pro work?",
+    q: "How does Verndly Pro work?",
     a: (
       <>
         Pro membership is GH₵57/month, billed via Paystack. Pro sellers get featured
@@ -68,7 +68,7 @@ const QA_LIST: QA[] = [
     q: "Is my data safe?",
     a: (
       <>
-        Yes. Payments are handled by Paystack — Vendly never sees your full card
+        Yes. Payments are handled by Paystack — Verndly never sees your full card
         details. Read our{" "}
         <a className="text-primary underline" href="/privacy">privacy policy</a>.
       </>
@@ -79,7 +79,7 @@ const QA_LIST: QA[] = [
     q: "How do I contact support?",
     a: (
       <>
-        Email <a className="text-primary underline" href="mailto:hello@vendly.com">hello@vendly.com</a>, WhatsApp +233 24 000 0000, or use the{" "}
+        Email <a className="text-primary underline" href="mailto:support@verndly.com">support@verndly.com</a>, WhatsApp +233 53 406 5652, or use the{" "}
         <a className="text-primary underline" href="/contact">contact form</a>.
       </>
     ),

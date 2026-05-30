@@ -56,7 +56,7 @@ export class AppController {
    */
   @Get('/debug-sentry/message')
   async sentryMessage() {
-    Sentry.captureMessage('Vendly API debug ping', 'info');
+    Sentry.captureMessage('Verndly API debug ping', 'info');
     await Sentry.flush(2000);
     return { sent: true };
   }
@@ -70,11 +70,11 @@ export class AppController {
    */
   @Get('/debug-sentry')
   getError() {
-    throw new Error('Vendly API debug — Sentry test exception');
+    throw new Error('Verndly API debug — Sentry test exception');
   }
 
   @Get('/debug-sentry/throw')
   getErrorAlt() {
-    throw new Error('Vendly API debug — Sentry test exception');
+    throw new Error('Verndly API debug — Sentry test exception');
   }
 }

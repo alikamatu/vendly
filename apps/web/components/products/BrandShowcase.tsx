@@ -65,10 +65,10 @@ export default function BrandShowcase({ products, brands, onBrandSelect }: Brand
       <div className="space-y-2">
         <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-primary font-medium">
           <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-          Vendly Collections
+          Verndly Collections
         </div>
         <h2 className="text-2xl md:text-4xl uppercase tracking-tight font-medium text-foreground">
-          Top Vendly Brands
+          Top Verndly Brands
         </h2>
         <p className="text-xs text-muted max-w-md">
           Explore highly rated brands chosen by independent sellers, categorized dynamically.

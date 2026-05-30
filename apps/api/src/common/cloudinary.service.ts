@@ -18,7 +18,7 @@ export class CloudinaryService {
 
   async uploadImage(
     file: Express.Multer.File,
-    folder: string = 'vendly',
+    folder: string = 'verndly',
     options: { vectorize?: boolean; quality?: string } = {},
   ): Promise<UploadApiResponse | UploadApiErrorResponse> {
     return new Promise((resolve, reject) => {
@@ -53,7 +53,7 @@ export class CloudinaryService {
 
   async uploadVideo(
     file: Express.Multer.File,
-    folder: string = 'vendly_videos',
+    folder: string = 'verndly_videos',
   ): Promise<UploadApiResponse | UploadApiErrorResponse> {
     return new Promise((resolve, reject) => {
       const upload = cloudinary.uploader.upload_stream(

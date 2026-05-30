@@ -144,7 +144,7 @@ export default function CategoryGalleryPage() {
   const galleryJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
-    name: 'Category & Brand Showcase - Vendly',
+    name: 'Category & Brand Showcase - Verndly',
     description:
       'Explore all product categories, special brands, and verified young entrepreneur lists.',
     itemListElement: categoriesWithDetails.map((cat, idx) => ({

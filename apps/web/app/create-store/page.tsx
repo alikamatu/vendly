@@ -86,7 +86,7 @@ export default function CreateStorePage() {
               Create Your Store
             </h1>
             <p className="text-lg text-muted max-w-md mx-auto leading-relaxed">
-              Express yourself and start your selling journey on Vendly in just a few steps.
+              Express yourself and start your selling journey on Verndly in just a few steps.
             </p>
           </div>
 
@@ -148,7 +148,7 @@ export default function CreateStorePage() {
                     className="text-lg py-3"
                   />
                   <p className="text-xs text-muted/60 pl-1 font-medium">
-                    Your store will be at: <span className="text-primary/70 italic">vendly.com/{form.watch('store_link') || 'username'}</span>
+                    Your store will be at: <span className="text-primary/70 italic">verndly.com/{form.watch('store_link') || 'username'}</span>
                   </p>
                 </div>
 

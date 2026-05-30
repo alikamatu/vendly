@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
   keywords: [
-    "Vendly",
+    "Verndly",
     "marketplace",
     "Ghana marketplace",
     "young entrepreneurs",
@@ -42,6 +42,15 @@ export const metadata: Metadata = {
   creator: SITE_NAME,
   publisher: SITE_NAME,
   formatDetection: { email: false, address: false, telephone: false },
+  // Ownership verification tokens. Set these in the Vercel project env so you
+  // can verify the domain in Google Search Console / Bing Webmaster Tools and
+  // submit the sitemap. Empty in dev → Next omits the tags entirely.
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
+    other: process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION
+      ? { "msvalidate.01": process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION }
+      : {},
+  },
   alternates: { canonical: SITE_URL },
   openGraph: {
     type: "website",

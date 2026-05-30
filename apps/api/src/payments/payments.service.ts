@@ -376,7 +376,7 @@ export class PaymentsService {
       deliveryNotes: order.delivery_notes || undefined,
       storeName:
         // Buyer may have items from multiple stores; surface the first seller name
-        order.items[0]?.product?.seller?.store_name || 'Vendly seller',
+        order.items[0]?.product?.seller?.store_name || 'Verndly seller',
       storeLink: order.items[0]?.product?.seller?.store_link || undefined,
       items: buyerItems,
       subtotal: order.total_amount.toString(),

@@ -6,10 +6,10 @@
 import type { Metadata } from "next";
 
 export const SITE_URL = (
-  process.env.NEXT_PUBLIC_SITE_URL || "https://vendly.market"
+  process.env.NEXT_PUBLIC_SITE_URL || "https://verndly.com"
 ).replace(/\/$/, "");
 
-export const SITE_NAME = "Vendly";
+export const SITE_NAME = "Verndly";
 
 export const SITE_DESCRIPTION =
   "Discover and shop from trusted, verified independent businesses and young entrepreneurs — all in one place.";

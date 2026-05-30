@@ -1,6 +1,6 @@
-# Contributing to Vendly
+# Contributing to Verndly
 
-First off, thank you for considering contributing to Vendly! It's people like you that make Vendly a great tool for entrepreneurs.
+First off, thank you for considering contributing to Verndly! It's people like you that make Verndly a great tool for entrepreneurs.
 
 ## 🤝 Code of Conduct
 
@@ -9,7 +9,7 @@ By participating in this project, you agree to abide by our code of conduct. Ple
 ## 🛠 Development Workflow
 
 ### Monorepo Tooling
-Vendly uses **pnpm workspaces** and **Turborepo** to manage multiple applications and shared packages. 
+Verndly uses **pnpm workspaces** and **Turborepo** to manage multiple applications and shared packages. 
 - Always use `pnpm` instead of `npm` or `yarn`.
 - Run commands from the root directory when possible using Turborepo or pnpm filters.
 
@@ -50,12 +50,12 @@ Before running the project locally, ensure you have the necessary environment va
 
 When making changes to the database schema (`apps/api/prisma/schema.prisma`):
 1. Make your schema changes.
-2. Generate the client: `pnpm --filter @vendly/api exec prisma generate`
-3. Create a migration: `pnpm --filter @vendly/api exec prisma migrate dev --name your_migration_name`
+2. Generate the client: `pnpm --filter @verndly/api exec prisma generate`
+3. Create a migration: `pnpm --filter @verndly/api exec prisma migrate dev --name your_migration_name`
 4. If testing locally, you can seed data using:
-   - `pnpm --filter @vendly/api run seed:admin`
-   - `pnpm --filter @vendly/api run seed:categories`
-   - `pnpm --filter @vendly/api run seed:locations`
+   - `pnpm --filter @verndly/api run seed:admin`
+   - `pnpm --filter @verndly/api run seed:categories`
+   - `pnpm --filter @verndly/api run seed:locations`
 
 ## 🧪 Testing
 

@@ -6,7 +6,7 @@ const isProd = process.env.NODE_ENV === 'production';
 // Hosts the app legitimately talks to. Adjust here when adding a new third-
 // party (analytics, payment widget, etc.) — every other entry below derives
 // from these so we don't drift.
-const API_HOST = process.env.NEXT_PUBLIC_API_URL || 'https://api.vendly.market';
+const API_HOST = process.env.NEXT_PUBLIC_API_URL || 'https://api.verndly.com';
 const PAYSTACK = 'https://js.paystack.co https://checkout.paystack.com';
 const CLOUDINARY = 'https://res.cloudinary.com';
 // Sentry's ingest endpoint is hostname-specific per project (e.g.
@@ -33,7 +33,7 @@ const csp = [
   `script-src-elem 'self' 'unsafe-inline' ${PAYSTACK} ${VERCEL_LIVE}`,
   `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com ${VERCEL_LIVE}`,
   "font-src 'self' data: https://fonts.gstatic.com",
-  `img-src 'self' data: blob: ${CLOUDINARY} https://lh3.googleusercontent.com https://vendly.market ${VERCEL_LIVE}`,
+  `img-src 'self' data: blob: ${CLOUDINARY} https://lh3.googleusercontent.com https://verndly.com ${VERCEL_LIVE}`,
   // `media-src` governs <video>/<audio>/<source>. Without it, Cloudinary
   // video URLs silently fall back to `default-src 'self'` and the browser
   // blocks them with no visible UI — videos just don't play.
@@ -79,7 +79,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: 'https', hostname: 'res.cloudinary.com' },
       { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
-      { protocol: 'https', hostname: 'vendly.market' },
+      { protocol: 'https', hostname: 'verndly.com' },
     ],
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 60 * 60 * 24,

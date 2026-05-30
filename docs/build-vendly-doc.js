@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /* eslint-disable */
-// Builds Vendly_Official_Documentation.docx for the marketing team.
+// Builds Verndly_Official_Documentation.docx for the marketing team.
 // Conservative docx-js usage — no header/footer/fields/multi-section.
 const fs = require('fs');
 const path = require('path');
@@ -132,7 +132,7 @@ const children = [];
 children.push(blank(), blank(), blank(), blank(), blank());
 children.push(new Paragraph({
   alignment: AlignmentType.LEFT,
-  children: [run('VENDLY', { bold: true, size: 96, color: INK })],
+  children: [run('VERNDLY', { bold: true, size: 96, color: INK })],
   spacing: { after: 120 },
 }));
 children.push(new Paragraph({
@@ -146,7 +146,7 @@ children.push(new Paragraph({
   spacing: { after: 1200 },
 }));
 children.push(specTable([
-  ['Prepared by', 'Vendly Product Team'],
+  ['Prepared by', 'Verndly Product Team'],
   ['Version', '1.0 · May 2026'],
   ['Audience', 'Marketing, partnerships, growth, and exec stakeholders'],
   ['Confidentiality', 'Internal — share with explicit approval only'],
@@ -190,31 +190,31 @@ children.push(para('Use this table to navigate the document. Section numbers dou
 
 // 1. EXECUTIVE SUMMARY
 children.push(h1('1. Executive Summary'));
-children.push(para('Vendly is a Ghana-built marketplace that turns small social-commerce sellers into credible, verified online businesses. Buyers get safer purchases and faster delivery; sellers get a storefront, payment rails, and a growth toolkit they cannot easily assemble on their own.'));
+children.push(para('Verndly is a Ghana-built marketplace that turns small social-commerce sellers into credible, verified online businesses. Buyers get safer purchases and faster delivery; sellers get a storefront, payment rails, and a growth toolkit they cannot easily assemble on their own.'));
 children.push(para('The platform is live, monetised through transaction fees and a paid "Pro" seller subscription, and built on a modern, audited stack (Next.js, NestJS, Paystack, Cloudinary, Resend, Arkesel). It launched in West Africa with a focus on Ghana and is designed to extend across the region.'));
-children.push(callout('In one sentence', 'Vendly is the trust layer that lets Ghana\'s informal sellers operate like real e-commerce brands — verified, payable, trackable, and shareable.'));
+children.push(callout('In one sentence', 'Verndly is the trust layer that lets Ghana\'s informal sellers operate like real e-commerce brands — verified, payable, trackable, and shareable.'));
 
 // 2. INTRODUCTION
 children.push(h1('2. Introduction'));
-children.push(para('This document is the canonical reference for explaining Vendly to anyone outside the engineering team: marketing partners, agencies, press, investors, vendors, and new hires. It is intentionally written in plain language. Where technical detail is unavoidable, it is set aside in dedicated sections so you can skip past it without losing the thread.'));
+children.push(para('This document is the canonical reference for explaining Verndly to anyone outside the engineering team: marketing partners, agencies, press, investors, vendors, and new hires. It is intentionally written in plain language. Where technical detail is unavoidable, it is set aside in dedicated sections so you can skip past it without losing the thread.'));
 children.push(h3('How to use this document'));
 children.push(bullet('If you have five minutes, read sections 1, 3, and 7.'));
 children.push(bullet('If you are writing copy or scripts, lean on sections 7, 8, 14, and 16.'));
 children.push(bullet('If you are briefing a partner or press, sections 4, 5, 9, and 13 will carry the conversation.'));
 children.push(bullet('If you are answering questions on a sales call, sections 8, 11, 12, and 17 cover most of them.'));
 children.push(h3('What this document is not'));
-children.push(para('This is not the engineering spec, not the legal terms of service, and not a sales deck. Engineering details live in the repo (README and API_REFERENCE). Legal terms live on vendly.market/terms. The sales deck lives in the marketing drive.'));
+children.push(para('This is not the engineering spec, not the legal terms of service, and not a sales deck. Engineering details live in the repo (README and API_REFERENCE). Legal terms live on verndly.com/terms. The sales deck lives in the marketing drive.'));
 
 // 3. PRODUCT OVERVIEW
 children.push(h1('3. Product Overview'));
-children.push(para('Vendly is a two-sided marketplace. Buyers browse and check out; sellers list and fulfil. A lightweight admin surface keeps the platform clean, safe, and accountable.'));
+children.push(para('Verndly is a two-sided marketplace. Buyers browse and check out; sellers list and fulfil. A lightweight admin surface keeps the platform clean, safe, and accountable.'));
 children.push(h2('3.1 What buyers see'));
 children.push(bullet('A clean storefront with curated products, real photos, and verified sellers.'));
 children.push(bullet('A shopping cart, secure Paystack checkout, and order tracking from "paid" to "delivered".'));
 children.push(bullet('Reviews, ratings, and return requests — the same instincts buyers have been trained on by global marketplaces, adapted for local context.'));
 children.push(h2('3.2 What sellers get'));
 children.push(bullet('A dashboard to list products (with up to three photos and a short video), set prices, manage stock, and watch orders come in.'));
-children.push(bullet('Automatic payouts: when a customer pays, Vendly takes its fee, deposits the rest into the seller\'s bank or mobile money account, and emails them a receipt.'));
+children.push(bullet('Automatic payouts: when a customer pays, Verndly takes its fee, deposits the rest into the seller\'s bank or mobile money account, and emails them a receipt.'));
 children.push(bullet('A verified seller badge once they pass identity + proof-of-sales checks. Sellers without it cannot publish.'));
 children.push(h2('3.3 What admins do'));
 children.push(bullet('Approve or reject seller verifications.'));
@@ -230,7 +230,7 @@ children.push(specTable([
   ['SMS provider', 'Arkesel (MTN, Telecel, AirtelTigo)'],
   ['Email delivery', 'Resend'],
   ['Media hosting', 'Cloudinary'],
-  ['Web', 'vendly.market'],
+  ['Web', 'verndly.com'],
   ['Admin', 'durabel dashboard (internal)'],
 ]));
 
@@ -254,7 +254,7 @@ children.push(callout('The gap', 'There is no neutral, trustable layer between t
 children.push(h1('5. Objectives & Success Metrics'));
 children.push(h2('5.1 Strategic objectives'));
 children.push(numbered('Become the default credibility layer for social-commerce sellers in Ghana within 18 months.'));
-children.push(numbered('Drive seller graduation: move every active seller from "informal DMs" to a published, verified Vendly store inside 60 days of signup.'));
+children.push(numbered('Drive seller graduation: move every active seller from "informal DMs" to a published, verified Verndly store inside 60 days of signup.'));
 children.push(numbered('Reach payment volume where transaction-fee revenue can sustain ops independently of subscription.'));
 children.push(numbered('Expand to a second West African market on the back of proven Ghana unit economics.'));
 children.push(h2('5.2 Headline KPIs'));
@@ -287,13 +287,13 @@ children.push(para('A small internal team running trust, payouts, and moderation
 // 7. VALUE PROPOSITION
 children.push(h1('7. Value Proposition'));
 children.push(h2('For buyers'));
-children.push(callout('Buy from real sellers, with a real receipt.', 'Every seller on Vendly has passed identity checks. Every order has a tracking page. Every payment is held against delivery. If something goes wrong, there is someone to call — not just a DM that goes dark.'));
+children.push(callout('Buy from real sellers, with a real receipt.', 'Every seller on Verndly has passed identity checks. Every order has a tracking page. Every payment is held against delivery. If something goes wrong, there is someone to call — not just a DM that goes dark.'));
 children.push(h2('For sellers'));
-children.push(callout('Run a real business from your phone.', 'Vendly handles the storefront, the checkout, the receipts, the payouts, and the customer trust. You handle the product. We take a fair fee on what sells — not a subscription you have to justify before you earn.'));
+children.push(callout('Run a real business from your phone.', 'Verndly handles the storefront, the checkout, the receipts, the payouts, and the customer trust. You handle the product. We take a fair fee on what sells — not a subscription you have to justify before you earn.'));
 children.push(h2('For pro sellers'));
 children.push(callout('Look as big as you actually are.', 'Pro unlocks shareable, branded product cards, advanced analytics, faster verification, priority support, and the verified Pro badge that buyers learn to trust.'));
 children.push(h2('For partners & brands'));
-children.push(callout('Distribution to verified sellers, at scale.', 'Vendly is the cleanest way to reach Ghana\'s social-commerce ecosystem as a single, addressable channel — sellers who are real, payable, and reachable.'));
+children.push(callout('Distribution to verified sellers, at scale.', 'Verndly is the cleanest way to reach Ghana\'s social-commerce ecosystem as a single, addressable channel — sellers who are real, payable, and reachable.'));
 
 // 8. CORE FEATURES
 children.push(h1('8. Core Features'));
@@ -313,7 +313,7 @@ children.push(bullet('Payout history and bank/momo connection (via Paystack suba
 children.push(bullet('Store sharing kit: QR code, store link, and (for Pro sellers) branded product cards ready for social.'));
 children.push(h2('8.3 Pro Membership'));
 children.push(bullet('Verified Pro badge displayed next to the store name across the marketplace.'));
-children.push(bullet('Branded share-card generator: portrait 4:5 PNGs in Vendly\'s palette, sized for Instagram and TikTok.'));
+children.push(bullet('Branded share-card generator: portrait 4:5 PNGs in Verndly\'s palette, sized for Instagram and TikTok.'));
 children.push(bullet('Hot Sales promotion slot on the homepage and category pages.'));
 children.push(bullet('Priority verification queue (24-hour SLA vs. standard 48).'));
 children.push(bullet('Priority support via WhatsApp and email.'));
@@ -332,9 +332,9 @@ children.push(numbered('Sign up with email or Google. Verify the email address.'
 children.push(numbered('Create the store: store name, logo, location, delivery area, and bank/momo details.'));
 children.push(numbered('Submit verification via store URL, ID + sales screenshots, or "contact us" route. Admin alerted by email + SMS.'));
 children.push(numbered('Once approved (typical 24-48h), publish products. Each can have variants, photos, and a short video.'));
-children.push(numbered('Receive orders. Update statuses as you fulfil. Vendly pays you out automatically, less the platform fee.'));
+children.push(numbered('Receive orders. Update statuses as you fulfil. Verndly pays you out automatically, less the platform fee.'));
 children.push(h3('Buyer journey'));
-children.push(numbered('Land on vendly.market or a shared store/product link.'));
+children.push(numbered('Land on verndly.com or a shared store/product link.'));
 children.push(numbered('Browse products. Filter by category, region, delivery time, price, and tags.'));
 children.push(numbered('Add to cart, check out via Paystack (cards / momo / bank).'));
 children.push(numbered('Get an email receipt and an order tracking page.'));
@@ -346,7 +346,7 @@ children.push(numbered('Admin moderation is logged and reviewable; sellers can d
 
 // 10. TECHNOLOGY & ARCHITECTURE
 children.push(h1('10. Technology & Architecture'));
-children.push(para('Vendly runs on a modern, sustainable stack designed for fast iteration and operational safety. Marketing usually does not need this section — it is here for press conversations and partner due diligence.'));
+children.push(para('Verndly runs on a modern, sustainable stack designed for fast iteration and operational safety. Marketing usually does not need this section — it is here for press conversations and partner due diligence.'));
 children.push(h3('Stack'));
 children.push(specTable([
   ['Web (storefront + dashboard)', 'Next.js 16 (App Router), Tailwind CSS, Framer Motion, Zustand'],
@@ -384,20 +384,20 @@ children.push(bullet('Buyer reviews are tied to verified purchases.'));
 children.push(bullet('Suspension and warnings are logged and trigger email notifications to the affected user.'));
 children.push(h3('Compliance posture'));
 children.push(bullet('Personal data handled in line with Ghana\'s Data Protection Act (2012).'));
-children.push(bullet('Payment data never touches Vendly servers — Paystack-hosted checkout keeps PCI scope minimal.'));
-children.push(bullet('Transactional emails identify Vendly as the sender, with unsubscribe handling on marketing emails only.'));
+children.push(bullet('Payment data never touches Verndly servers — Paystack-hosted checkout keeps PCI scope minimal.'));
+children.push(bullet('Transactional emails identify Verndly as the sender, with unsubscribe handling on marketing emails only.'));
 
 // 12. PAYMENTS & PAYOUTS
 children.push(h1('12. Payments & Payouts'));
 children.push(h3('How money moves'));
 children.push(numbered('Buyer pays through Paystack at checkout (card, mobile money, or bank).'));
-children.push(numbered('Paystack collects the funds and notifies Vendly via a signed webhook.'));
-children.push(numbered('Vendly records the transaction in a double-entry ledger and credits the seller\'s subaccount, net of platform fee.'));
+children.push(numbered('Paystack collects the funds and notifies Verndly via a signed webhook.'));
+children.push(numbered('Verndly records the transaction in a double-entry ledger and credits the seller\'s subaccount, net of platform fee.'));
 children.push(numbered('Payouts are processed on a regular schedule — and admins can issue them manually from the dashboard.'));
 children.push(numbered('Sellers receive an email when a payout is sent. Failed payouts surface for retry.'));
 children.push(h3('Fees'));
-children.push(bullet('Vendly charges a platform fee on each successful sale. The exact percentage is configurable and disclosed to sellers in the dashboard.'));
-children.push(bullet('Paystack\'s processing fees are paid by Vendly out of the platform fee — sellers see one clean number.'));
+children.push(bullet('Verndly charges a platform fee on each successful sale. The exact percentage is configurable and disclosed to sellers in the dashboard.'));
+children.push(bullet('Paystack\'s processing fees are paid by Verndly out of the platform fee — sellers see one clean number.'));
 children.push(h3('Reliability'));
 children.push(bullet('Webhook handling is replay-safe: duplicate deliveries from Paystack are deduped on event ID and never trigger duplicate payouts.'));
 children.push(bullet('Payout retries are audited; a payout that fails three times is escalated to the ops team automatically.'));
@@ -414,7 +414,7 @@ children.push(bullet('Variable cost per order: Paystack fee + Cloudinary bandwid
 children.push(bullet('Fixed cost: hosting, support, and the ops/moderation team.'));
 children.push(bullet('Pro acts as a margin booster — subscription revenue carries the platform between transaction-fee cycles.'));
 children.push(h3('Why this model'));
-children.push(para('Charging only on success aligns Vendly\'s incentives with the seller\'s. Sellers do not pay to start; they pay when the platform delivers them revenue. Pro is the optional accelerator for sellers who have already proven they have something to sell.'));
+children.push(para('Charging only on success aligns Verndly\'s incentives with the seller\'s. Sellers do not pay to start; they pay when the platform delivers them revenue. Pro is the optional accelerator for sellers who have already proven they have something to sell.'));
 
 // 14. BRAND GUIDELINES
 children.push(h1('14. Brand Guidelines'));
@@ -435,8 +435,8 @@ children.push(specTable([
   ['Logo', 'Wordmark, white on dark or black on light. Never recolour'],
 ]));
 children.push(h3('What to avoid'));
-children.push(bullet('Saying Vendly "disrupts" anything. We replace screenshots of momo numbers with receipts. That is enough.'));
-children.push(bullet('Comparing Vendly to Amazon. Wrong frame; wrong continent.'));
+children.push(bullet('Saying Verndly "disrupts" anything. We replace screenshots of momo numbers with receipts. That is enough.'));
+children.push(bullet('Comparing Verndly to Amazon. Wrong frame; wrong continent.'));
 children.push(bullet('Using stock photos of "happy African entrepreneurs". Use real sellers — we have a release-form template.'));
 
 // 15. ROADMAP
@@ -458,12 +458,12 @@ children.push(bullet('Embedded credit for sellers (working capital tied to GMV).
 
 // 16. TALKING POINTS
 children.push(h1('16. Talking Points for Marketing'));
-children.push(h3('When asked "what is Vendly?"'));
-children.push(callout('Default answer (15 seconds)', 'Vendly is a marketplace for Ghana\'s social-commerce sellers — Instagram and WhatsApp sellers who want a real storefront, real payments, and real customer trust without becoming a tech company.'));
+children.push(h3('When asked "what is Verndly?"'));
+children.push(callout('Default answer (15 seconds)', 'Verndly is a marketplace for Ghana\'s social-commerce sellers — Instagram and WhatsApp sellers who want a real storefront, real payments, and real customer trust without becoming a tech company.'));
 children.push(h3('When asked "how is it different from X?"'));
-children.push(bullet('vs. Instagram/WhatsApp: those are discovery tools. Vendly is the transaction layer that turns discovery into a real, recoverable purchase.'));
-children.push(bullet('vs. Jumia / Tonaton: those are classified marketplaces. Vendly is a verified seller marketplace — buyers know who they are buying from.'));
-children.push(bullet('vs. Shopify: Shopify is for the seller who hires a developer. Vendly is for the seller who runs the business themselves, on their phone.'));
+children.push(bullet('vs. Instagram/WhatsApp: those are discovery tools. Verndly is the transaction layer that turns discovery into a real, recoverable purchase.'));
+children.push(bullet('vs. Jumia / Tonaton: those are classified marketplaces. Verndly is a verified seller marketplace — buyers know who they are buying from.'));
+children.push(bullet('vs. Shopify: Shopify is for the seller who hires a developer. Verndly is for the seller who runs the business themselves, on their phone.'));
 children.push(h3('When asked "is it safe?"'));
 children.push(bullet('Every seller has passed identity and proof-of-sales verification.'));
 children.push(bullet('Payments go through Paystack — the same rails the banks use.'));
@@ -478,38 +478,38 @@ children.push(bullet('"We make sellers rich" — we make sellers credible. Big d
 
 // 17. FAQ
 children.push(h1('17. FAQ'));
-children.push(h3('Is Vendly free to join?'));
+children.push(h3('Is Verndly free to join?'));
 children.push(para('Yes for both buyers and sellers. Sellers pay a small fee on each successful sale. Pro membership is optional and paid monthly.'));
 children.push(h3('How does a seller get verified?'));
 children.push(para('They submit one of three things: a store URL (Instagram, Shopify, etc.), an ID + screenshots of past sales, or a request for manual review via WhatsApp/email. Admins respond within 24-48 hours.'));
 children.push(h3('What if a buyer does not receive their order?'));
-children.push(para('Buyers can open a return/refund request from the order page. Vendly\'s ops team reviews disputes against the seller\'s response and the audit trail before issuing a Paystack refund where appropriate.'));
+children.push(para('Buyers can open a return/refund request from the order page. Verndly\'s ops team reviews disputes against the seller\'s response and the audit trail before issuing a Paystack refund where appropriate.'));
 children.push(h3('Can sellers operate outside Ghana?'));
 children.push(para('The current platform is Ghana-first. Sellers in neighbouring countries can register but cannot yet receive payouts. Cross-border expansion is on the roadmap.'));
-children.push(h3('Does Vendly handle delivery?'));
+children.push(h3('Does Verndly handle delivery?'));
 children.push(para('Not directly today. Sellers fulfil orders themselves or via their own courier. Logistics integrations are on the roadmap.'));
 children.push(h3('Is there a mobile app?'));
 children.push(para('The web app is mobile-first and works well on every modern phone. Native iOS and Android apps are planned.'));
 children.push(h3('How is buyer data protected?'));
-children.push(para('Personal data is handled in line with Ghana\'s Data Protection Act. Payment details never touch Vendly servers — Paystack hosts the checkout. Buyers can request data export or deletion from their account settings.'));
+children.push(para('Personal data is handled in line with Ghana\'s Data Protection Act. Payment details never touch Verndly servers — Paystack hosts the checkout. Buyers can request data export or deletion from their account settings.'));
 children.push(h3('Who owns the seller\'s store and customer data?'));
-children.push(para('The seller does. Vendly is the operator of the marketplace; sellers retain rights to their own catalogue, branding, and customer relationships built on the platform.'));
+children.push(para('The seller does. Verndly is the operator of the marketplace; sellers retain rights to their own catalogue, branding, and customer relationships built on the platform.'));
 
 // 18. GLOSSARY
 children.push(h1('18. Glossary'));
 children.push(specTable([
   ['Activated seller', 'A seller who has published at least one product and received at least one paid order'],
-  ['Admin', 'Internal Vendly team member with access to moderation, payouts, and the audit log'],
+  ['Admin', 'Internal Verndly team member with access to moderation, payouts, and the audit log'],
   ['Audit log', 'Append-only record of every consequential admin and seller action — actor, IP, before/after, reason'],
-  ['Buyer', 'A user purchasing from a Vendly store'],
+  ['Buyer', 'A user purchasing from a Verndly store'],
   ['GMV', 'Gross merchandise value — total GHS value of paid orders before fees and refunds'],
   ['Hot Sales', 'Paid promotional slot on the homepage and category pages'],
   ['Pro', 'Paid monthly subscription tier with upgraded toolkit and verified Pro badge'],
   ['Payout', 'Transfer of a seller\'s earned funds (less fees) to their bank or mobile money account'],
   ['Paystack', 'Payment processor handling all card, momo, and bank transactions'],
-  ['Seller / Entrepreneur', 'A user with a verified storefront on Vendly'],
+  ['Seller / Entrepreneur', 'A user with a verified storefront on Verndly'],
   ['Subaccount', 'A Paystack-side account scoped to one seller, used for split payments and payouts'],
-  ['Take rate', 'Vendly\'s effective platform fee as a percentage of GMV'],
+  ['Take rate', 'Verndly\'s effective platform fee as a percentage of GMV'],
   ['Verification', 'Process by which a new seller establishes identity and proof of sales before publishing'],
 ]));
 
@@ -517,11 +517,11 @@ children.push(specTable([
 children.push(h1('19. Appendix & Contact'));
 children.push(h3('Primary surfaces'));
 children.push(specTable([
-  ['Marketplace', 'https://vendly.market'],
+  ['Marketplace', 'https://verndly.com'],
   ['Admin dashboard', 'Durabel — internal access only'],
   ['Status page', 'TBD'],
-  ['Support email', 'support@vendly.market'],
-  ['Press / partnerships', 'hello@vendly.market'],
+  ['Support email', 'support@verndly.com'],
+  ['Press / partnerships', 'hello@verndly.com'],
 ]));
 children.push(h3('Marketing handover checklist'));
 children.push(bullet('Confirm the version number on the cover matches the latest internal release.'));
@@ -532,20 +532,20 @@ children.push(h3('Document control'));
 children.push(specTable([
   ['Version', '1.0'],
   ['Status', 'Approved for internal circulation'],
-  ['Owner', 'Vendly Product Team'],
+  ['Owner', 'Verndly Product Team'],
   ['Review cycle', 'Quarterly, or on any major release'],
   ['Next review', 'August 2026'],
 ]));
 
 // 20. GO-LIVE BUDGET
 children.push(h1('20. Go-Live Budget'));
-children.push(para('The total cash required to take Vendly from "ready to deploy" to "publicly launched and able to onboard the first 50 sellers". Figures are in US dollars (USD) and assume a 12-week launch window. Annual costs are pro-rated; recurring costs are shown both monthly and across the first 12 months so the runway is explicit.'));
+children.push(para('The total cash required to take Verndly from "ready to deploy" to "publicly launched and able to onboard the first 50 sellers". Figures are in US dollars (USD) and assume a 12-week launch window. Annual costs are pro-rated; recurring costs are shown both monthly and across the first 12 months so the runway is explicit.'));
 children.push(para('Numbers in the first table are line items already approved by the founding team. The second table lists items the team flagged as missing or under-scoped — these are recommendations to scrutinise, not commitments.'));
 
 children.push(h2('20.1 Approved line items'));
 children.push(specTable([
   ['Line item', 'Cost (USD)'],
-  ['Domain (vendly.market, 1 year)', '$48'],
+  ['Domain (verndly.com, 1 year)', '$48'],
   ['Server / hosting', '$74'],
   ['Marketing assets (launch creative pack)', '$66'],
   ['Email domain (workspace / mailbox setup, 1 year)', '$14'],
@@ -623,7 +623,7 @@ children.push(bullet('Cross-border expansion costs — out of scope until Ghana 
 
 children.push(h2('20.7 Approval & ownership'));
 children.push(specTable([
-  ['Budget owner', 'Vendly Founding Team'],
+  ['Budget owner', 'Verndly Founding Team'],
   ['Approved by', '_________________________ (date: __________)'],
   ['Finance lead', '_________________________'],
   ['Review cadence', 'Monthly until break-even, then quarterly'],
@@ -638,9 +638,9 @@ children.push(new Paragraph({
 
 // ─── document ──────────────────────────────────────────────────────────────
 const doc = new Document({
-  creator: 'Vendly Product Team',
-  title: 'Vendly Official Documentation',
-  description: 'Marketing & stakeholder briefing for the Vendly platform.',
+  creator: 'Verndly Product Team',
+  title: 'Verndly Official Documentation',
+  description: 'Marketing & stakeholder briefing for the Verndly platform.',
   styles: {
     default: { document: { run: { font: 'Arial', size: 22 } } },
     paragraphStyles: [
@@ -675,7 +675,7 @@ const doc = new Document({
   ],
 });
 
-const outPath = path.join(__dirname, 'Vendly_Official_Documentation.docx');
+const outPath = path.join(__dirname, 'Verndly_Official_Documentation.docx');
 Packer.toBuffer(doc).then((buffer) => {
   fs.writeFileSync(outPath, buffer);
   console.log('Wrote', outPath, '(' + buffer.length + ' bytes)');

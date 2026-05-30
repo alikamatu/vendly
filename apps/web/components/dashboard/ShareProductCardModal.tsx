@@ -27,7 +27,7 @@ interface Props {
 }
 
 const PUBLIC_SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || "https://vendly.market";
+  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || "https://verndly.com";
 
 /**
  * Pro-only share-card preview. Loads the PNG from
@@ -52,7 +52,7 @@ export default function ShareProductCardModal({
   // relative URL means it works in local dev (localhost:3000), preview
   // deploys, and production — without needing NEXT_PUBLIC_SITE_URL set.
   // The shared *product* URL is different — that one should always point at
-  // vendly.market so buyers actually land somewhere real.
+  // verndly.com so buyers actually land somewhere real.
   const cardUrl = `/api/cards/product/${product.id}${v ? `?v=${v}` : ""}`;
   const productUrl = `${PUBLIC_SITE_URL}/product/${product.id}`;
 
@@ -88,7 +88,7 @@ export default function ShareProductCardModal({
         .replace(/^-+|-+$/g, "")
         .toLowerCase()
         .slice(0, 50);
-      a.download = `${safeName || "product"}-vendly-card.png`;
+      a.download = `${safeName || "product"}-verndly-card.png`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (e: any) {
@@ -109,7 +109,7 @@ export default function ShareProductCardModal({
       try {
         const res = await fetch(cardUrl);
         const blob = await res.blob();
-        const f = new File([blob], `${product.id}-vendly-card.png`, {
+        const f = new File([blob], `${product.id}-verndly-card.png`, {
           type: "image/png",
         });
         // Some browsers don't support file share — feature-detect.

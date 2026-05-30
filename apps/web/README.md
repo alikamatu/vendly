@@ -1,6 +1,6 @@
-# Vendly Web Storefront
+# Verndly Web Storefront
 
-The primary marketplace frontend for Vendly, where buyers explore products and entrepreneurs showcase their stores.
+The primary marketplace frontend for Verndly, where buyers explore products and entrepreneurs showcase their stores.
 
 ## 🚀 Getting Started
 
@@ -20,9 +20,9 @@ The primary marketplace frontend for Vendly, where buyers explore products and e
 ## 🛠 Available Scripts
 
 Run these from the monorepo root using Turborepo filters:
--   `pnpm --filter @vendly/web dev`: Starts the Next.js development server (port 3000).
--   `pnpm --filter @vendly/web build`: Compiles the application for production.
--   `pnpm --filter @vendly/web lint`: Runs ESLint to check for code quality.
+-   `pnpm --filter @verndly/web dev`: Starts the Next.js development server (port 3000).
+-   `pnpm --filter @verndly/web build`: Compiles the application for production.
+-   `pnpm --filter @verndly/web lint`: Runs ESLint to check for code quality.
 
 ## ✨ Key Features
 

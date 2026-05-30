@@ -319,7 +319,7 @@ export default function SettingsPage() {
       </div>
 
       <p className="text-center text-[10px] text-[var(--color-muted)] pb-2">
-        Vendly · v1.0 · Made with ♥ for young entrepreneurs
+        Verndly · v1.0 · Made with ♥ for young entrepreneurs
       </p>
     </div>
   );

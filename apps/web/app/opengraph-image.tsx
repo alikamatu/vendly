@@ -9,7 +9,7 @@ import { ImageResponse } from "next/og";
  * a network round-trip to the build.
  */
 export const runtime = "edge";
-export const alt = "Vendly — Marketplace for Independent Businesses";
+export const alt = "Verndly — Marketplace for Independent Businesses";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -54,7 +54,7 @@ export default async function OpengraphImage() {
               letterSpacing: -0.5,
             }}
           >
-            Vendly
+            Verndly
           </span>
         </div>
 
@@ -93,7 +93,7 @@ export default async function OpengraphImage() {
             color: "#737373",
           }}
         >
-          <span>vendly.market</span>
+          <span>verndly.com</span>
           <span style={{ display: "flex", gap: 24 }}>
             <span>Shop</span>
             <span>·</span>

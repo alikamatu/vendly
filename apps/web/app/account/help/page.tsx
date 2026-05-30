@@ -36,14 +36,14 @@ const FAQS = [
   {
     icon: Store,
     tag: "Selling",
-    q: "How do I become a seller on Vendly?",
+    q: "How do I become a seller on Verndly?",
     a: "Tap 'Become a Seller' from your Account page. You'll submit identity verification (National ID + proof of business). Our team reviews within 24–48 hours.",
   },
   {
     icon: CreditCard,
     tag: "Payments",
     q: "What payment methods are accepted?",
-    a: "Vendly supports Mobile Money (MTN, Vodafone, AirtelTigo), bank transfers, and cash on delivery. Available methods depend on the seller's configuration at checkout.",
+    a: "Verndly supports Mobile Money (MTN, Vodafone, AirtelTigo), bank transfers, and cash on delivery. Available methods depend on the seller's configuration at checkout.",
   },
   {
     icon: Lock,
@@ -61,7 +61,7 @@ const FAQS = [
     icon: Mail,
     tag: "Account",
     q: "Can I change my email address?",
-    a: "Email changes require identity verification for your protection. Contact support@vendly.app with your request and we'll guide you through it securely.",
+    a: "Email changes require identity verification for your protection. Contact support@verndly.com with your request and we'll guide you through it securely.",
   },
   {
     icon: Package,
@@ -73,7 +73,7 @@ const FAQS = [
     icon: ShieldCheck,
     tag: "Privacy",
     q: "Is my personal information safe?",
-    a: "Yes — Vendly encrypts all data in transit (TLS) and at rest. We never sell personal data. See our full privacy policy in Terms & Conditions.",
+    a: "Yes — Verndly encrypts all data in transit (TLS) and at rest. We never sell personal data. See our full privacy policy in Terms & Conditions.",
   },
 ];
 
@@ -85,25 +85,25 @@ const CONTACTS = [
     icon: MessageCircle,
     color: "text-emerald-500",
     bg: "bg-emerald-500/10",
-    href: "https://wa.me/233000000000?text=Hi%20Vendly%20Support",
+    href: "https://wa.me/233534065652?text=Hi%20Verndly%20Support",
   },
   {
     id: "email",
     label: "Email Support",
-    desc: "support@vendly.app · within 24h",
+    desc: "support@verndly.com · within 24h",
     icon: Mail,
     color: "text-blue-500",
     bg: "bg-blue-500/10",
-    href: "mailto:support@vendly.app",
+    href: "mailto:support@verndly.com",
   },
   {
     id: "phone",
     label: "Call Us",
-    desc: "+233 00 000 0000 · Mon–Fri 9–5",
+    desc: "+233 53 406 5652 · Mon–Fri 9–5",
     icon: Phone,
     color: "text-violet-500",
     bg: "bg-violet-500/10",
-    href: "tel:+233000000000",
+    href: "tel:+233534065652",
   },
 ];
 
@@ -178,11 +178,11 @@ function ReportForm() {
     if (!topic || body.trim().length < 10) return;
     setLoading(true);
     const clean = sanitizeText(body, 1000);
-    const sub = encodeURIComponent(`[Vendly Support] ${topic}`);
+    const sub = encodeURIComponent(`[Verndly Support] ${topic}`);
     const msg = encodeURIComponent(
       `From: ${user?.full_name ?? "Guest"} <${user?.email ?? ""}>\nTopic: ${topic}\n\n${clean}`
     );
-    window.location.href = `mailto:support@vendly.app?subject=${sub}&body=${msg}`;
+    window.location.href = `mailto:support@verndly.com?subject=${sub}&body=${msg}`;
     setTimeout(() => { setSent(true); setLoading(false); }, 600);
   };
 
@@ -195,8 +195,8 @@ function ReportForm() {
         <p className="text-sm font-medium">Report submitted</p>
         <p className="text-[11px] text-[var(--color-muted)] max-w-xs">
           Your email client should have opened. If not, email us directly at{" "}
-          <a href="mailto:support@vendly.app" className="font-normal text-[var(--color-accent)] underline">
-            support@vendly.app
+          <a href="mailto:support@verndly.com" className="font-normal text-[var(--color-accent)] underline">
+            support@verndly.com
           </a>
         </p>
         <button
@@ -354,7 +354,7 @@ export default function HelpPage() {
       </Section>
 
       <p className="text-center text-[10px] text-[var(--color-muted)]">
-        support@vendly.app · Vendly v1.0
+        support@verndly.com · Verndly v1.0
       </p>
     </div>
   );

@@ -156,7 +156,7 @@ export default function SellerActivityPage() {
         <ShieldCheck className="text-emerald-500 mt-0.5 h-4 w-4 shrink-0" />
         <p className="text-muted text-xs leading-relaxed">
           This log is append-only. Entries cannot be edited or deleted, by you
-          or by Vendly admins. The IP, device, and exact timestamp of every
+          or by Verndly admins. The IP, device, and exact timestamp of every
           action you take here are stored and can be referenced if your
           account is ever audited.
         </p>
