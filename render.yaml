@@ -14,7 +14,7 @@ services:
     rootDir: .
     buildCommand: |
       npm install -g pnpm@9.15.4
-      pnpm install --frozen-lockfile --filter @vendly/api...
+      pnpm install --frozen-lockfile --filter @vendly/api... --prod=false
       pnpm --filter @vendly/api exec prisma generate
       pnpm --filter @vendly/api run build
     startCommand: pnpm --filter @vendly/api exec node dist/main.js
