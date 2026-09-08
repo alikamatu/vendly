@@ -1,22 +1,23 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { useLoginForm } from '@/hooks/useAuth';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
-import ProgressBar from '@/components/ui/ProgressBar';
 import GoogleSignInButton from '@/components/auth/GoogleSignInButton';
-import { Mail, Lock } from 'lucide-react';
+import { Mail, Lock, ShieldCheck, KeyRound } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/contexts/auth-context';
 import { authApi } from '@/lib/api/auth';
 
 interface LoginFormProps {
   onSuccess?: () => void;
+  onSwitchToRegister?: () => void;
 }
 
-export default function LoginForm({ onSuccess }: LoginFormProps) {
+export default function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps) {
   const {
     form,
     onSubmit,
@@ -60,6 +61,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       setResendingVerify(false);
     }
   };
+
   const {
     register,
     formState: { errors },
@@ -97,19 +99,25 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
   if (totpRequired) {
     const isSms = method === 'SMS' && !useBackupCode;
     const prompt = useBackupCode
-      ? 'Enter one of your saved backup codes.'
+      ? 'Enter one of your saved single-use backup codes.'
       : isSms
-        ? `We texted a 6-digit code to ${phoneHint || 'your phone'}.`
+        ? `We texted a 6-digit verification code to ${phoneHint || 'your phone'}.`
         : 'Enter the 6-digit code from your authenticator app.';
+
     return (
       <div className="w-full">
-        {isLoading && <ProgressBar className="mb-4" />}
-        <form onSubmit={handleCodeSubmit} className="space-y-6">
+        <form onSubmit={handleCodeSubmit} className="space-y-5">
           {error && <Alert variant="error" message={error} onDismiss={clearError} />}
-          <div>
-            <h2 className="text-lg font-medium">Two-factor authentication</h2>
-            <p className="text-foreground/60 text-sm mt-1">{prompt}</p>
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-surface/80 border border-border">
+            <div className="h-10 w-10 rounded-lg bg-accent/10 flex items-center justify-center text-accent shrink-0">
+              <ShieldCheck size={20} />
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-foreground">Two-factor authentication</h2>
+              <p className="text-xs text-foreground/60 leading-tight mt-0.5">{prompt}</p>
+            </div>
           </div>
+
           <Input
             label={
               useBackupCode
@@ -122,15 +130,25 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
             autoComplete="one-time-code"
             inputMode={useBackupCode ? 'text' : 'numeric'}
             placeholder={useBackupCode ? 'XXXX-XXXX' : '123456'}
+            icon={<KeyRound size={16} />}
             value={code}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
               setCode(e.target.value)
             }
           />
-          <Button type="submit" variant="primary" className="w-full" isLoading={isLoading}>
-            Verify and sign in
+
+          <Button
+            type="submit"
+            variant="primary"
+            size="md"
+            className="w-full h-11"
+            isLoading={isLoading}
+            loadingText="Verifying..."
+          >
+            Verify and continue
           </Button>
-          <div className="flex items-center justify-between text-xs text-foreground/60">
+
+          <div className="flex items-center justify-between text-xs text-foreground/60 pt-1">
             <div className="flex items-center gap-3">
               <button
                 type="button"
@@ -138,12 +156,12 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
                   setCode('');
                   setUseBackupCode(!useBackupCode);
                 }}
-                className="text-accent hover:underline"
+                className="text-accent hover:underline font-medium"
               >
                 {useBackupCode
                   ? isSms
                     ? 'Use SMS code instead'
-                    : 'Use authenticator app instead'
+                    : 'Use authenticator app'
                   : 'Use a backup code'}
               </button>
               {isSms && (
@@ -151,7 +169,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
                   type="button"
                   onClick={resendSms}
                   disabled={resending}
-                  className="hover:underline disabled:opacity-60"
+                  className="hover:underline disabled:opacity-60 text-foreground/80 font-medium"
                 >
                   {resending ? 'Sending…' : 'Resend SMS'}
                 </button>
@@ -163,7 +181,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
                 setCode('');
                 resetTotpChallenge();
               }}
-              className="hover:underline"
+              className="text-foreground/50 hover:text-foreground"
             >
               Cancel
             </button>
@@ -175,12 +193,11 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
 
   return (
     <div className="w-full">
-      {isLoading && <ProgressBar className="mb-4" />}
-
       {oauthError && (
         <Alert
           variant="error"
           message={oauthError}
+          className="mb-4"
           onDismiss={() => {
             const url = new URL(window.location.href);
             url.searchParams.delete('oauth_error');
@@ -189,79 +206,105 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         />
       )}
 
-      <GoogleSignInButton next={next || '/'} />
-      <div className="my-6 flex items-center gap-3 text-[10px] uppercase tracking-wider text-foreground/40">
-        <div className="h-px flex-1 bg-border" />
-        or sign in with email
-        <div className="h-px flex-1 bg-border" />
+      {error && <Alert variant="error" message={error} className="mb-4" onDismiss={clearError} />}
+
+      {isUnverified && (
+        <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3.5 text-xs space-y-2">
+          <p className="text-foreground/80 font-medium">
+            We sent a verification link to your email. Didn&apos;t get it?
+          </p>
+          <button
+            type="button"
+            onClick={handleResend}
+            disabled={resendingVerify}
+            className="text-accent hover:underline font-semibold disabled:opacity-60 inline-flex items-center gap-1.5"
+          >
+            {resendingVerify ? 'Sending verification link…' : 'Resend verification email'}
+          </button>
+          {resendStatus && (
+            <p className={resendStatus.kind === 'ok' ? 'text-emerald-600 font-medium' : 'text-red-600 font-medium'}>
+              {resendStatus.msg}
+            </p>
+          )}
+        </div>
+      )}
+
+      <GoogleSignInButton next={next || '/'} label="Continue with Google" />
+
+      <div className="my-5 flex items-center gap-3 text-[11px] font-medium uppercase tracking-wider text-foreground/40">
+        <div className="h-px flex-1 bg-border/80" />
+        <span>or sign in with email</span>
+        <div className="h-px flex-1 bg-border/80" />
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
-        {error && <Alert variant="error" message={error} onDismiss={clearError} />}
-        {isUnverified && (
-          <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 text-xs space-y-2">
-            <p>
-              We sent a verification link to your email. Didn&apos;t get it?
-            </p>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <Input
+          label="Email address"
+          type="email"
+          autoComplete="username"
+          inputMode="email"
+          placeholder="name@example.com"
+          icon={<Mail size={16} />}
+          error={errors.email?.message}
+          registration={register('email')}
+        />
+
+        <Input
+          label="Password"
+          labelRight={
+            <Link
+              href="/forgot-password"
+              className="text-xs font-medium text-foreground/60 hover:text-foreground transition-colors hover:underline"
+            >
+              Forgot password?
+            </Link>
+          }
+          type="password"
+          autoComplete="current-password"
+          placeholder="••••••••"
+          icon={<Lock size={16} />}
+          error={errors.password?.message}
+          registration={register('password')}
+        />
+
+        <div className="pt-2">
+          <Button
+            type="submit"
+            variant="primary"
+            size="md"
+            className="w-full h-11"
+            isLoading={isLoading}
+            loadingText="Signing in..."
+          >
+            Sign in
+          </Button>
+        </div>
+
+        <div className="pt-2 text-center text-xs text-foreground/60 flex items-center justify-between">
+          <span>Don&apos;t have an account?</span>
+          {onSwitchToRegister ? (
             <button
               type="button"
-              onClick={handleResend}
-              disabled={resendingVerify}
-              className="text-accent hover:underline font-medium disabled:opacity-60"
+              onClick={onSwitchToRegister}
+              className="font-medium text-accent hover:underline"
             >
-              {resendingVerify ? 'Sending…' : 'Resend verification email'}
+              Create an account
             </button>
-            {resendStatus && (
-              <p className={resendStatus.kind === 'ok' ? 'text-emerald-600' : 'text-red-600'}>
-                {resendStatus.msg}
-              </p>
-            )}
-          </div>
-        )}
-
-        <div className="space-y-6">
-          <Input
-            label="Email"
-            type="email"
-            autoComplete="username"
-            inputMode="email"
-            icon={<Mail size={18} />}
-            error={errors.email?.message}
-            registration={register('email')}
-          />
-
-          <Input
-            label="Password"
-            type="password"
-            autoComplete="current-password"
-            icon={<Lock size={18} />}
-            error={errors.password?.message}
-            registration={register('password')}
-          />
+          ) : (
+            <Link href="/register" className="font-medium text-accent hover:underline">
+              Create an account
+            </Link>
+          )}
         </div>
 
-        <div className="flex items-center justify-between text-xs">
-          <a href="/forgot-password" className="text-accent transition hover:underline">
-            Forgot password?
-          </a>
-          <a href="/help/find-account" className="text-foreground/60 hover:text-foreground">
-            Forgot which email you used?
-          </a>
-        </div>
-
-        <Button type="submit" variant="primary" className="w-full" isLoading={isLoading}>
-          {isLoading ? 'Signing in...' : 'Sign in'}
-        </Button>
-
-        <p className="text-center text-[11px] text-foreground/50">
-          Need help?{' '}
+        <p className="pt-2 text-center text-[11px] text-foreground/40">
+          Having trouble?{' '}
           <a
-            href="mailto:support@vendly.app?subject=Sign-in%20issue"
-            className="text-accent hover:underline"
+            href="mailto:support@verndly.app?subject=Sign-in%20issue"
+            className="text-foreground/60 hover:text-foreground underline transition-colors"
           >
             Contact support
           </a>
-          .
         </p>
       </form>
     </div>

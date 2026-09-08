@@ -1,0 +1,36 @@
+# Verndly
+
+> Verndly (https://verndly.com) is Ghana's marketplace connecting buyers with verified independent businesses, brands, and young entrepreneurs.
+
+All purchases on Verndly are protected by Paystack escrow settlement, offering a 7-Day Buyer Protection guarantee and fast local courier delivery.
+
+## Core Features
+- **Verified Independent Merchants**: Curated stores across Ghana (Accra, Kumasi, Takoradi, Tamale) offering authentic products.
+- **7-Day Escrow Buyer Protection**: Online payments are held in escrow and only released to the seller after the buyer receives and inspects the item.
+- **Paystack Payment Rails**: Full support for MTN Mobile Money, Telecel Cash, AirtelTigo Money, Visa, Mastercard, and bank transfer.
+- **Direct Storefronts**: Each verified seller operates an independent storefront accessible at `https://verndly.com/s/[store_link]`.
+- **Courier Logistics**: Sellers dispatch with verified couriers providing same-day or 1-3 business day tracked delivery.
+
+## Key URLs
+- Homepage & Featured Marketplace: https://verndly.com/
+- All Products Catalog: https://verndly.com/products
+- Categories & Brands Directory: https://verndly.com/categories
+- Verified Stores Directory: https://verndly.com/stores
+- 7-Day Returns & Refund Policy: https://verndly.com/returns
+- Shipping & Courier Information: https://verndly.com/shipping
+- Frequently Asked Questions: https://verndly.com/faq
+- Help & Support Center: https://verndly.com/help
+
+## Product Categories
+- Electronics & Gadgets (Smartphones, Laptops, Accessories)
+- Fashion, Clothing & Footwear
+- Health, Beauty & Cosmetics
+- Home, Furniture & Appliances
+- Books & Stationery
+- Groceries, Food & Snacks
+
+## Buyer Protection & Refunds
+- **Inspection Period**: 7 calendar days from delivery confirmation.
+- **Eligible Reasons**: Damaged in transit, defective, materially different model/color, or non-delivery.
+- **Refund Execution**: Automated Paystack gateway reversal directly to original Mobile Money or card account.
+- **Dispute Escalation**: Independent administrative arbitration if buyer and merchant do not reach agreement within 48 hours.

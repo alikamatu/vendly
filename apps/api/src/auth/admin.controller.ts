@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Patch,
+  Post,
   Param,
   Body,
   Query,
@@ -140,9 +141,23 @@ export class AdminController {
   @Patch('returns/:id')
   async updateReturn(
     @Param('id') id: string,
-    @Body() body: { status: 'APPROVED' | 'REJECTED' | 'COMPLETED'; admin_note?: string },
+    @Body()
+    body: {
+      status: 'APPROVED' | 'REJECTED' | 'COMPLETED' | 'ESCALATED' | 'REFUNDED';
+      admin_note?: string;
+    },
+    @Req() req,
   ) {
-    return this.adminService.updateReturnStatus(id, body);
+    return this.adminService.updateReturnStatus(id, body, actorFromReq(req));
+  }
+
+  @Post('returns/:id/refund')
+  async refundReturn(
+    @Param('id') id: string,
+    @Body() body: { amount?: number; reason?: string; admin_note?: string },
+    @Req() req,
+  ) {
+    return this.adminService.refundReturnRequest(id, body, actorFromReq(req));
   }
 
   // ───────────────── Reviews ─────────────────

@@ -12,6 +12,7 @@ import { RatingStars } from '@/components/reviews/rating-stars';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Spinner from '@/components/ui/Spinner';
+import Select from '@/components/ui/Select';
 import {
   Star,
   MessageSquare,
@@ -343,22 +344,20 @@ export default function SellerReviewsDashboardPage() {
           ))}
         </div>
 
-        {/* Sort Select */}
-        <div className="flex w-full items-center gap-3 sm:w-auto">
-          <span className="text-muted whitespace-nowrap text-[10px] font-medium uppercase tracking-wider">
-            Sort By
-          </span>
-          <select
+        {/* Custom Sort Select */}
+        <div className="w-full sm:w-44">
+          <Select
             value={sort}
-            onChange={(e) => setSort(e.target.value as ReviewSort)}
-            className="border-border bg-surface text-foreground focus:border-primary/50 h-9 w-full cursor-pointer rounded-xl border px-4 text-[11px] font-normal outline-none transition-colors sm:w-auto"
-          >
-            <option value="newest">Most Recent</option>
-            <option value="oldest">Oldest</option>
-            <option value="highest">Highest Rated</option>
-            <option value="lowest">Lowest Rated</option>
-            <option value="helpful">Most Helpful</option>
-          </select>
+            onChange={(val) => setSort(val as ReviewSort)}
+            options={[
+              { value: 'newest', label: 'Most Recent' },
+              { value: 'oldest', label: 'Oldest' },
+              { value: 'highest', label: 'Highest Rated' },
+              { value: 'lowest', label: 'Lowest Rated' },
+              { value: 'helpful', label: 'Most Helpful' },
+            ]}
+            size="sm"
+          />
         </div>
       </div>
 

@@ -11,6 +11,7 @@ interface ProFeatureCardProps {
   isPro: boolean;
   /** When unlocked, render an action button; otherwise an upgrade prompt. */
   cta?: { label: string; onClick: () => void } | { label: string; href: string };
+  previewHref?: string;
   accent?: "accent" | "neutral";
 }
 
@@ -20,6 +21,7 @@ export default function ProFeatureCard({
   description,
   isPro,
   cta,
+  previewHref,
   accent = "neutral",
 }: ProFeatureCardProps) {
   const unlocked = isPro;
@@ -40,13 +42,23 @@ export default function ProFeatureCard({
       "h-9 inline-flex items-center justify-center gap-1.5 px-3.5 rounded-xl text-[11px] font-medium uppercase tracking-wider transition-opacity";
     if (!unlocked) {
       return (
-        <Link
-          href="/dashboard/settings"
-          className={`${btnClass} bg-[var(--color-accent)] text-white hover:opacity-90`}
-        >
-          <Sparkles className="w-3.5 h-3.5" />
-          Upgrade
-        </Link>
+        <div className="flex items-center gap-2">
+          {previewHref && (
+            <Link
+              href={previewHref}
+              className={`${btnClass} bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-foreground)] hover:bg-[var(--color-surface)]/80`}
+            >
+              Preview
+            </Link>
+          )}
+          <Link
+            href="/dashboard/settings"
+            className={`${btnClass} bg-[var(--color-accent)] text-white hover:opacity-90`}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            Upgrade
+          </Link>
+        </div>
       );
     }
     if ("href" in cta) {

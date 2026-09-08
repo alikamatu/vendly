@@ -21,6 +21,7 @@ import {
   Lock,
 } from "lucide-react";
 import Link from "next/link";
+import Select from "@/components/ui/Select";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { sanitizeText } from "@/lib/utils/sanitize";
 
@@ -36,14 +37,14 @@ const FAQS = [
   {
     icon: Store,
     tag: "Selling",
-    q: "How do I become a seller on Vendly?",
+    q: "How do I become a seller on Verndly?",
     a: "Tap 'Become a Seller' from your Account page. You'll submit identity verification (National ID + proof of business). Our team reviews within 24–48 hours.",
   },
   {
     icon: CreditCard,
     tag: "Payments",
     q: "What payment methods are accepted?",
-    a: "Vendly supports Mobile Money (MTN, Vodafone, AirtelTigo), bank transfers, and cash on delivery. Available methods depend on the seller's configuration at checkout.",
+    a: "Verndly supports Mobile Money (MTN, Vodafone, AirtelTigo), bank transfers, and cash on delivery. Available methods depend on the seller's configuration at checkout.",
   },
   {
     icon: Lock,
@@ -61,7 +62,7 @@ const FAQS = [
     icon: Mail,
     tag: "Account",
     q: "Can I change my email address?",
-    a: "Email changes require identity verification for your protection. Contact support@vendly.app with your request and we'll guide you through it securely.",
+    a: "Email changes require identity verification for your protection. Contact support@verndly.app with your request and we'll guide you through it securely.",
   },
   {
     icon: Package,
@@ -73,7 +74,7 @@ const FAQS = [
     icon: ShieldCheck,
     tag: "Privacy",
     q: "Is my personal information safe?",
-    a: "Yes — Vendly encrypts all data in transit (TLS) and at rest. We never sell personal data. See our full privacy policy in Terms & Conditions.",
+    a: "Yes — Verndly encrypts all data in transit (TLS) and at rest. We never sell personal data. See our full privacy policy in Terms & Conditions.",
   },
 ];
 
@@ -85,16 +86,16 @@ const CONTACTS = [
     icon: MessageCircle,
     color: "text-emerald-500",
     bg: "bg-emerald-500/10",
-    href: "https://wa.me/233000000000?text=Hi%20Vendly%20Support",
+    href: "https://wa.me/233000000000?text=Hi%20Verndly%20Support",
   },
   {
     id: "email",
     label: "Email Support",
-    desc: "support@vendly.app · within 24h",
+    desc: "support@verndly.app · within 24h",
     icon: Mail,
     color: "text-blue-500",
     bg: "bg-blue-500/10",
-    href: "mailto:support@vendly.app",
+    href: "mailto:support@verndly.app",
   },
   {
     id: "phone",
@@ -178,11 +179,11 @@ function ReportForm() {
     if (!topic || body.trim().length < 10) return;
     setLoading(true);
     const clean = sanitizeText(body, 1000);
-    const sub = encodeURIComponent(`[Vendly Support] ${topic}`);
+    const sub = encodeURIComponent(`[Verndly Support] ${topic}`);
     const msg = encodeURIComponent(
       `From: ${user?.full_name ?? "Guest"} <${user?.email ?? ""}>\nTopic: ${topic}\n\n${clean}`
     );
-    window.location.href = `mailto:support@vendly.app?subject=${sub}&body=${msg}`;
+    window.location.href = `mailto:support@verndly.app?subject=${sub}&body=${msg}`;
     setTimeout(() => { setSent(true); setLoading(false); }, 600);
   };
 
@@ -195,8 +196,8 @@ function ReportForm() {
         <p className="text-sm font-medium">Report submitted</p>
         <p className="text-[11px] text-[var(--color-muted)] max-w-xs">
           Your email client should have opened. If not, email us directly at{" "}
-          <a href="mailto:support@vendly.app" className="font-normal text-[var(--color-accent)] underline">
-            support@vendly.app
+          <a href="mailto:support@verndly.app" className="font-normal text-[var(--color-accent)] underline">
+            support@verndly.app
           </a>
         </p>
         <button
@@ -212,22 +213,13 @@ function ReportForm() {
 
   return (
     <form onSubmit={submit} className="space-y-3">
-      <div className="relative">
-        <select
+      <div>
+        <Select
           value={topic}
-          onChange={(e) => setTopic(e.target.value)}
-          required
-          className={[
-            "w-full h-12 px-4 rounded-2xl border border-[var(--color-border)] appearance-none",
-            "bg-[var(--color-background)] text-base text-[var(--color-foreground)]",
-            "outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15 transition-all",
-            !topic ? "text-[var(--color-muted)]" : "",
-          ].join(" ")}
-        >
-          <option value="" disabled>Select a topic…</option>
-          {TOPICS.map((t) => <option key={t} value={t}>{t}</option>)}
-        </select>
-        <ChevronDown className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-muted)]" />
+          onChange={(val) => setTopic(val)}
+          options={TOPICS.map((t) => ({ value: t, label: t }))}
+          placeholder="Select a topic…"
+        />
       </div>
 
       <div className="relative">
@@ -354,7 +346,7 @@ export default function HelpPage() {
       </Section>
 
       <p className="text-center text-[10px] text-[var(--color-muted)]">
-        support@vendly.app · Vendly v1.0
+        support@verndly.app · Verndly v1.0
       </p>
     </div>
   );

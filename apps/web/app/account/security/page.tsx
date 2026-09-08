@@ -5,9 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
   Key,
-  Eye,
-  EyeOff,
-  Loader2,
   Check,
   AlertCircle,
   ShieldCheck,
@@ -16,98 +13,9 @@ import {
 import Link from "next/link";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { authApi } from "@/lib/api/auth";
-
-// ─── Strength meter ───────────────────────────────────────────────────────────
-
-function strength(pw: string): { score: number; label: string; color: string } {
-  if (!pw) return { score: 0, label: "", color: "" };
-  let s = 0;
-  if (pw.length >= 8) s++;
-  if (pw.length >= 12) s++;
-  if (/[A-Z]/.test(pw)) s++;
-  if (/[0-9]/.test(pw)) s++;
-  if (/[^A-Za-z0-9]/.test(pw)) s++;
-  const map: Record<number, { label: string; color: string }> = {
-    0: { label: "Too short", color: "bg-red-400" },
-    1: { label: "Weak", color: "bg-red-400" },
-    2: { label: "Fair", color: "bg-amber-400" },
-    3: { label: "Good", color: "bg-yellow-400" },
-    4: { label: "Strong", color: "bg-emerald-400" },
-    5: { label: "Very strong", color: "bg-emerald-500" },
-  };
-  return { score: s, ...map[Math.min(s, 5)] };
-}
-
-function StrengthBar({ password }: { password: string }) {
-  if (!password) return null;
-  const { score, label, color } = strength(password);
-  return (
-    <div className="space-y-1 mt-2">
-      <div className="flex gap-1">
-        {[1, 2, 3, 4, 5].map((i) => (
-          <div
-            key={i}
-            className={`h-1 flex-1 rounded-full transition-all duration-300 ${
-              i <= score ? color : "bg-[var(--color-border)]"
-            }`}
-          />
-        ))}
-      </div>
-      <p className="text-[10px] font-normal text-[var(--color-muted)] pl-0.5">{label}</p>
-    </div>
-  );
-}
-
-// ─── Password field ───────────────────────────────────────────────────────────
-
-function PasswordField({
-  label,
-  value,
-  onChange,
-  placeholder,
-  required,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  required?: boolean;
-}) {
-  const [show, setShow] = useState(false);
-  return (
-    <div>
-      <label className="block text-[11px] font-medium text-[var(--color-muted)] uppercase tracking-wider mb-1.5">
-        {label}
-      </label>
-      <div className="relative">
-        <input
-          type={show ? "text" : "password"}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder ?? "••••••••"}
-          required={required}
-          autoComplete="new-password"
-          className={[
-            "w-full h-12 px-4 pr-12 rounded-2xl border border-[var(--color-border)]",
-            "bg-[var(--color-background)] text-[var(--color-foreground)] text-base",
-            "outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15",
-            "transition-all duration-150",
-          ].join(" ")}
-        />
-        <button
-          type="button"
-          onClick={() => setShow((v) => !v)}
-          className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-[var(--color-muted)] hover:text-[var(--color-foreground)] transition-colors"
-          aria-label={show ? "Hide password" : "Show password"}
-        >
-          {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
+import Input from "@/components/ui/Input";
+import Button from "@/components/ui/Button";
+import PasswordStrength from "@/components/auth/PasswordStrength";
 
 export default function AccountSecurityPage() {
   const { token } = useAuth();
@@ -118,7 +26,6 @@ export default function AccountSecurityPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
-  const { score } = strength(next);
   const mismatch = confirm.length > 0 && next !== confirm;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -129,8 +36,8 @@ export default function AccountSecurityPage() {
       setMsg({ ok: false, text: "New passwords do not match." });
       return;
     }
-    if (score < 2) {
-      setMsg({ ok: false, text: "Choose a stronger password (min 8 chars, mix letters & numbers)." });
+    if (next.length < 8) {
+      setMsg({ ok: false, text: "Choose a stronger password (minimum 8 characters)." });
       return;
     }
 
@@ -154,72 +61,76 @@ export default function AccountSecurityPage() {
   };
 
   return (
-    <div className="max-w-lg mx-auto space-y-5 pb-16">
+    <div className="max-w-lg mx-auto space-y-6 pb-16">
       {/* Back */}
       <Link
         href="/account"
-        className="inline-flex items-center gap-2 text-[11px] font-medium text-[var(--color-muted)] hover:text-[var(--color-foreground)] uppercase tracking-wider transition-colors group"
+        className="inline-flex items-center gap-2 text-xs font-medium text-muted hover:text-foreground transition-colors group"
       >
         <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
         Account
       </Link>
 
       <div>
-        <h1 className="text-lg font-medium tracking-tight">Password & Security</h1>
-        <p className="text-[11px] text-[var(--color-muted)] mt-0.5">Keep your account safe with a strong password</p>
+        <h1 className="text-xl font-medium tracking-tight">Password & Security</h1>
+        <p className="text-xs text-muted mt-1">Keep your account safe with a strong password</p>
       </div>
 
       {/* Tips card */}
-      <div className="bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)] p-4 flex items-start gap-3">
-        <div className="w-9 h-9 rounded-2xl bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+      <div className="rounded-2xl border border-border bg-card p-4 flex items-start gap-3.5 shadow-sm">
+        <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
           <ShieldCheck className="w-4 h-4 text-emerald-500" />
         </div>
         <div className="space-y-1">
-          <p className="text-[12px] font-medium text-[var(--color-foreground)]">Password tips</p>
-          <ul className="space-y-0.5 text-[11px] text-[var(--color-muted)]">
-            <li>· At least 8 characters</li>
-            <li>· Mix uppercase, numbers and symbols</li>
-            <li>· Never reuse passwords from other sites</li>
+          <p className="text-xs font-medium text-foreground">Password recommendations</p>
+          <ul className="space-y-0.5 text-[11px] text-muted leading-relaxed">
+            <li>• At least 8 characters with upper & lowercase letters</li>
+            <li>• Include numbers and special symbols</li>
+            <li>• Never reuse passwords across different services</li>
           </ul>
         </div>
       </div>
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)] p-5 space-y-4">
-          <PasswordField
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="rounded-2xl border border-border bg-card p-6 space-y-4 shadow-sm">
+          <Input
             label="Current Password"
+            type="password"
             value={current}
-            onChange={setCurrent}
+            onChange={(e) => setCurrent(e.target.value)}
+            placeholder="••••••••"
             required
+            autoComplete="current-password"
+            icon={<Key size={18} />}
           />
 
-          <div className="border-t border-[var(--color-border)]/50 pt-4 space-y-4">
-            <div>
-              <PasswordField
+          <div className="border-t border-border/50 pt-4 space-y-4">
+            <div className="space-y-2">
+              <Input
                 label="New Password"
+                type="password"
                 value={next}
-                onChange={setNext}
+                onChange={(e) => setNext(e.target.value)}
                 placeholder="Choose a strong password"
                 required
+                autoComplete="new-password"
+                icon={<Lock size={18} />}
               />
-              <StrengthBar password={next} />
+              <PasswordStrength password={next} />
             </div>
 
-            <div>
-              <PasswordField
-                label="Confirm New Password"
-                value={confirm}
-                onChange={setConfirm}
-                placeholder="Repeat new password"
-                required
-              />
-              {mismatch && (
-                <p className="mt-1.5 text-[11px] font-normal text-red-500 pl-0.5">
-                  Passwords don't match
-                </p>
-              )}
-            </div>
+            <Input
+              label="Confirm New Password"
+              type="password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              placeholder="Repeat new password"
+              required
+              autoComplete="new-password"
+              error={mismatch ? "Passwords don't match" : undefined}
+              icon={<Lock size={18} />}
+            />
           </div>
         </div>
 
@@ -229,7 +140,7 @@ export default function AccountSecurityPage() {
               initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
-              className={`flex items-center gap-3 px-4 py-3 rounded-2xl border text-sm font-medium ${
+              className={`flex items-center gap-3 px-4 py-3 rounded-2xl border text-xs font-medium ${
                 msg.ok
                   ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600"
                   : "bg-red-500/10 border-red-500/30 text-red-600"
@@ -245,23 +156,21 @@ export default function AccountSecurityPage() {
           )}
         </AnimatePresence>
 
-        <button
+        <Button
           type="submit"
-          disabled={isLoading || mismatch}
-          className="w-full h-14 rounded-2xl bg-[var(--color-foreground)] text-[var(--color-background)] font-medium uppercase tracking-wider text-sm hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          isLoading={isLoading}
+          loadingText="Updating Password…"
+          disabled={mismatch || !current || !next}
+          className="w-full h-12 rounded-xl text-xs font-medium"
         >
-          {isLoading ? (
-            <><Loader2 className="w-4 h-4 animate-spin" /> Updating…</>
-          ) : (
-            <><Lock className="w-4 h-4" /> Update Password</>
-          )}
-        </button>
+          Update Password
+        </Button>
       </form>
 
       {/* Forgot password link */}
-      <p className="text-center text-[11px] text-[var(--color-muted)]">
+      <p className="text-center text-xs text-muted">
         Forgot your current password?{" "}
-        <Link href="/forgot-password" className="font-normal text-[var(--color-accent)] hover:underline">
+        <Link href="/forgot-password" className="font-medium text-foreground hover:underline">
           Reset it here
         </Link>
       </p>

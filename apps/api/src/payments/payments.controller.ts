@@ -106,6 +106,15 @@ export class PaymentsController {
     return this.paymentsService.retryPayout(id, actorFromReq(req));
   }
 
+  @Post('payouts/:id/settle')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  async settlePayout(@Param('id') id: string) {
+    return this.paymentsService.finalizePayoutSuccess(id, {
+      processed_at: new Date(),
+    });
+  }
+
   @Get('history')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SELLER', 'ADMIN')

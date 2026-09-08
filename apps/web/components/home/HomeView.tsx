@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import Header from "@/components/layout/Header";
 import ModernHero from "@/components/common/ModernHero";
 import ProductFilters from "@/components/products/ProductFilters";
 import Loading from "@/app/loading";
@@ -79,7 +79,7 @@ export default function HomeView() {
   return (
     <div className="min-h-screen bg-background">
       <HomeJsonLd categories={categories} />
-      <DashboardHeader title="Home" />
+      <Header />
       <ModernHero />
 
       <CategoryShowcase
@@ -99,7 +99,7 @@ export default function HomeView() {
         id="marketplace"
         className="max-w-7xl mx-auto px-4 md:px-8 pb-24 md:pb-32 space-y-16 md:space-y-20 relative z-10"
       >
-        <div className="bg-background/80 backdrop-blur-xl sticky top-16 md:top-20 z-30 py-4 md:py-6 -mx-4 px-4 border-b border-border/50 md:rounded-[2.5rem] md:border md:static md:bg-transparent md:backdrop-blur-none md:p-0 md:border-none">
+        <div className="bg-background sticky top-16 md:top-20 z-30 py-4 md:py-6 -mx-4 px-4 border-b border-border/50 md:rounded-[2.5rem] md:border md:static md:bg-transparent md:p-0 md:border-none">
           <ProductFilters
             categories={categories}
             currentCategory={filters.activeCategory}

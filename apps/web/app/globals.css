@@ -1,23 +1,39 @@
 @import "tailwindcss";
 
+/* ──────────────────────────────────────────────────────────────────────────────
+   Tell Tailwind v4 to activate dark: classes via the data-theme attribute
+   instead of @media (prefers-color-scheme: dark).
+   ────────────────────────────────────────────────────────────────────────────── */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 :root {
   --color-background: #ffffff;
   --color-foreground: #171717;
   --color-primary: #000000;
-  --color-accent: #fb923c;
-  --color-surface: #f9fafb;
-  --color-border: #e5e7eb;
+  --color-secondary: #ef4444;
+  --color-secondary-foreground: #ffffff;
+  --color-accent: #ef4444;
+  --color-surface: #f7f8fa;
+  --color-border: #e2e4e9;
   --color-muted: #6b7280;
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-input-bg: #ffffff;
+  --color-input-border: #d4d4d8;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "SF Pro", "San Francisco", "Inter", var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: "SF Mono", var(--font-geist-mono), ui-monospace, Menlo, Monaco, Consolas, monospace;
 }
 
 @theme inline {
   --color-background: var(--color-background);
   --color-foreground: var(--color-foreground);
+  --color-primary: var(--color-primary);
+  --color-secondary: var(--color-secondary);
+  --color-secondary-foreground: var(--color-secondary-foreground);
+  --color-accent: var(--color-accent);
   --color-surface: var(--color-surface);
   --color-border: var(--color-border);
   --color-muted: var(--color-muted);
+  --color-input-bg: var(--color-input-bg);
+  --color-input-border: var(--color-input-border);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -27,20 +43,28 @@
   --color-background: #ffffff;
   --color-foreground: #171717;
   --color-primary: #000000;
-  --color-accent: #fb923c;
-  --color-surface: #f9fafb;
-  --color-border: #e5e7eb;
+  --color-secondary: #ef4444;
+  --color-secondary-foreground: #ffffff;
+  --color-accent: #ef4444;
+  --color-surface: #f7f8fa;
+  --color-border: #e2e4e9;
   --color-muted: #6b7280;
+  --color-input-bg: #ffffff;
+  --color-input-border: #d4d4d8;
 }
 
 [data-theme="dark"] {
   --color-background: #0a0a0a;
   --color-foreground: #f5f5f5;
   --color-primary: #ffffff;
-  --color-accent: #a78bfa;
-  --color-surface: #171717;
+  --color-secondary: #ef4444;
+  --color-secondary-foreground: #ffffff;
+  --color-accent: #ef4444;
+  --color-surface: #141414;
   --color-border: #262626;
   --color-muted: #a3a3a3;
+  --color-input-bg: #141414;
+  --color-input-border: #2a2a2a;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -48,10 +72,14 @@
     --color-background: #0a0a0a;
     --color-foreground: #f5f5f5;
     --color-primary: #ffffff;
-    --color-accent: #a78bfa;
-    --color-surface: #171717;
+    --color-secondary: #ef4444;
+    --color-secondary-foreground: #ffffff;
+    --color-accent: #ef4444;
+    --color-surface: #141414;
     --color-border: #262626;
     --color-muted: #a3a3a3;
+    --color-input-bg: #141414;
+    --color-input-border: #2a2a2a;
   }
 }
 
@@ -64,7 +92,7 @@ body {
 body {
   background: var(--color-background);
   color: var(--color-foreground);
-  font-family: var(--font-sans, Arial, Helvetica, sans-serif);
+  font-family: var(--font-sans);
   font-weight: 400;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -134,4 +162,70 @@ svg.lucide[width="14"] {
   textarea {
     font-size: max(16px, 1em) !important;
   }
+}
+
+/* Crisp browser autofill handling for both light & dark themes */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+textarea:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--color-foreground) !important;
+  -webkit-box-shadow: 0 0 0 1000px var(--color-input-bg) inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────────
+   Hide scroll indicators / scrollbars globally across all modern browsers
+   while maintaining full smooth trackpad, touch, and mouse-wheel scrolling.
+   ────────────────────────────────────────────────────────────────────────────── */
+html,
+body,
+*,
+*::before,
+*::after {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+::-webkit-scrollbar,
+*::-webkit-scrollbar,
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none !important;
+  width: 0px !important;
+  height: 0px !important;
+  background: transparent !important;
+}
+
+::-webkit-scrollbar-thumb,
+*::-webkit-scrollbar-thumb {
+  display: none !important;
+  background: transparent !important;
+}
+
+::-webkit-scrollbar-track,
+*::-webkit-scrollbar-track {
+  display: none !important;
+  background: transparent !important;
+}
+
+.no-scrollbar,
+.custom-scrollbar,
+.scrollbar-hide,
+[data-scrollless] {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.no-scrollbar::-webkit-scrollbar,
+.custom-scrollbar::-webkit-scrollbar,
+.scrollbar-hide::-webkit-scrollbar,
+[data-scrollless]::-webkit-scrollbar {
+  display: none !important;
+  width: 0px !important;
+  height: 0px !important;
 }

@@ -4,32 +4,41 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Sun, Moon } from 'lucide-react';
 import { useTheme } from '@/lib/contexts/theme';
+import AmbientBackground from '@/components/ui/AmbientBackground';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   const { theme, setTheme } = useTheme();
   const isDark = theme === 'dark';
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Theme toggle */}
-      <div className="fixed right-4 top-4 z-50">
+    <div className="relative min-h-screen bg-background text-foreground selection:bg-secondary/20 overflow-x-hidden">
+      {/* Ambient background with visible SVG grid */}
+      <AmbientBackground />
+
+      {/* Floating Theme Toggle */}
+      <div className="fixed top-5 right-6 z-50">
         <button
+          type="button"
           aria-label="Toggle theme"
           onClick={() => setTheme(isDark ? 'light' : 'dark')}
-          className="rounded-full bg-foreground/5 p-2.5 transition-colors hover:bg-foreground/10"
+          className="rounded-full border border-border/80 bg-surface p-2.5 transition-all hover:border-foreground/30 hover:bg-surface active:scale-95 shadow-xs"
         >
           <motion.div
             key={isDark ? 'moon' : 'sun'}
             initial={{ rotate: -30, opacity: 0, scale: 0.8 }}
             animate={{ rotate: 0, opacity: 1, scale: 1 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+            transition={{ type: 'spring', stiffness: 350, damping: 20 }}
+            className="text-foreground/80 hover:text-foreground"
           >
-            {isDark ? <Moon size={18} /> : <Sun size={18} />}
+            {isDark ? <Moon size={16} /> : <Sun size={16} />}
           </motion.div>
         </button>
       </div>
 
-      {children}
+      {/* Main viewport */}
+      <main className="relative z-10 w-full min-h-screen">
+        {children}
+      </main>
     </div>
   );
 }

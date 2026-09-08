@@ -21,7 +21,7 @@ function VendorCard({ vendor, rank }: VendorCardProps) {
       <motion.div
         whileHover={{ y: -4 }}
         transition={{ type: 'spring', stiffness: 300, damping: 22 }}
-        className="hover:border-[var(--color-accent)]/40 flex h-full flex-col items-center justify-center gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-sm transition-all hover:shadow-md"
+        className="hover:border-[var(--color-accent)]/40 flex h-full flex-col items-center justify-center gap-4"
       >
         <div className="relative">
           <div className="h-24 w-24 overflow-hidden rounded-full border-4 border-[var(--color-background)] bg-[var(--color-background)] shadow-sm">

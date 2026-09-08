@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Suspense } from "react";
 import { AlertCircle } from "lucide-react";
-import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import Header from "@/components/layout/Header";
 import ProductCard from "@/components/products/ProductCard";
 import { useProductsBrowser } from "@/hooks/useProductsBrowser";
 import { productApi } from "@/lib/api/product";
@@ -67,7 +67,7 @@ function ProductsBrowserInner() {
 
   return (
     <div className="min-h-screen bg-[var(--color-background)]">
-      <DashboardHeader title="Products" />
+      <Header />
 
       <div className="max-w-7xl mx-auto px-4 md:px-8 pt-6 md:pt-10 pb-24 md:pb-32 space-y-6 md:space-y-8">
         <header className="space-y-3" id="products-top">
@@ -88,7 +88,7 @@ function ProductsBrowserInner() {
         <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6 md:gap-8">
           {/* Desktop sidebar */}
           <aside className="hidden lg:block">
-            <div className="sticky top-20 space-y-5 max-h-[calc(100vh-6rem)] overflow-y-auto pr-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-[var(--color-border)] [&::-webkit-scrollbar-thumb]:rounded-full">
+            <div className="sticky top-20 space-y-5 max-h-[calc(100vh-6rem)] overflow-y-auto pr-2 no-scrollbar">
               <h2 className="text-[10px] font-medium uppercase tracking-wider text-[var(--color-muted)] pb-2 border-b border-[var(--color-border)]/60">
                 Filters
               </h2>

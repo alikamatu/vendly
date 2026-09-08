@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -10,14 +11,20 @@ import { Prisma } from '@prisma/client';
 import { PaymentsService } from '../payments/payments.service';
 import { NotificationService } from '../notification/notification.service';
 import { SmsClient } from '../auth/arkesel.client';
+import { EmailService } from '../email/email.service';
+import { OrderEventsService } from '../events/order-events.service';
 
 @Injectable()
 export class OrderService {
+  private readonly logger = new Logger(OrderService.name);
+
   constructor(
     private prisma: PrismaService,
     private paymentsService: PaymentsService,
     private notifications: NotificationService,
     private sms: SmsClient,
+    private emailService: EmailService,
+    private orderEvents: OrderEventsService,
   ) { }
 
   async createOrder(userId: string, dto: CreateOrderDto) {
@@ -223,11 +230,13 @@ export class OrderService {
       return newOrder;
     });
 
-    let authorization_url = null;
+    let authorization_url: string | null = null;
+    let access_code: string | null = null;
+    let reference: string | undefined = undefined;
 
     if (requiresPaystack) {
       // Create a Transaction record
-      const reference = `ORD_${order.id}_${Date.now()}`;
+      reference = `ORD_${order.id}_${Date.now()}`;
       await this.prisma.transaction.create({
         data: {
           order_id: order.id,
@@ -243,9 +252,14 @@ export class OrderService {
         'http://localhost:3000';
       const callbackUrl = `${webBaseUrl}/orders?order_payment=1&reference=${reference}&order_id=${order.id.toString()}`;
 
+      const buyerEmail =
+        buyer.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(buyer.email.trim())
+          ? buyer.email.trim()
+          : 'customer@verndly.com';
+
       // Call Paystack
       const paystackData = await this.paymentsService.initializeTransaction({
-        email: buyer.email,
+        email: buyerEmail,
         amount: totalAmount.toNumber(),
         reference,
         callbackUrl,
@@ -257,6 +271,7 @@ export class OrderService {
 
       if (paystackData && paystackData.data) {
         authorization_url = paystackData.data.authorization_url;
+        access_code = paystackData.data.access_code || null;
       }
     }
 
@@ -283,6 +298,27 @@ export class OrderService {
       });
     }
 
+    if (!requiresPaystack) {
+      // Send buyer confirmation and vendor order alert emails for Cash on Delivery / Pay on Delivery orders
+      this.sendOrderPlacedEmails(order.id).catch((err) =>
+        console.error(`Failed to send order placed emails for ${order.id}:`, err),
+      );
+    }
+
+    // Real-time synchronization across system
+    this.orderEvents.emit({
+      type: 'order.created',
+      orderId: order.id,
+      orderNumber,
+      status: order.status,
+      buyerId: userId,
+      sellerUserIds: [seller.user_id],
+      total: order.total_amount.toString(),
+      customerName: dto.customerName,
+      reference: reference || undefined,
+      timestamp: new Date().toISOString(),
+    });
+
     return {
       message: requiresPaystack
         ? 'Order initiated. Complete payment to finalize.'
@@ -290,6 +326,8 @@ export class OrderService {
       orderId: order.id.toString(),
       total: order.total_amount.toString(),
       authorization_url,
+      access_code,
+      reference,
     };
   }
 
@@ -297,6 +335,14 @@ export class OrderService {
     const orders = await this.prisma.order.findMany({
       where: { buyer_id: userId },
       include: {
+        buyer: {
+          select: {
+            id: true,
+            full_name: true,
+            email: true,
+            phone_e164: true,
+          },
+        },
         items: {
           include: {
             product: {
@@ -338,6 +384,7 @@ export class OrderService {
           status: o.transaction.status,
           provider: o.transaction.provider,
           reference: o.transaction.reference,
+          provider_ref: o.transaction.provider_ref,
           amount: o.transaction.amount?.toString(),
         }
         : {
@@ -417,6 +464,7 @@ export class OrderService {
           status: o.transaction.status,
           provider: o.transaction.provider,
           reference: o.transaction.reference,
+          provider_ref: o.transaction.provider_ref,
           amount: o.transaction.amount?.toString(),
         }
         : {
@@ -456,6 +504,7 @@ export class OrderService {
           },
         },
         return_request: true,
+        transaction: true,
       },
     });
 
@@ -481,6 +530,18 @@ export class OrderService {
         price: i.price.toString(),
       })),
       return_request: order.return_request,
+      payment_info: order.transaction
+        ? {
+            status: order.transaction.status,
+            provider: order.transaction.provider,
+            reference: order.transaction.reference,
+            provider_ref: order.transaction.provider_ref,
+            amount: order.transaction.amount?.toString(),
+          }
+        : {
+            status: order.status === 'PAID' ? 'SUCCESS' : 'PENDING',
+            provider: 'CASH_ON_DELIVERY',
+          },
     };
   }
 
@@ -520,9 +581,271 @@ export class OrderService {
       data: { status },
     });
 
+    const orderNumber = `ORD-${orderId.slice(-6).toUpperCase()}`;
+
+    // In-app notification for buyer
+    await this.notifications.create({
+      userId: order.buyer_id,
+      type: 'ORDER_STATUS_CHANGED' as any,
+      title: `Order ${orderNumber} is now ${status.replace(/_/g, ' ')}`,
+      body: `Your order status has been updated to ${status.replace(/_/g, ' ')}.`,
+      link: `/orders/${orderId}`,
+      data: { orderId, status },
+    });
+
+    // Real-time synchronization event across system
+    this.orderEvents.emit({
+      type: 'order.status_updated',
+      orderId,
+      orderNumber,
+      status,
+      buyerId: order.buyer_id,
+      sellerUserIds: [seller.user_id],
+      total: order.total_amount.toString(),
+      customerName: order.customer_name || undefined,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Trigger rich status email with product images and order details to buyer (and seller if cancelled)
+    this.sendOrderStatusEmails(orderId, status).catch((err) =>
+      console.error(`Failed to send status email for order ${orderId}:`, err),
+    );
+
     return {
       message: 'Order status updated successfully',
       status: updatedOrder.status,
+    };
+  }
+
+  async updateOrderPaymentStatus(
+    userId: string,
+    orderId: string,
+    dto: {
+      payment_status: 'PAID' | 'PENDING' | 'FAILED';
+      payment_method: 'PAYSTACK' | 'CASH' | 'CASH_ON_DELIVERY';
+      reference?: string;
+    },
+  ) {
+    const seller = await this.prisma.sellerProfile.findUnique({
+      where: { user_id: userId },
+    });
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const isAdmin = user?.role === 'ADMIN';
+
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        items: {
+          include: {
+            product: {
+              select: {
+                seller_id: true,
+                title: true,
+                image_urls: true,
+                seller: { select: { user_id: true, store_name: true } },
+              },
+            },
+          },
+        },
+        transaction: true,
+        buyer: true,
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    if (!isAdmin) {
+      if (!seller) throw new NotFoundException('Seller profile not found');
+      const ownsItem = order.items.some(
+        (it) => it.product?.seller_id === seller.id,
+      );
+      if (!ownsItem)
+        throw new BadRequestException('Unauthorized access to this order');
+    }
+
+    let providerRef: string | null = order.transaction?.provider_ref || null;
+    let finalReference =
+      dto.reference?.trim() ||
+      order.transaction?.reference ||
+      `ORD_${orderId}_${Date.now()}`;
+
+    // If Online / Paystack and reference is supplied, query / verify Paystack to get the real Paystack Transaction ID
+    if (dto.payment_method === 'PAYSTACK') {
+      if (dto.reference?.trim()) {
+        try {
+          const paystackVerify = await this.paymentsService.verifyTransaction(
+            dto.reference.trim(),
+          );
+          if (paystackVerify?.data?.id) {
+            providerRef = paystackVerify.data.id.toString();
+          }
+        } catch (err) {
+          this.logger.warn(
+            `Could not verify Paystack reference ${dto.reference}: ${err}`,
+          );
+        }
+      }
+    } else if (
+      dto.payment_method === 'CASH' ||
+      dto.payment_method === 'CASH_ON_DELIVERY'
+    ) {
+      if (!dto.reference?.trim()) {
+        finalReference = `CASH_${orderId}_${Date.now()}`;
+      }
+    }
+
+    const txStatus =
+      dto.payment_status === 'PAID' ? 'SUCCESS' : dto.payment_status;
+
+    // Upsert transaction
+    const transaction = await this.prisma.transaction.upsert({
+      where: { order_id: orderId },
+      create: {
+        order_id: orderId,
+        reference: finalReference,
+        amount: order.total_amount,
+        status: txStatus,
+        provider: dto.payment_method,
+        provider_ref: providerRef,
+      },
+      update: {
+        status: txStatus,
+        provider: dto.payment_method,
+        reference: finalReference,
+        ...(providerRef ? { provider_ref: providerRef } : {}),
+      },
+    });
+
+    // Update order status if marked paid
+    let newOrderStatus = order.status;
+    if (
+      dto.payment_status === 'PAID' &&
+      (order.status === 'PENDING' || order.status === 'AWAITING_PAYMENT')
+    ) {
+      newOrderStatus = 'PAID';
+      await this.prisma.order.update({
+        where: { id: orderId },
+        data: { status: 'PAID' },
+      });
+    }
+
+    const orderNumber = `ORD-${orderId.slice(-6).toUpperCase()}`;
+
+    if (dto.payment_status === 'PAID') {
+      // Finalize inventory if not already finalized
+      await this.prisma
+        .$transaction(async (tx) => {
+          for (const item of order.items) {
+            if (item.variant_id) {
+              await tx.productVariant.update({
+                where: { id: item.variant_id },
+                data: { quantity_available: { decrement: item.quantity } },
+              });
+            }
+            await tx.product.update({
+              where: { id: item.product_id },
+              data: { quantity_available: { decrement: item.quantity } },
+            });
+          }
+        })
+        .catch(() => {});
+
+      // Settle ledger, 4% platform fee and vendor balance records
+      await this.paymentsService
+        .createOrderSettlementRecords(transaction.id, finalReference)
+        .catch((err) => {
+          this.logger.error(
+            `Failed to create settlement records for order ${orderId}: ${err}`,
+          );
+        });
+
+      // In-app notification for buyer
+      await this.notifications.create({
+        userId: order.buyer_id,
+        type: 'ORDER_STATUS_CHANGED' as any,
+        title: `Payment recorded for ${orderNumber}`,
+        body: `Payment for order ${orderNumber} was marked as received (${dto.payment_method === 'PAYSTACK' ? 'Online' : 'Cash'}).`,
+        link: `/orders/${orderId}`,
+        data: { orderId, reference: finalReference },
+      });
+
+      // Real-time event
+      const sellerUserIds = Array.from(
+        new Set(
+          order.items
+            .map((i: any) => i.product?.seller?.user_id)
+            .filter((x: any): x is string => Boolean(x)),
+        ),
+      );
+
+      this.orderEvents.emit({
+        type: 'order.paid',
+        orderId: order.id,
+        orderNumber,
+        status: newOrderStatus,
+        buyerId: order.buyer_id,
+        sellerUserIds,
+        total: order.total_amount.toString(),
+        customerName:
+          order.customer_name || order.buyer?.full_name || 'Customer',
+        reference: finalReference,
+        timestamp: new Date().toISOString(),
+      });
+
+      // Send payment receipt email
+      if (order.buyer?.email) {
+        this.emailService
+          .sendPaymentReceiptEmail(order.buyer.email, {
+            orderNumber,
+            date: order.created_at,
+            customerName:
+              order.customer_name || order.buyer?.full_name || 'Customer',
+            customerEmail: order.buyer?.email,
+            customerPhone: order.customer_phone || undefined,
+            deliveryMethod: order.delivery_method || undefined,
+            deliveryLocation: order.delivery_location || undefined,
+            deliveryNotes: order.delivery_notes || undefined,
+            storeName:
+              order.items[0]?.product?.seller?.store_name || 'Verndly Store',
+            items: order.items.map((it: any) => ({
+              title: it.product?.title || 'Product',
+              quantity: it.quantity,
+              price: it.price.toString(),
+              image_url: it.product?.image_urls?.[0] || null,
+            })),
+            subtotal: order.total_amount.toString(),
+            total: order.total_amount.toString(),
+            paymentMethod:
+              dto.payment_method === 'PAYSTACK'
+                ? 'Paystack (Online)'
+                : 'Cash / Cash on Delivery',
+            paymentReference: finalReference,
+            isPaid: true,
+            orderId: order.id,
+            transactionId: transaction.id,
+          })
+          .catch((err) =>
+            this.logger.error('Failed to send payment receipt email', err),
+          );
+      }
+    }
+
+    return {
+      message: 'Order payment status updated successfully',
+      order: {
+        ...order,
+        status: newOrderStatus,
+        payment_info: {
+          status: transaction.status,
+          provider: transaction.provider,
+          reference: transaction.reference,
+          provider_ref: transaction.provider_ref,
+          amount: transaction.amount?.toString(),
+        },
+      },
     };
   }
 
@@ -603,6 +926,23 @@ export class OrderService {
       });
     }
 
+    // Trigger rich cancellation email to buyer and seller(s)
+    this.sendOrderStatusEmails(orderId, 'CANCELLED', reason, { cancelledBy: 'buyer' }).catch((err) =>
+      console.error(`Failed to send cancellation emails for order ${orderId}:`, err),
+    );
+
+    // Real-time event for cancellation
+    this.orderEvents.emit({
+      type: 'order.cancelled',
+      orderId,
+      orderNumber,
+      status: 'CANCELLED',
+      buyerId: userId,
+      sellerUserIds,
+      total: order.total_amount ? order.total_amount.toString() : '0',
+      timestamp: new Date().toISOString(),
+    });
+
     return {
       message: 'Order cancelled',
       status: updated.status,
@@ -659,6 +999,29 @@ export class OrderService {
     // (For COD orders, this fires at creation time in createOrder above.)
     if (transaction?.status === 'SUCCESS' && freshOrder?.status === 'PAID') {
       await this.notifyAllSellersForPaidOrder(orderId);
+      this.sendOrderPlacedEmails(orderId).catch((err) =>
+        console.error(`Failed to send paid order confirmation emails for ${orderId}:`, err),
+      );
+
+      const orderNumber = `ORD-${orderId.slice(-6).toUpperCase()}`;
+      const sellerUserIds = Array.from(
+        new Set(
+          order.items
+            .map((i: any) => i.product?.seller?.user_id)
+            .filter((x): x is string => Boolean(x)),
+        ),
+      );
+      this.orderEvents.emit({
+        type: 'order.paid',
+        orderId,
+        orderNumber,
+        status: 'PAID',
+        buyerId: order.buyer_id,
+        sellerUserIds,
+        total: order.total_amount ? order.total_amount.toString() : '0',
+        reference,
+        timestamp: new Date().toISOString(),
+      });
     }
 
     return {
@@ -714,7 +1077,7 @@ export class OrderService {
       const firstName =
         (args.buyerName || 'A customer').split(' ')[0] || 'A customer';
       const message =
-        `Vendly: new order ${args.orderNumber} from ${firstName}. ` +
+        `Verndly: new order ${args.orderNumber} from ${firstName}. ` +
         `Open your dashboard to fulfil it.`;
       this.sms
         .sendSms(sellerUser.phone_e164, message)
@@ -817,9 +1180,14 @@ export class OrderService {
       'http://localhost:3000';
     const callbackUrl = `${webBaseUrl}/orders?order_payment=1&reference=${reference}&order_id=${order.id.toString()}`;
 
+    const buyerEmail =
+      order.buyer?.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(order.buyer.email.trim())
+        ? order.buyer.email.trim()
+        : 'customer@verndly.com';
+
     // Call Paystack
     const paystackData = await this.paymentsService.initializeTransaction({
-      email: order.buyer.email,
+      email: buyerEmail,
       amount: order.total_amount.toNumber(),
       reference,
       callbackUrl,
@@ -835,6 +1203,7 @@ export class OrderService {
 
     return {
       authorization_url: paystackData.data.authorization_url,
+      access_code: paystackData.data.access_code || null,
       reference,
     };
   }
@@ -878,6 +1247,14 @@ export class OrderService {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
       include: {
+        buyer: {
+          select: {
+            id: true,
+            full_name: true,
+            email: true,
+            phone_e164: true,
+          },
+        },
         items: {
           include: {
             product: {
@@ -929,6 +1306,7 @@ export class OrderService {
           status: order.transaction.status,
           provider: order.transaction.provider,
           reference: order.transaction.reference,
+          provider_ref: order.transaction.provider_ref,
           amount: order.transaction.amount?.toString(),
         }
         : {
@@ -1007,8 +1385,9 @@ export class OrderService {
   async updateReturnRequestStatus(
     userId: string,
     orderId: string,
-    status: 'APPROVED' | 'REJECTED',
+    status: 'APPROVED' | 'REJECTED' | 'REFUNDED',
     sellerResponse?: string,
+    refundNow?: boolean,
   ) {
     const seller = await this.prisma.sellerProfile.findUnique({
       where: { user_id: userId },
@@ -1040,17 +1419,438 @@ export class OrderService {
       throw new BadRequestException('No return request exists for this order');
     }
 
+    const effectiveStatus =
+      status === 'REFUNDED' || refundNow ? 'REFUNDED' : status;
+
     const returnRequest = await this.prisma.returnRequest.update({
       where: { id: order.return_request.id },
       data: {
-        status,
+        status: effectiveStatus,
         seller_response: sellerResponse,
       },
     });
 
+    if (refundNow || status === 'REFUNDED') {
+      await this.paymentsService.refundTransaction({
+        orderId,
+        reason: sellerResponse || 'Seller approved return and refund',
+        actor: { id: userId, role: 'SELLER' as any },
+      });
+    } else {
+      const orderNumber = `ORD-${orderId.slice(-6).toUpperCase()}`;
+      await this.notifications
+        .create({
+          userId: order.buyer_id,
+          type: 'RETURN_UPDATED' as any,
+          title: `Return request ${status.toLowerCase()} for ${orderNumber}`,
+          body: sellerResponse
+            ? `Seller note: "${sellerResponse}"`
+            : `Your return request was ${status.toLowerCase()} by the seller.`,
+          link: `/orders/${orderId}`,
+          data: { orderId, status },
+        })
+        .catch(() => {});
+    }
+
     return {
-      message: `Return request ${status.toLowerCase()}`,
+      message: `Return request ${effectiveStatus.toLowerCase()}`,
       returnRequest,
     };
+  }
+
+  async escalateReturnRequest(
+    userId: string,
+    orderId: string,
+    disputeReason: string,
+  ) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        return_request: true,
+        items: {
+          include: {
+            product: { select: { seller: { select: { user_id: true } } } },
+          },
+        },
+      },
+    });
+
+    if (!order) throw new NotFoundException('Order not found');
+    if (order.buyer_id !== userId) {
+      throw new ForbiddenException('Unauthorized access to this order');
+    }
+
+    if (!order.return_request) {
+      throw new BadRequestException('No return request exists for this order');
+    }
+
+    const returnRequest = await this.prisma.returnRequest.update({
+      where: { id: order.return_request.id },
+      data: {
+        status: 'ESCALATED',
+        description: `${order.return_request.description}\n\n[ESCALATION NOTE]: ${disputeReason}`,
+      },
+    });
+
+    const orderNumber = `ORD-${orderId.slice(-6).toUpperCase()}`;
+    const sellerUserIds = Array.from(
+      new Set(
+        order.items
+          .map((i: any) => i.product?.seller?.user_id)
+          .filter((x): x is string => Boolean(x)),
+      ),
+    );
+
+    for (const sUserId of sellerUserIds) {
+      await this.notifications
+        .create({
+          userId: sUserId,
+          type: 'RETURN_UPDATED' as any,
+          title: `Dispute Escalated for ${orderNumber}`,
+          body: `Buyer escalated return dispute to Verndly Support: "${disputeReason}"`,
+          link: `/dashboard/orders/${orderId}`,
+          data: { orderId, disputeReason },
+        })
+        .catch(() => {});
+    }
+
+    this.orderEvents.emit({
+      type: 'order.return_updated',
+      orderId,
+      orderNumber,
+      status: 'ESCALATED',
+      buyerId: userId,
+      sellerUserIds,
+      total: order.total_amount?.toString() || '0',
+      timestamp: new Date().toISOString(),
+    });
+
+    return {
+      message: 'Dispute escalated to Verndly Trust & Safety',
+      returnRequest,
+    };
+  }
+
+  async confirmReturnReceivedAndRefund(
+    userId: string,
+    orderId: string,
+    note?: string,
+  ) {
+    const seller = await this.prisma.sellerProfile.findUnique({
+      where: { user_id: userId },
+    });
+    if (!seller) throw new NotFoundException('Seller profile not found');
+
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        return_request: true,
+        items: { where: { product: { seller_id: seller.id } } },
+      },
+    });
+    if (!order || order.items.length === 0) {
+      throw new BadRequestException('Unauthorized access to this order');
+    }
+
+    return this.paymentsService.refundTransaction({
+      orderId,
+      reason:
+        note ||
+        'Seller confirmed returned item receipt and authorized refund',
+      actor: { id: userId, role: 'SELLER' as any },
+    });
+  }
+
+  /**
+   * Dispatches professional order confirmation emails:
+   * 1. Buyer order confirmation (with item thumbnails, variants, breakdown, delivery details)
+   * 2. Vendor new sale alert (with buyer contact, WhatsApp quick action, and store items)
+   */
+  async sendOrderPlacedEmails(orderId: string) {
+    try {
+      const order = await this.prisma.order.findUnique({
+        where: { id: orderId },
+        include: {
+          buyer: true,
+          transaction: true,
+          items: {
+            include: {
+              product: {
+                include: {
+                  seller: {
+                    include: {
+                      user: true,
+                    },
+                  },
+                },
+              },
+              variant: true,
+            },
+          },
+        },
+      });
+
+      if (!order) return;
+
+      const orderNumber = `ORD-${order.id.slice(-6).toUpperCase()}`;
+      const customerName =
+        order.customer_name || order.buyer?.full_name || 'Customer';
+
+      const formatVariantDesc = (variant: any): string | null => {
+        if (!variant || !variant.attributes) return null;
+        try {
+          const attrs =
+            typeof variant.attributes === 'string'
+              ? JSON.parse(variant.attributes)
+              : variant.attributes;
+          if (attrs && typeof attrs === 'object') {
+            const entries = Object.entries(attrs).filter(
+              ([, v]) => v != null && String(v).trim() !== '',
+            );
+            if (entries.length > 0) {
+              return entries.map(([k, v]) => `${k}: ${v}`).join(' • ');
+            }
+          }
+        } catch {}
+        return null;
+      };
+
+      const buyerItems = order.items.map((item: any) => ({
+        title: item.product?.title || 'Product',
+        quantity: item.quantity,
+        price: item.price.toString(),
+        image_url:
+          item.variant?.image_url ||
+          item.product?.image_urls?.[0] ||
+          null,
+        variantDescription: formatVariantDesc(item.variant),
+      }));
+
+      const isPaid =
+        order.transaction?.status === 'SUCCESS' || order.status === 'PAID';
+      const paymentMethod =
+        order.transaction?.provider === 'PAYSTACK'
+          ? 'Paystack (Paid Online)'
+          : 'Cash on Delivery (Pay on Delivery)';
+
+      const buyerOrderData = {
+        orderNumber,
+        date: order.created_at,
+        customerName,
+        customerEmail: order.buyer?.email,
+        customerPhone: order.customer_phone || undefined,
+        deliveryMethod: order.delivery_method || undefined,
+        deliveryLocation: order.delivery_location || undefined,
+        deliveryNotes: order.delivery_notes || undefined,
+        storeName:
+          order.items[0]?.product?.seller?.store_name || 'Verndly Store',
+        storeLink: order.items[0]?.product?.seller?.store_link || undefined,
+        items: buyerItems,
+        subtotal: order.total_amount.toString(),
+        total: order.total_amount.toString(),
+        currency: 'GHS',
+        paymentMethod,
+        paymentReference: order.transaction?.reference || undefined,
+        isPaid,
+      };
+
+      // 1. Send confirmation to buyer
+      if (order.buyer?.email) {
+        this.emailService
+          .sendOrderConfirmation(order.buyer.email, buyerOrderData)
+          .catch((err) =>
+            console.error(`Failed to send order confirmation to ${order.buyer?.email}:`, err),
+          );
+      }
+
+      // 2. Group items per seller & send new sale alert to each vendor
+      const sellerGroups = new Map<
+        string,
+        {
+          email: string;
+          storeName: string;
+          storeLink?: string;
+          items: typeof buyerItems;
+        }
+      >();
+
+      for (const item of order.items as any[]) {
+        const seller = item.product?.seller;
+        const sellerUser = seller?.user;
+        if (!sellerUser?.email) continue;
+
+        const email = sellerUser.email;
+        let group = sellerGroups.get(email);
+        if (!group) {
+          group = {
+            email,
+            storeName: seller?.store_name || 'Your Store',
+            storeLink: seller?.store_link,
+            items: [],
+          };
+          sellerGroups.set(email, group);
+        }
+
+        group.items.push({
+          title: item.product?.title || 'Product',
+          quantity: item.quantity,
+          price: item.price.toString(),
+          image_url:
+            item.variant?.image_url ||
+            item.product?.image_urls?.[0] ||
+            null,
+          variantDescription: formatVariantDesc(item.variant),
+        });
+      }
+
+      for (const group of sellerGroups.values()) {
+        const sellerTotal = group.items.reduce(
+          (sum, it) => sum + Number(it.price) * it.quantity,
+          0,
+        );
+
+        this.emailService
+          .sendSellerOrderNotification(group.email, {
+            ...buyerOrderData,
+            storeName: group.storeName,
+            storeLink: group.storeLink,
+            items: group.items,
+            subtotal: sellerTotal.toFixed(2),
+            total: sellerTotal.toFixed(2),
+          })
+          .catch((err) =>
+            console.error(`Failed to send seller order notification to ${group.email}:`, err),
+          );
+      }
+    } catch (error) {
+      console.error(`Error in sendOrderPlacedEmails for order ${orderId}:`, error);
+    }
+  }
+
+  /**
+   * Dispatches rich status update emails:
+   * 1. Buyer status email (with product thumbnails, details, delivery info, and tracking CTA)
+   * 2. Vendor status alert (especially when cancelled by buyer or admin)
+   */
+  async sendOrderStatusEmails(
+    orderId: string,
+    status: string,
+    reason?: string | null,
+    opts?: { cancelledBy?: 'buyer' | 'seller' | 'admin' },
+  ) {
+    try {
+      const order = await this.prisma.order.findUnique({
+        where: { id: orderId },
+        include: {
+          buyer: true,
+          transaction: true,
+          items: {
+            include: {
+              product: {
+                include: {
+                  seller: {
+                    include: {
+                      user: true,
+                    },
+                  },
+                },
+              },
+              variant: true,
+            },
+          },
+        },
+      });
+
+      if (!order) return;
+
+      const orderNumber = `ORD-${order.id.slice(-6).toUpperCase()}`;
+      const customerName =
+        order.customer_name || order.buyer?.full_name || 'Customer';
+
+      const formatVariantDesc = (variant: any): string | null => {
+        if (!variant || !variant.attributes) return null;
+        try {
+          const attrs =
+            typeof variant.attributes === 'string'
+              ? JSON.parse(variant.attributes)
+              : variant.attributes;
+          if (attrs && typeof attrs === 'object') {
+            const entries = Object.entries(attrs).filter(
+              ([, v]) => v != null && String(v).trim() !== '',
+            );
+            if (entries.length > 0) {
+              return entries.map(([k, v]) => `${k}: ${v}`).join(' • ');
+            }
+          }
+        } catch {}
+        return null;
+      };
+
+      const items = order.items.map((item: any) => ({
+        title: item.product?.title || 'Product',
+        quantity: item.quantity,
+        price: item.price.toString(),
+        image_url:
+          item.variant?.image_url ||
+          item.product?.image_urls?.[0] ||
+          null,
+        variantDescription: formatVariantDesc(item.variant),
+      }));
+
+      const storeName =
+        order.items[0]?.product?.seller?.store_name || 'Verndly Store';
+      const storeLink =
+        order.items[0]?.product?.seller?.store_link || undefined;
+
+      const statusData = {
+        orderNumber,
+        date: order.created_at,
+        customerName,
+        customerPhone: order.customer_phone || undefined,
+        storeName,
+        storeLink,
+        status,
+        items,
+        subtotal: order.total_amount.toString(),
+        total: order.total_amount.toString(),
+        currency: 'GHS',
+        deliveryMethod: order.delivery_method || undefined,
+        deliveryLocation: order.delivery_location || undefined,
+        deliveryNotes: order.delivery_notes || undefined,
+        reason: reason ?? null,
+        cancelledBy: opts?.cancelledBy,
+      };
+
+      // 1. Notify buyer
+      if (order.buyer?.email) {
+        this.emailService
+          .sendOrderStatusUpdate(order.buyer.email, statusData)
+          .catch((err) =>
+            console.error(`Failed to send order status email to ${order.buyer?.email}:`, err),
+          );
+      }
+
+      // 2. If cancelled (by buyer or admin), notify vendor(s)
+      const normStatus = status.trim().toUpperCase();
+      if (normStatus === 'CANCELLED') {
+        const sellerEmails = Array.from(
+          new Set(
+            order.items
+              .map((i: any) => i.product?.seller?.user?.email)
+              .filter((e): e is string => Boolean(e)),
+          ),
+        );
+
+        for (const email of sellerEmails) {
+          this.emailService
+            .sendSellerOrderStatusNotification(email, statusData)
+            .catch((err) =>
+              console.error(`Failed to send cancellation alert to seller ${email}:`, err),
+            );
+        }
+      }
+    } catch (error) {
+      console.error(`Error in sendOrderStatusEmails for order ${orderId}:`, error);
+    }
   }
 }

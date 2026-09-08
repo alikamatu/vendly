@@ -7,14 +7,20 @@ export interface ContactData {
   message: string;
 }
 
+export interface NewsletterResponse {
+  success: boolean;
+  status: "subscribed" | "already_subscribed" | string;
+  message?: string;
+}
+
 export const contactApi = {
   submitContactForm: async (data: ContactData) => {
     const res = await api.post("/contact", data);
     return res.data;
   },
 
-  subscribeNewsletter: async (email: string) => {
-    const res = await api.post("/contact/newsletter", { email });
+  subscribeNewsletter: async (email: string): Promise<NewsletterResponse> => {
+    const res = await api.post<NewsletterResponse>("/contact/newsletter", { email });
     return res.data;
   },
 };

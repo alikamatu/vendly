@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+import React, { useEffect, useState, useMemo } from "react";
+import Select from "@/components/ui/Select";
 import { onboardingApi, LocationCity } from "@/lib/api/onboarding";
+import { MapPin } from "lucide-react";
 
 interface RegionCityPickerProps {
   initialRegion?: string;
@@ -10,9 +11,6 @@ interface RegionCityPickerProps {
   onChange: (v: { region: string; cityId: string; cityLabel: string | null }) => void;
   onError?: (message: string) => void;
 }
-
-const baseField =
-  "w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-4 py-3 text-sm text-[var(--color-foreground)] focus:ring-2 focus:ring-[var(--color-accent)]/30 focus:border-[var(--color-accent)]/50 outline-none transition-all";
 
 export default function RegionCityPicker({
   initialRegion = "",
@@ -56,71 +54,50 @@ export default function RegionCityPicker({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [region, cityId, cities]);
 
-  return (
-    <div className="space-y-4 md:space-y-5">
-      <Field label="Region">
-        {loadingRegions ? (
-          <LoadingShell text="Loading regions..." />
-        ) : (
-          <select
-            value={region}
-            onChange={(e) => {
-              setRegion(e.target.value);
-              setCityId("");
-            }}
-            className={`${baseField} appearance-none cursor-pointer`}
-          >
-            <option value="">Select your region</option>
-            {regions.map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
-        )}
-      </Field>
-
-      <Field label="City / Town">
-        {loadingCities ? (
-          <LoadingShell text="Loading cities..." />
-        ) : (
-          <select
-            value={cityId}
-            onChange={(e) => setCityId(e.target.value)}
-            disabled={!region}
-            className={`${baseField} appearance-none cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed`}
-          >
-            <option value="">
-              {region ? "Select your city" : "Select a region first"}
-            </option>
-            {cities.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.city}
-              </option>
-            ))}
-          </select>
-        )}
-      </Field>
-    </div>
+  const regionOptions = useMemo(
+    () => regions.map((r) => ({ value: r, label: r })),
+    [regions]
   );
-}
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="space-y-2">
-      <label className="text-[11px] font-normal text-[var(--color-muted)] uppercase tracking-wider pl-1">
-        {label}
-      </label>
-      {children}
-    </div>
+  const cityOptions = useMemo(
+    () => cities.map((c) => ({ value: c.id, label: c.city })),
+    [cities]
   );
-}
 
-function LoadingShell({ text }: { text: string }) {
   return (
-    <div className="flex items-center gap-2 py-3 px-4 bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)]">
-      <Loader2 className="w-4 h-4 animate-spin text-[var(--color-muted)]" />
-      <span className="text-xs text-[var(--color-muted)]">{text}</span>
+    <div className="space-y-4">
+      <Select
+        id="region-select"
+        label="Region"
+        icon={<MapPin className="w-4 h-4" />}
+        value={region}
+        onChange={(val) => {
+          setRegion(val);
+          setCityId("");
+        }}
+        options={regionOptions}
+        placeholder={loadingRegions ? "Loading regions..." : "Select your region"}
+        searchable
+        disabled={loadingRegions}
+      />
+
+      <Select
+        id="city-select"
+        label="City / Town"
+        icon={<MapPin className="w-4 h-4" />}
+        value={cityId}
+        onChange={(val) => setCityId(val)}
+        options={cityOptions}
+        placeholder={
+          !region
+            ? "Select a region first"
+            : loadingCities
+            ? "Loading cities..."
+            : "Select your city"
+        }
+        searchable
+        disabled={!region || loadingCities}
+      />
     </div>
   );
 }

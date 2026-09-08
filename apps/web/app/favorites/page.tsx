@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import Header from "@/components/layout/Header";
 import Container from "@/components/common/Container";
 import ProductCard from "@/components/products/ProductCard";
 import { favoriteApi } from "@/lib/api/favorite";
@@ -35,7 +35,7 @@ export default function FavoritesPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <DashboardHeader title="My Favorites" />
+      <Header />
 
       <main className="py-12 pb-32">
         <Container>
@@ -90,7 +90,7 @@ export default function FavoritesPage() {
                    <motion.button
                      whileHover={{ scale: 1.05 }}
                      whileTap={{ scale: 0.95 }}
-                     className="px-8 py-4 bg-primary text-white text-[10px] font-medium uppercase tracking-wider rounded-2xl shadow-xl shadow-primary/20"
+                     className="px-8 py-4 bg-primary text-background text-[10px] font-medium uppercase tracking-wider rounded-2xl shadow-xl shadow-primary/20"
                    >
                      Start Exploring
                    </motion.button>

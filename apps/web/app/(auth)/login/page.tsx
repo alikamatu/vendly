@@ -1,61 +1,79 @@
 "use client";
 
-import { Container } from '@/components';
-import AuthTabs from '@/components/auth/auth-tabs';
-import { ShoppingBag } from 'lucide-react';
-import Image from 'next/image';
+import React, { Suspense } from 'react';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
+import AuthTabs from '@/components/auth/auth-tabs';
+import AuthShowcase from '@/components/auth/AuthShowcase';
+import { ShieldCheck } from 'lucide-react';
 
-function RegisterContent() {
+function LoginContent() {
   const searchParams = useSearchParams();
-  const mode = searchParams.get('mode') as 'login' | 'register' | null;
-  const defaultTab = mode || 'register';
+  const mode = (searchParams.get('mode') as 'login' | 'register') || 'login';
 
   return (
-    <Container className="flex min-h-screen items-center justify-center py-8">
-      <div className="grid w-full max-w-5xl grid-cols-1 gap-8 md:grid-cols-2 md:gap-12">
-        {/* Left column: forms */}
-        <div className="flex flex-col justify-center">
-          <div className="mb-8 text-center md:text-left">
-            <h1 className="text-3xl font-normal tracking-tight md:text-4xl">
-              Join <span className="text-accent">Vendly</span>
+    <div className="flex flex-col lg:flex-row min-h-screen w-full">
+      {/* Left Column: Form Section (~30%) */}
+      <div className="w-full lg:w-[32%] xl:w-[30%] min-h-screen lg:h-screen flex flex-col justify-between p-6 sm:p-10 xl:p-12 overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden bg-background z-10">
+        <div>
+          {/* Brand Logo */}
+          <Link href="/" className="inline-flex items-center gap-2.5 mb-8 group">
+            <img
+              src="/logos/verndly.png"
+              alt="Verndly"
+              className="h-8 w-8 object-contain transition-transform group-hover:scale-105"
+            />
+            <span className="font-semibold text-lg tracking-tight text-foreground">
+              Verndly
+            </span>
+          </Link>
+
+          {/* Heading */}
+          <div className="space-y-1.5 mb-6">
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground">
+              Welcome back
             </h1>
-            <p className="mt-2 text-foreground/60">
-              Create your account and start selling.
+            <p className="text-xs sm:text-sm text-foreground/60 leading-relaxed">
+              Sign in to manage your orders, storefront, and payouts.
             </p>
           </div>
 
-          <AuthTabs defaultTab={defaultTab} />
+          {/* Auth Tabs / Form */}
+          <AuthTabs defaultTab={mode} />
         </div>
 
-        {/* Right column: image */}
-        <div className="relative hidden md:block">
-          <div className="sticky top-8 h-[700px] w-full overflow-hidden rounded-3xl bg-gradient-to-br from-accent/20 to-accent/5">
-            <div className="relative h-full w-full overflow-hidden rounded-2xl">
-              <div className="absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent/30 blur-3xl" />
-              <Image
-                src="/images/36121.jpg"
-                alt="Vendly marketplace illustration"
-                fill
-                priority
-                className="object-cover object-center"
-              />
-              <div className="absolute bottom-6 right-6 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-white shadow-xl">
-                <ShoppingBag size={26} />
-              </div>
-            </div>
+        {/* Minimal Footer */}
+        <div className="pt-8 mt-6 border-t border-border/40 flex items-center justify-between text-[11px] text-foreground/40">
+          <div className="flex items-center gap-1.5">
+            <ShieldCheck size={13} className="text-emerald-500 shrink-0" />
+            <span>256-bit SSL • Verified Platform</span>
           </div>
+          <span className="font-mono text-foreground/30">v1.0</span>
         </div>
       </div>
-    </Container>
+
+      {/* Right Column: Full-Height Showcase Area (70%) */}
+      <AuthShowcase
+        headline="Commerce engineered for the"
+        highlightWords="next generation."
+        description="Direct mobile money rails, instant checkout, and verified buyer trust for young entrepreneurs across Ghana."
+        testimonial={{
+          quote:
+            "Verndly completely eliminated manual MoMo screenshots and WhatsApp DM chaos. Our brand doubled sales within the first month.",
+          author: "Kweku Mensah",
+          role: "Founder, SneakerLab GH • Independent Brand",
+          avatarText: "KM",
+          metric: "GH₵ 48,000+ settled",
+        }}
+      />
+    </div>
   );
 }
 
-export default function RegisterPage() {
+export default function LoginPage() {
   return (
     <Suspense fallback={null}>
-      <RegisterContent />
+      <LoginContent />
     </Suspense>
   );
 }

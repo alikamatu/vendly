@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Sparkles, ShoppingBag, Layers, ChevronRight, Search, X } from 'lucide-react';
 import Link from 'next/link';
 import { productApi } from '@/lib/api/product';
-import DashboardHeader from '@/components/dashboard/DashboardHeader';
+import Header from '@/components/layout/Header';
 import Loading from '../loading';
 
 const getCategoryImageUrl = (name: string, customUrl?: string | null) => {
@@ -144,7 +144,7 @@ export default function CategoryGalleryPage() {
   const galleryJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
-    name: 'Category & Brand Showcase - Vendly',
+    name: 'Category & Brand Showcase - Verndly',
     description:
       'Explore all product categories, special brands, and verified young entrepreneur lists.',
     itemListElement: categoriesWithDetails.map((cat, idx) => ({
@@ -166,7 +166,7 @@ export default function CategoryGalleryPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(galleryJsonLd) }}
       />
 
-      <DashboardHeader title="Collections" />
+      <Header />
 
       {/* Header back bar */}
       <div className="mx-auto max-w-7xl px-4 pb-4 pt-8 md:px-8">
@@ -181,10 +181,6 @@ export default function CategoryGalleryPage() {
 
       {/* Showcase Hero Intro */}
       <section className="mx-auto max-w-7xl space-y-4 px-4 py-8 md:px-8">
-        <div className="text-primary flex items-center gap-2 text-[10px] font-medium uppercase tracking-wider">
-          <Sparkles className="h-3.5 w-3.5 animate-pulse" />
-          Immersive Catalog
-        </div>
         <h1 className="text-foreground text-3xl font-medium uppercase tracking-tight md:text-5xl">
           Categories & Brands
         </h1>
@@ -249,37 +245,37 @@ export default function CategoryGalleryPage() {
                   />
 
                   {/* Content Overlay */}
-                  <div className="relative z-[2] w-full space-y-4 text-white">
+                  <div className="relative z-[2] w-full space-y-4 text-black">
                     <div className="flex items-start justify-between">
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-[10px] font-normal uppercase tracking-wider backdrop-blur-md">
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1 text-[10px] font-normal uppercase tracking-wider">
                         <ShoppingBag className="h-3 w-3" />
-                        {cat.productCount} active item{cat.productCount === 1 ? '' : 's'}
+                        {cat.productCount} item{cat.productCount === 1 ? '' : 's'}
                       </span>
 
                       <Link
                         href={`/products?category=${encodeURIComponent(cat.name)}`}
-                        className="bg-primary flex h-8 w-8 items-center justify-center rounded-full text-white transition-transform hover:scale-110 active:scale-95"
+                        className="bg-primary flex h-8 w-8 items-center justify-center rounded-full text-background transition-transform hover:scale-110 active:scale-95"
                       >
                         <ChevronRight className="h-4 w-4" />
                       </Link>
                     </div>
 
                     <div className="space-y-1">
-                      <h3 className="text-xl font-medium uppercase tracking-tight md:text-2xl">
+                      <h3 className="text-md font-exrabold uppercase tracking-tight md:text-2xl">
                         {cat.name}
                       </h3>
                       {cat.description && (
-                        <p className="line-clamp-2 text-xs text-white/70">{cat.description}</p>
+                        <p className="line-clamp-2 text-xs text-black">{cat.description}</p>
                       )}
                     </div>
 
                     {/* Horizontally scrolling brand tags */}
                     <div className="space-y-2 border-t border-white/10 pt-2">
-                      <p className="text-[10px] font-normal uppercase tracking-wider text-white/40">
+                      <p className="text-[10px] font-normal uppercase tracking-wider text-black">
                         Available Brands
                       </p>
                       {cat.brands.length === 0 ? (
-                        <p className="text-[11px] italic text-white/50">Generic or custom brands</p>
+                        <p className="text-[11px] italic text-black">Generic or custom brands</p>
                       ) : (
                         <div className="scrollbar-hide flex max-h-[80px] flex-wrap gap-1.5 overflow-y-auto">
                           {cat.brands.map((b: any) => (
@@ -339,7 +335,7 @@ export default function CategoryGalleryPage() {
                       <img
                         src={b.image_url}
                         alt={b.name}
-                        className="h-full w-full object-contain"
+                        className="h-full w-full object-cover"
                       />
                     ) : (
                       <span className="text-muted-foreground/30 text-sm font-medium uppercase">

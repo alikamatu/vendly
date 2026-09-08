@@ -9,8 +9,9 @@ async function main() {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
   const adapter = new PrismaPg(pool);
   const prisma = new PrismaClient({ adapter });
-  const email = 'alikamatu14@gmail.com';
-  const password = 'Admin@123';
+  const email = process.env.ADMIN_NOTIFY_EMAIL || 'alikamatu14@gmail.com';
+  const phone = process.env.ADMIN_NOTIFY_PHONE || '+233534065652';
+  const password = process.env.ADMIN_SEED_PASSWORD || 'Admin@123';
   const password_hash = await bcrypt.hash(password, 10);
 
   const user = await prisma.user.upsert({
@@ -19,8 +20,8 @@ async function main() {
       role: 'ADMIN',
       is_verified: true,
       password_hash,
-      full_name: 'Admin',
-      school: 'Admin',
+      phone_e164: phone,
+      phone_verified_at: new Date(),
     },
     create: {
       email,
@@ -29,6 +30,8 @@ async function main() {
       school: 'Admin',
       role: 'ADMIN',
       is_verified: true,
+      phone_e164: phone,
+      phone_verified_at: new Date(),
     },
   });
 

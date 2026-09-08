@@ -189,7 +189,7 @@ function SellerCTA({ status }: { status: 'PENDING' | 'APPROVED' | 'REJECTED' | n
         </div>
         <div className="space-y-0.5">
           <p className="text-sm font-medium text-[var(--color-foreground)]">
-            Start selling on Vendly
+            Start selling on Verndly
           </p>
           <p className="text-[11px] leading-relaxed text-[var(--color-muted)]">
             Join young entrepreneurs, list products and grow your business — all in one place.
@@ -237,7 +237,7 @@ export default function AccountPage() {
           {/* Avatar with beautiful outline ring */}
           <div className="group/avatar relative">
             <div
-              className={`h-16 w-16 rounded-2xl bg-gradient-to-br ${grad} flex flex-shrink-0 items-center justify-center shadow-md transition-transform duration-300 group-hover/avatar:scale-[1.03]`}
+              className="h-16 w-16 rounded-2xl bg-primary flex flex-shrink-0 items-center justify-center shadow-sm transition-transform duration-300 group-hover/avatar:scale-[1.03]"
             >
               <span className="select-none text-xl font-medium text-white">
                 {initials(user.full_name)}

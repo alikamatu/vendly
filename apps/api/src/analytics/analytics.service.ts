@@ -91,7 +91,7 @@ export class AnalyticsService {
       throw new ForbiddenException({
         code: 'PRO_REQUIRED',
         message:
-          'Advanced analytics is a Vendly Pro feature. Upgrade to unlock revenue, conversion, and top-product insights.',
+          'Advanced analytics is a Verndly Pro feature. Upgrade to unlock revenue, conversion, and top-product insights.',
       });
     }
     return seller.id;

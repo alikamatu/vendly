@@ -402,7 +402,7 @@ function ProUpsell() {
     },
   ];
   return (
-    <div className="border-border/40 bg-gradient-to-br from-red-500/5 via-surface/30 to-surface/40 rounded-[2.5rem] border p-8 md:p-12">
+    <div className="border-border/40 bg-surface/50 rounded-[2.5rem] border p-8 md:p-12">
       <div className="flex flex-col items-center gap-6 text-center max-w-xl mx-auto">
         <div className="bg-red-500 text-white rounded-2xl px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest flex items-center gap-1.5 shadow-lg shadow-red-500/20">
           <Sparkles className="h-3 w-3" /> Pro feature
@@ -589,7 +589,7 @@ function ChartTooltip({
   if (!active || !payload || !payload.length) return null;
   const p = payload[0].payload;
   return (
-    <div className="border-border bg-background/95 rounded-xl border px-3 py-2 shadow-xl backdrop-blur-sm">
+    <div className="border-border bg-background rounded-xl border px-3 py-2 shadow-md">
       <p className="text-muted text-[10px] uppercase tracking-widest">{label}</p>
       <p className="text-foreground mt-1 text-sm font-medium">
         {fmtMoney(p.revenue)}

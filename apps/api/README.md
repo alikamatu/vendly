@@ -1,6 +1,6 @@
-# Vendly API
+# Verndly API
 
-The core backend service for the Vendly platform, built with NestJS and Prisma. Admin functionality is built directly into this API rather than as a separate application.
+The core backend service for the Verndly platform, built with NestJS and Prisma. Admin functionality is built directly into this API rather than as a separate application.
 
 ## 🚀 Getting Started
 

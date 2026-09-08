@@ -33,7 +33,7 @@ export default function StoreCard({ store, index }: StoreCardProps) {
     >
       <div>
         {/* Banner area */}
-        <div className={`h-16 w-full border-b bg-gradient-to-r ${bannerGradient}`} />
+        <div className="h-16 w-full border-b border-[var(--color-border)]/50 bg-[var(--color-surface)]" />
 
         {/* Profile Header section */}
         <div className="relative px-5 pb-3">
@@ -127,7 +127,7 @@ export default function StoreCard({ store, index }: StoreCardProps) {
                     </div>
                   )}
                   {/* Subtle price tag overlay */}
-                  <div className="absolute bottom-1 right-1 rounded-md bg-black/70 px-1.5 py-0.5 text-[9px] font-semibold text-white backdrop-blur-md">
+                  <div className="absolute bottom-1 right-1 rounded-md bg-black/80 px-1.5 py-0.5 text-[9px] font-semibold text-white">
                     ₵
                     {product.price.toLocaleString(undefined, {
                       minimumFractionDigits: 2,

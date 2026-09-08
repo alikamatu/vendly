@@ -10,7 +10,9 @@ import {
   Clock,
   TrendingUp,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Percent,
+  Wallet,
 } from "lucide-react";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
@@ -25,6 +27,8 @@ const IconMap: Record<string, any> = {
   Package,
   Users,
   TrendingUp,
+  Percent,
+  Wallet,
 };
 
 export default function DashboardPage() {
@@ -101,11 +105,11 @@ export default function DashboardPage() {
       <motion.div 
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 md:p-6 rounded-[2rem] bg-surface/30 border border-border/50 backdrop-blur-sm shadow-xl shadow-black/5"
+        className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 md:p-6 rounded-[2rem] bg-surface border border-border/60 shadow-sm"
       >
         <div>
-          <h2 className="text-sm font-medium tracking-tight uppercase">Welcome back, {user?.full_name?.split(' ')[0]} ⚡️</h2>
-          <p className="text-[10px] text-muted mt-1 font-normal uppercase tracking-wider italic">Real-time performance metrics</p>
+          <h2 className="text-sm font-medium tracking-tight uppercase">Welcome back, {user?.full_name?.split(' ')[0]}</h2>
+          <p className="text-[10px] text-muted mt-1 font-normal uppercase tracking-wider">Real-time performance metrics</p>
         </div>
         <Link href="/dashboard/products/add">
           <Button size="sm" className="h-10 px-6 rounded-xl flex items-center gap-2 group shadow-lg shadow-primary/20">

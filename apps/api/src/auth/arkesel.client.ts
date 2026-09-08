@@ -10,7 +10,7 @@
  * Env:
  *   ARKESEL_API_KEY     required
  *   ARKESEL_SENDER_ID   up to 11 chars, must be registered with Arkesel
- *                       (defaults to "Vendly")
+ *                       (defaults to "Verndly")
  *   ARKESEL_SANDBOX     "true" to call the sandbox endpoint (no real SMS)
  *
  * If creds are missing we log + no-op so dev / local work without an
@@ -46,7 +46,7 @@ export class SmsClient {
 
   private get sender(): string {
     // Arkesel caps sender id at 11 alphanumeric chars.
-    const raw = this.config.get<string>('ARKESEL_SENDER_ID') || 'Vendly';
+    const raw = this.config.get<string>('ARKESEL_SENDER_ID') || 'Verndly';
     return raw.slice(0, 11);
   }
 

@@ -7,6 +7,11 @@ import Link from "next/link";
 import Card from "@/components/ui/Card";
 import { useCart } from "@/lib/contexts/cart-context";
 import { useFavorites } from "@/lib/contexts/favorite-context";
+import { toast } from "sonner";
+
+const MotionButton = motion.button as any;
+const MotionSpan = motion.span as any;
+const MotionDiv = motion.div as any;
 
 interface ProductCardProps {
   product: {
@@ -39,6 +44,7 @@ export default function ProductCard({ product, index }: ProductCardProps) {
   const { addItem } = useCart();
   const { toggleFavorite, isFavorited } = useFavorites();
   const [added, setAdded] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   const favorited = isFavorited(String(product.id));
 
@@ -46,6 +52,7 @@ export default function ProductCard({ product, index }: ProductCardProps) {
     e.preventDefault();
     e.stopPropagation();
     toggleFavorite(String(product.id));
+    toast.success(favorited ? "Removed from favorites" : "Saved to favorites");
   };
 
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -62,10 +69,12 @@ export default function ProductCard({ product, index }: ProductCardProps) {
       logoUrl: product.seller.logo_url ?? null,
     });
     setAdded(true);
+    toast.success("Added to cart");
     setTimeout(() => setAdded(false), 1800);
   };
 
   const handleMouseEnter = () => {
+    setIsHovered(true);
     if (product.video_url && videoRef.current) {
       videoRef.current.currentTime = 0;
       const playPromise = videoRef.current.play();
@@ -78,6 +87,7 @@ export default function ProductCard({ product, index }: ProductCardProps) {
   };
 
   const handleMouseLeave = () => {
+    setIsHovered(false);
     if (product.video_url && videoRef.current) {
       videoRef.current.pause();
       videoRef.current.currentTime = 0;
@@ -92,12 +102,12 @@ export default function ProductCard({ product, index }: ProductCardProps) {
       className="break-inside-avoid mb-2"
     >
       <Card
-        className="group border-none shadow-none rounded-[2rem] overflow-hidden p-0 bg-transparent"
+        className="group relative border-0 shadow-none rounded-[2rem] overflow-hidden p-0 bg-transparent"
         hoverEffect={false}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
-        <div className="relative">
+        <div className="relative group/media">
           <Link href={`/product/${product.id}`} className="block">
             {/* Product Media */}
             <div className="relative w-full overflow-hidden rounded-[1.5rem]">
@@ -125,7 +135,7 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                   <motion.div
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-600 backdrop-blur-md text-white text-[9px] font-normal uppercase tracking-wider shadow-xl shadow-primary/30"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-600 text-white text-[9px] font-normal uppercase tracking-wider shadow-none border-0"
                   >
                     <Sparkles size={12} className="text-white fill-current" />
                     Hot Sale
@@ -141,7 +151,7 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                     <motion.div
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="px-2.5 py-1.5 rounded-full bg-emerald-500 text-white text-[10px] font-medium uppercase tracking-wider shadow-lg shadow-emerald-500/30"
+                      className="px-2.5 py-1.5 rounded-full bg-emerald-600 text-white text-[10px] font-medium uppercase tracking-wider shadow-none border-0"
                     >
                       −{d}%
                     </motion.div>
@@ -153,38 +163,75 @@ export default function ProductCard({ product, index }: ProductCardProps) {
             </div>
           </Link>
 
-          {/* Quick Actions Overlay (Always visible on mobile, hover on desktop) */}
-          <div className="absolute inset-x-2 bottom-2 flex items-center justify-between translate-y-0 opacity-100 md:translate-y-2 md:opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100 transition-all duration-300 pointer-events-none">
-            <div className="flex gap-2">
-              <motion.button
-                {...({
-                  type: "button",
-                  onClick: handleAddToCart,
-                  whileTap: { scale: 0.92 },
-                  className: "p-2.5 md:p-3 rounded-xl md:rounded-2xl bg-white/95 backdrop-blur-md text-black hover:scale-110 active:scale-95 transition-transform shadow-lg pointer-events-auto"
-                } as HTMLMotionProps<"button">)}
-              >
-                {added ? (
-                  <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 400 }}>
-                    <Check className="w-3 md:w-3.5 h-3 md:h-3.5 text-emerald-600" />
-                  </motion.span>
-                ) : (
-                  <ShoppingCart className="w-3 md:w-3.5 h-3 md:h-3.5" />
-                )}
-              </motion.button>
+          {/* Quick Actions (Bottom-Left Corner, animated on hover, borderless & shadowless & no blur) */}
+          <div
+            className={`absolute left-3 bottom-3 z-30 flex items-center gap-1.5 transition-all duration-300 ease-out pointer-events-auto ${
+              isHovered
+                ? "opacity-100 translate-y-0"
+                : "opacity-100 sm:opacity-0 sm:translate-y-2 group-hover/media:opacity-100 group-hover/media:translate-y-0 group-hover:opacity-100 group-hover:translate-y-0"
+            }`}
+          >
+            {/* Add to Cart Button */}
+            <MotionButton
+              type="button"
+              aria-label="Add to cart"
+              onClick={handleAddToCart}
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.92 }}
+              transition={{ type: "spring", stiffness: 400, damping: 20 }}
+              className={`p-2 sm:p-2.5 rounded-full border-0 shadow-none transition-all duration-200 flex items-center justify-center ${
+                added
+                  ? "bg-emerald-600 text-white"
+                  : "bg-surface hover:bg-surface/85 text-foreground"
+              }`}
+            >
+              {added ? (
+                <MotionSpan
+                  key="checked"
+                  initial={{ scale: 0, rotate: -20 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 15 }}
+                >
+                  <Check className="w-3.5 h-3.5 text-white stroke-[2.5]" />
+                </MotionSpan>
+              ) : (
+                <MotionSpan
+                  key="cart"
+                  initial={{ scale: 0.8 }}
+                  animate={{ scale: 1 }}
+                >
+                  <ShoppingCart className="w-3.5 h-3.5 text-foreground" />
+                </MotionSpan>
+              )}
+            </MotionButton>
 
-              <motion.button
-                {...({
-                  type: "button",
-                  onClick: handleToggleFavorite,
-                  whileTap: { scale: 0.92 },
-                  className: `p-2.5 md:p-3 rounded-xl md:rounded-2xl backdrop-blur-md transition-all shadow-lg pointer-events-auto ${favorited ? "bg-rose-500 text-white" : "bg-white/95 text-black hover:text-rose-500"
-                    }`
-                } as HTMLMotionProps<"button">)}
+            {/* Favorite Toggle Button */}
+            <MotionButton
+              type="button"
+              aria-label={favorited ? "Remove from favorites" : "Save to favorites"}
+              onClick={handleToggleFavorite}
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.92 }}
+              transition={{ type: "spring", stiffness: 400, damping: 20 }}
+              className={`p-2 sm:p-2.5 rounded-full border-0 shadow-none transition-all duration-200 flex items-center justify-center ${
+                favorited
+                  ? "bg-rose-500 text-white"
+                  : "bg-surface hover:bg-surface/85 text-foreground hover:text-rose-500"
+              }`}
+            >
+              <MotionDiv
+                animate={favorited ? { scale: [1, 1.25, 1] } : { scale: 1 }}
+                transition={{ duration: 0.3 }}
               >
-                <Heart className={`w-3 md:w-3.5 h-3 md:h-3.5 ${favorited ? "fill-current" : ""}`} />
-              </motion.button>
-            </div>
+                <Heart
+                  className={`w-3.5 h-3.5 transition-colors ${
+                    favorited
+                      ? "fill-white text-white"
+                      : "text-foreground group-hover/fav:text-rose-500"
+                  }`}
+                />
+              </MotionDiv>
+            </MotionButton>
           </div>
         </div>
 

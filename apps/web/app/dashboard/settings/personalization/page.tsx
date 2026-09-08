@@ -28,7 +28,7 @@ export default function PersonalizationPage() {
 
       <div className="px-2">
         <h2 className="text-md font-medium tracking-tight uppercase">Personalization</h2>
-        <p className="text-xs text-muted font-medium mt-1">Customize your Vendly experience and display</p>
+        <p className="text-xs text-muted font-medium mt-1">Customize your Verndly experience and display</p>
       </div>
 
       <div className="space-y-6">
@@ -45,11 +45,11 @@ export default function PersonalizationPage() {
                     onClick={() => setTheme(t.id as any)}
                     className={`flex flex-col items-center gap-3 p-4 rounded-2xl transition-all ${
                       theme === t.id 
-                        ? "bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]" 
+                        ? "bg-primary text-background shadow-lg shadow-primary/20 scale-[1.02]" 
                         : "bg-surface hover:bg-border/30 text-muted"
                     }`}
                   >
-                    <t.icon className={`w-5 h-5 ${theme === t.id ? "text-white" : t.color}`} />
+                    <t.icon className={`w-5 h-5 ${theme === t.id ? "text-background" : t.color}`} />
                     <span className="text-[10px] font-normal">{t.name}</span>
                   </button>
                 ))}

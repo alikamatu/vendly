@@ -104,14 +104,14 @@ function CategoryShowcase({
                   role="img"
                   aria-label={cat.name}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                <div className="absolute inset-0 bg-black/60" />
                 <div
                   className={`absolute inset-0 bg-primary/20 transition-opacity duration-300 ${
                     isSelected ? "opacity-30" : "opacity-0 group-hover:opacity-100"
                   }`}
                 />
                 <div className="relative z-10 space-y-1.5">
-                  <span className="text-[10px] font-medium uppercase tracking-wider text-white bg-primary/95 backdrop-blur-md px-3 py-1.5 rounded-full inline-block">
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-background bg-primary px-3 py-1.5 rounded-full inline-block">
                     {cat.name}
                   </span>
                   <p className="text-[10px] text-white/70 line-clamp-1 group-hover:text-white transition-colors">

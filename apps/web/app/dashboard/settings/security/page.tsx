@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, ShieldCheck, Key, Smartphone, Loader2, Check, Info } from "lucide-react";
+import { ArrowLeft, ShieldCheck, Key, Smartphone, Check, Info } from "lucide-react";
 import Link from "next/link";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
@@ -134,10 +134,11 @@ export default function SecuritySettingsPage() {
 
               <Button 
                 type="submit" 
-                disabled={isLoading}
-                className="w-full h-12 rounded-xl mt-4 text-[10px] font-medium uppercase tracking-wider"
+                isLoading={isLoading}
+                loadingText="Updating Password…"
+                className="w-full h-12 rounded-xl mt-4 text-xs font-medium"
               >
-                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Update Password"}
+                Update Password
               </Button>
             </Card>
           </form>

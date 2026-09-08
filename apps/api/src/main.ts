@@ -52,18 +52,42 @@ async function bootstrap() {
   app.use(compression());
 
   // Enable CORS
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-  const adminUrl = process.env.ADMIN_URL || 'http://localhost:3001';
+  const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/+$/, '');
+  const adminUrl = (process.env.ADMIN_URL || 'http://localhost:3001').replace(/\/+$/, '');
+
+  const allowedOrigins = new Set([
+    frontendUrl,
+    adminUrl,
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'https://verndly.com',
+    'https://www.verndly.com',
+    'https://verndly.market',
+    'https://www.verndly.market',
+  ]);
 
   app.enableCors({
-    origin: [frontendUrl, adminUrl],
+    origin: (origin, callback) => {
+      if (
+        !origin ||
+        allowedOrigins.has(origin) ||
+        /^https:\/\/.*\.vercel\.app$/.test(origin)
+      ) {
+        callback(null, true);
+      } else {
+        callback(new Error(`Origin ${origin} not allowed by CORS`));
+      }
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
-  await app.listen(1000);
+
+  const port = process.env.PORT || 1000;
+  await app.listen(port);
 }
 
-const port = 1000;
 bootstrap().then(() => {
-  console.log(`Server running on http://localhost:${port}`);
+  const port = process.env.PORT || 1000;
+  console.log(`Server running on port ${port}`);
 });
+

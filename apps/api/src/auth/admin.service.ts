@@ -767,8 +767,27 @@ export class AdminService {
         new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
     );
 
+    const [payoutAggregate, pendingPayoutAggregate] = await Promise.all([
+      this.prisma.payout.aggregate({
+        where: { status: 'SUCCESS' },
+        _sum: { amount: true },
+      }),
+      this.prisma.payout.aggregate({
+        where: { status: 'PENDING' },
+        _sum: { amount: true },
+      }),
+    ]);
+
+    const gmv = Number(transactionAggregate._sum.amount || 0);
+    const platformRevenue = Number((gmv * 0.04).toFixed(2));
+    const netVendorVolume = Number((gmv * 0.96).toFixed(2));
+
     return {
-      revenue: Number(transactionAggregate._sum.amount || 0),
+      revenue: platformRevenue,
+      gmv,
+      netVendorVolume,
+      totalPayoutsSettled: Number(payoutAggregate._sum.amount || 0),
+      pendingPayoutsVolume: Number(pendingPayoutAggregate._sum.amount || 0),
       transactionCount: transactionCount || 0,
       productCount: productCount || 0,
       sellerCount: sellerCount || 0,
@@ -873,6 +892,17 @@ export class AdminService {
               status: true,
               total_amount: true,
               created_at: true,
+              transaction: {
+                select: {
+                  id: true,
+                  reference: true,
+                  amount: true,
+                  status: true,
+                  provider: true,
+                  provider_ref: true,
+                  payout_status: true,
+                },
+              },
               items: {
                 take: 1,
                 select: {
@@ -899,10 +929,23 @@ export class AdminService {
 
   async updateReturnStatus(
     id: string,
-    args: { status: 'APPROVED' | 'REJECTED' | 'COMPLETED'; admin_note?: string },
+    args: {
+      status: 'APPROVED' | 'REJECTED' | 'COMPLETED' | 'ESCALATED' | 'REFUNDED';
+      admin_note?: string;
+    },
+    actor?: Actor,
   ) {
     const ret = await this.prisma.returnRequest.findUnique({ where: { id } });
     if (!ret) throw new NotFoundException('Return request not found');
+
+    if (args.status === 'REFUNDED') {
+      return this.refundReturnRequest(
+        id,
+        { admin_note: args.admin_note },
+        actor || { id: 'admin', role: 'ADMIN' as any },
+      );
+    }
+
     const updated = await this.prisma.returnRequest.update({
       where: { id },
       data: {
@@ -911,6 +954,43 @@ export class AdminService {
       } as any,
     });
     return updated;
+  }
+
+  async refundReturnRequest(
+    id: string,
+    args: {
+      amount?: number;
+      reason?: string;
+      admin_note?: string;
+    },
+    actor: Actor,
+  ) {
+    const ret = await this.prisma.returnRequest.findUnique({
+      where: { id },
+      include: { order: true },
+    });
+    if (!ret) throw new NotFoundException('Return request not found');
+
+    const result = await this.paymentsService.refundTransaction({
+      orderId: ret.order_id,
+      amount: args.amount,
+      reason:
+        args.reason ||
+        args.admin_note ||
+        'Return request approved and refunded by Admin',
+      customerNote: args.admin_note,
+      merchantNote: args.reason,
+      actor,
+    });
+
+    if (args.admin_note) {
+      await this.prisma.returnRequest.update({
+        where: { id },
+        data: { admin_notes: args.admin_note },
+      });
+    }
+
+    return result;
   }
 
   // ───────────────── Reviews admin ─────────────────

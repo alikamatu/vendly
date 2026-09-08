@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
   X,
-  Loader2,
   ArrowRight,
   ShoppingBag,
   Store,
@@ -15,6 +14,7 @@ import {
 import { useRouter } from "next/navigation";
 import { productApi } from "@/lib/api/product";
 import Portal from "../common/Portal";
+import Spinner from "@/components/ui/Spinner";
 
 // aliases used to bypass strict framer-motion prop typings
 const MotionDiv: any = motion.div;
@@ -118,7 +118,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={onClose}
-              className="absolute inset-0 bg-black/80 backdrop-blur-md"
+              className="absolute inset-0 bg-black/60"
             />
 
             {/* Search Drawer */}
@@ -155,7 +155,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                     />
                     {isLoading && (
                       <div className="absolute right-14 top-1/2 -translate-y-1/2">
-                        <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                        <Spinner size="sm" />
                       </div>
                     )}
                   </div>

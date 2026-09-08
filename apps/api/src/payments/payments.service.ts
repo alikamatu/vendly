@@ -15,6 +15,8 @@ import { PaymentsRepository } from './payments.repository';
 import { InitializePaymentDto } from './dto/initialize-payment.dto';
 import { EmailService } from '../email/email.service';
 import { Actor, AuditLogService } from '../audit/audit-log.service';
+import { OrderEventsService } from '../events/order-events.service';
+import { NotificationService } from '../notification/notification.service';
 
 interface PaymentProvider {
   initializeTransaction(dto: InitializePaymentDto): Promise<any>;
@@ -25,7 +27,7 @@ interface PaymentProvider {
 export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name);
   private readonly platformFeePercent = Number(
-    process.env.PLATFORM_FEE_PERCENT || 10,
+    process.env.PLATFORM_FEE_PERCENT || 4,
   );
 
   constructor(
@@ -33,6 +35,8 @@ export class PaymentsService {
     private readonly paymentsRepository: PaymentsRepository,
     private readonly emailService: EmailService,
     private readonly auditLogs: AuditLogService,
+    private readonly orderEvents: OrderEventsService,
+    private readonly notifications: NotificationService,
     @Inject(paystackConfig.KEY)
     private readonly paystackCfg: ConfigType<typeof paystackConfig>,
   ) {}
@@ -97,30 +101,12 @@ export class PaymentsService {
         const transaction =
           await this.paymentsRepository.findTransactionByReference(reference);
         if (transaction && transaction.status !== 'SUCCESS') {
-          await this.paymentsRepository.updateTransactionStatus(
-            transaction.id,
-            'SUCCESS',
-            verifyData?.id?.toString(),
-          );
-          await this.paymentsRepository.finalizeOrderInventory(
+          await this.settlePaidOrder(
             transaction.order_id,
+            transaction.id,
+            verifyData?.id?.toString(),
+            reference,
           );
-
-          // Trigger Order Confirmation Emails
-          this.triggerOrderEmails(transaction.order_id).catch((err) => {
-            this.logger.error(
-              `Failed to trigger order emails for order ${transaction.order_id}`,
-              err,
-            );
-          });
-
-          // Low-stock alerts (fire-and-forget)
-          this.triggerLowStockAlerts(transaction.order_id).catch((err) => {
-            this.logger.error(
-              `Failed to send low-stock alerts for order ${transaction.order_id}`,
-              err,
-            );
-          });
         }
       }
     }
@@ -180,6 +166,10 @@ export class PaymentsService {
       await this.processTransferSuccess(data);
     } else if (event === 'transfer.failed') {
       await this.processTransferFailed(data);
+    } else if (event === 'refund.processed') {
+      await this.processRefundProcessed(data);
+    } else if (event === 'refund.failed') {
+      await this.processRefundFailed(data);
     }
 
     return { received: true };
@@ -299,34 +289,111 @@ export class PaymentsService {
       return;
     }
 
-    await this.paymentsRepository.updateTransactionStatus(
+    await this.settlePaidOrder(
+      transaction.order_id,
       transaction.id,
-      'SUCCESS',
-      data.id.toString(),
+      data.id?.toString(),
+      reference,
     );
 
-    await this.paymentsRepository.finalizeOrderInventory(transaction.order_id);
-    await this.createOrderSettlementRecords(transaction.id, reference);
+    this.logger.log(
+      `Transaction and Order updated successfully for reference: ${reference}`,
+    );
+  }
 
-    // Trigger Order Confirmation Emails
-    this.triggerOrderEmails(transaction.order_id).catch((err) => {
+  private async settlePaidOrder(
+    orderId: string,
+    transactionId: string,
+    paystackTransactionId: string | undefined,
+    reference: string,
+  ) {
+    await this.paymentsRepository.updateTransactionStatus(
+      transactionId,
+      'SUCCESS',
+      paystackTransactionId,
+    );
+
+    await this.paymentsRepository.finalizeOrderInventory(orderId);
+    await this.createOrderSettlementRecords(transactionId, reference);
+
+    // Trigger Order Confirmation & Payment Receipt Emails
+    this.triggerOrderEmails(orderId).catch((err) => {
       this.logger.error(
-        `Failed to trigger order emails for order ${transaction.order_id}`,
+        `Failed to trigger order emails for order ${orderId}`,
+        err,
+      );
+    });
+
+    // Real-time synchronization event across system & in-app notifications
+    this.triggerOrderRealtimeAndNotifications(orderId, reference).catch((err) => {
+      this.logger.error(
+        `Failed to trigger order real-time events for order ${orderId}`,
         err,
       );
     });
 
     // Low-stock alerts (fire-and-forget)
-    this.triggerLowStockAlerts(transaction.order_id).catch((err) => {
+    this.triggerLowStockAlerts(orderId).catch((err) => {
       this.logger.error(
-        `Failed to send low-stock alerts for order ${transaction.order_id}`,
+        `Failed to send low-stock alerts for order ${orderId}`,
         err,
       );
     });
+  }
 
-    this.logger.log(
-      `Transaction and Order updated successfully for reference: ${reference}`,
+  private async triggerOrderRealtimeAndNotifications(
+    orderId: string,
+    reference: string,
+  ) {
+    const order = await this.paymentsRepository.findOrderWithDetails(orderId);
+    if (!order) return;
+
+    const orderNumber = `ORD-${order.id.slice(-6).toUpperCase()}`;
+    const sellerUserIds = Array.from(
+      new Set(
+        order.items
+          .map((i: any) => i.product?.seller?.user_id)
+          .filter((x): x is string => Boolean(x)),
+      ),
     );
+
+    // In-app notifications for sellers
+    for (const sellerUserId of sellerUserIds) {
+      await this.notifications.create({
+        userId: sellerUserId,
+        type: 'ORDER_STATUS_CHANGED' as any,
+        title: `Order ${orderNumber} paid`,
+        body: `Order ${orderNumber} has been paid and is ready for fulfillment.`,
+        link: '/dashboard/orders',
+        data: { orderId, reference },
+      });
+    }
+
+    // In-app notification for buyer
+    if (order.buyer_id) {
+      await this.notifications.create({
+        userId: order.buyer_id,
+        type: 'ORDER_STATUS_CHANGED' as any,
+        title: `Payment received for ${orderNumber}`,
+        body: `Your payment for order ${orderNumber} was successfully processed.`,
+        link: `/orders/${orderId}`,
+        data: { orderId, reference },
+      });
+    }
+
+    // Real-time synchronization event across system (Admin, Seller, Buyer)
+    this.orderEvents.emit({
+      type: 'order.paid',
+      orderId: order.id,
+      orderNumber,
+      status: 'PAID',
+      buyerId: order.buyer_id,
+      sellerUserIds,
+      total: order.total_amount ? order.total_amount.toString() : '0',
+      customerName: order.customer_name || order.buyer?.full_name || 'Customer',
+      reference,
+      timestamp: new Date().toISOString(),
+    });
   }
 
   private async triggerLowStockAlerts(orderId: string) {
@@ -357,12 +424,35 @@ export class PaymentsService {
     const customerName =
       order.customer_name || order.buyer?.full_name || 'Customer';
 
+    const formatVariantDesc = (variant: any): string | null => {
+      if (!variant || !variant.attributes) return null;
+      try {
+        const attrs =
+          typeof variant.attributes === 'string'
+            ? JSON.parse(variant.attributes)
+            : variant.attributes;
+        if (attrs && typeof attrs === 'object') {
+          const entries = Object.entries(attrs).filter(
+            ([, v]) => v != null && String(v).trim() !== '',
+          );
+          if (entries.length > 0) {
+            return entries.map(([k, v]) => `${k}: ${v}`).join(' • ');
+          }
+        }
+      } catch {}
+      return null;
+    };
+
     // Buyer-facing items: all line items
-    const buyerItems = order.items.map((item) => ({
+    const buyerItems = order.items.map((item: any) => ({
       title: item.product?.title || 'Unknown Product',
       quantity: item.quantity,
       price: item.price.toString(),
-      image_url: item.product?.image_urls?.[0] || null,
+      image_url:
+        item.variant?.image_url ||
+        item.product?.image_urls?.[0] ||
+        null,
+      variantDescription: formatVariantDesc(item.variant),
     }));
 
     const buyerOrderData = {
@@ -376,22 +466,36 @@ export class PaymentsService {
       deliveryNotes: order.delivery_notes || undefined,
       storeName:
         // Buyer may have items from multiple stores; surface the first seller name
-        order.items[0]?.product?.seller?.store_name || 'Vendly seller',
+        order.items[0]?.product?.seller?.store_name || 'Verndly seller',
       storeLink: order.items[0]?.product?.seller?.store_link || undefined,
       items: buyerItems,
       subtotal: order.total_amount.toString(),
       total: order.total_amount.toString(),
       paymentMethod: order.transaction?.provider || 'Paystack',
       paymentReference: order.transaction?.reference || undefined,
+      isPaid: true,
     };
 
-    // 1. Buyer order confirmation
+    // 1. Buyer order confirmation & payment receipt
     if (order.buyer?.email) {
       this.emailService
         .sendOrderConfirmation(order.buyer.email, buyerOrderData)
         .catch((err) =>
           this.logger.error(
             `Failed to send order confirmation to ${order.buyer?.email}`,
+            err,
+          ),
+        );
+
+      this.emailService
+        .sendPaymentReceiptEmail(order.buyer.email, {
+          ...buyerOrderData,
+          orderId: order.id,
+          transactionId: order.transaction?.id,
+        })
+        .catch((err) =>
+          this.logger.error(
+            `Failed to send payment receipt to ${order.buyer?.email}`,
             err,
           ),
         );
@@ -409,7 +513,7 @@ export class PaymentsService {
       }
     >();
 
-    for (const item of order.items) {
+    for (const item of order.items as any[]) {
       const seller = item.product?.seller;
       const sellerUser = seller?.user;
       if (!sellerUser?.email) continue;
@@ -429,7 +533,11 @@ export class PaymentsService {
         title: item.product?.title || 'Unknown Product',
         quantity: item.quantity,
         price: item.price.toString(),
-        image_url: item.product?.image_urls?.[0] || null,
+        image_url:
+          item.variant?.image_url ||
+          item.product?.image_urls?.[0] ||
+          null,
+        variantDescription: formatVariantDesc(item.variant),
       });
     }
 
@@ -481,50 +589,55 @@ export class PaymentsService {
   private async processTransferSuccess(data: any) {
     const reference = data.reference as string;
     if (!reference?.startsWith('PAYOUT_')) return;
-    const payoutId = reference.split('_')[1];
-    await this.paymentsRepository.updatePayoutStatus(payoutId, 'SUCCESS', {
-      provider_ref: data.transfer_code?.toString(),
+
+    let payout = await this.paymentsRepository.getPayoutByReference(reference);
+    if (!payout && reference.includes('_')) {
+      const parts = reference.split('_');
+      for (const part of parts) {
+        if (part !== 'PAYOUT' && part !== 'TXN' && part.length > 10) {
+          payout = await this.paymentsRepository.getPayoutById(part).catch(() => null);
+          if (payout) break;
+        }
+      }
+    }
+
+    if (!payout) {
+      this.logger.warn(
+        `processTransferSuccess: Payout not found for reference ${reference}`,
+      );
+      return;
+    }
+
+    await this.finalizePayoutSuccess(payout.id, {
+      provider_ref: data.transfer_code?.toString() || data.id?.toString(),
       processed_at: new Date(),
     });
-
-    // Notify the seller — fire-and-forget.
-    try {
-      const payout = await this.paymentsRepository.getPayoutById(payoutId);
-      const seller = payout?.seller;
-      if (!seller) return;
-      const sellerUser = await this.paymentsRepository.findUserById(
-        seller.user_id,
-      );
-      if (!sellerUser?.email) return;
-      this.emailService
-        .sendPayoutSentEmail(sellerUser.email, {
-          storeName: seller.store_name,
-          amount: payout.amount.toString(),
-          currency: payout.currency || 'GHS',
-          reference: payout.reference,
-          bankName: seller.bank_name || undefined,
-          accountLastFour: seller.account_number?.slice(-4) || undefined,
-          processedAt: payout.processed_at ?? new Date(),
-        })
-        .catch((err) =>
-          this.logger.error(`Failed to send payout email: ${err}`),
-        );
-    } catch (err) {
-      this.logger.error(`processTransferSuccess email path failed: ${err}`);
-    }
   }
 
   private async processTransferFailed(data: any) {
     const reference = data.reference as string;
     if (!reference?.startsWith('PAYOUT_')) return;
-    const payoutId = reference.split('_')[1];
-    await this.paymentsRepository.updatePayoutStatus(payoutId, 'FAILED', {
+
+    let payout = await this.paymentsRepository.getPayoutByReference(reference);
+    if (!payout && reference.includes('_')) {
+      const parts = reference.split('_');
+      for (const part of parts) {
+        if (part !== 'PAYOUT' && part !== 'TXN' && part.length > 10) {
+          payout = await this.paymentsRepository.getPayoutById(part).catch(() => null);
+          if (payout) break;
+        }
+      }
+    }
+
+    if (!payout) return;
+
+    await this.paymentsRepository.updatePayoutStatus(payout.id, 'FAILED', {
       failure_reason: data.reason || 'Transfer failed',
       processed_at: new Date(),
     });
   }
 
-  private async createOrderSettlementRecords(
+  async createOrderSettlementRecords(
     transactionId: string,
     reference: string,
   ) {
@@ -604,23 +717,8 @@ export class PaymentsService {
     });
 
     if (isEligibleForAuto) {
-      await this.paymentsRepository.updatePayoutStatus(payout.id, 'SUCCESS', {
+      await this.finalizePayoutSuccess(payout.id, {
         processed_at: new Date(),
-      });
-      await this.paymentsRepository.createLedgerEntry({
-        seller_id: sellerId,
-        payout_id: payout.id,
-        transaction_id: transactionId,
-        reference: `LEDGER_PAYOUT_${payout.reference}`,
-        type: 'DEBIT',
-        source_type: 'PAYOUT',
-        amount,
-        description: 'Automatic payout sent',
-      });
-      await this.paymentsRepository.upsertVendorBalanceSnapshot({
-        sellerId,
-        availableDelta: amount.negated(),
-        withdrawnDelta: amount,
       });
     }
 
@@ -657,7 +755,7 @@ export class PaymentsService {
         business_name: seller.store_name,
         settlement_bank: seller.bank_code,
         account_number: seller.account_number,
-        percentage_charge: 0.5, // Default charge, can be made configurable
+        percentage_charge: this.platformFeePercent,
         description: `Subaccount for ${seller.store_name}`,
       };
 
@@ -806,7 +904,7 @@ export class PaymentsService {
     });
     const results = await Promise.all(
       queue.items.map((item) =>
-        this.paymentsRepository.updatePayoutStatus(item.id, 'SUCCESS', {
+        this.finalizePayoutSuccess(item.id, {
           processed_at: new Date(),
         }),
       ),
@@ -827,6 +925,149 @@ export class PaymentsService {
     return {
       processed: results.length,
     };
+  }
+
+  async finalizePayoutSuccess(
+    payoutId: string,
+    details?: { provider_ref?: string; processed_at?: Date },
+  ) {
+    const payout = await this.paymentsRepository.getPayoutById(payoutId);
+    if (!payout) {
+      this.logger.warn(`finalizePayoutSuccess: Payout not found ${payoutId}`);
+      return null;
+    }
+
+    const processedAt = details?.processed_at || new Date();
+    const providerRef = details?.provider_ref || payout.provider_ref;
+
+    const updatedPayout = await this.paymentsRepository.updatePayoutStatus(
+      payoutId,
+      'SUCCESS',
+      {
+        provider_ref: providerRef || undefined,
+        processed_at: processedAt,
+      },
+    );
+
+    // Ledger debit entry if not already recorded
+    const ledgerRef = `LEDGER_PAYOUT_${payout.reference}`;
+    const existingLedger =
+      await this.paymentsRepository.findLedgerEntryByReference(ledgerRef);
+
+    if (!existingLedger) {
+      const decimalAmount = new Prisma.Decimal(payout.amount);
+      await this.paymentsRepository.createLedgerEntry({
+        seller_id: payout.seller_id,
+        payout_id: payout.id,
+        transaction_id: payout.transaction_id || undefined,
+        reference: ledgerRef,
+        type: 'DEBIT',
+        source_type: 'PAYOUT',
+        amount: decimalAmount,
+        description: 'Payout disbursement processed',
+      });
+      await this.paymentsRepository.upsertVendorBalanceSnapshot({
+        sellerId: payout.seller_id,
+        availableDelta: decimalAmount.negated(),
+        withdrawnDelta: decimalAmount,
+      });
+    }
+
+    // Send receipt email & in-app notification to the seller
+    await this.sendPayoutReceipt(payoutId, {
+      ...payout,
+      provider_ref: providerRef,
+      processed_at: processedAt,
+    });
+
+    return updatedPayout;
+  }
+
+  async sendPayoutReceipt(payoutId: string, preloadedPayout?: any) {
+    try {
+      const payout =
+        preloadedPayout?.seller?.user
+          ? preloadedPayout
+          : await this.paymentsRepository.getPayoutById(payoutId);
+
+      if (!payout) {
+        this.logger.warn(
+          `Cannot send payout receipt: payout ${payoutId} not found`,
+        );
+        return;
+      }
+
+      const seller = payout.seller;
+      if (!seller) {
+        this.logger.warn(
+          `Cannot send payout receipt: seller not found for payout ${payoutId}`,
+        );
+        return;
+      }
+
+      const sellerUser =
+        seller.user ||
+        (await this.paymentsRepository.findUserById(seller.user_id));
+
+      const recipientEmail = sellerUser?.email;
+      if (!recipientEmail) {
+        this.logger.warn(
+          `Cannot send payout receipt: no email found for seller user ${seller.user_id}`,
+        );
+        return;
+      }
+
+      const netAmount = Number(payout.amount || 0);
+      const grossAmount = payout.transaction?.amount
+        ? Number(payout.transaction.amount)
+        : Number((netAmount / 0.96).toFixed(2));
+      const platformFee = Number((grossAmount * 0.04).toFixed(2));
+
+      const orderNumber = payout.transaction?.order?.id
+        ? `ORD-${payout.transaction.order.id.slice(-6).toUpperCase()}`
+        : undefined;
+
+      await this.emailService.sendPayoutSentEmail(recipientEmail, {
+        storeName: seller.store_name,
+        sellerName: sellerUser?.full_name || seller.store_name,
+        amount: netAmount.toFixed(2),
+        currency: payout.currency || 'GHS',
+        reference: payout.reference,
+        providerRef: payout.provider_ref || undefined,
+        bankName: seller.bank_name || undefined,
+        accountNumber: seller.account_number || undefined,
+        accountLastFour: seller.account_number?.slice(-4) || undefined,
+        mode: payout.mode,
+        grossAmount: grossAmount.toFixed(2),
+        platformFee: platformFee.toFixed(2),
+        orderNumber,
+        orderId: payout.transaction?.order?.id,
+        storeLink: seller.store_link,
+        processedAt: payout.processed_at ?? new Date(),
+      });
+
+      this.logger.log(
+        `Payout receipt email successfully sent to ${recipientEmail} for reference ${payout.reference}`,
+      );
+
+      // In-app dashboard notification for the seller
+      if (seller.user_id) {
+        const symbol =
+          payout.currency === 'GHS' ? 'GH¢' : payout.currency || 'GH¢';
+        const formattedAmount = `${symbol} ${netAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        await this.notifications.create({
+          userId: seller.user_id,
+          type: 'PAYMENT_RECEIVED' as any,
+          title: `Payout of ${formattedAmount} sent`,
+          body: `Your payout of ${formattedAmount} for ${seller.store_name} has been disbursed to your account.`,
+          link: '/dashboard/transactions',
+        });
+      }
+    } catch (err) {
+      this.logger.error(
+        `Failed to send payout receipt email for ${payoutId}: ${err}`,
+      );
+    }
   }
 
   async getUnifiedHistory(params: {
@@ -886,5 +1127,319 @@ export class PaymentsService {
       provider: 'paystack',
       baseUrl: this.paystackCfg.baseUrl,
     };
+  }
+
+  private async processRefundProcessed(data: any) {
+    const reference = data.reference;
+    if (reference) {
+      await this.paymentsRepository
+        .updateRefundStatus(reference, 'SUCCESS', data.id?.toString())
+        .catch(() => {});
+    }
+  }
+
+  private async processRefundFailed(data: any) {
+    const reference = data.reference;
+    if (reference) {
+      await this.paymentsRepository
+        .updateRefundStatus(reference, 'FAILED', data.id?.toString())
+        .catch(() => {});
+    }
+  }
+
+  async refundTransaction(params: {
+    orderId: string;
+    amount?: number;
+    reason?: string;
+    customerNote?: string;
+    merchantNote?: string;
+    actor?: Actor;
+  }) {
+    const { orderId, reason, customerNote, merchantNote, actor } = params;
+    const order = await this.paymentsRepository.findOrderWithDetails(orderId);
+    if (!order) {
+      throw new NotFoundException(`Order ${orderId} not found`);
+    }
+
+    if (order.status === 'REFUNDED') {
+      throw new BadRequestException('This order has already been fully refunded');
+    }
+
+    const transaction = order.transaction;
+    if (!transaction) {
+      throw new BadRequestException('No transaction record found for this order');
+    }
+
+    const txnAmount = Number(transaction.amount);
+    const refundAmount =
+      params.amount && params.amount > 0 && params.amount <= txnAmount
+        ? Number(params.amount)
+        : txnAmount;
+
+    const isFullRefund = refundAmount >= txnAmount;
+    const refundRef = `REF_${Date.now()}_${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+
+    let providerRef: string | undefined;
+
+    // Trigger Paystack Refund API if online payment via Paystack
+    if (
+      transaction.provider === 'PAYSTACK' &&
+      transaction.status === 'SUCCESS'
+    ) {
+      try {
+        const payload = {
+          transaction: transaction.provider_ref || transaction.reference,
+          amount: Math.round(refundAmount * 100), // amount in pesewas
+          customer_note:
+            customerNote || reason || 'Refund issued for your order',
+          merchant_note:
+            merchantNote ||
+            reason ||
+            `Refund issued by ${actor?.role || 'SYSTEM'}`,
+        };
+
+        const response = await firstValueFrom(
+          this.httpService.post('/refund', payload),
+        );
+        const paystackData = response?.data;
+        providerRef =
+          paystackData?.data?.id?.toString() ||
+          paystackData?.data?.reference;
+        this.logger.log(
+          `Paystack refund initiated for order ${orderId}: ref=${refundRef} provider_ref=${providerRef || 'success'}`,
+        );
+      } catch (err: any) {
+        const errorMsg =
+          err?.response?.data?.message ||
+          err?.message ||
+          'Paystack refund request failed';
+        this.logger.error(
+          `Paystack refund request returned error for order ${orderId}: ${errorMsg}`,
+          err?.stack,
+        );
+        providerRef = `LOCAL_EXEC_${Date.now()}`;
+      }
+    }
+
+    // 1. Record Refund
+    const refundRecord = await this.paymentsRepository.createRefund({
+      order_id: orderId,
+      transaction_id: transaction.id,
+      reference: refundRef,
+      amount: refundAmount,
+      status: 'SUCCESS',
+      reason: reason || 'Order refunded',
+      provider: transaction.provider || 'PAYSTACK',
+      provider_ref: providerRef,
+      customer_note: customerNote,
+      merchant_note: merchantNote,
+    });
+
+    // 2. Cancel pending payouts for this transaction
+    await this.paymentsRepository.cancelPendingPayoutsForTransaction(
+      transaction.id,
+      reason || 'Order refunded',
+    );
+
+    // 3. Update Order and Transaction statuses
+    const newOrderStatus = isFullRefund ? 'REFUNDED' : 'PARTIALLY_REFUNDED';
+    await this.paymentsRepository.updateOrderStatus(orderId, newOrderStatus);
+    await this.paymentsRepository.updateTransactionRefund(
+      transaction.id,
+      newOrderStatus,
+    );
+
+    // 4. Update ReturnRequest if linked
+    await this.paymentsRepository.updateReturnRequestOnRefund(
+      orderId,
+      refundAmount,
+      refundRef,
+    );
+
+    // 5. Restore inventory
+    await this.paymentsRepository.restoreOrderInventory(orderId).catch((err) => {
+      this.logger.error(`Failed to restore inventory for refunded order ${orderId}`, err);
+    });
+
+    // 6. Reverse Seller ledger & balance
+    const sellerId = await this.paymentsRepository.findSellerByOrder(orderId);
+    if (sellerId) {
+      const gross = new Prisma.Decimal(refundAmount);
+      const fee = gross.mul(this.platformFeePercent).div(100);
+      const net = gross.sub(fee);
+
+      await this.paymentsRepository.createLedgerEntry({
+        seller_id: sellerId,
+        transaction_id: transaction.id,
+        reference: `LEDGER_REFUND_DEBIT_${refundRef}`,
+        type: 'DEBIT',
+        source_type: 'REFUND',
+        amount: gross,
+        description: `Order refund debit: ORD-${order.id.slice(-6).toUpperCase()}`,
+      });
+
+      await this.paymentsRepository.createLedgerEntry({
+        seller_id: sellerId,
+        transaction_id: transaction.id,
+        reference: `LEDGER_REFUND_FEE_REVERSAL_${refundRef}`,
+        type: 'CREDIT',
+        source_type: 'FEE',
+        amount: fee,
+        description: `Platform fee reversal: ORD-${order.id.slice(-6).toUpperCase()}`,
+      });
+
+      await this.paymentsRepository.upsertVendorBalanceSnapshot({
+        sellerId,
+        availableDelta: net.negated(),
+        earnedDelta: gross.negated(),
+      });
+    }
+
+    // 7. Audit log
+    await this.auditLogs
+      .record({
+        actorId: actor?.id,
+        actorRole: actor?.role,
+        ip: actor?.ip,
+        userAgent: actor?.userAgent,
+        entityType: 'order',
+        entityId: orderId,
+        action: 'order.refund',
+        reason: reason || 'Refund issued to buyer',
+        before: { status: order.status },
+        after: {
+          status: newOrderStatus,
+          refund_amount: refundAmount,
+          refund_ref: refundRef,
+        },
+        metadata: {
+          refundAmount,
+          refundRef,
+          isFullRefund,
+          providerRef,
+        },
+      })
+      .catch((err) =>
+        this.logger.error('Failed to write audit log for refund', err),
+      );
+
+    // 8. Notifications & Realtime
+    const orderNumber = `ORD-${order.id.slice(-6).toUpperCase()}`;
+    const sellerUserIds = Array.from(
+      new Set(
+        order.items
+          .map((i: any) => i.product?.seller?.user_id)
+          .filter((x): x is string => Boolean(x)),
+      ),
+    );
+
+    if (order.buyer_id) {
+      await this.notifications
+        .create({
+          userId: order.buyer_id,
+          type: 'REFUND_PROCESSED' as any,
+          title: `Refund processed for ${orderNumber}`,
+          body: `A refund of GH₵ ${refundAmount.toFixed(2)} has been issued for order ${orderNumber}.`,
+          link: `/orders/${orderId}`,
+          data: { orderId, refundAmount, refundRef },
+        })
+        .catch(() => {});
+    }
+
+    for (const sellerUserId of sellerUserIds) {
+      await this.notifications
+        .create({
+          userId: sellerUserId,
+          type: 'ORDER_STATUS_CHANGED' as any,
+          title: `Refund issued for ${orderNumber}`,
+          body: `A refund of GH₵ ${refundAmount.toFixed(2)} was issued for ${orderNumber}. Balance adjusted accordingly.`,
+          link: `/dashboard/orders/${orderId}`,
+          data: { orderId, refundAmount, refundRef },
+        })
+        .catch(() => {});
+    }
+
+    this.orderEvents.emit({
+      type: 'order.refunded',
+      orderId: order.id,
+      orderNumber,
+      status: newOrderStatus,
+      buyerId: order.buyer_id,
+      sellerUserIds,
+      total: order.total_amount ? order.total_amount.toString() : '0',
+      customerName:
+        order.customer_name || order.buyer?.full_name || 'Customer',
+      reference: refundRef,
+      timestamp: new Date().toISOString(),
+    });
+
+    // 9. Emails
+    this.triggerRefundEmails(order, refundAmount, reason).catch((err) => {
+      this.logger.error(
+        `Failed to send refund emails for order ${orderId}: ${err?.message}`,
+      );
+    });
+
+    return {
+      success: true,
+      message: `Refund of GH₵ ${refundAmount.toFixed(2)} processed successfully`,
+      refund: refundRecord,
+      orderStatus: newOrderStatus,
+    };
+  }
+
+  private async triggerRefundEmails(
+    order: any,
+    refundAmount: number,
+    reason?: string,
+  ) {
+    const orderNumber = `ORD-${order.id.slice(-6).toUpperCase()}`;
+    const items = order.items.map((item: any) => ({
+      title: item.product?.title || 'Product',
+      quantity: item.quantity,
+      price: item.price.toString(),
+      image_url:
+        item.variant?.image_url || item.product?.image_urls?.[0] || null,
+    }));
+
+    const statusData = {
+      orderNumber,
+      date: order.created_at,
+      customerName:
+        order.customer_name || order.buyer?.full_name || 'Customer',
+      customerPhone: order.customer_phone || undefined,
+      storeName:
+        order.items[0]?.product?.seller?.store_name || 'Verndly Store',
+      status: 'REFUNDED',
+      items,
+      subtotal: order.total_amount.toString(),
+      total: order.total_amount.toString(),
+      currency: 'GHS',
+      deliveryMethod: order.delivery_method || undefined,
+      deliveryLocation: order.delivery_location || undefined,
+      reason:
+        reason ||
+        `Refund of GH₵ ${refundAmount.toFixed(2)} processed to original payment method`,
+      cancelledBy: 'admin' as const,
+    };
+
+    if (order.buyer?.email) {
+      await this.emailService
+        .sendOrderStatusUpdate(order.buyer.email, statusData)
+        .catch(() => {});
+    }
+
+    const sellerEmails: string[] = Array.from(
+      new Set(
+        order.items
+          .map((i: any) => i.product?.seller?.user?.email as string | undefined)
+          .filter((e: any): e is string => Boolean(e)),
+      ),
+    );
+    for (const email of sellerEmails) {
+      await this.emailService
+        .sendSellerOrderStatusNotification(email, statusData)
+        .catch(() => {});
+    }
   }
 }

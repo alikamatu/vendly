@@ -1,4 +1,4 @@
-name: Deploy Vendly API to AWS
+name: Deploy Verndly API to AWS
 
 on:
   push:

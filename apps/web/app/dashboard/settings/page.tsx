@@ -20,6 +20,7 @@ import {
   MailWarning,
   MapPin,
   ShieldAlert,
+  Activity,
 } from "lucide-react";
 import { useAuth } from "@/lib/contexts/auth-context";
 import ProMembershipCard from "@/components/dashboard/ProMembershipCard";
@@ -224,12 +225,12 @@ export default function SettingsPage() {
   const accountGroup: SettingItem[] = [
     { id: "profile", name: "Personal Info", desc: "Name, email, phone, business", icon: User, href: "/dashboard/settings/profile", color: "text-violet-500", bg: "bg-violet-500/10" },
     { id: "security", name: "Password & Security", desc: "Change password, 2FA", icon: ShieldCheck, href: "/dashboard/settings/security", color: "text-emerald-500", bg: "bg-emerald-500/10" },
-    { id: "addresses", name: "Address Book", desc: "Manage delivery addresses", icon: MapPin, href: "/account/addresses", color: "text-blue-500", bg: "bg-blue-500/10" },
+    { id: "activity", name: "Activity & Audit Log", desc: "Security events, changes & history", icon: Activity, href: "/dashboard/settings/activity", color: "text-blue-500", bg: "bg-blue-500/10" },
   ];
 
   const shoppingGroup: SettingItem[] = [
-    { id: "orders", name: "My Orders", desc: "Track your purchases", icon: Package, href: "/orders", color: "text-orange-500", bg: "bg-orange-500/10" },
-    { id: "favorites", name: "Saved Items", desc: "Products you've liked", icon: Heart, href: "/favorites", color: "text-rose-500", bg: "bg-rose-500/10" },
+    { id: "orders", name: "Store Orders", desc: "Manage fulfillment and customer orders", icon: Package, href: "/dashboard/orders", color: "text-orange-500", bg: "bg-orange-500/10" },
+    { id: "reviews", name: "Store Reviews", desc: "Customer feedback and ratings", icon: Star, href: "/dashboard/reviews", color: "text-amber-500", bg: "bg-amber-500/10" },
   ];
 
   const preferencesGroup: SettingItem[] = [
@@ -238,7 +239,6 @@ export default function SettingsPage() {
 
   const legalGroup: SettingItem[] = [
     { id: "terms", name: "Terms & Conditions", desc: "Seller agreement, policies", icon: FileText, href: "/dashboard/settings/terms", color: "text-amber-500", bg: "bg-amber-500/10" },
-    { id: "data", name: "Data & Privacy", desc: "Export data, delete account", icon: ShieldAlert, href: "/account/data", color: "text-red-500", bg: "bg-red-500/10" },
   ];
 
   const supportGroup: SettingItem[] = [
@@ -319,7 +319,7 @@ export default function SettingsPage() {
       </div>
 
       <p className="text-center text-[10px] text-[var(--color-muted)] pb-2">
-        Vendly · v1.0 · Made with ♥ for young entrepreneurs
+        Verndly · v1.0 · Made with ♥ for young entrepreneurs
       </p>
     </div>
   );

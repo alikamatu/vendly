@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Crown, MapPin, SlidersHorizontal, RefreshCw } from 'lucide-react';
 import { onboardingApi } from '@/lib/api/onboarding';
 import type { StoresBrowserState } from '@/hooks/useStoresBrowser';
+import Select from '@/components/ui/Select';
 
 interface StoresFiltersPanelProps {
   state: StoresBrowserState;
@@ -55,26 +56,16 @@ export default function StoresFiltersPanel({ state }: StoresFiltersPanelProps) {
           <MapPin className="h-3.5 w-3.5" />
           Browse by Region
         </label>
-        <div className="relative">
-          <select
-            value={state.location || ''}
-            onChange={(e) => state.setLocation(e.target.value || null)}
-            disabled={loadingRegions}
-            className="focus:ring-[var(--color-accent)]/10 h-11 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-xs text-[var(--color-foreground)] transition-all duration-200 focus:border-[var(--color-accent)] focus:outline-none focus:ring-4 disabled:opacity-50"
-          >
-            <option value="">All Regions / Everywhere</option>
-            {regions.map((region) => (
-              <option key={region} value={region}>
-                {region}
-              </option>
-            ))}
-          </select>
-          {loadingRegions && (
-            <div className="absolute right-3 top-3.5">
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--color-accent)] border-t-transparent" />
-            </div>
-          )}
-        </div>
+        <Select
+          value={state.location || ''}
+          onChange={(val) => state.setLocation(val || null)}
+          options={[
+            { value: '', label: 'All Regions / Everywhere' },
+            ...regions.map((r) => ({ value: r, label: r })),
+          ]}
+          disabled={loadingRegions}
+          size="sm"
+        />
       </div>
 
       {/* iOS-Style PRO Toggle */}

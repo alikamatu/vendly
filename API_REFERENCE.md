@@ -1,6 +1,6 @@
-# Vendly API Reference
+# Verndly API Reference
 
-This document provides a comprehensive overview of the Vendly REST API endpoints.
+This document provides a comprehensive overview of the Verndly REST API endpoints.
 
 ## Base URL
 All API requests should be made to the base URL configured in your environment (default: `http://localhost:1000`).

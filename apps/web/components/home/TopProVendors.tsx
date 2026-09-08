@@ -58,7 +58,7 @@ export default function TopProVendors({ vendors }: TopProVendorsProps) {
           </>
         }
         title="Featured Pro sellers"
-        description="Hand-picked Pro vendors delivering quality across the Vendly marketplace."
+        description="Hand-picked Pro vendors delivering quality across the Verndly marketplace."
         action={
           <div className="hidden items-center gap-2 md:flex">
             <button

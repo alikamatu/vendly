@@ -2,13 +2,15 @@
 
 import React, { useEffect, useState, Suspense } from 'react';
 import { AlertCircle, ArrowUpDown, SlidersHorizontal, Store } from 'lucide-react';
-import DashboardHeader from '@/components/dashboard/DashboardHeader';
+import Header from '@/components/layout/Header';
 import { useStoresBrowser } from '@/hooks/useStoresBrowser';
 import StoreCard from './StoreCard';
 import StoresSearchBar from './StoresSearchBar';
 import StoresFiltersPanel from './StoresFiltersPanel';
 import StoresActiveFiltersBar from './StoresActiveFiltersBar';
 import StoresPagination from './StoresPagination';
+import Spinner from '@/components/ui/Spinner';
+import Select from '@/components/ui/Select';
 
 function StoresBrowserInner() {
   const state = useStoresBrowser();
@@ -27,24 +29,17 @@ function StoresBrowserInner() {
   return (
     <div className="min-h-screen bg-[var(--color-background)]">
       {/* Dynamic Header */}
-      <DashboardHeader title="Stores" />
+      <Header />
 
       {/* Hero Section */}
-      <div className="border-[var(--color-border)]/40 relative overflow-hidden border-b bg-gradient-to-b from-[var(--color-surface)] to-[var(--color-background)] py-12 md:py-16">
-        {/* Decorative backdrop gradients */}
-        <div className="bg-[var(--color-accent)]/5 absolute left-1/4 top-1/2 h-72 w-72 -translate-y-1/2 rounded-full blur-3xl" />
-        <div className="absolute right-1/4 top-1/3 h-80 w-80 -translate-y-1/2 rounded-full bg-blue-500/5 blur-3xl" />
-
+      <div className="border-[var(--color-border)]/40 relative overflow-hidden border-b bg-[var(--color-surface)] py-12 md:py-16">
         <div className="relative z-10 mx-auto max-w-7xl space-y-4 px-4 text-center md:px-8">
           <div className="bg-[var(--color-accent)]/10 border-[var(--color-accent)]/20 shadow-xs inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-[var(--color-accent)]">
             <Store className="h-3.5 w-3.5" />
-            VENDLY DIRECTORY
+            VERNDLY DIRECTORY
           </div>
           <h1 className="text-3xl font-semibold leading-none tracking-tight text-[var(--color-foreground)] md:text-5xl">
-            Discover Verified{' '}
-            <span className="bg-gradient-to-r from-[var(--color-accent)] to-rose-500 bg-clip-text text-transparent">
-              Entrepreneurs
-            </span>
+            Discover Verified <span className="text-[var(--color-accent)]">Entrepreneurs</span>
           </h1>
           <p className="mx-auto max-w-2xl text-sm leading-relaxed text-[var(--color-muted)]">
             Support local businesses and young creators. Browse certified store profiles, view
@@ -64,7 +59,7 @@ function StoresBrowserInner() {
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[260px_1fr]">
           {/* Desktop Filters Sidebar */}
           <aside className="hidden lg:block">
-            <div className="sticky top-24 max-h-[calc(100vh-8rem)] space-y-5 overflow-y-auto pr-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[var(--color-border)] [&::-webkit-scrollbar]:w-1.5">
+            <div className="sticky top-24 max-h-[calc(100vh-8rem)] space-y-5 overflow-y-auto pr-2 no-scrollbar">
               <StoresFiltersPanel state={state} />
             </div>
           </aside>
@@ -80,7 +75,7 @@ function StoresBrowserInner() {
                     : `${state.meta.total} ${state.meta.total === 1 ? 'Store profile' : 'Store profiles'} found`}
                 </p>
                 {state.isRefreshing && (
-                  <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[var(--color-accent)] border-t-transparent" />
+                  <Spinner size="xs" />
                 )}
               </div>
 
@@ -99,25 +94,25 @@ function StoresBrowserInner() {
                   )}
                 </button>
 
-                {/* Sort selector */}
-                <div className="flex w-full items-center gap-2 sm:w-auto">
-                  <ArrowUpDown className="hidden h-4 w-4 text-[var(--color-muted)] sm:block" />
-                  <select
+                {/* Custom Sort selector */}
+                <div className="w-full sm:w-48">
+                  <Select
                     value={state.sort}
-                    onChange={(e) => state.setSort(e.target.value)}
-                    className="h-10 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-xs text-[var(--color-foreground)] transition-all duration-200 focus:border-[var(--color-accent)] focus:outline-none sm:w-44"
-                  >
-                    <option value="default">Most Products (Default)</option>
-                    <option value="newest">Newest Vendors</option>
-                    <option value="alphabetical">Alphabetical (A–Z)</option>
-                  </select>
+                    onChange={(val) => state.setSort(val)}
+                    options={[
+                      { value: 'default', label: 'Most Products (Default)' },
+                      { value: 'newest', label: 'Newest Vendors' },
+                      { value: 'alphabetical', label: 'Alphabetical (A–Z)' },
+                    ]}
+                    size="sm"
+                  />
                 </div>
               </div>
             </div>
 
             {/* Mobile filters expansion panel */}
             {mobileFiltersOpen && (
-              <div className="bg-[var(--color-surface)]/80 animate-slide-down space-y-4 rounded-2xl border border-[var(--color-border)] p-5 backdrop-blur-md lg:hidden">
+              <div className="bg-[var(--color-surface)] animate-slide-down space-y-4 rounded-2xl border border-[var(--color-border)] p-5 lg:hidden">
                 <StoresFiltersPanel state={state} />
               </div>
             )}

@@ -41,6 +41,37 @@ export class PaymentsRepository {
     });
   }
 
+  async updateReturnRequestOnRefund(
+    orderId: string,
+    refundAmount: Prisma.Decimal | number,
+    refundRef: string,
+  ) {
+    const rr = await this.prisma.returnRequest.findUnique({
+      where: { order_id: orderId },
+    });
+    if (!rr) return null;
+    return this.prisma.returnRequest.update({
+      where: { id: rr.id },
+      data: {
+        status: 'REFUNDED',
+        refund_amount: refundAmount as any,
+        refund_ref: refundRef,
+        refunded_at: new Date(),
+      },
+    });
+  }
+
+  async updateTransactionRefund(
+    transactionId: string,
+    status: string = 'REFUNDED',
+  ) {
+    return this.prisma.transaction.update({
+      where: { id: transactionId },
+      data: { status },
+    });
+  }
+
+
   async finalizeOrderInventory(orderId: string) {
     return this.prisma.$transaction(async (tx) => {
       // 1. Fetch order with items
@@ -90,6 +121,7 @@ export class PaymentsRepository {
                 },
               },
             },
+            variant: true,
           },
         },
       },
@@ -310,7 +342,7 @@ export class PaymentsRepository {
     payout_id?: string;
     reference: string;
     type: 'CREDIT' | 'DEBIT';
-    source_type: 'ORDER' | 'PROMOTION' | 'ADJUSTMENT' | 'FEE' | 'PAYOUT';
+    source_type: 'ORDER' | 'PROMOTION' | 'ADJUSTMENT' | 'FEE' | 'PAYOUT' | 'REFUND';
     amount: Prisma.Decimal | number;
     description?: string;
     metadata?: Prisma.InputJsonValue;
@@ -327,6 +359,12 @@ export class PaymentsRepository {
         description: data.description,
         metadata: data.metadata ?? {},
       },
+    });
+  }
+
+  async findLedgerEntryByReference(reference: string) {
+    return this.prisma.paymentLedgerEntry.findUnique({
+      where: { reference },
     });
   }
 
@@ -418,7 +456,56 @@ export class PaymentsRepository {
   async getPayoutById(id: string) {
     return this.prisma.payout.findUnique({
       where: { id },
-      include: { seller: true, transaction: true },
+      include: {
+        seller: {
+          include: {
+            user: {
+              select: { id: true, email: true, full_name: true },
+            },
+          },
+        },
+        transaction: {
+          include: {
+            order: {
+              select: {
+                id: true,
+                total_amount: true,
+                customer_name: true,
+                customer_phone: true,
+                created_at: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  async getPayoutByReference(reference: string) {
+    return this.prisma.payout.findUnique({
+      where: { reference },
+      include: {
+        seller: {
+          include: {
+            user: {
+              select: { id: true, email: true, full_name: true },
+            },
+          },
+        },
+        transaction: {
+          include: {
+            order: {
+              select: {
+                id: true,
+                total_amount: true,
+                customer_name: true,
+                customer_phone: true,
+                created_at: true,
+              },
+            },
+          },
+        },
+      },
     });
   }
 
@@ -436,7 +523,35 @@ export class PaymentsRepository {
     const [items, total] = await Promise.all([
       this.prisma.payout.findMany({
         where,
-        include: { transaction: true },
+        include: {
+          transaction: {
+            include: {
+              order: {
+                select: {
+                  id: true,
+                  customer_name: true,
+                  customer_phone: true,
+                },
+              },
+            },
+          },
+          seller: {
+            select: {
+              id: true,
+              store_name: true,
+              bank_name: true,
+              bank_code: true,
+              account_number: true,
+              paystack_subaccount_code: true,
+              user: {
+                select: {
+                  email: true,
+                  full_name: true,
+                },
+              },
+            },
+          },
+        },
         orderBy: { created_at: 'desc' },
         skip,
         take: params.limit,
@@ -444,7 +559,22 @@ export class PaymentsRepository {
       this.prisma.payout.count({ where }),
     ]);
 
-    return { items, total };
+    const enriched = items.map((p) => {
+      const net = Number(p.amount || 0);
+      const gross = p.transaction?.amount
+        ? Number(p.transaction.amount)
+        : Number((net / 0.96).toFixed(2));
+      const fee = Number((gross * 0.04).toFixed(2));
+      return {
+        ...p,
+        net_amount: net,
+        gross_amount: gross,
+        platform_fee_percent: 4,
+        platform_fee: fee,
+      };
+    });
+
+    return { items: enriched, total };
   }
 
   async listTransactions(params: {
@@ -468,13 +598,41 @@ export class PaymentsRepository {
       };
     }
     const skip = (params.page - 1) * params.limit;
-    let items: any[] = [];
+    let rawItems: any[] = [];
     let total = 0;
     try {
-      [items, total] = await Promise.all([
+      [rawItems, total] = await Promise.all([
         this.prisma.transaction.findMany({
           where,
-          include: { order: true, payout: true },
+          include: {
+            order: {
+              include: {
+                buyer: {
+                  select: { id: true, full_name: true, email: true, phone_e164: true },
+                },
+                items: {
+                  include: {
+                    product: {
+                      select: {
+                        id: true,
+                        title: true,
+                        seller_id: true,
+                        seller: {
+                          select: {
+                            id: true,
+                            store_name: true,
+                            store_link: true,
+                            paystack_subaccount_code: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            payout: true,
+          },
           orderBy: { created_at: 'desc' },
           skip,
           take: params.limit,
@@ -483,7 +641,7 @@ export class PaymentsRepository {
       ]);
     } catch (error) {
       if (!this.isMissingColumnError(error)) throw error;
-      [items, total] = await Promise.all([
+      [rawItems, total] = await Promise.all([
         this.prisma.transaction.findMany({
           where,
           select: {
@@ -506,6 +664,34 @@ export class PaymentsRepository {
         this.prisma.transaction.count({ where }),
       ]);
     }
+
+    const items = rawItems.map((tx) => {
+      const gross = Number(tx.amount || 0);
+      const fee = Number((gross * 0.04).toFixed(2));
+      const net = Number((gross - fee).toFixed(2));
+      const firstItem = tx.order?.items?.[0];
+      const seller = firstItem?.product?.seller;
+      const payerName =
+        tx.order?.customer_name || tx.order?.buyer?.full_name || 'Customer';
+      const payerPhone =
+        tx.order?.customer_phone || tx.order?.buyer?.phone_e164 || null;
+
+      return {
+        ...tx,
+        gross_amount: gross,
+        platform_fee_percent: 4,
+        platform_fee: fee,
+        net_amount: net,
+        payer: {
+          name: payerName,
+          phone: payerPhone,
+        },
+        receiver: {
+          store_name: seller?.store_name || 'Vendly Store',
+          subaccount: seller?.paystack_subaccount_code || null,
+        },
+      };
+    });
 
     return { items, total };
   }
@@ -652,4 +838,114 @@ export class PaymentsRepository {
 
     return { items, total };
   }
+
+  async createRefund(data: {
+    order_id: string;
+    transaction_id: string;
+    reference: string;
+    amount: Prisma.Decimal | number;
+    currency?: string;
+    status?: 'PENDING' | 'PROCESSING' | 'SUCCESS' | 'FAILED';
+    reason?: string;
+    provider?: string;
+    provider_ref?: string;
+    customer_note?: string;
+    merchant_note?: string;
+  }) {
+    return this.prisma.refund.create({
+      data: {
+        order_id: data.order_id,
+        transaction_id: data.transaction_id,
+        reference: data.reference,
+        amount: data.amount as any,
+        currency: data.currency || 'GHS',
+        status: data.status ?? 'PENDING',
+        reason: data.reason,
+        provider: data.provider || 'PAYSTACK',
+        provider_ref: data.provider_ref,
+        customer_note: data.customer_note,
+        merchant_note: data.merchant_note,
+      },
+    });
+  }
+
+  async updateRefundStatus(
+    reference: string,
+    status: 'PENDING' | 'PROCESSING' | 'SUCCESS' | 'FAILED',
+    providerRef?: string,
+  ) {
+    return this.prisma.refund.update({
+      where: { reference },
+      data: {
+        status,
+        ...(providerRef && { provider_ref: providerRef }),
+      },
+    });
+  }
+
+  async findRefundsByOrderId(orderId: string) {
+    return this.prisma.refund.findMany({
+      where: { order_id: orderId },
+      orderBy: { created_at: 'desc' },
+    });
+  }
+
+  async cancelPendingPayoutsForTransaction(
+    transactionId: string,
+    reason = 'Order refunded',
+  ) {
+    const payouts = await this.prisma.payout.findMany({
+      where: {
+        transaction_id: transactionId,
+        status: { in: ['PENDING', 'PROCESSING'] },
+      },
+    });
+
+    for (const payout of payouts) {
+      await this.prisma.payout.update({
+        where: { id: payout.id },
+        data: {
+          status: 'FAILED',
+          failure_reason: `Cancelled: ${reason}`,
+          processed_at: new Date(),
+        },
+      });
+    }
+
+    return payouts;
+  }
+
+  async restoreOrderInventory(orderId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const order = await tx.order.findUnique({
+        where: { id: orderId },
+        include: { items: true },
+      });
+
+      if (!order) return;
+
+      for (const item of order.items) {
+        await tx.product.update({
+          where: { id: item.product_id },
+          data: {
+            quantity_available: {
+              increment: item.quantity,
+            },
+          },
+        });
+
+        if (item.variant_id) {
+          await tx.productVariant.update({
+            where: { id: item.variant_id },
+            data: {
+              quantity_available: {
+                increment: item.quantity,
+              },
+            },
+          });
+        }
+      }
+    });
+  }
 }
+

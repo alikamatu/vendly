@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { ChevronDown, Search } from "lucide-react";
-import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import Header from "@/components/layout/Header";
 
 interface QA {
   q: string;
@@ -36,7 +36,7 @@ const QA_LIST: QA[] = [
     tags: ["payment"],
   },
   {
-    q: "How does Vendly Pro work?",
+    q: "How does Verndly Pro work?",
     a: (
       <>
         Pro membership is GH₵57/month, billed via Paystack. Pro sellers get featured
@@ -68,7 +68,7 @@ const QA_LIST: QA[] = [
     q: "Is my data safe?",
     a: (
       <>
-        Yes. Payments are handled by Paystack — Vendly never sees your full card
+        Yes. Payments are handled by Paystack — Verndly never sees your full card
         details. Read our{" "}
         <a className="text-primary underline" href="/privacy">privacy policy</a>.
       </>
@@ -79,8 +79,19 @@ const QA_LIST: QA[] = [
     q: "How do I contact support?",
     a: (
       <>
-        Email <a className="text-primary underline" href="mailto:hello@vendly.com">hello@vendly.com</a>, WhatsApp +233 24 000 0000, or use the{" "}
-        <a className="text-primary underline" href="/contact">contact form</a>.
+        Email{" "}
+        <a className="text-primary underline" href="mailto:alikamatu14@gmail.com">
+          alikamatu14@gmail.com
+        </a>
+        , WhatsApp{" "}
+        <a className="text-primary underline" href="https://wa.me/233534065652">
+          +233 53 406 5652
+        </a>
+        , or use the{" "}
+        <a className="text-primary underline" href="/contact">
+          contact form
+        </a>
+        .
       </>
     ),
     tags: ["support"],
@@ -101,7 +112,7 @@ export default function FAQPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <DashboardHeader title="FAQ" />
+      <Header />
       <main className="max-w-3xl mx-auto px-4 md:px-8 pt-10 md:pt-16 pb-24 md:pb-32 space-y-8">
         <header className="space-y-3">
           <p className="text-[10px] font-medium uppercase tracking-wider text-primary">

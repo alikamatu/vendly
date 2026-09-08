@@ -13,6 +13,7 @@ const HIDE_PREFIXES = [
   "/verify-email",
   "/seller-verification",
   "/onboarding",
+  "/create-store",
 ];
 
 /** Renders the global footer except on dashboard + auth/onboarding routes. */

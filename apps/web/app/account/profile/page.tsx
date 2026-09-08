@@ -185,7 +185,7 @@ export default function AccountProfilePage() {
       <div className="border-[var(--color-border)]/80 shadow-xs flex items-center gap-5 rounded-3xl border bg-[var(--color-surface)] p-5 transition-all duration-300 hover:border-[var(--color-border)] hover:shadow-sm">
         <div className="group/avatar relative flex-shrink-0">
           <div
-            className={`h-16 w-16 rounded-2xl bg-gradient-to-br ${grad} flex items-center justify-center shadow-md transition-transform duration-300 group-hover/avatar:scale-[1.03]`}
+            className="h-16 w-16 rounded-2xl bg-primary flex items-center justify-center shadow-sm transition-transform duration-300 group-hover/avatar:scale-[1.03]"
           >
             <span className="select-none text-xl font-medium text-white">{inits}</span>
           </div>

@@ -3,7 +3,8 @@
 import React, { Suspense, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { AlertCircle, CheckCircle2 } from "lucide-react";
+import Spinner from "@/components/ui/Spinner";
 
 /**
  * Endpoint the API redirects to after a successful Google OAuth handshake.
@@ -45,40 +46,52 @@ function CallbackInner() {
   }, [router]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="max-w-sm text-center space-y-4">
+    <div className="min-h-screen flex items-center justify-center px-4 bg-background">
+      <div className="w-full max-w-sm rounded-3xl border border-border bg-card p-8 text-center shadow-sm space-y-5">
         {status === "loading" && (
-          <>
-            <Loader2 className="w-8 h-8 animate-spin mx-auto text-muted" />
-            <p className="text-sm text-muted">Finishing sign-in…</p>
-          </>
+          <div className="py-4 space-y-4">
+            <Spinner size="lg" className="mx-auto text-foreground" />
+            <div>
+              <h2 className="text-base font-medium text-foreground">Completing sign-in</h2>
+              <p className="text-xs text-muted mt-1">Securing your session…</p>
+            </div>
+          </div>
         )}
         {status === "success" && (
-          <>
-            <CheckCircle2 className="w-10 h-10 mx-auto text-emerald-500" />
-            <p className="text-sm">Signed in! Taking you to your dashboard…</p>
-          </>
+          <div className="py-4 space-y-4">
+            <div className="w-12 h-12 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-base font-medium text-foreground">Signed in successfully</h2>
+              <p className="text-xs text-muted mt-1">Taking you to your dashboard…</p>
+            </div>
+          </div>
         )}
         {status === "error" && (
-          <>
-            <AlertCircle className="w-10 h-10 mx-auto text-red-500" />
-            <h1 className="text-lg font-medium">Sign-in didn't complete</h1>
-            <p className="text-sm text-muted">{error}</p>
-            <div className="flex flex-col gap-2 pt-2">
+          <div className="py-4 space-y-4">
+            <div className="w-12 h-12 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center mx-auto">
+              <AlertCircle className="w-6 h-6" />
+            </div>
+            <div>
+              <h1 className="text-base font-medium text-foreground">Sign-in couldn't be completed</h1>
+              <p className="text-xs text-muted mt-1.5 leading-relaxed">{error}</p>
+            </div>
+            <div className="flex flex-col gap-2.5 pt-2">
               <Link
                 href="/login"
-                className="text-sm text-accent hover:underline"
+                className="w-full h-11 inline-flex items-center justify-center rounded-xl bg-foreground text-background text-xs font-medium hover:opacity-90 transition-opacity"
               >
                 Back to sign in
               </Link>
               <a
-                href="mailto:support@vendly.app?subject=Sign-in%20issue"
-                className="text-xs text-muted hover:underline"
+                href="mailto:support@verndly.app?subject=Sign-in%20issue"
+                className="text-xs text-muted hover:text-foreground transition-colors"
               >
                 Contact support
               </a>
             </div>
-          </>
+          </div>
         )}
       </div>
     </div>

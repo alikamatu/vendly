@@ -8,7 +8,6 @@ import {
   Mail,
   Building,
   Shield,
-  Loader2,
   Check,
   AlertCircle,
   BadgeCheck,
@@ -167,7 +166,7 @@ function ProFeaturesCard({ isPro }: { isPro: boolean }) {
       className={`rounded-3xl border p-5 space-y-4 ${
         isPro
           ? "border-emerald-500/20 bg-emerald-500/5"
-          : "border-red-500/20 bg-gradient-to-br from-red-500/5 to-transparent"
+          : "border-red-500/20 bg-red-500/5"
       }`}
     >
       <div className="flex items-center justify-between">
@@ -183,7 +182,7 @@ function ProFeaturesCard({ isPro }: { isPro: boolean }) {
           </div>
           <div>
             <p className="text-sm font-medium text-[var(--color-foreground)]">
-              Vendly Pro
+              Verndly Pro
             </p>
             <p className="text-[11px] text-[var(--color-muted)]">
               {isPro ? "Active on your account" : "Upgrade to unlock"}
@@ -351,7 +350,7 @@ export default function ProfileSettingsPage() {
       <div className="bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)] p-5">
         <div className="flex items-center gap-4">
           {/* Avatar */}
-          <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center flex-shrink-0 shadow-lg`}>
+          <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center flex-shrink-0 shadow-sm">
             <span className="text-xl font-medium text-white">{initials}</span>
           </div>
 
@@ -457,16 +456,11 @@ export default function ProfileSettingsPage() {
 
         <Button
           type="submit"
-          disabled={isLoading}
+          isLoading={isLoading}
+          loadingText="Saving…"
           className="w-full h-14 rounded-2xl font-medium uppercase tracking-wider text-sm"
         >
-          {isLoading ? (
-            <span className="flex items-center gap-2">
-              <Loader2 className="w-4 h-4 animate-spin" /> Saving…
-            </span>
-          ) : (
-            "Save Changes"
-          )}
+          Save Changes
         </Button>
       </form>
 

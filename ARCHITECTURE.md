@@ -1,10 +1,10 @@
-# Vendly Architecture Overview
+# Verndly Architecture Overview
 
-This document provides a deep dive into the technical architecture of the Vendly platform, explaining the design decisions and data flows that power the marketplace.
+This document provides a deep dive into the technical architecture of the Verndly platform, explaining the design decisions and data flows that power the marketplace.
 
 ## 🏛 System Design
 
-Vendly is designed as a distributed system with a clear separation of concerns between the data layer, business logic, and presentation layers.
+Verndly is designed as a distributed system with a clear separation of concerns between the data layer, business logic, and presentation layers.
 
 ### 1. Data Layer (Prisma & PostgreSQL)
 The schema is the source of truth for the application. The Prisma schema includes over 22 models. Key entities and relationships include:

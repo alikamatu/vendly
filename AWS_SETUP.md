@@ -1,4 +1,4 @@
-# Vendly AWS Hosting Setup Guide
+# Verndly AWS Hosting Setup Guide
 
 ## Architecture Summary
 
@@ -50,7 +50,7 @@ RDS and ElastiCache must be inside a private VPC so they're never exposed to the
 
 1. Go to **ElastiCache → Create cluster**
 2. Choose **Redis OSS**
-3. Cluster mode: **Disabled** (simpler, sufficient for Vendly's load)
+3. Cluster mode: **Disabled** (simpler, sufficient for Verndly's load)
 4. Name: `vendly-cache`
 5. Node type: `cache.t3.micro`
 6. Replicas: 0 (dev) / 1 (prod)

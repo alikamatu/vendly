@@ -8,6 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
+import { LoopsService } from '../loops/loops.service';
 
 interface GoogleProfile {
   sub: string;
@@ -38,7 +39,8 @@ export class OAuthService {
     private readonly config: ConfigService,
     private readonly jwt: JwtService,
     private readonly email: EmailService,
-  ) {}
+    private readonly loopsService: LoopsService,
+  ) { }
 
   private get clientId() {
     return this.config.get<string>('GOOGLE_CLIENT_ID') || '';
@@ -125,7 +127,7 @@ export class OAuthService {
     if (!tokenRes.ok || !tokenJson?.id_token) {
       throw new UnauthorizedException(
         tokenJson?.error_description ||
-          'Couldn’t finish Google sign-in. Please try again.',
+        'Couldn’t finish Google sign-in. Please try again.',
       );
     }
 
@@ -183,6 +185,28 @@ export class OAuthService {
         .catch((err) =>
           console.error('Failed to send welcome email (google)', err),
         );
+
+      const newUser = user;
+      // Sync new Google account to Loops
+      this.loopsService
+        .createOrUpdateContact({
+          email: newUser.email,
+          firstName: profile.given_name || profile.name?.split(' ')[0],
+          lastName: profile.family_name || profile.name?.split(' ').slice(1).join(' '),
+          userId: newUser.id,
+          userGroup: 'Buyer',
+          source: 'Google OAuth',
+          subscribed: false, // Default to false until user explicitly opts into marketing
+        })
+        .then(() => {
+          return this.loopsService.sendEvent(newUser.email, 'signup_completed', {
+            accountType: 'BUYER',
+            authMethod: 'google',
+          });
+        })
+        .catch((err) => {
+          console.error('[Loops] Failed to sync Google OAuth contact:', err);
+        });
     }
 
     if (user.is_suspended) {

@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   User,
   LayoutDashboard,
@@ -14,6 +15,8 @@ import {
   ChevronDown,
   ExternalLink,
   X,
+  Store,
+  Activity,
 } from "lucide-react";
 import { useAuth } from "@/lib/contexts/auth-context";
 import clsx from "@/utils/clsx";
@@ -45,6 +48,9 @@ export default function UserMenu() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen, isMobile]);
 
+  const pathname = usePathname();
+  const isDashboard = pathname?.startsWith("/dashboard");
+
   if (!user) return null;
 
   const isSeller = user.role === "SELLER";
@@ -60,45 +66,90 @@ export default function UserMenu() {
     visible: { y: 0, opacity: 1 },
   };
 
-  const navLinks = [
-    {
-      label: "My Profile",
-      href: "/account/profile",
-      icon: User,
-      show: true,
-    },
-    {
-      label: "Dashboard",
-      href: "/dashboard",
-      icon: LayoutDashboard,
-      show: isSeller || isAdmin,
-    },
-    {
-      label: "Manage Products",
-      href: "/dashboard/products",
-      icon: Package,
-      show: isSeller,
-    },
-    {
-      label: "Open Cart",
-      href: "/cart",
-      icon: ShoppingBag,
-      show: true,
-    },
-    {
-      label: "Orders",
-      href: isSeller ? "/dashboard/orders" : "/orders",
-      icon: ShoppingBag,
-      show: true,
-    },
-    { label: "Favorites", href: "/favorites", icon: Heart, show: true },
-    {
-      label: "Settings",
-      href: "/account",
-      icon: Settings,
-      show: true,
-    },
-  ];
+  const navLinks = isDashboard
+    ? [
+        {
+          label: "Dashboard",
+          href: "/dashboard",
+          icon: LayoutDashboard,
+          show: true,
+        },
+        {
+          label: "My Products",
+          href: "/dashboard/products",
+          icon: Package,
+          show: isSeller,
+        },
+        {
+          label: "Orders",
+          href: "/dashboard/orders",
+          icon: ShoppingBag,
+          show: true,
+        },
+        {
+          label: "Store Settings",
+          href: "/dashboard/settings/store",
+          icon: Store,
+          show: isSeller,
+        },
+        {
+          label: "Personal Info",
+          href: "/dashboard/settings/profile",
+          icon: User,
+          show: true,
+        },
+        {
+          label: "Activity Log",
+          href: "/dashboard/settings/activity",
+          icon: Activity,
+          show: true,
+        },
+        {
+          label: "Settings",
+          href: "/dashboard/settings",
+          icon: Settings,
+          show: true,
+        },
+      ]
+    : [
+        {
+          label: "My Profile",
+          href: isSeller ? "/dashboard/settings/profile" : "/account/profile",
+          icon: User,
+          show: true,
+        },
+        {
+          label: "Dashboard",
+          href: "/dashboard",
+          icon: LayoutDashboard,
+          show: isSeller || isAdmin,
+        },
+        {
+          label: "Manage Products",
+          href: "/dashboard/products",
+          icon: Package,
+          show: isSeller,
+        },
+        {
+          label: "Open Cart",
+          href: "/cart",
+          icon: ShoppingBag,
+          show: true,
+        },
+        {
+          label: "Orders",
+          href: isSeller ? "/dashboard/orders" : "/orders",
+          icon: ShoppingBag,
+          show: true,
+        },
+        { label: "Favorites", href: "/favorites", icon: Heart, show: true },
+        {
+          label: "Settings",
+          href: isSeller ? "/dashboard/settings" : "/account",
+          icon: Settings,
+          show: true,
+        },
+      ];
 
   return (
     <div className="relative">
@@ -157,7 +208,7 @@ export default function UserMenu() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsOpen(false)}
-              className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[100]"
+              className="fixed inset-0 bg-black/60 z-[100]"
             />
  
             {/* Menu Container */}
@@ -171,7 +222,7 @@ export default function UserMenu() {
                 "fixed z-[101] overflow-hidden",
                 isMobile
                   ? "inset-x-0 bottom-0 rounded-t-[2.5rem] bg-background border-t border-border shadow-2xl-up"
-                  : "w-72 mt-2 rounded-3xl bg-background border border-border/60 shadow-2xl backdrop-blur-xl",
+                  : "w-72 mt-2 rounded-3xl bg-background border border-border/60 shadow-2xl",
               )}
               style={
                 !isMobile

@@ -1,9 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import { Mail, MessageSquare, Phone, MapPin, Send, CheckCircle2, Loader2 } from "lucide-react";
-import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import { Mail, MessageSquare, Phone, MapPin, Send, CheckCircle2 } from "lucide-react";
+import Header from "@/components/layout/Header";
 import { contactApi } from "@/lib/api/contact";
+import Input from "@/components/ui/Input";
+import Textarea from "@/components/ui/Textarea";
+import Button from "@/components/ui/Button";
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
@@ -42,12 +45,12 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <DashboardHeader title="Contact" />
+      <Header />
 
       <main className="max-w-5xl mx-auto px-4 md:px-8 pt-10 md:pt-16 pb-24 grid grid-cols-1 lg:grid-cols-5 gap-10">
         <aside className="lg:col-span-2 space-y-6">
           <div className="space-y-2">
-            <p className="text-[10px] font-medium uppercase tracking-wider text-primary">Get in touch</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted">Get in touch</p>
             <h1 className="text-3xl md:text-4xl font-medium tracking-tight">We're here to help.</h1>
             <p className="text-sm text-muted leading-relaxed">
               Fill out the form and we'll respond within 24 hours, or reach us directly via
@@ -56,73 +59,67 @@ export default function ContactPage() {
           </div>
 
           <ul className="space-y-3">
-            <ContactRow icon={Mail} label="Email" value="hello@vendly.com" href="mailto:hello@vendly.com" />
-            <ContactRow icon={MessageSquare} label="WhatsApp" value="+233 24 000 0000" href="https://wa.me/233240000000" />
-            <ContactRow icon={Phone} label="Phone" value="+233 24 000 0000" href="tel:+233240000000" />
+            <ContactRow icon={Mail} label="Email" value="alikamatu14@gmail.com" href="mailto:alikamatu14@gmail.com" />
+            <ContactRow icon={MessageSquare} label="WhatsApp" value="+233 53 406 5652" href="https://wa.me/233534065652" />
+            <ContactRow icon={Phone} label="Phone" value="+233 53 406 5652" href="tel:+233534065652" />
             <ContactRow icon={MapPin} label="HQ" value="Accra, Ghana" />
           </ul>
         </aside>
 
-        <form onSubmit={submit} className="lg:col-span-3 space-y-3" noValidate>
+        <form onSubmit={submit} className="lg:col-span-3 space-y-4 rounded-3xl border border-border bg-card p-6 md:p-8 shadow-sm" noValidate>
           {submitted && (
-            <div className="flex items-center gap-2 p-3 rounded-2xl bg-emerald-500/10 text-emerald-600 text-[12px] font-normal">
-              <CheckCircle2 className="w-4 h-4" />
+            <div className="flex items-center gap-2 p-3.5 rounded-2xl bg-emerald-500/10 text-emerald-600 text-xs font-medium border border-emerald-500/20">
+              <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
               Message sent — we'll be in touch soon.
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Field
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
               label="Your name"
               value={form.name}
-              onChange={(v) => setForm((p) => ({ ...p, name: v }))}
+              onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
               error={errors.name}
               autoComplete="name"
+              placeholder="Akua Mensah"
             />
-            <Field
+            <Input
               label="Email"
               type="email"
               inputMode="email"
               value={form.email}
-              onChange={(v) => setForm((p) => ({ ...p, email: v }))}
+              onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
               error={errors.email}
               autoComplete="email"
+              placeholder="akua@example.com"
             />
           </div>
-          <Field
+          <Input
             label="Subject"
             value={form.subject}
-            onChange={(v) => setForm((p) => ({ ...p, subject: v }))}
+            onChange={(e) => setForm((p) => ({ ...p, subject: e.target.value }))}
             error={errors.subject}
+            placeholder="How can we assist you?"
           />
-          <div className="space-y-1">
-            <label className="text-[10px] font-medium uppercase tracking-wider text-muted px-1">
-              Message
-            </label>
-            <textarea
-              rows={6}
-              maxLength={2000}
-              value={form.message}
-              onChange={(e) => setForm((p) => ({ ...p, message: e.target.value }))}
-              className={`w-full rounded-2xl border bg-surface px-4 py-3 text-[13px] font-medium outline-none focus:ring-2 focus:ring-primary/30 transition-all ${
-                errors.message ? "border-red-500/50" : "border-border focus:border-primary/40"
-              }`}
-            />
-            {errors.message && <p className="text-[10px] font-normal text-red-500 px-1">{errors.message}</p>}
-          </div>
+          <Textarea
+            label="Message"
+            rows={5}
+            maxLength={2000}
+            value={form.message}
+            onChange={(e) => setForm((p) => ({ ...p, message: e.target.value }))}
+            error={errors.message}
+            placeholder="Tell us about your inquiry..."
+          />
 
-          <button
+          <Button
             type="submit"
-            disabled={isSubmitting}
-            className="inline-flex items-center gap-2 h-11 px-5 rounded-2xl bg-primary text-white text-[12px] font-medium uppercase tracking-wider hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+            isLoading={isSubmitting}
+            loadingText="Sending message…"
+            className="w-full sm:w-auto h-11 px-6 rounded-xl text-xs font-medium"
           >
-            {isSubmitting ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Send className="w-3.5 h-3.5" />
-            )}
-            {isSubmitting ? "Sending..." : "Send message"}
-          </button>
+            <Send className="w-3.5 h-3.5 mr-2" />
+            Send message
+          </Button>
         </form>
       </main>
     </div>
@@ -164,39 +161,3 @@ function ContactRow({
   );
 }
 
-function Field({
-  label,
-  value,
-  onChange,
-  error,
-  type = "text",
-  inputMode,
-  autoComplete,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  error?: string;
-  type?: string;
-  inputMode?: any;
-  autoComplete?: string;
-}) {
-  return (
-    <div className="space-y-1">
-      <label className="text-[10px] font-medium uppercase tracking-wider text-muted px-1 block">
-        {label}
-      </label>
-      <input
-        type={type}
-        inputMode={inputMode}
-        autoComplete={autoComplete}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className={`w-full h-11 rounded-2xl border bg-surface px-4 text-[13px] font-normal outline-none focus:ring-2 focus:ring-primary/30 transition-all ${
-          error ? "border-red-500/50" : "border-border focus:border-primary/40"
-        }`}
-      />
-      {error && <p className="text-[10px] font-normal text-red-500 px-1">{error}</p>}
-    </div>
-  );
-}

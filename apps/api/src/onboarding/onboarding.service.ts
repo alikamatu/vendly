@@ -25,9 +25,26 @@ export class OnboardingService {
     });
 
     if (!store) {
-      throw new NotFoundException(
-        'Store not found. Please create a store first.',
-      );
+      return {
+        store_profile_completed: false,
+        location_set: false,
+        payment_setup_completed: false,
+        onboarding_completed: false,
+        current_data: {
+          bio: null,
+          whatsapp_number: null,
+          business_hours: null,
+          delivery_policies: null,
+          location_id: null,
+          location: null,
+          area: null,
+          service_area: null,
+          avg_delivery_time: null,
+          accepted_payment_methods: [],
+          payment_timing: null,
+          payout_ready: false,
+        },
+      };
     }
 
     return {

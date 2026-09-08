@@ -13,11 +13,13 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { PaymentsModule } from '../payments/payments.module';
 import { SmsClient } from './arkesel.client';
 import { OAuthService } from './oauth.service';
+import { LoopsModule } from '../loops/loops.module';
 
 @Module({
   imports: [
     PrismaModule,
     EmailModule,
+    LoopsModule,
     CloudinaryModule,
     PassportModule,
     PaymentsModule,

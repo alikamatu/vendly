@@ -22,10 +22,6 @@ export default function ModernHero() {
           transition={{ duration: 0.8, ease: 'easeOut' }}
           className="relative overflow-hidden rounded-[2.5rem] bg-zinc-900 md:rounded-[4rem]"
         >
-          {/* Decorative Gradients */}
-          <div className="bg-primary/20 absolute right-0 top-0 -z-10 h-[500px] w-[500px] -translate-y-1/2 translate-x-1/2 blur-[120px]" />
-          <div className="absolute bottom-0 left-0 -z-10 h-[300px] w-[300px] -translate-x-1/4 translate-y-1/4 bg-blue-500/10 blur-[100px]" />
-
           <div className="relative z-10 grid grid-cols-1 items-center gap-12 bg-[url('/images/423323.jpeg')] bg-cover bg-bottom px-6 py-16 md:px-16 md:py-24 lg:grid-cols-2">
             {/* Left Side: Content */}
             <div className="space-y-8 text-center lg:text-left">
@@ -33,7 +29,7 @@ export default function ModernHero() {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.2 }}
-                className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1.5 text-[10px] font-normal uppercase tracking-wider text-black backdrop-blur-sm"
+                className="inline-flex items-center gap-2 rounded-full bg-white/90 px-3.5 py-1.5 text-[10px] font-normal uppercase tracking-wider text-black shadow-xs"
               >
                 <span className="inline-flex h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
                 Verified marketplace for modern businesses
@@ -46,7 +42,7 @@ export default function ModernHero() {
                   <span className="text-primary">not harder.</span>
                 </h1>
                 <p className="mx-auto max-w-lg text-base leading-relaxed text-black/80 md:text-lg lg:mx-0">
-                  Tired of running your business in DMs? Vendly gives young entrepreneurs and small
+                  Tired of running your business in DMs? Verndly gives young entrepreneurs and small
                   businesses a premium storefront in seconds — professional, fast, and built to
                   grow.
                 </p>
@@ -88,7 +84,7 @@ export default function ModernHero() {
                     )}
                   </div>
                   <p className="text-[11px] text-black font-normal">
-                    <span className="text-primary">1,000+</span> entrepreneurs trust Vendly
+                    <span className="text-primary">1,000+</span> entrepreneurs trust Verndly
                   </p>
                 </div>
                 <div className="flex flex-wrap justify-center lg:justify-start gap-x-5 gap-y-2 text-black/80">

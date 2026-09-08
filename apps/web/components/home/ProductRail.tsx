@@ -34,14 +34,14 @@ export default function ProductRail({ products, label }: ProductRailProps) {
         <button
           onClick={() => scroll("left")}
           aria-label="Scroll left"
-          className="p-2.5 rounded-full bg-background/95 backdrop-blur-md border border-border hover:bg-primary/10 hover:text-primary transition-all shadow-md"
+          className="p-2.5 rounded-full bg-background border border-border hover:bg-primary/10 hover:text-primary transition-all shadow-md"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
         <button
           onClick={() => scroll("right")}
           aria-label="Scroll right"
-          className="p-2.5 rounded-full bg-background/95 backdrop-blur-md border border-border hover:bg-primary/10 hover:text-primary transition-all shadow-md"
+          className="p-2.5 rounded-full bg-background border border-border hover:bg-primary/10 hover:text-primary transition-all shadow-md"
         >
           <ChevronRight className="w-4 h-4" />
         </button>

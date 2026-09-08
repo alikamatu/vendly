@@ -11,6 +11,7 @@ import {
   Clock,
   Search,
   ChevronRight,
+  ChevronDown,
   RefreshCw,
   TrendingUp,
   Sparkles,
@@ -21,8 +22,11 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import Card from "@/components/ui/Card";
+import Select from "@/components/ui/Select";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { orderApi } from "@/lib/api/order";
+import { useRealtimeOrders } from "@/hooks/useRealtimeOrders";
+import OrderStatusModal from "@/components/orders/OrderStatusModal";
 
 // ─── Status groups ────────────────────────────────────────────────────
 // Sellers don't care about every server-side status — group them into the
@@ -131,7 +135,12 @@ export default function StoreOrdersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [statusModalOrder, setStatusModalOrder] = useState<any | null>(null);
+
+  // Real-time synchronization across buyer, seller, and admin
+  useRealtimeOrders({
+    onOrderEvent: () => fetchOrders(true),
+  });
 
   // Filters
   const [searchTerm, setSearchTerm] = useState("");
@@ -167,20 +176,6 @@ export default function StoreOrdersPage() {
     const id = setInterval(() => fetchOrders(true), 30_000);
     return () => clearInterval(id);
   }, [token]);
-
-  const handleUpdateStatus = async (orderId: string, newStatus: string) => {
-    try {
-      setUpdatingId(orderId);
-      await orderApi.updateOrderStatus(token!, orderId, newStatus);
-      setOrders((prev) =>
-        prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)),
-      );
-    } catch (err: any) {
-      alert(err.message || "Failed to update status");
-    } finally {
-      setUpdatingId(null);
-    }
-  };
 
   // ─── Stats (computed from the full order list — instant) ───────────
   const stats = useMemo(() => {
@@ -369,16 +364,18 @@ export default function StoreOrdersPage() {
             Unpaid only
           </label>
           <div className="ml-auto shrink-0 flex items-center gap-1.5 text-[11px]">
-            <span className="text-muted uppercase tracking-wider">Sort</span>
-            <select
+            <span className="text-muted uppercase tracking-wider">Sort:</span>
+            <Select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
-              className="h-8 px-2.5 rounded-full border border-border bg-background text-xs focus:outline-none focus:border-red-500/40"
-            >
-              <option value="newest">Newest first</option>
-              <option value="oldest">Oldest first</option>
-              <option value="highest">Highest value</option>
-            </select>
+              onChange={(val) => setSortBy(val as any)}
+              options={[
+                { value: "newest", label: "Newest first" },
+                { value: "oldest", label: "Oldest first" },
+                { value: "highest", label: "Highest value" },
+              ]}
+              size="sm"
+              className="min-w-[130px]"
+            />
           </div>
         </div>
       </div>
@@ -399,8 +396,7 @@ export default function StoreOrdersPage() {
                 key={order.id}
                 order={order}
                 index={idx}
-                onUpdateStatus={handleUpdateStatus}
-                updating={updatingId === order.id}
+                onOpenStatusModal={() => setStatusModalOrder(order)}
               />
             ))
           ) : (
@@ -408,6 +404,50 @@ export default function StoreOrdersPage() {
           )}
         </AnimatePresence>
       </div>
+
+      {statusModalOrder && token && (
+        <OrderStatusModal
+          isOpen={!!statusModalOrder}
+          onClose={() => setStatusModalOrder(null)}
+          orderId={statusModalOrder.id}
+          orderNumber={statusModalOrder.id.slice(-8).toUpperCase()}
+          currentStatus={statusModalOrder.status}
+          currentPaymentStatus={
+            statusModalOrder.payment_info?.status ||
+            (statusModalOrder.status === "PAID" ? "PAID" : "PENDING")
+          }
+          currentPaymentMethod={
+            statusModalOrder.payment_info?.provider || "PAYSTACK"
+          }
+          currentReference={
+            statusModalOrder.payment_info?.reference || ""
+          }
+          currentProviderRef={
+            statusModalOrder.payment_info?.provider_ref
+          }
+          token={token}
+          onStatusUpdated={(newStatus) => {
+            setOrders((prev) =>
+              prev.map((o) =>
+                o.id === statusModalOrder.id ? { ...o, status: newStatus } : o,
+              ),
+            );
+          }}
+          onPaymentUpdated={(paymentInfo, newOrderStatus) => {
+            setOrders((prev) =>
+              prev.map((o) =>
+                o.id === statusModalOrder.id
+                  ? {
+                      ...o,
+                      ...(newOrderStatus ? { status: newOrderStatus } : {}),
+                      payment_info: paymentInfo,
+                    }
+                  : o,
+              ),
+            );
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -429,10 +469,10 @@ function StatTile({
 }) {
   return (
     <div
-      className={`p-3 sm:p-4 rounded-2xl border ${
+      className={`p-3 sm:p-4 rounded-2xl border-0 shadow-none ${
         accent
-          ? "border-red-500/30 bg-red-500/5"
-          : "border-border bg-surface/50"
+          ? "bg-red-500/10 text-red-500"
+          : "bg-surface/40"
       }`}
     >
       <div className="flex items-center gap-1.5">
@@ -486,10 +526,10 @@ function Chip({
   return (
     <button
       onClick={onClick}
-      className={`shrink-0 inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-medium border transition active:scale-95 ${
+      className={`shrink-0 inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-medium border-0 transition active:scale-95 shadow-none ${
         active
-          ? "bg-red-500 text-white border-red-500"
-          : "bg-background border-border hover:border-foreground/30 text-foreground/80"
+          ? "bg-red-500 text-white"
+          : "bg-surface/60 hover:bg-surface/90 text-foreground/80"
       }`}
     >
       {children}
@@ -508,7 +548,7 @@ function Chip({
 
 function EmptyState({ query }: { query: string }) {
   return (
-    <div className="py-16 sm:py-24 text-center space-y-3 border border-dashed border-border rounded-3xl">
+    <div className="py-16 sm:py-24 text-center space-y-3 bg-surface/20 rounded-3xl border-0 shadow-none">
       <div className="mx-auto w-12 h-12 rounded-full bg-surface flex items-center justify-center">
         <ShoppingBag className="w-5 h-5 text-muted" />
       </div>
@@ -529,13 +569,11 @@ function EmptyState({ query }: { query: string }) {
 function OrderRow({
   order,
   index,
-  updating,
-  onUpdateStatus,
+  onOpenStatusModal,
 }: {
   order: any;
   index: number;
-  updating: boolean;
-  onUpdateStatus: (id: string, newStatus: string) => void;
+  onOpenStatusModal: () => void;
 }) {
   const total = orderTotal(order);
   const items = order.items || [];
@@ -557,8 +595,8 @@ function OrderRow({
       transition={{ delay: Math.min(index * 0.02, 0.2), duration: 0.2 }}
     >
       <Card
-        className={`p-3 sm:p-4 rounded-2xl border transition hover:bg-surface/40 ${
-          isNew ? "border-red-500/30" : "border-border"
+        className={`p-4 rounded-2xl border-0 shadow-none transition-colors hover:bg-surface/60 ${
+          isNew ? "bg-surface/60" : "bg-surface/40"
         }`}
         hoverEffect={false}
       >
@@ -572,7 +610,7 @@ function OrderRow({
             {firstThree.map((it: any, i: number) => (
               <div
                 key={i}
-                className="h-12 w-12 rounded-xl overflow-hidden border border-border/50 bg-surface"
+                className="h-12 w-12 rounded-xl overflow-hidden bg-surface border-0"
               >
                 {it.product?.image_urls?.[0] ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -589,7 +627,7 @@ function OrderRow({
               </div>
             ))}
             {extra > 0 && (
-              <div className="h-12 w-12 rounded-xl border border-dashed border-border bg-surface text-[11px] font-medium text-muted flex items-center justify-center">
+              <div className="h-12 w-12 rounded-xl bg-surface text-[11px] font-medium text-muted flex items-center justify-center border-0">
                 +{extra}
               </div>
             )}
@@ -651,27 +689,28 @@ function OrderRow({
               <p className="text-lg font-semibold text-red-500 tabular-nums leading-tight">
                 GH₵{total.toLocaleString()}
               </p>
+              <p className="text-[9px] text-muted leading-none mt-0.5">
+                Net 96%: GH₵{(total * 0.96).toFixed(0)}
+              </p>
             </div>
             <div className="flex items-center gap-1.5">
-              <select
-                value={order.status}
-                disabled={updating}
-                onChange={(e) => onUpdateStatus(order.id, e.target.value)}
-                className="h-8 px-2 rounded-lg border border-border bg-background text-[11px] focus:outline-none focus:border-red-500/40"
-                onClick={(e) => e.stopPropagation()}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onOpenStatusModal();
+                }}
+                className="h-8 px-2.5 rounded-lg bg-surface hover:bg-surface/80 text-[11px] font-medium text-foreground flex items-center gap-1.5 transition border-0 shadow-none"
               >
-                {STATUS_OPTIONS.map((s) => (
-                  <option key={s} value={s}>
-                    {s.replace(/_/g, " ").toLowerCase()}
-                  </option>
-                ))}
-              </select>
-              {updating && (
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-red-500" />
-              )}
+                <span className="capitalize">
+                  {order.status?.replace(/_/g, " ").toLowerCase()}
+                </span>
+                <ChevronDown className="w-3 h-3 text-muted-foreground" />
+              </button>
               <Link
                 href={`/dashboard/orders/${order.id}`}
-                className="h-8 w-8 hidden sm:inline-flex items-center justify-center rounded-lg border border-border hover:bg-surface transition"
+                className="h-8 w-8 hidden sm:inline-flex items-center justify-center rounded-lg bg-surface hover:bg-surface/80 transition border-0 shadow-none"
                 aria-label="Open"
               >
                 <ChevronRight className="w-3.5 h-3.5" />

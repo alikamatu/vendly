@@ -43,7 +43,7 @@ export default function MobileFilterDrawer({
             exit: { opacity: 0 },
             onClick: onClose,
             className:
-              "fixed inset-0 z-[70] flex items-end bg-black/45 backdrop-blur-sm lg:hidden",
+              "fixed inset-0 z-[70] flex items-end bg-black/60 lg:hidden",
           } as HTMLMotionProps<"div">)}
         >
           <motion.div

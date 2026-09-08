@@ -63,6 +63,27 @@ export const orderApi = {
     return handleResponse<any>(response);
   },
 
+  async updateOrderPaymentStatus(
+    token: string,
+    orderId: string,
+    data: {
+      payment_status: 'PAID' | 'PENDING' | 'FAILED';
+      payment_method: 'PAYSTACK' | 'CASH' | 'CASH_ON_DELIVERY';
+      reference?: string;
+    },
+  ) {
+    const response = await fetch(`${API_URL}/orders/${orderId}/payment-status`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+
+    return handleResponse<any>(response);
+  },
+
   async getOrderDetails(token: string, orderId: string) {
     const response = await fetch(`${API_URL}/orders/${orderId}`, {
       headers: {
@@ -102,7 +123,7 @@ export const orderApi = {
       },
     });
 
-    return handleResponse<{ authorization_url: string; reference: string }>(response);
+    return handleResponse<{ authorization_url: string; reference: string; access_code?: string }>(response);
   },
 
   async cancelOrder(token: string, orderId: string, reason?: string) {
@@ -147,7 +168,11 @@ export const orderApi = {
   async updateReturnRequestStatus(
     token: string,
     orderId: string,
-    data: { status: 'APPROVED' | 'REJECTED'; sellerResponse?: string },
+    data: {
+      status: 'APPROVED' | 'REJECTED' | 'REFUNDED';
+      sellerResponse?: string;
+      refundNow?: boolean;
+    },
   ) {
     const response = await fetch(`${API_URL}/orders/${orderId}/return/status`, {
       method: "POST",
@@ -160,4 +185,42 @@ export const orderApi = {
 
     return handleResponse<any>(response);
   },
+
+  async escalateReturnRequest(
+    token: string,
+    orderId: string,
+    reason: string,
+  ) {
+    const response = await fetch(`${API_URL}/orders/${orderId}/return/escalate`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ reason }),
+    });
+
+    return handleResponse<any>(response);
+  },
+
+  async confirmReturnReceivedAndRefund(
+    token: string,
+    orderId: string,
+    note?: string,
+  ) {
+    const response = await fetch(
+      `${API_URL}/orders/${orderId}/return/confirm-refund`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ note }),
+      },
+    );
+
+    return handleResponse<any>(response);
+  },
 };
+

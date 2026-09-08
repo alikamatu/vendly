@@ -99,7 +99,7 @@ export default function PrimaryNav() {
     <>
       <div
         ref={navRef}
-        className="sticky top-20 z-30 border-b border-border bg-background/95 backdrop-blur-xl"
+        className="sticky top-20 z-30 border-b border-border bg-background"
       >
         <div className="max-w-7xl mx-auto px-4 md:px-8 h-12 md:h-14 flex items-center gap-2 md:gap-4">
           {/* Mobile menu trigger */}
@@ -148,8 +148,8 @@ export default function PrimaryNav() {
               name="q"
               type="search"
               inputMode="search"
-              placeholder="Search Vendly…"
-              className="h-9 w-full pl-9 pr-3 rounded-xl bg-surface border border-border text-[12px] font-normal outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-all"
+              placeholder="Search Verndly…"
+              className="h-9 w-full pl-9 pr-3 rounded-xl bg-surface border border-border text-[12px] font-normal text-foreground placeholder:text-muted outline-none focus:ring-2 focus:ring-secondary/30 focus:border-secondary/50 transition-all"
             />
           </form>
         </div>
@@ -356,7 +356,7 @@ function MobileDrawer({
             initial: { opacity: 0 },
             animate: { opacity: 1 },
             exit: { opacity: 0 },
-            className: "fixed inset-0 z-[70] bg-black/50 backdrop-blur-sm lg:hidden",
+            className: "fixed inset-0 z-[70] bg-black/60 lg:hidden",
             onClick: onClose,
           } as HTMLMotionProps<"div">)}
         >
@@ -374,11 +374,9 @@ function MobileDrawer({
             } as HTMLMotionProps<"div">)}
           >
             <header className="h-16 px-5 flex items-center justify-between border-b border-border">
-              <Link href="/" onClick={onClose} className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-primary rounded-lg overflow-hidden">
-                  <img src="/logos/vendly.png" alt="" className="w-full h-full" />
-                </div>
-                <span className="text-base font-medium uppercase">Vendly</span>
+              <Link href="/" onClick={onClose} className="flex items-center gap-2.5 group">
+                <img src="/logos/verndly.png" alt="Verndly" className="w-8 h-8 object-contain" />
+                <span className="text-base font-medium uppercase tracking-tight text-foreground">Verndly</span>
               </Link>
               <button
                 onClick={onClose}
@@ -416,7 +414,7 @@ function MobileDrawer({
                   ))}
                   <div className="my-3 border-t border-border" />
                   <DrawerRow icon={ShoppingBag} label="My orders" href="/orders" onClick={onClose} />
-                  <DrawerRow icon={TrendingUp} label="Sell on Vendly" href="/seller-verification" onClick={onClose} />
+                  <DrawerRow icon={TrendingUp} label="Sell on Verndly" href="/seller-verification" onClick={onClose} />
                   <DrawerRow icon={HelpCircle} label="Help & support" href="/help" onClick={onClose} />
                 </ul>
               )}

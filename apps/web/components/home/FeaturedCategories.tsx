@@ -109,7 +109,7 @@ function FeaturedCard({
         role="img"
         aria-label={item.category.name}
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent" />
+      <div className="absolute inset-0 bg-black/60" />
       <div
         className={`absolute inset-0 bg-[var(--color-accent)]/20 transition-opacity duration-300 ${
           active ? "opacity-30" : "opacity-0 group-hover:opacity-100"
@@ -118,7 +118,7 @@ function FeaturedCard({
 
       {/* Rank badge */}
       <div className="absolute top-3 left-3 md:top-4 md:left-4 z-10">
-        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[9px] font-medium uppercase tracking-wider bg-white/15 backdrop-blur-md text-white border border-white/20">
+        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[9px] font-medium uppercase tracking-wider bg-black/60 text-white border border-white/20">
           {item.count} {item.count === 1 ? "Item" : "Items"}
         </span>
       </div>

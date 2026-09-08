@@ -65,10 +65,10 @@ export default function BrandShowcase({ products, brands, onBrandSelect }: Brand
       <div className="space-y-2">
         <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-primary font-medium">
           <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-          Vendly Collections
+          Verndly Collections
         </div>
         <h2 className="text-2xl md:text-4xl uppercase tracking-tight font-medium text-foreground">
-          Top Vendly Brands
+          Top Verndly Brands
         </h2>
         <p className="text-xs text-muted max-w-md">
           Explore highly rated brands chosen by independent sellers, categorized dynamically.
@@ -96,7 +96,7 @@ export default function BrandShowcase({ products, brands, onBrandSelect }: Brand
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center text-xs font-medium uppercase text-primary italic">
+                    <div className="w-full h-full bg-primary/10 flex items-center justify-center text-xs font-medium uppercase text-primary italic">
                       {brand.name.slice(0, 2)}
                     </div>
                   )}
@@ -129,14 +129,14 @@ export default function BrandShowcase({ products, brands, onBrandSelect }: Brand
             <div className="absolute right-0 top-1/2 -translate-y-1/2 z-10 hidden lg:flex gap-2 opacity-0 group-hover/section:opacity-100 transition-opacity duration-300">
               <button
                 onClick={() => handleScroll(brand.name, "left")}
-                className="p-3.5 rounded-2xl bg-background/90 backdrop-blur-md border border-border/80 hover:bg-primary/10 hover:text-primary transition-all shadow-xl hover:-translate-x-0.5"
+                className="p-3.5 rounded-2xl bg-background border border-border/80 hover:bg-primary/10 hover:text-primary transition-all shadow-xl hover:-translate-x-0.5"
                 title="Scroll Left"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <button
                 onClick={() => handleScroll(brand.name, "right")}
-                className="p-3.5 rounded-2xl bg-background/90 backdrop-blur-md border border-border/80 hover:bg-primary/10 hover:text-primary transition-all shadow-xl hover:translate-x-0.5"
+                className="p-3.5 rounded-2xl bg-background border border-border/80 hover:bg-primary/10 hover:text-primary transition-all shadow-xl hover:translate-x-0.5"
                 title="Scroll Right"
               >
                 <ChevronRight className="w-4 h-4" />

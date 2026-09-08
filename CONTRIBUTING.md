@@ -1,6 +1,6 @@
-# Contributing to Vendly
+# Contributing to Verndly
 
-First off, thank you for considering contributing to Vendly! It's people like you that make Vendly a great tool for entrepreneurs.
+First off, thank you for considering contributing to Verndly! It's people like you that make Verndly a great tool for entrepreneurs.
 
 ## 🤝 Code of Conduct
 
@@ -9,7 +9,7 @@ By participating in this project, you agree to abide by our code of conduct. Ple
 ## 🛠 Development Workflow
 
 ### Monorepo Tooling
-Vendly uses **pnpm workspaces** and **Turborepo** to manage multiple applications and shared packages. 
+Verndly uses **pnpm workspaces** and **Turborepo** to manage multiple applications and shared packages. 
 - Always use `pnpm` instead of `npm` or `yarn`.
 - Run commands from the root directory when possible using Turborepo or pnpm filters.
 

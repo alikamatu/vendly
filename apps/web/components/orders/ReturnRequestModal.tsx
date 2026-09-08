@@ -77,7 +77,7 @@ export default function ReturnRequestModal({
             </h3>
             <p className="text-xs text-muted font-normal leading-relaxed max-w-xs mx-auto">
               The seller has been notified and has 48 hours to respond. You can
-              escalate to Vendly support if unresolved.
+              escalate to Verndly support if unresolved.
             </p>
           </div>
           <Button

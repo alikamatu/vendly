@@ -41,4 +41,11 @@ export class ContactController {
     const result = await this.contactService.subscribeNewsletter(body.email);
     return { success: true, ...result };
   }
+
+  @Post('newsletter/unsubscribe')
+  @HttpCode(HttpStatus.OK)
+  async unsubscribeNewsletter(@Body() body: NewsletterDto) {
+    const result = await this.contactService.unsubscribeNewsletter(body.email);
+    return { success: true, ...result };
+  }
 }

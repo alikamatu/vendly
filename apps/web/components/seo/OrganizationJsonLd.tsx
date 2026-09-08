@@ -15,7 +15,7 @@ export default function OrganizationJsonLd() {
           "@type": "Organization",
           name: SITE_NAME,
           url: SITE_URL,
-          logo: `${SITE_URL}/logos/vendly.png`,
+          logo: `${SITE_URL}/logos/verndly.png`,
           description: SITE_DESCRIPTION,
           sameAs: [],
         },

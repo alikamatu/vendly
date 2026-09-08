@@ -16,15 +16,16 @@ import {
   Play,
   Ruler,
 } from 'lucide-react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { productApi } from '@/lib/api/product';
 import Button from '@/components/ui/Button';
 import { useCart } from '@/lib/contexts/cart-context';
+import { useFavorites } from '@/lib/contexts/favorite-context';
 import PriceBlock from '@/components/product-detail/PriceBlock';
 import SellerCard from '@/components/product-detail/SellerCard';
 import RelatedProducts from '@/components/product-detail/RelatedProducts';
 import RecentlyViewed from '@/components/home/RecentlyViewed';
-import DashboardHeader from '@/components/dashboard/DashboardHeader';
+import Header from '@/components/layout/Header';
 import { RatingStars } from '@/components/reviews/rating-stars';
 import { ProductReviewsSection } from '@/components/reviews/product-reviews-section';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
@@ -32,13 +33,18 @@ import VariantPicker, {
   matchVariant,
   type ProductVariant as Variant,
 } from '@/components/product-detail/VariantPicker';
+import QuickCheckoutModal from '@/components/product-detail/QuickCheckoutModal';
+import ShareProductModal from '@/components/product-detail/ShareProductModal';
+import { toast } from 'sonner';
 
 type MediaItem = { type: 'image'; url: string } | { type: 'video'; url: string };
 
 export default function ProductDetailsPage() {
   const router = useRouter();
   const { id } = useParams();
+  const searchParams = useSearchParams();
   const { addItem } = useCart();
+  const { toggleFavorite, isFavorited } = useFavorites();
   const [product, setProduct] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
@@ -47,6 +53,8 @@ export default function ProductDetailsPage() {
   const [selectedVariantAttrs, setSelectedVariantAttrs] = useState<
     Record<string, string>
   >({});
+  const [isQuickCheckoutOpen, setIsQuickCheckoutOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -169,27 +177,78 @@ export default function ProductDetailsPage() {
     setTimeout(() => setAddedFeedback(false), 2000);
   };
 
+  // Auto-open Quick Checkout if returning from auth redirect (?buyNow=1)
+  useEffect(() => {
+    if (searchParams.get('buyNow') === '1' && product) {
+      setIsQuickCheckoutOpen(true);
+    }
+  }, [searchParams, product]);
+
   const handleBuyNow = () => {
     if (!product?.seller) return;
-    handleAddToCart();
-    // Jump straight to checkout for this store
-    router.push(`/cart/checkout?store=${encodeURIComponent(product.seller.store_link)}`);
+    if (hasVariants && !matchedVariant) {
+      toast.error('Please select all product options first.');
+      return;
+    }
+    setIsQuickCheckoutOpen(true);
+  };
+
+  const handleToggleFavorite = () => {
+    if (!product?.id) return;
+    toggleFavorite(String(product.id));
+    toast.success(
+      isFavorited(String(product.id))
+        ? 'Removed from favorites'
+        : 'Saved to favorites'
+    );
   };
 
   const handleShare = async () => {
     if (typeof window === 'undefined') return;
     const url = window.location.href;
-    if ((navigator as any).share) {
+    const imageUrl = product?.image_urls?.[0];
+    const title = product?.title ?? 'Verndly product';
+    const text = `Check out ${title} on Verndly! GH₵${product?.price}`;
+
+    if (typeof navigator !== 'undefined' && (navigator as any).share) {
+      if (imageUrl && (navigator as any).canShare) {
+        try {
+          const res = await fetch(imageUrl);
+          if (res.ok) {
+            const blob = await res.blob();
+            const mimeType = blob.type || 'image/jpeg';
+            const ext = mimeType.split('/')[1] || 'jpg';
+            const file = new File(
+              [blob],
+              `${title.replace(/[^a-zA-Z0-9]/g, '_')}.${ext}`,
+              { type: mimeType }
+            );
+            if ((navigator as any).canShare({ files: [file] })) {
+              await (navigator as any).share({
+                title,
+                text,
+                url,
+                files: [file],
+              });
+              toast.success('Shared successfully!');
+              return;
+            }
+          }
+        } catch {
+          // Fall through to standard share
+        }
+      }
+
       try {
-        await (navigator as any).share({ title: product?.title ?? 'Vendly product', url });
+        await (navigator as any).share({ title, text, url });
+        toast.success('Shared successfully!');
         return;
-      } catch {
-        // fall through
+      } catch (err: any) {
+        if (err.name === 'AbortError') return;
       }
     }
-    try {
-      await navigator.clipboard.writeText(url);
-    } catch {}
+
+    setIsShareModalOpen(true);
   };
 
   const togglePlay = () => {
@@ -230,7 +289,7 @@ export default function ProductDetailsPage() {
       className="bg-background min-h-screen pb-20"
     >
       {/* Unified Navigation Header */}
-      <DashboardHeader title={product.title ?? 'Product'} />
+      <Header />
 
       {/* Mobile back + share + favorite strip — subtle, sits under the header */}
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-4 pt-4 md:px-8">
@@ -246,15 +305,22 @@ export default function ProductDetailsPage() {
           <button
             onClick={handleShare}
             aria-label="Share product"
-            className="bg-surface hover:bg-border/20 rounded-xl p-2.5 transition-colors"
+            className="bg-surface hover:bg-border/20 rounded-xl p-2.5 transition-colors border-0 shadow-none"
           >
             <Share2 className="h-4 w-4" />
           </button>
           <button
-            aria-label="Add to favorites"
-            className="bg-surface hover:bg-border/20 rounded-xl p-2.5 text-red-500 transition-colors"
+            onClick={handleToggleFavorite}
+            aria-label={isFavorited(String(product?.id)) ? 'Remove from favorites' : 'Add to favorites'}
+            className="bg-surface hover:bg-border/20 rounded-xl p-2.5 transition-colors border-0 shadow-none"
           >
-            <Heart className="h-4 w-4" />
+            <Heart
+              className={`h-4 w-4 transition-colors ${
+                isFavorited(String(product?.id))
+                  ? 'fill-red-500 text-red-500'
+                  : 'text-foreground'
+              }`}
+            />
           </button>
         </div>
       </div>
@@ -293,8 +359,7 @@ export default function ProductDetailsPage() {
                        fetch priority so the browser dispatches it before
                        any below-the-fold work. */
                     loading={currentMediaIndex === 0 ? 'eager' : 'lazy'}
-                    // @ts-ignore — fetchpriority is a valid DOM attr; React types lag.
-                    fetchpriority={currentMediaIndex === 0 ? 'high' : undefined}
+                    fetchPriority={currentMediaIndex === 0 ? 'high' : undefined}
                     decoding="async"
                     className="h-full w-full object-cover"
                   />
@@ -573,6 +638,26 @@ export default function ProductDetailsPage() {
       <div className="mx-auto max-w-7xl px-4 pb-24 md:px-8">
         <RelatedProducts category={product.category} excludeId={String(product.id)} />
       </div>
+
+      {/* Quick Checkout Modal (Mobile-first, Borderless, Shadowless, No blur) */}
+      {product && (
+        <QuickCheckoutModal
+          isOpen={isQuickCheckoutOpen}
+          onClose={() => setIsQuickCheckoutOpen(false)}
+          product={product}
+          selectedVariant={matchedVariant}
+          selectedVariantAttrs={selectedVariantAttrs}
+        />
+      )}
+
+      {/* Share Product Modal (With Product Image, Mobile-first, Borderless, Shadowless, No blur) */}
+      {product && (
+        <ShareProductModal
+          isOpen={isShareModalOpen}
+          onClose={() => setIsShareModalOpen(false)}
+          product={product}
+        />
+      )}
     </motion.div>
   );
 }

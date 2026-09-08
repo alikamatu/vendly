@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { ChevronDown, RefreshCcw, Loader2 } from "lucide-react";
+import { ChevronDown, RefreshCcw } from "lucide-react";
+import Spinner from "@/components/ui/Spinner";
+import Select from "@/components/ui/Select";
 import type { ProductsBrowserState } from "@/hooks/useProductsBrowser";
 import {
   SERVICE_AREA_LABEL,
@@ -50,34 +52,28 @@ export default function FiltersPanel({
       </Group>
 
       <Group title="Category">
-        <select
+        <Select
           value={state.category ?? ""}
-          onChange={(e) => state.setCategory(e.target.value || null)}
-          className={fieldClass}
-        >
-          <option value="">All categories</option>
-          {categories.map((c) => (
-            <option key={c.id ?? c.name} value={c.name}>
-              {c.name}
-            </option>
-          ))}
-        </select>
+          onChange={(val) => state.setCategory(val || null)}
+          options={[
+            { value: "", label: "All categories" },
+            ...categories.map((c) => ({ value: c.name, label: c.name })),
+          ]}
+          size="sm"
+        />
       </Group>
 
       {brands.length > 0 && (
         <Group title="Brand">
-          <select
+          <Select
             value={state.brand ?? ""}
-            onChange={(e) => state.setBrand(e.target.value || null)}
-            className={fieldClass}
-          >
-            <option value="">All brands</option>
-            {brands.map((b) => (
-              <option key={b} value={b}>
-                {b}
-              </option>
-            ))}
-          </select>
+            onChange={(val) => state.setBrand(val || null)}
+            options={[
+              { value: "", label: "All brands" },
+              ...brands.map((b) => ({ value: b, label: b })),
+            ]}
+            size="sm"
+          />
         </Group>
       )}
 
@@ -168,46 +164,28 @@ function LocationFilter({ state }: { state: ProductsBrowserState }) {
 
   return (
     <div className="space-y-2">
-      <div className="relative">
-        {loadingRegions && (
-          <Loader2 className="w-3.5 h-3.5 animate-spin absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-muted)] pointer-events-none" />
-        )}
-        <select
-          value={state.region ?? ""}
-          onChange={(e) => state.setRegion(e.target.value || null)}
-          className={fieldClass}
-          disabled={loadingRegions}
-          aria-label="Region"
-        >
-          <option value="">Any region</option>
-          {regions.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="relative">
-        {loadingCities && (
-          <Loader2 className="w-3.5 h-3.5 animate-spin absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-muted)] pointer-events-none" />
-        )}
-        <select
-          value={state.cityId ?? ""}
-          onChange={(e) => state.setCityId(e.target.value || null)}
-          className={fieldClass}
-          disabled={!state.region || loadingCities}
-          aria-label="City"
-        >
-          <option value="">
-            {state.region ? "Any city" : "Pick a region first"}
-          </option>
-          {cities.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.city}
-            </option>
-          ))}
-        </select>
-      </div>
+      <Select
+        value={state.region ?? ""}
+        onChange={(val) => state.setRegion(val || null)}
+        options={[
+          { value: "", label: "Any region" },
+          ...regions.map((r) => ({ value: r, label: r })),
+        ]}
+        disabled={loadingRegions}
+        placeholder="Any region"
+        size="sm"
+      />
+      <Select
+        value={state.cityId ?? ""}
+        onChange={(val) => state.setCityId(val || null)}
+        options={[
+          { value: "", label: state.region ? "Any city" : "Pick a region first" },
+          ...cities.map((c) => ({ value: c.id, label: c.city })),
+        ]}
+        disabled={!state.region || loadingCities}
+        placeholder={state.region ? "Any city" : "Pick a region first"}
+        size="sm"
+      />
     </div>
   );
 }
@@ -244,27 +222,24 @@ function DeliveryFilter({ state }: { state: ProductsBrowserState }) {
         <p className="text-[10px] font-normal text-[var(--color-muted)] uppercase tracking-wider px-0.5">
           Average delivery
         </p>
-        <select
+        <Select
           value={state.deliveryTime ?? ""}
-          onChange={(e) => state.setDeliveryTime((e.target.value || null) as DeliveryTimeFilter | null)}
-          className={fieldClass}
-          aria-label="Average delivery time"
-        >
-          <option value="">Any delivery time</option>
-          {(
-            [
+          onChange={(val) => state.setDeliveryTime((val || null) as DeliveryTimeFilter | null)}
+          options={[
+            { value: "", label: "Any delivery time" },
+            ...([
               "SAME_DAY",
               "NEXT_DAY",
               "TWO_TO_THREE_DAYS",
               "FOUR_TO_SEVEN_DAYS",
               "MORE_THAN_ONE_WEEK",
-            ] as DeliveryTimeFilter[]
-          ).map((d) => (
-            <option key={d} value={d}>
-              {DELIVERY_TIME_LABEL[d]}
-            </option>
-          ))}
-        </select>
+            ] as DeliveryTimeFilter[]).map((d) => ({
+              value: d,
+              label: DELIVERY_TIME_LABEL[d],
+            })),
+          ]}
+          size="sm"
+        />
       </div>
     </div>
   );

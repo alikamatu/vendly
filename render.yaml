@@ -1,4 +1,4 @@
-# Render blueprint for the Vendly NestJS API.
+# Render blueprint for the Verndly NestJS API.
 # https://render.com/docs/blueprint-spec
 #
 # Render's default Node detection runs `npm install` at the repo root, which
@@ -57,7 +57,7 @@ services:
       - key: ARKESEL_API_KEY
         sync: false
       - key: ARKESEL_SENDER_ID
-        value: Vendly
+        value: Verndly
       - key: ARKESEL_SANDBOX
         value: "false"
       # Where seller-verification submissions notify (email + SMS).

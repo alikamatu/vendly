@@ -38,7 +38,7 @@ export default function SellerCard({ seller }: SellerCardProps) {
     <Card
       className={`p-5 border rounded-[2rem] ${
         seller.is_pro
-          ? "border-[var(--color-accent,#fb923c)]/40 bg-gradient-to-br from-[var(--color-accent,#fb923c)]/8 via-surface/40 to-surface/40"
+          ? "border-[var(--color-accent,#fb923c)]/40 bg-[var(--color-accent,#fb923c)]/5"
           : "border-border/30 bg-surface/50"
       }`}
       hoverEffect={false}

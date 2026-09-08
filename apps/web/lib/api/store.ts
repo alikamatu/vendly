@@ -18,6 +18,8 @@ export interface CreateStoreInput {
   bio?: string;
   whatsapp_number?: string;
   logo_url?: string;
+  business_hours?: string;
+  delivery_policies?: string;
 }
 
 export const storeApi = {
@@ -27,6 +29,8 @@ export const storeApi = {
     formData.append('store_link', data.store_link);
     if (data.bio) formData.append('bio', data.bio);
     if (data.whatsapp_number) formData.append('whatsapp_number', data.whatsapp_number);
+    if (data.business_hours) formData.append('business_hours', data.business_hours);
+    if (data.delivery_policies) formData.append('delivery_policies', data.delivery_policies);
     if (logoFile) formData.append('logo', logoFile);
 
     const res = await fetch(`${API_URL}/stores`, {
@@ -70,7 +74,7 @@ export const storeApi = {
         'Content-Type': 'application/json',
       },
     });
-    return handleResponse<{ stats: any[]; recentOrders: any[] }>(res);
+    return handleResponse<{ stats: any[]; recentOrders: any[]; financials?: any }>(res);
   },
 
   async getStoreBySlug(slug: string) {

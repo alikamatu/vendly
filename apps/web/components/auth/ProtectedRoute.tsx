@@ -97,7 +97,7 @@ function AccessDenied() {
           </h1>
           <p className="text-sm text-[var(--color-muted)] leading-relaxed">
             This area is for verified sellers and administrators. Open a store on
-            Vendly to unlock the seller dashboard.
+            Verndly to unlock the seller dashboard.
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">

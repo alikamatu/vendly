@@ -20,6 +20,7 @@ import { parseGhanaPhone } from './phone.util';
 import { EmailService } from '../email/email.service';
 import { CloudinaryService } from '../common/cloudinary.service';
 import { RegisterDto } from './dto/register.dto';
+import { LoopsService } from '../loops/loops.service';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
@@ -45,6 +46,7 @@ export class AuthService {
     // Field kept named `twilio` for diff minimalism, but it's now Arkesel.
     // Rename if you do a sweep — every call site uses `this.twilio.sendSms`.
     private twilio: SmsClient,
+    private loopsService: LoopsService,
     @Inject(CACHE_MANAGER) private readonly cache: Cache,
   ) {}
 
@@ -156,6 +158,72 @@ export class AuthService {
       .catch((err) => {
         console.error('Failed to send verification email', err);
       });
+
+    // Handle Loops contact sync and newsletter subscription choice
+    const [firstName, ...restNames] = (dto.full_name || '').trim().split(' ');
+    const lastName = restNames.join(' ');
+    const isSeller = dto.account_type === 'SELLER';
+
+    if (dto.marketing_opt_in) {
+      // 1. Record subscription in local DB
+      this.prisma.newsletterSubscriber
+        .upsert({
+          where: { email: user.email },
+          create: { email: user.email, is_active: true },
+          update: { is_active: true },
+        })
+        .catch((err) => {
+          console.error('[Newsletter] Failed to record subscriber in DB:', err);
+        });
+
+      // 2. Sync opted-in contact to Loops with subscribed: true
+      this.loopsService
+        .createOrUpdateContact({
+          email: user.email,
+          firstName,
+          lastName,
+          userId: user.id,
+          phone: phoneResult.e164,
+          userGroup: isSeller ? 'Seller' : 'Buyer',
+          source: 'Auth Registration',
+          subscribed: true,
+        })
+        .then(() => {
+          // 3. Fire custom event for automated Loops welcome/nurture sequence
+          return this.loopsService.sendEvent(user.email, 'signup_completed', {
+            accountType: dto.account_type,
+            storeName: dto.school || undefined,
+            marketingOptIn: true,
+          });
+        })
+        .catch((err) => {
+          console.error('[Loops] Failed to sync contact:', err);
+        });
+    } else {
+      // Register with subscribed: false so transactional and product analytics
+      // exist in Loops without receiving marketing newsletters
+      this.loopsService
+        .createOrUpdateContact({
+          email: user.email,
+          firstName,
+          lastName,
+          userId: user.id,
+          phone: phoneResult.e164,
+          userGroup: isSeller ? 'Seller' : 'Buyer',
+          source: 'Auth Registration',
+          subscribed: false,
+        })
+        .then(() => {
+          return this.loopsService.sendEvent(user.email, 'signup_completed', {
+            accountType: dto.account_type,
+            storeName: dto.school || undefined,
+            marketingOptIn: false,
+          });
+        })
+        .catch((err) => {
+          console.error('[Loops] Failed to sync non-marketing contact:', err);
+        });
+    }
 
     return {
       message:
@@ -537,7 +605,7 @@ export class AuthService {
       this.twilio
         .sendSms(
           adminPhone,
-          `Vendly: new seller verification from ${user.full_name} (${user.email}) via ${dto.type}. Review in dashboard.`,
+          `Verndly: new seller verification from ${user.full_name} (${user.email}) via ${dto.type}. Review in dashboard.`,
         )
         .catch((err) =>
           console.error('Failed to send admin verification SMS', err),
@@ -833,7 +901,7 @@ export class AuthService {
         where: { id: userId },
         data: {
           full_name: 'Deleted User',
-          email: `deleted_${userId}@vendly.com`,
+          email: `deleted_${userId}@verndly.com`,
           password_hash: '',
           school: 'Unknown',
           is_suspended: true,
@@ -887,7 +955,7 @@ export class AuthService {
       where: { id: userId },
       data: { totp_secret: secret },
     });
-    const issuer = this.configService.get<string>('APP_NAME') || 'Vendly';
+    const issuer = this.configService.get<string>('APP_NAME') || 'Verndly';
     return {
       secret, // shown once; user can also paste manually if QR fails
       otpauth_url: buildOtpAuthUrl({
@@ -1125,7 +1193,7 @@ export class AuthService {
 
     const send = await this.twilio.sendSms(
       phone,
-      `Your Vendly verification code is ${code}. It expires in 5 minutes.`,
+      `Your Verndly verification code is ${code}. It expires in 5 minutes.`,
     );
 
     return {
@@ -1213,7 +1281,7 @@ export class AuthService {
     });
     await this.twilio.sendSms(
       user.phone_e164,
-      `Your Vendly login code is ${code}. It expires in 5 minutes.`,
+      `Your Verndly login code is ${code}. It expires in 5 minutes.`,
     );
     return { sent: true, phone_hint: maskPhone(user.phone_e164) };
   }

@@ -1,167 +1,160 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Menu,
+  Search,
+  ExternalLink,
+  Sun,
+  Moon,
+  ChevronRight,
+  Store,
+} from 'lucide-react';
 import { useTheme } from '@/lib/contexts/theme';
 import { useAuth } from '@/lib/contexts/auth-context';
-import { useCart } from '@/lib/contexts/cart-context';
-import { Moon, Sun, LayoutDashboard, ShoppingBag, Heart, Search } from 'lucide-react';
-import GlobalSearch from '../layout/GlobalSearch';
-import { motion, AnimatePresence } from 'framer-motion';
-import Link from 'next/link';
-import { useAuthModal } from '@/lib/contexts/auth-modal-context';
-import { usePathname } from 'next/navigation';
-import PrimaryNav from '../layout/PrimaryNav';
+import UserMenu from '../layout/UserMenu';
+import NotificationBell from '../layout/NotificationBell';
+import DashboardSearchModal from './DashboardSearchModal';
 
 interface DashboardHeaderProps {
   title: string;
   onMenuToggle?: () => void;
-  /** Hide the categories/brands mega-nav row (e.g. inside the seller dashboard). */
   hidePrimaryNav?: boolean;
 }
-
-import UserMenu from '../layout/UserMenu';
-import NotificationBell from '../layout/NotificationBell';
 
 export default function DashboardHeader({
   title,
   onMenuToggle,
-  hidePrimaryNav,
 }: DashboardHeaderProps) {
-  const [isSearchOpen, setIsSearchOpen] = React.useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { theme, setTheme } = useTheme();
   const { user } = useAuth();
-  const { openRegister } = useAuthModal();
-  const { itemCount } = useCart();
-  const pathname = usePathname();
   const isDark = theme === 'dark';
 
-  const isSeller = user?.role === 'SELLER';
-  // Auto-hide mega nav inside the seller dashboard (it has its own sidebar)
-  const showPrimaryNav = !hidePrimaryNav && !pathname?.startsWith('/dashboard');
+  // Global hotkey: ⌘K or Ctrl+K opens the in-dashboard search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsSearchOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const storeLink = user?.seller_profile?.store_link;
+  const storeName = user?.seller_profile?.store_name;
 
   return (
     <>
-      <header className="border-border bg-background sticky top-0 z-50 flex h-20 items-center justify-between border-b px-4 md:px-8">
-        <div className="flex min-w-0 items-center gap-4">
-          {isSeller && (
-            <button
-              onClick={onMenuToggle}
-              className="bg-surface border-border text-muted hover:text-foreground shrink-0 rounded-xl border p-2.5 transition-all lg:hidden"
-            >
-              <LayoutDashboard className="h-5 w-5" />
-            </button>
-          )}
-          <Link href="/" className="group flex min-w-0 items-center gap-2">
-            <div className="bg-primary shadow-primary/20 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs text-white shadow-lg transition-transform group-hover:scale-105">
-              <img src="/logos/vendly.png" alt="Ventry Logo" className="h-full w-full" />
-            </div>
-            <h1 className="text-md text-foreground min-w-0 max-w-[120px] truncate tracking-tight sm:max-w-[200px] md:max-w-[300px] lg:max-w-[450px] xl:max-w-[600px]">
-              {title}
-            </h1>
-          </Link>
-        </div>
-
-        <div className="flex items-center gap-1 md:gap-3">
-          {/* Cart — always visible (incl. mobile) */}
-          <Link
-            href="/cart"
-            aria-label={`Cart${itemCount > 0 ? `, ${itemCount} item${itemCount === 1 ? '' : 's'}` : ''}`}
-            className="text-muted hover:text-primary hover:bg-primary/5 group relative rounded-2xl p-2.5 transition-all"
-            title="Cart"
-          >
-            <ShoppingBag className="h-5 w-5 transition-transform group-active:scale-90" />
-            {itemCount > 0 && (
-              <motion.span
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="border-background absolute -right-0.5 -top-0.5 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full border-2 bg-red-500 px-1 text-[10px] text-white shadow-lg"
-              >
-                {itemCount > 99 ? '99+' : itemCount}
-              </motion.span>
-            )}
-          </Link>
-
-          {/* Favorites — small+ */}
-          {user && (
-            <Link
-              href="/favorites"
-              aria-label="Favorites"
-              className="text-muted group hidden rounded-2xl p-2.5 transition-all hover:bg-red-500/5 hover:text-red-500 sm:inline-flex"
-              title="Favorites"
-            >
-              <Heart className="h-5 w-5 transition-transform group-active:scale-90" />
-            </Link>
-          )}
-
-          {/* Start selling CTA for non-seller users */}
-          {user && !isSeller && user.role !== 'ADMIN' && user?.approval_status !== 'APPROVED' && (
-            <Link href="/seller-verification" className="hidden sm:inline-flex">
-              <button className="bg-red-500 ml-1 h-9 rounded-lg px-3.5 text-xs text-white shadow-sm transition-all hover:opacity-90 active:scale-[0.98]">
-                Start selling
-              </button>
-            </Link>
-          )}
-
-          <div className="bg-border mx-1 hidden h-8 w-[1px] sm:block"></div>
-
-          {/* Search Toggle */}
+      <header className="sticky top-0 z-40 flex h-16 md:h-18 w-full items-center justify-between border-b border-border/60 bg-background px-4 md:px-8 transition-colors">
+        {/* Left: Mobile Drawer Trigger + Breadcrumbs */}
+        <div className="flex min-w-0 items-center gap-3">
           <button
-            onClick={() => setIsSearchOpen(true)}
-            className="text-muted hover:text-primary hover:bg-primary/5 group rounded-2xl p-2.5 transition-all"
-            aria-label="Search"
+            onClick={onMenuToggle}
+            aria-label="Open sidebar navigation"
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-border/60 bg-surface/50 text-muted transition-colors hover:border-border hover:bg-surface hover:text-foreground active:scale-95 lg:hidden"
           >
-            <Search className="h-5 w-5 transition-transform group-active:scale-90" />
+            <Menu className="h-4 w-4" />
           </button>
 
-          {/* Theme Toggle */}
+          <div className="flex min-w-0 items-center gap-2">
+            <Link
+              href="/dashboard"
+              className="group hidden sm:flex items-center gap-2 rounded-xl p-1 text-muted hover:text-foreground transition-colors"
+            >
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-border/60 bg-surface text-primary">
+                <Store className="h-3.5 w-3.5" />
+              </div>
+              {storeName ? (
+                <span className="max-w-[140px] truncate text-xs font-medium text-foreground">
+                  {storeName}
+                </span>
+              ) : (
+                <span className="text-xs font-medium text-foreground">Seller Hub</span>
+              )}
+            </Link>
+
+            <span className="hidden sm:inline-block text-border text-xs">/</span>
+
+            <h1 className="truncate text-xs sm:text-sm font-semibold tracking-tight text-foreground">
+              {title}
+            </h1>
+          </div>
+        </div>
+
+        {/* Center: In-Dashboard Search Pill (⌘K) */}
+        <div className="flex-1 max-w-xs md:max-w-md mx-3">
+          <button
+            type="button"
+            onClick={() => setIsSearchOpen(true)}
+            className="group flex w-full items-center justify-between gap-2 rounded-2xl border border-border/60 bg-surface/40 px-3 py-1.5 md:py-2 text-xs text-muted transition-all hover:border-border hover:bg-surface hover:text-foreground"
+          >
+            <div className="flex items-center gap-2 truncate">
+              <Search className="h-3.5 w-3.5 shrink-0 text-muted group-hover:text-foreground transition-colors" />
+              <span className="truncate text-[11px] sm:text-xs">
+                Search products, orders, settings...
+              </span>
+            </div>
+            <kbd className="hidden sm:inline-flex items-center rounded-md border border-border/60 bg-background/80 px-1.5 py-0.5 font-mono text-[9px] font-medium text-muted">
+              ⌘K
+            </kbd>
+          </button>
+        </div>
+
+        {/* Right: Operational Controls */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* View Public Storefront Link */}
+          {storeLink && (
+            <Link
+              href={`/s/${storeLink}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden md:inline-flex items-center gap-1.5 rounded-xl border border-border/60 bg-surface/30 px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-border hover:bg-surface hover:text-foreground"
+              title="Open public storefront in new tab"
+            >
+              <span>View Store</span>
+              <ExternalLink className="h-3 w-3" />
+            </Link>
+          )}
+
+          {/* Notifications Bell */}
+          <NotificationBell />
+
+          {/* Theme Switcher */}
           <button
             onClick={() => setTheme(isDark ? 'light' : 'dark')}
-            className="text-muted hover:text-foreground hover:bg-surface rounded-2xl p-2.5 transition-all"
             aria-label="Toggle theme"
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-transparent text-muted transition-colors hover:border-border/60 hover:bg-surface hover:text-foreground active:scale-95"
           >
-            <AnimatePresence mode="wait">
+            <AnimatePresence mode="wait" initial={false}>
               <motion.div
                 key={theme}
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
-                transition={{ duration: 0.2 }}
+                transition={{ duration: 0.15 }}
               >
-                {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+                {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </motion.div>
             </AnimatePresence>
           </button>
 
-          <div className="bg-border mx-1 h-8 w-[1px]"></div>
+          <div className="hidden sm:block h-5 w-[1px] bg-border/60 mx-1" />
 
-          {/* User Profile or Login */}
-          <div className="flex items-center gap-3 pl-1">
-            {user ? (
-              <>
-                <NotificationBell />
-                <UserMenu />
-              </>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Link
-                  href="/login"
-                  className="text-foreground/80 hover:text-foreground hidden h-9 items-center px-3 text-xs transition-colors sm:inline-flex"
-                >
-                  Sign in
-                </Link>
-                <Link
-                  href="/register"
-                  className="bg-background text-primary inline-flex h-9 items-center rounded-lg px-3.5 text-xs shadow-sm transition-all hover:opacity-90 active:scale-[0.98]"
-                >
-                  Sign up
-                </Link>
-              </div>
-            )}
-          </div>
+          {/* User Menu */}
+          <UserMenu />
         </div>
-        <GlobalSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
       </header>
-      {showPrimaryNav && <PrimaryNav />}
+
+      {/* In-Dashboard Search Modal */}
+      <DashboardSearchModal
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+      />
     </>
   );
 }

@@ -22,29 +22,38 @@ export default function AuthModal() {
     <Modal
       isOpen={isOpen}
       onClose={closeModal}
-      className="sm:max-w-[460px]"
+      className="sm:max-w-[440px]"
     >
-      <div className="flex flex-col items-center text-center space-y-4 mb-2">
-        <div className="w-16 h-16 rounded-3xl bg-primary/10 flex items-center justify-center text-primary shadow-inner mb-2">
-          <Fingerprint size={32} />
+      <div className="flex flex-col items-center text-center space-y-3 mb-4">
+        <div className="w-12 h-12 rounded-2xl bg-secondary/10 flex items-center justify-center text-secondary shadow-xs">
+          <Fingerprint size={24} />
         </div>
-        <div className="space-y-1">
-          <h2 className="text-2xl font-medium uppercase tracking-tight text-foreground">
-            {view === "login" ? "Welcome Back" : "Create Account"}
+        <div>
+          <h2 className="text-xl font-semibold tracking-tight text-foreground">
+            {view === "login" ? "Welcome back" : "Create your account"}
           </h2>
+          <p className="mt-1 text-xs text-foreground/60 leading-relaxed">
+            {view === "login"
+              ? "Sign in to access your store and checkout faster."
+              : "Join Verndly to shop from verified young entrepreneurs or launch your store."}
+          </p>
         </div>
       </div>
 
-      <div className="mt-4">
+      {message && (
+        <Alert variant="info" message={message} className="mb-4" />
+      )}
+
+      <div>
         <AuthTabs
           defaultTab={view}
           onSuccess={handleComplete}
         />
       </div>
 
-      <div className="mt-8 text-center">
-        <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
-          Secure • SSL Encrypted • Identity Verified
+      <div className="mt-6 pt-2 text-center">
+        <p className="text-[10px] text-foreground/40 font-medium">
+          256-bit SSL Encrypted • Verndly Verified Platform
         </p>
       </div>
     </Modal>

@@ -9,12 +9,12 @@ interface HomeJsonLdProps {
 
 /** Server-renders structured data for SEO. */
 export default function HomeJsonLd({ categories }: HomeJsonLdProps) {
-  const origin = typeof window !== "undefined" ? window.location.origin : "https://vendly.com";
+  const origin = typeof window !== "undefined" ? window.location.origin : "https://verndly.com";
 
   const site = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    name: "Vendly",
+    name: "Verndly",
     url: origin,
     description: "Discover and shop from trusted, verified entrepreneurs all in one place.",
     potentialAction: {

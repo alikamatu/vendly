@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { Bell, Check, CheckCheck, Trash2, X } from "lucide-react";
+import { Bell, Check, CheckCheck, Trash2, X, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   notificationApi,
@@ -188,7 +188,7 @@ export default function NotificationBell() {
             {isMobile && (
               <div
                 onClick={() => setOpen(false)}
-                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[99] sm:hidden animate-in fade-in duration-150"
+                className="fixed inset-0 bg-black/60 z-[99] sm:hidden animate-in fade-in duration-150"
               />
             )}
 
@@ -397,6 +397,18 @@ export default function NotificationBell() {
                     })}
                   </motion.div>
                 )}
+              </div>
+
+              {/* Footer: View all notifications */}
+              <div className="border-t border-border/60 bg-surface/30 px-4 py-3 text-center">
+                <Link
+                  href="/dashboard/notifications"
+                  onClick={() => setOpen(false)}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline transition-all"
+                >
+                  <span>View all notifications</span>
+                  <ArrowRight size={12} />
+                </Link>
               </div>
             </motion.div>
           </>

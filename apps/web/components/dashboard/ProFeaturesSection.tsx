@@ -23,7 +23,7 @@ export default function ProFeaturesSection() {
         <div className="space-y-0.5">
           <p className="text-[10px] font-medium text-[var(--color-accent)] uppercase tracking-wider inline-flex items-center gap-1.5">
             <Sparkles className="w-3 h-3" />
-            Vendly Pro
+            Verndly Pro
           </p>
           <h3 className="text-sm font-medium uppercase tracking-tight text-[var(--color-foreground)]">
             Pro features
@@ -63,9 +63,11 @@ export default function ProFeaturesSection() {
         <ProFeatureCard
           icon={BarChart3}
           title="Advanced analytics"
-          description="Conversion rate, visitor sources, and low-stock alerts. Currently free preview — Pro keeps full history."
+          description="Track conversion rates, revenue trends, top-selling products, and buyer drop-off funnels in real time."
           isPro={isPro}
-          cta={{ label: "Soon", href: "/dashboard" }}
+          accent="accent"
+          previewHref="/dashboard/analytics"
+          cta={{ label: "View analytics", href: "/dashboard/analytics" }}
         />
 
         <ProFeatureCard

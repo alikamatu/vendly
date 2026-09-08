@@ -1,6 +1,6 @@
 import React from "react";
 import JsonLd from "./JsonLd";
-import { absoluteUrl, SITE_NAME } from "@/lib/seo";
+import { absoluteUrl, SITE_NAME, SITE_URL } from "@/lib/seo";
 
 export interface ProductSchemaInput {
   id: string;
@@ -15,7 +15,7 @@ export interface ProductSchemaInput {
   brand?: string | null;
   category?: string | null;
   quantity_available?: number | null;
-  seller?: { store_name?: string | null; store_link?: string | null } | null;
+  seller?: { store_name?: string | null; store_link?: string | null; image_url?: string | null } | null;
 }
 
 /** Maps our internal condition strings to schema.org item-condition URIs. */
@@ -38,6 +38,15 @@ export default function ProductJsonLd({ product }: { product: ProductSchemaInput
     typeof product.quantity_available === "number"
       ? product.quantity_available > 0
       : true;
+
+  // Price valid 1 year into the future
+  const priceValidUntil = new Date();
+  priceValidUntil.setFullYear(priceValidUntil.getFullYear() + 1);
+
+  const sellerUrl = product.seller?.store_link
+    ? absoluteUrl(`/s/${product.seller.store_link}`)
+    : SITE_URL;
+
   return (
     <JsonLd
       data={{
@@ -46,31 +55,77 @@ export default function ProductJsonLd({ product }: { product: ProductSchemaInput
         name: product.title,
         description: product.description || product.title,
         sku: product.id,
-        image: (product.images || []).map((u) => u),
+        mpn: product.id,
+        image: (product.images && product.images.length > 0)
+          ? product.images.map((u) => absoluteUrl(u))
+          : [`${SITE_URL}/logos/verndly.png`],
         url,
         category: product.category || undefined,
-        brand: product.brand
-          ? { "@type": "Brand", name: product.brand }
-          : undefined,
+        brand: {
+          "@type": "Brand",
+          name: product.brand || product.seller?.store_name || SITE_NAME,
+        },
         itemCondition: conditionUri(product.condition),
         offers: {
           "@type": "Offer",
           url,
-          price: String(product.price),
+          price: Number(product.price).toFixed(2),
           priceCurrency: (product.currency || "GHS").toUpperCase(),
+          priceValidUntil: priceValidUntil.toISOString().split("T")[0],
           availability: inStock
             ? "https://schema.org/InStock"
             : "https://schema.org/OutOfStock",
-          seller: product.seller?.store_name
-            ? { "@type": "Organization", name: product.seller.store_name }
-            : { "@type": "Organization", name: SITE_NAME },
+          itemCondition: conditionUri(product.condition),
+          seller: {
+            "@type": "Store",
+            name: product.seller?.store_name || SITE_NAME,
+            url: sellerUrl,
+          },
+          hasMerchantReturnPolicy: {
+            "@type": "MerchantReturnPolicy",
+            applicableCountry: "GH",
+            returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
+            merchantReturnDays: 7,
+            returnMethod: "https://schema.org/ReturnByMail",
+            returnFees: "https://schema.org/FreeReturn",
+            refundType: "https://schema.org/FullRefund",
+          },
+          shippingDetails: {
+            "@type": "OfferShippingDetails",
+            shippingRate: {
+              "@type": "MonetaryAmount",
+              value: "0.00",
+              currency: "GHS",
+            },
+            shippingDestination: {
+              "@type": "DefinedRegion",
+              addressCountry: "GH",
+            },
+            deliveryTime: {
+              "@type": "ShippingDeliveryTime",
+              handlingTime: {
+                "@type": "QuantitativeValue",
+                minValue: 0,
+                maxValue: 1,
+                unitCode: "DAY",
+              },
+              transitTime: {
+                "@type": "QuantitativeValue",
+                minValue: 1,
+                maxValue: 3,
+                unitCode: "DAY",
+              },
+            },
+          },
         },
         aggregateRating:
           product.rating_count && product.rating_count > 0 && product.rating_avg
             ? {
                 "@type": "AggregateRating",
-                ratingValue: product.rating_avg,
+                ratingValue: Number(product.rating_avg).toFixed(1),
                 reviewCount: product.rating_count,
+                bestRating: "5",
+                worstRating: "1",
               }
             : undefined,
       }}

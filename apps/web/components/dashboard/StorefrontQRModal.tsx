@@ -13,6 +13,9 @@ interface StorefrontQRModalProps {
   storeName: string;
 }
 
+const MotionButton = motion.button as any;
+const MotionA = motion.a as any;
+
 export default function StorefrontQRModal({
   open,
   onClose,
@@ -63,7 +66,7 @@ export default function StorefrontQRModal({
             exit: { opacity: 0 },
             onClick: onClose,
             className:
-              "fixed inset-0 z-[80] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm",
+              "fixed inset-0 z-[80] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60",
           } as HTMLMotionProps<"div">)}
         >
           <motion.div
@@ -74,7 +77,7 @@ export default function StorefrontQRModal({
               transition: { type: "spring", stiffness: 360, damping: 30 },
               onClick: (e: React.MouseEvent) => e.stopPropagation(),
               className:
-                "w-full sm:max-w-md bg-[var(--color-background)] border border-[var(--color-border)] rounded-t-3xl sm:rounded-3xl overflow-hidden",
+                "w-full sm:max-w-md bg-[var(--color-background)] border-0 shadow-[0_24px_70px_rgba(0,0,0,0.18)] dark:shadow-[0_24px_70px_rgba(0,0,0,0.65)] rounded-t-3xl sm:rounded-3xl overflow-hidden",
               role: "dialog",
               "aria-modal": true,
               "aria-labelledby": "qr-modal-title",
@@ -84,7 +87,7 @@ export default function StorefrontQRModal({
               <div className="space-y-1">
                 <p
                   id="qr-modal-title"
-                  className="text-[10px] font-medium uppercase tracking-wider text-[var(--color-accent)]"
+                  className="text-[10px] font-semibold uppercase tracking-wider text-secondary"
                 >
                   Pro · Storefront QR
                 </p>
@@ -92,19 +95,21 @@ export default function StorefrontQRModal({
                   {storeName}
                 </h2>
               </div>
-              <button
+              <MotionButton
+                whileHover={{ scale: 1.08 }}
+                whileTap={{ scale: 0.92 }}
                 onClick={onClose}
                 aria-label="Close"
                 className="p-2 rounded-xl text-[var(--color-muted)] hover:bg-[var(--color-surface)] hover:text-[var(--color-foreground)] transition-colors"
               >
                 <X className="w-4 h-4" />
-              </button>
+              </MotionButton>
             </div>
 
             <div className="px-5 pb-5 space-y-4">
               <div
                 ref={canvasRef}
-                className="mx-auto p-5 rounded-2xl bg-white w-fit shadow-sm"
+                className="mx-auto p-5 rounded-2xl bg-white w-fit shadow-xs"
               >
                 <QRCodeCanvas
                   value={url}
@@ -116,13 +121,14 @@ export default function StorefrontQRModal({
                 />
               </div>
 
-              <div className="rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] flex items-center gap-2 px-3 py-2.5">
+              <div className="rounded-2xl bg-[var(--color-surface)] border-0 shadow-xs flex items-center gap-2 px-3 py-2.5">
                 <span className="flex-1 text-[11px] font-mono text-[var(--color-foreground)] truncate">
                   {url}
                 </span>
-                <button
+                <MotionButton
+                  whileTap={{ scale: 0.88 }}
                   onClick={copy}
-                  className="p-1.5 rounded-lg hover:bg-[var(--color-border)]/60 text-[var(--color-muted)] hover:text-[var(--color-foreground)] transition-colors"
+                  className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 text-[var(--color-muted)] hover:text-[var(--color-foreground)] transition-colors"
                   aria-label="Copy URL"
                   title="Copy URL"
                 >
@@ -131,26 +137,30 @@ export default function StorefrontQRModal({
                   ) : (
                     <Copy className="w-3.5 h-3.5" />
                   )}
-                </button>
+                </MotionButton>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
-                <button
+                <MotionButton
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.97 }}
                   onClick={download}
                   className="h-11 inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--color-foreground)] text-[var(--color-background)] text-xs font-medium hover:opacity-90 transition-opacity"
                 >
                   <Download className="w-3.5 h-3.5" />
                   Download PNG
-                </button>
-                <a
+                </MotionButton>
+                <MotionA
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.97 }}
                   href={url}
                   target="_blank"
                   rel="noreferrer"
-                  className="h-11 inline-flex items-center justify-center gap-2 rounded-2xl border border-[var(--color-border)] text-xs font-medium text-[var(--color-foreground)] hover:bg-[var(--color-surface)] transition-colors"
+                  className="h-11 inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--color-surface)] border-0 shadow-xs text-xs font-medium text-[var(--color-foreground)] hover:bg-surface/90 transition-colors"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
                   Preview
-                </a>
+                </MotionA>
               </div>
 
               <p className="text-[11px] text-[var(--color-muted)] text-center leading-relaxed">

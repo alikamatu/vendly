@@ -216,6 +216,7 @@ model Order {
   transaction       Transaction?
   buyer             User           @relation("BuyerOrders", fields: [buyer_id], references: [id])
   return_request    ReturnRequest?
+  refunds           Refund[]
 
   @@map("orders")
 }
@@ -236,6 +237,7 @@ model Transaction {
   order          Order                @relation(fields: [order_id], references: [id])
   payout         Payout?
   ledger_entries PaymentLedgerEntry[]
+  refunds        Refund[]
 
   @@map("transactions")
 }
@@ -560,6 +562,7 @@ enum LedgerSourceType {
   ADJUSTMENT
   FEE
   PAYOUT
+  REFUND
 }
 
 enum ServiceArea {
@@ -586,6 +589,9 @@ model ReturnRequest {
   status          ReturnRequestStatus @default(PENDING)
   seller_response String?
   admin_notes     String?
+  refund_amount   Decimal?            @db.Decimal(10, 2)
+  refund_ref      String?
+  refunded_at     DateTime?
   created_at      DateTime            @default(now())
   updated_at      DateTime            @updatedAt
   order           Order               @relation(fields: [order_id], references: [id])
@@ -608,6 +614,8 @@ enum ReturnRequestStatus {
   APPROVED
   REJECTED
   ESCALATED
+  REFUNDED
+  COMPLETED
 }
 
 model ContactMessage {
@@ -699,10 +707,41 @@ enum NotificationType {
   REVIEW_FLAGGED
   RETURN_REQUESTED
   RETURN_UPDATED
+  REFUND_PROCESSED
   PRODUCT_APPROVED
   PRODUCT_REJECTED
   STORE_APPROVED
   STORE_REJECTED
   ADMIN_BROADCAST
   SYSTEM
+}
+
+model Refund {
+  id                String       @id @default(uuid()) @db.Uuid
+  order_id          String       @db.Uuid
+  transaction_id    String       @db.Uuid
+  reference         String       @unique
+  amount            Decimal      @db.Decimal(10, 2)
+  currency          String       @default("GHS") @db.VarChar(3)
+  status            RefundStatus @default(PENDING)
+  reason            String?
+  provider          String       @default("PAYSTACK")
+  provider_ref      String?
+  customer_note     String?
+  merchant_note     String?
+  created_at        DateTime     @default(now())
+  updated_at        DateTime     @updatedAt
+  order             Order        @relation(fields: [order_id], references: [id])
+  transaction       Transaction  @relation(fields: [transaction_id], references: [id])
+
+  @@index([order_id])
+  @@index([transaction_id])
+  @@map("refunds")
+}
+
+enum RefundStatus {
+  PENDING
+  PROCESSING
+  SUCCESS
+  FAILED
 }

@@ -21,7 +21,10 @@ export default function GoogleSignInButton({
   label = "Continue with Google",
   className = "",
 }: Props) {
+  const [loading, setLoading] = React.useState(false);
+
   const handleClick = () => {
+    setLoading(true);
     window.location.href = authApi.googleStartUrl(next);
   };
 
@@ -29,10 +32,14 @@ export default function GoogleSignInButton({
     <button
       type="button"
       onClick={handleClick}
-      className={`w-full h-11 inline-flex items-center justify-center gap-3 rounded-xl border border-border bg-background text-foreground text-sm font-medium hover:bg-surface transition active:scale-[0.99] ${className}`}
+      disabled={loading}
+      aria-busy={loading}
+      className={`w-full h-11 inline-flex items-center justify-center gap-2.5 rounded-xl border border-input-border bg-input-bg text-foreground text-sm font-medium hover:bg-surface hover:border-foreground/25 active:scale-[0.985] transition-all disabled:opacity-60 disabled:cursor-not-allowed ${className}`}
     >
-      <GoogleLogo />
-      {label}
+      <span className="inline-flex items-center justify-center shrink-0">
+        <GoogleLogo />
+      </span>
+      <span className="leading-none">{loading ? "Connecting to Google..." : label}</span>
     </button>
   );
 }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Filter, X, Tag, CreditCard, SortAsc, LayoutGrid } from "lucide-react";
 import Button from "../ui/Button";
+import Select from "../ui/Select";
 import Portal from "../common/Portal";
 
 interface ProductFiltersProps {
@@ -65,17 +66,13 @@ export default function ProductFilters({
 
         <div className="flex items-center gap-2">
           {/* Desktop Sort */}
-          <div className="hidden md:flex items-center gap-2 bg-surface border border-border/50 rounded-2xl px-4 h-12">
-             <SortAsc size={16} className="text-muted" />
-             <select 
-               value={sortBy}
-               onChange={(e) => onSortChange(e.target.value)}
-               className="bg-transparent text-[11px] font-medium uppercase tracking-wider outline-none cursor-pointer"
-             >
-               {sortOptions.map(opt => (
-                 <option key={opt.value} value={opt.value}>{opt.label}</option>
-               ))}
-             </select>
+          <div className="hidden md:block w-48">
+            <Select
+              value={sortBy}
+              onChange={(val) => onSortChange(val)}
+              options={sortOptions}
+              size="sm"
+            />
           </div>
 
           <Button 
@@ -128,7 +125,7 @@ export default function ProductFilters({
                    initial={{ opacity: 0 }}
                    animate={{ opacity: 1 }}
                    exit={{ opacity: 0 }}
-                   className="absolute inset-0 bg-black/80 backdrop-blur-md"
+                   className="absolute inset-0 bg-black/60"
                  />
                </div>
 
@@ -245,7 +242,7 @@ export default function ProductFilters({
                   </div>
 
                   {/* Fixed CTA at bottom */}
-                  <div className="absolute bottom-0 inset-x-0 p-8 md:p-10 pt-4 bg-gradient-to-t from-background via-background to-transparent shrink-0">
+                  <div className="absolute bottom-0 inset-x-0 p-8 md:p-10 pt-4 bg-background border-t border-border/40 shrink-0">
                      <Button 
                        onClick={() => setIsMobileMenuOpen(false)}
                        className="w-full h-16 md:h-20 rounded-[2.5rem] uppercase tracking-wider shadow-2xl shadow-primary/20"

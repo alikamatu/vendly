@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { toast } from "sonner";
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import {
   ArrowLeft,
   Edit2,
@@ -19,33 +19,39 @@ import {
   Loader2,
   Check,
   TrendingUp,
-  Calendar,
   Tag,
   Layers,
-  CalendarClock,
-  MessageSquare,
   BarChart3,
   Image as ImageIcon,
-} from "lucide-react";
-import Button from "@/components/ui/Button";
-import Card from "@/components/ui/Card";
-import { useAuth } from "@/lib/contexts/auth-context";
-import { useProStatus } from "@/hooks/useProStatus";
-import { productApi } from "@/lib/api/product";
-import ShareProductCardModal from "@/components/dashboard/ShareProductCardModal";
+  Video,
+  MoreHorizontal,
+} from 'lucide-react';
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
+import Alert from '@/components/ui/Alert';
+import ConfirmModal from '@/components/ui/ConfirmModal';
+import DropdownMenu, { DropdownMenuItem } from '@/components/ui/DropdownMenu';
+import Modal from '@/components/ui/Modal';
+import VariantEditor from '@/components/dashboard/VariantEditor';
+import { useAuth } from '@/lib/contexts/auth-context';
+import { useProStatus } from '@/hooks/useProStatus';
+import { productApi } from '@/lib/api/product';
+import ShareProductCardModal from '@/components/dashboard/ShareProductCardModal';
 
 const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || "https://vendly.market";
+  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') || 'https://verndly.com';
 
-const STATUS_OPTIONS: Array<{ value: string; label: string; tint: string }> = [
-  { value: "draft", label: "Draft", tint: "bg-orange-500/10 text-orange-600" },
-  { value: "active", label: "Active", tint: "bg-emerald-500/10 text-emerald-600" },
+const STATUS_OPTIONS: Array<{ value: string; label: string; description: string }> = [
   {
-    value: "out_of_stock",
-    label: "Out of stock",
-    tint: "bg-red-500/10 text-red-600",
+    value: 'active',
+    label: 'Active',
+    description: 'Visible on marketplace and discoverable by buyers',
   },
-  { value: "archived", label: "Archived", tint: "bg-muted/30 text-muted" },
+  {
+    value: 'draft',
+    label: 'Draft',
+    description: 'Hidden from public, work in progress',
+  },
 ];
 
 export default function ManageProductPage() {
@@ -65,7 +71,9 @@ export default function ManageProductPage() {
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showShareCard, setShowShareCard] = useState(false);
+  const [showVariantModal, setShowVariantModal] = useState(false);
   const [togglingHot, setTogglingHot] = useState(false);
+  const [activeMediaIndex, setActiveMediaIndex] = useState(0);
 
   const refresh = useCallback(async () => {
     if (!id) return;
@@ -74,7 +82,7 @@ export default function ManageProductPage() {
       setProduct(data);
       setStockDraft(null);
     } catch (e: any) {
-      setError(e?.message || "Failed to load product");
+      setError(e?.message || 'Failed to load product');
     } finally {
       setLoading(false);
     }
@@ -86,7 +94,7 @@ export default function ManageProductPage() {
 
   const isOwner = useMemo(() => {
     if (!product || !user) return false;
-    return product.seller?.user_id === user.id || user.role === "ADMIN";
+    return product.seller?.user_id === user.id || user.role === 'ADMIN';
   }, [product, user]);
 
   const currentStock = stockDraft ?? product?.quantity_available ?? 0;
@@ -102,7 +110,7 @@ export default function ManageProductPage() {
     setSavingStatus(true);
     try {
       await productApi.updateStatus(token, product.id, next);
-      toast.success(`Status set to ${next.replace("_", " ")}`);
+      toast.success(`Status updated to ${next.toUpperCase()}`);
       await refresh();
     } catch (e: any) {
       toast.error(e?.message || "Couldn't update status");
@@ -116,7 +124,7 @@ export default function ManageProductPage() {
     setSavingStock(true);
     try {
       await productApi.updateStock(token, product.id, stockDraft);
-      toast.success(`Stock updated to ${stockDraft}`);
+      toast.success(`Inventory stock updated to ${stockDraft}`);
       await refresh();
     } catch (e: any) {
       toast.error(e?.message || "Couldn't update stock");
@@ -130,7 +138,7 @@ export default function ManageProductPage() {
     setDuplicating(true);
     try {
       const res = await productApi.duplicateProduct(token, product.id);
-      toast.success("Duplicated as draft.");
+      toast.success('Product duplicated as draft.');
       router.push(`/dashboard/products/${res.product.id}`);
     } catch (e: any) {
       toast.error(e?.message || "Couldn't duplicate");
@@ -144,11 +152,12 @@ export default function ManageProductPage() {
     setDeleting(true);
     try {
       await productApi.deleteProduct(token, product.id);
-      toast.success("Product deleted.");
-      router.push("/dashboard/products");
+      toast.success('Product removed permanently.');
+      router.push('/dashboard/products');
     } catch (e: any) {
-      toast.error(e?.message || "Couldn't delete");
+      toast.error(e?.message || "Couldn't delete product");
       setDeleting(false);
+      setConfirmDelete(false);
     }
   }
 
@@ -156,15 +165,27 @@ export default function ManageProductPage() {
     if (!token) return;
     setTogglingHot(true);
     try {
-      await productApi.toggleHotSales(
-        token,
-        product.id,
-        Boolean(product.is_featured),
-      );
-      toast.success(
-        product.is_featured ? "Hot Sales disabled." : "Hot Sales enabled.",
-      );
-      await refresh();
+      if (!product.is_featured) {
+        try {
+          await productApi.toggleHotSales(token, product.id, true);
+          toast.success('Hot Sales enabled!');
+          await refresh();
+          return;
+        } catch (paymentErr: any) {
+          if (String(paymentErr?.message || '').toLowerCase().includes('payment')) {
+            const init = await productApi.initializeHotSalesPayment(token, product.id);
+            if (init.checkout_url) {
+              window.location.href = init.checkout_url;
+              return;
+            }
+          }
+          throw paymentErr;
+        }
+      } else {
+        await productApi.toggleHotSales(token, product.id, false);
+        toast.success('Hot Sales boost disabled.');
+        await refresh();
+      }
     } catch (e: any) {
       toast.error(e?.message || "Couldn't toggle Hot Sales");
     } finally {
@@ -176,9 +197,9 @@ export default function ManageProductPage() {
     const url = `${SITE_URL}/product/${product.id}`;
     try {
       await navigator.clipboard.writeText(url);
-      toast.success("Public link copied.");
+      toast.success('Public product link copied to clipboard.');
     } catch {
-      toast.error("Couldn't copy. Long-press the URL instead.");
+      toast.error("Couldn't copy link. Please copy directly from browser.");
     }
   }
 
@@ -186,8 +207,11 @@ export default function ManageProductPage() {
 
   if (loading) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-muted" />
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3">
+        <Loader2 className="w-7 h-7 animate-spin text-[var(--color-accent)]" />
+        <p className="text-xs text-[var(--color-muted)] font-medium tracking-wider uppercase">
+          Loading product hub...
+        </p>
       </div>
     );
   }
@@ -195,11 +219,13 @@ export default function ManageProductPage() {
   if (error || !product) {
     return (
       <div className="max-w-md mx-auto py-20 text-center space-y-4">
-        <AlertCircle className="w-10 h-10 text-red-500 mx-auto" />
-        <h1 className="text-lg font-medium">Couldn&apos;t load this product</h1>
-        <p className="text-sm text-muted">{error || "Try again in a moment."}</p>
-        <Button onClick={() => router.push("/dashboard/products")}>
-          Back to products
+        <Alert
+          variant="error"
+          title="Product Unavailable"
+          message={error || 'This listing may have been removed or does not exist.'}
+        />
+        <Button variant="secondary" onClick={() => router.push('/dashboard/products')} className="rounded-xl">
+          <ArrowLeft className="w-4 h-4 mr-1.5" /> Back to products
         </Button>
       </div>
     );
@@ -208,148 +234,267 @@ export default function ManageProductPage() {
   if (!isOwner) {
     return (
       <div className="max-w-md mx-auto py-20 text-center space-y-4">
-        <Lock className="w-10 h-10 text-muted mx-auto" />
-        <h1 className="text-lg font-medium">This isn&apos;t your product</h1>
-        <Button onClick={() => router.push("/dashboard/products")}>
+        <div className="w-12 h-12 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] flex items-center justify-center mx-auto">
+          <Lock className="w-6 h-6 text-[var(--color-muted)]" />
+        </div>
+        <h1 className="text-lg font-bold text-[var(--color-foreground)]">Unauthorized Access</h1>
+        <p className="text-sm text-[var(--color-muted)]">You do not have permission to manage this product.</p>
+        <Button variant="secondary" onClick={() => router.push('/dashboard/products')} className="rounded-xl">
           Back to your products
         </Button>
       </div>
     );
   }
 
-  const statusInfo =
-    STATUS_OPTIONS.find((s) => s.value === product.status) || STATUS_OPTIONS[0];
   const publicUrl = `${SITE_URL}/product/${product.id}`;
-  const created = new Date(product.created_at);
+  const createdDate = new Date(product.created_at);
+  const images = product.image_urls || [];
+  const hasVideo = Boolean(product.video_url);
+
+  const moreMenuItems: DropdownMenuItem[] = [
+    {
+      label: 'Copy Public Link',
+      icon: <Copy className="w-3.5 h-3.5" />,
+      onClick: copyPublicUrl,
+    },
+    {
+      label: 'Edit Details',
+      icon: <Edit2 className="w-3.5 h-3.5" />,
+      onClick: () => router.push(`/dashboard/products/edit/${product.id}`),
+    },
+    {
+      label: 'Manage Variants',
+      icon: <Layers className="w-3.5 h-3.5" />,
+      onClick: () => setShowVariantModal(true),
+    },
+    {
+      label: 'Generate Social Card',
+      icon: <Sparkles className="w-3.5 h-3.5" />,
+      onClick: () => setShowShareCard(true),
+    },
+    {
+      label: product.is_featured ? 'Deactivate Boost' : 'Boost on Hot Sales',
+      icon: <Flame className="w-3.5 h-3.5 text-amber-500" />,
+      onClick: handleToggleHot,
+    },
+    {
+      label: 'Delete Product',
+      icon: <Trash2 className="w-3.5 h-3.5" />,
+      variant: 'danger',
+      divider: true,
+      onClick: () => setConfirmDelete(true),
+    },
+  ];
 
   return (
-    <div className="max-w-5xl mx-auto pb-24 px-4 md:px-0">
+    <div className="max-w-5xl mx-auto pb-24 px-3 sm:px-6 space-y-4">
       {/* Back link */}
       <Link
         href="/dashboard/products"
-        className="inline-flex items-center gap-1.5 text-xs text-muted hover:text-foreground transition-colors mb-4 mt-2"
+        className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)] hover:text-[var(--color-foreground)] transition-colors mt-2 group"
       >
-        <ArrowLeft className="w-3.5 h-3.5" />
+        <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
         All products
       </Link>
 
-      {/* HERO */}
+      {/* Stock Alerts (if applicable) */}
+      {outOfStock ? (
+        <Alert
+          variant="error"
+          title="Out of Stock"
+          message="This product has 0 quantity available and is marked as sold out on the public store."
+        />
+      ) : lowStock ? (
+        <Alert
+          variant="warning"
+          title="Low Inventory Alert"
+          message={`Only ${currentStock} item(s) left in stock. Consider updating your quantity soon.`}
+        />
+      ) : null}
+
+      {/* HERO SECTION */}
       <Card
-        className="overflow-hidden border-none bg-surface/40 p-4 sm:p-6 rounded-3xl"
+        className="overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface)] p-5 sm:p-6 rounded-2xl"
         hoverEffect={false}
       >
-        <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
-          <div className="relative h-32 w-full sm:h-32 sm:w-32 shrink-0 rounded-2xl overflow-hidden border border-border/50 bg-black/5">
-            {product.image_urls?.[0] ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={product.image_urls[0]}
-                alt={product.title}
-                className="w-full h-full object-cover"
-                loading="eager"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-muted">
-                <ImageIcon className="w-8 h-8" />
+        <div className="flex flex-col md:flex-row gap-6 items-start">
+          {/* Media Showcase */}
+          <div className="w-full md:w-56 shrink-0 space-y-3">
+            <div className="relative aspect-square w-full rounded-xl overflow-hidden border border-[var(--color-border)] bg-black/5">
+              {activeMediaIndex === 99 && product.video_url ? (
+                <video
+                  src={product.video_url}
+                  controls
+                  className="w-full h-full object-cover"
+                />
+              ) : images[activeMediaIndex] ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={images[activeMediaIndex]}
+                  alt={product.title}
+                  className="w-full h-full object-cover"
+                  loading="eager"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-[var(--color-muted)]">
+                  <ImageIcon className="w-9 h-9 stroke-1" />
+                </div>
+              )}
+
+              {product.is_featured && (
+                <span className="absolute top-2 left-2 inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-white uppercase tracking-wider">
+                  <Flame className="w-2.5 h-2.5 fill-current" /> Hot
+                </span>
+              )}
+            </div>
+
+            {/* Thumbnail Selectors */}
+            {(images.length > 1 || hasVideo) && (
+              <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                {images.map((url: string, idx: number) => (
+                  <button
+                    key={url}
+                    type="button"
+                    onClick={() => setActiveMediaIndex(idx)}
+                    className={`relative w-11 h-11 rounded-lg overflow-hidden border-2 transition-colors shrink-0 ${
+                      activeMediaIndex === idx
+                        ? 'border-[var(--color-accent)]'
+                        : 'border-[var(--color-border)] opacity-70 hover:opacity-100'
+                    }`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={url} alt="" className="w-full h-full object-cover" />
+                  </button>
+                ))}
+                {hasVideo && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveMediaIndex(99)}
+                    className={`relative w-11 h-11 rounded-lg overflow-hidden border-2 flex items-center justify-center bg-black/10 transition-colors shrink-0 ${
+                      activeMediaIndex === 99
+                        ? 'border-[var(--color-accent)]'
+                        : 'border-[var(--color-border)] opacity-70 hover:opacity-100'
+                    }`}
+                    title="Play Video"
+                  >
+                    <Video className="w-4 h-4 text-[var(--color-foreground)]" />
+                  </button>
+                )}
               </div>
-            )}
-            {product.is_featured && (
-              <span className="absolute top-2 left-2 inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-500/90 text-white uppercase tracking-wider">
-                <Flame className="w-2.5 h-2.5" /> Hot
-              </span>
             )}
           </div>
 
-          <div className="flex-1 min-w-0 space-y-3">
+          {/* Details & Actions */}
+          <div className="flex-1 min-w-0 space-y-4 w-full">
             <div>
-              <h1 className="text-lg sm:text-xl font-medium tracking-tight leading-snug">
-                {product.title}
-              </h1>
-              <p className="text-xs text-muted mt-1">
-                {product.category}
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                <span className="text-xs font-semibold uppercase tracking-wider text-[var(--color-accent)]">
+                  {product.category}
+                </span>
                 {product.brand && (
                   <>
-                    <span className="opacity-40 mx-1.5">·</span>
-                    {product.brand}
+                    <span className="text-[var(--color-muted)] opacity-40">·</span>
+                    <span className="text-xs font-medium text-[var(--color-muted)]">
+                      {product.brand}
+                    </span>
                   </>
                 )}
-                <span className="opacity-40 mx-1.5">·</span>
-                Added{" "}
-                {created.toLocaleDateString(undefined, {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                })}
-              </p>
+                <span className="text-[var(--color-muted)] opacity-40">·</span>
+                <span className="text-xs text-[var(--color-muted)]">
+                  Listed {createdDate.toLocaleDateString(undefined, {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
+                </span>
+              </div>
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--color-foreground)] leading-snug">
+                {product.title}
+              </h1>
             </div>
 
-            <div className="flex items-baseline gap-2 flex-wrap">
-              <span className="text-2xl font-semibold text-primary">
-                {product.currency || "GH₵"}
+            {/* Pricing & Stock Status */}
+            <div className="flex items-baseline gap-3 flex-wrap">
+              <span className="text-2xl sm:text-3xl font-bold text-[var(--color-foreground)] tabular-nums">
+                {product.currency || 'GH₵'}
                 {parseFloat(product.price).toLocaleString()}
               </span>
               {product.original_price &&
                 Number(product.original_price) > Number(product.price) && (
-                  <span className="text-sm text-muted line-through">
-                    {product.currency || "GH₵"}
+                  <span className="text-sm text-[var(--color-muted)] line-through tabular-nums">
+                    {product.currency || 'GH₵'}
                     {parseFloat(product.original_price).toLocaleString()}
                   </span>
                 )}
               <span
-                className={`text-[10px] font-medium px-2 py-0.5 rounded-full uppercase tracking-wider ${statusInfo.tint}`}
+                className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider border ${
+                  product.status === 'active'
+                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                    : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                }`}
               >
-                {statusInfo.label}
+                {product.status}
+              </span>
+              <span
+                className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider border ${
+                  outOfStock
+                    ? 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20'
+                    : lowStock
+                      ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                      : 'bg-[var(--color-surface)] text-[var(--color-foreground)] border-[var(--color-border)]'
+                }`}
+              >
+                {outOfStock ? 'Out of Stock' : `${currentStock} in stock`}
               </span>
             </div>
 
-            {/* Primary actions row — wraps on mobile */}
-            <div className="flex flex-wrap gap-2 pt-1">
+            {/* Primary Actions Bar */}
+            <div className="flex flex-wrap items-center gap-2 pt-1">
               <Link
                 href={`/dashboard/products/edit/${product.id}`}
-                className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl bg-primary text-white text-xs font-medium hover:opacity-90 transition"
+                className="inline-flex items-center gap-1.5 h-9 px-4 rounded-xl bg-[var(--color-accent)] text-white text-xs font-semibold hover:opacity-90 transition"
               >
-                <Edit2 className="w-3.5 h-3.5" /> Edit details
+                <Edit2 className="w-3.5 h-3.5" />
+                Edit Listing
               </Link>
               <a
                 href={publicUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl border border-border text-xs font-medium hover:bg-surface transition"
+                className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] text-xs font-medium text-[var(--color-foreground)] hover:bg-[var(--color-border)]/20 transition"
               >
-                <Eye className="w-3.5 h-3.5" /> View public
+                <Eye className="w-3.5 h-3.5" />
+                View Public
                 <ExternalLink className="w-3 h-3 opacity-50" />
               </a>
-              <button
-                onClick={copyPublicUrl}
-                className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl border border-border text-xs font-medium hover:bg-surface transition"
-              >
-                <Copy className="w-3.5 h-3.5" /> Copy link
-              </button>
-              <button
-                onClick={handleDuplicate}
-                disabled={duplicating}
-                className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl border border-border text-xs font-medium hover:bg-surface transition disabled:opacity-60"
-              >
-                {duplicating ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Copy className="w-3.5 h-3.5" />
-                )}
-                Duplicate
-              </button>
+
+              {/* More Actions Dropdown */}
+              <DropdownMenu
+                trigger={
+                  <button
+                    type="button"
+                    className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-muted)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-border)]/20 transition-colors"
+                    title="More options"
+                  >
+                    <MoreHorizontal className="w-4 h-4" />
+                  </button>
+                }
+                items={moreMenuItems}
+                align="right"
+              />
             </div>
           </div>
         </div>
       </Card>
 
-      {/* GRID */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-        {/* Status */}
-        <Card className="p-5 rounded-3xl space-y-3" hoverEffect={false}>
+      {/* CONTROLS GRID */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Listing Status Toggle */}
+        <Card className="p-5 rounded-2xl space-y-3 bg-[var(--color-surface)] border border-[var(--color-border)]" hoverEffect={false}>
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-medium">Listing status</h2>
+            <h2 className="text-sm font-semibold text-[var(--color-foreground)]">Listing Status</h2>
             {savingStatus && (
-              <Loader2 className="w-3.5 h-3.5 animate-spin text-muted" />
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-[var(--color-muted)]" />
             )}
           </div>
           <div className="grid grid-cols-2 gap-2">
@@ -358,50 +503,51 @@ export default function ManageProductPage() {
               return (
                 <button
                   key={s.value}
+                  type="button"
                   onClick={() => handleStatusChange(s.value)}
                   disabled={savingStatus || active}
-                  className={`relative h-11 rounded-xl text-xs font-medium transition border ${
+                  className={`relative p-3 rounded-xl text-left transition-colors border ${
                     active
-                      ? `${s.tint} border-current/30`
-                      : "border-border hover:bg-surface text-foreground/80"
-                  } disabled:cursor-default`}
+                      ? 'bg-[var(--color-foreground)] text-[var(--color-surface)] border-transparent'
+                      : 'border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-foreground)] hover:border-[var(--color-foreground)]/30'
+                  }`}
                 >
-                  {s.label}
-                  {active && (
-                    <Check className="w-3 h-3 absolute top-1.5 right-1.5 opacity-70" />
-                  )}
+                  <div className="text-xs font-bold uppercase tracking-wider flex items-center justify-between">
+                    <span>{s.label}</span>
+                    {active && <Check className="w-3.5 h-3.5 opacity-80" />}
+                  </div>
+                  <p className="text-[10px] opacity-75 mt-1 leading-tight line-clamp-2">
+                    {s.description}
+                  </p>
                 </button>
               );
             })}
           </div>
-          <p className="text-[11px] text-muted">
-            Draft hides the product from shoppers. Out of stock keeps the page
-            but blocks add-to-cart.
+          <p className="text-[11px] text-[var(--color-muted)]">
+            Draft hides the listing from shoppers without removing photos or descriptions.
           </p>
         </Card>
 
-        {/* Stock */}
-        <Card className="p-5 rounded-3xl space-y-3" hoverEffect={false}>
+        {/* Inventory Stock Stepper */}
+        <Card className="p-5 rounded-2xl space-y-3 bg-[var(--color-surface)] border border-[var(--color-border)]" hoverEffect={false}>
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-medium">Inventory</h2>
+            <h2 className="text-sm font-semibold text-[var(--color-foreground)]">Inventory Quantity</h2>
             <span
-              className={`text-[10px] font-medium px-2 py-0.5 rounded-full uppercase tracking-wider ${
+              className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
                 outOfStock
-                  ? "bg-red-500/10 text-red-600"
+                  ? 'bg-red-500/10 text-red-600 dark:text-red-400'
                   : lowStock
-                    ? "bg-amber-500/10 text-amber-600"
-                    : "bg-emerald-500/10 text-emerald-600"
+                    ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                    : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
               }`}
             >
-              {outOfStock ? "Out" : lowStock ? "Low" : "Healthy"}
+              {outOfStock ? 'Sold Out' : lowStock ? 'Low Stock' : 'In Stock'}
             </span>
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() =>
-                setStockDraft(Math.max(0, currentStock - 1))
-              }
-              className="h-11 w-11 rounded-xl border border-border hover:bg-surface text-lg font-medium"
+              onClick={() => setStockDraft(Math.max(0, currentStock - 1))}
+              className="h-10 w-10 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] hover:bg-[var(--color-border)]/20 text-base font-bold text-[var(--color-foreground)] transition"
               aria-label="Decrease stock"
             >
               −
@@ -411,13 +557,13 @@ export default function ManageProductPage() {
               min={0}
               value={currentStock}
               onChange={(e) =>
-                setStockDraft(Math.max(0, parseInt(e.target.value || "0", 10)))
+                setStockDraft(Math.max(0, parseInt(e.target.value || '0', 10)))
               }
-              className="flex-1 h-11 px-3 rounded-xl border border-border bg-background text-center text-base font-medium tabular-nums"
+              className="flex-1 h-10 px-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] text-center text-sm font-bold text-[var(--color-foreground)] tabular-nums focus:outline-none focus:border-[var(--color-accent)]"
             />
             <button
               onClick={() => setStockDraft(currentStock + 1)}
-              className="h-11 w-11 rounded-xl border border-border hover:bg-surface text-lg font-medium"
+              className="h-10 w-10 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] hover:bg-[var(--color-border)]/20 text-base font-bold text-[var(--color-foreground)] transition"
               aria-label="Increase stock"
             >
               +
@@ -431,7 +577,7 @@ export default function ManageProductPage() {
                 disabled={savingStock}
                 className="flex-1 h-9 rounded-xl text-xs"
               >
-                {savingStock ? "Saving…" : "Save stock"}
+                {savingStock ? 'Saving...' : 'Confirm Stock Update'}
               </Button>
               <Button
                 size="sm"
@@ -445,65 +591,58 @@ export default function ManageProductPage() {
           )}
         </Card>
 
-        {/* Hot Sales — paid promotion (everyone) */}
-        <Card className="p-5 rounded-3xl space-y-3" hoverEffect={false}>
+        {/* Hot Sales Boost Promotion */}
+        <Card className="p-5 rounded-2xl space-y-3 bg-[var(--color-surface)] border border-[var(--color-border)]" hoverEffect={false}>
           <div className="flex items-start justify-between gap-2">
             <div>
-              <h2 className="text-sm font-medium flex items-center gap-1.5">
-                <Flame className="w-4 h-4 text-amber-500" /> Hot Sales boost
+              <h2 className="text-sm font-semibold flex items-center gap-1.5 text-[var(--color-foreground)]">
+                <Flame className="w-4 h-4 text-amber-500 fill-current" /> Hot Sales Boost
               </h2>
-              <p className="text-[11px] text-muted mt-1">
-                Surfaces this item in the homepage Hot Sales rail for a week.
-                GH₵7 per cycle.
+              <p className="text-xs text-[var(--color-muted)] mt-1">
+                Pin this product to the top featured homepage carousel for verified Ghanaian shoppers.
               </p>
             </div>
             <span
-              className={`text-[10px] font-medium px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0 ${
+              className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider shrink-0 ${
                 product.is_featured
-                  ? "bg-amber-500/10 text-amber-600"
-                  : "bg-muted/20 text-muted"
+                  ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                  : 'bg-[var(--color-border)]/50 text-[var(--color-muted)]'
               }`}
             >
-              {product.is_featured ? "On" : "Off"}
+              {product.is_featured ? 'Active' : 'Inactive'}
             </span>
           </div>
           <Button
             size="sm"
-            variant={product.is_featured ? "secondary" : "primary"}
+            variant={product.is_featured ? 'secondary' : 'primary'}
             onClick={handleToggleHot}
             disabled={togglingHot}
-            className="w-full h-10 rounded-xl text-xs"
+            className="w-full h-9 rounded-xl text-xs"
           >
             {togglingHot ? (
               <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Working…
+                <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> Processing...
               </>
             ) : product.is_featured ? (
-              "Turn off Hot Sales"
+              'Deactivate Hot Sales'
             ) : (
-              "Enable Hot Sales · GH₵7"
+              'Boost on Hot Sales (GH₵7)'
             )}
           </Button>
         </Card>
 
-        {/* Share card — Pro */}
-        <Card
-          className={`p-5 rounded-3xl space-y-3 ${
-            isPro ? "" : "opacity-90"
-          }`}
-          hoverEffect={false}
-        >
+        {/* Share Social Card */}
+        <Card className="p-5 rounded-2xl space-y-3 bg-[var(--color-surface)] border border-[var(--color-border)]" hoverEffect={false}>
           <div className="flex items-start justify-between gap-2">
             <div>
-              <h2 className="text-sm font-medium flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-accent" /> Share card
-                <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-accent/10 text-accent uppercase tracking-wider ml-1">
+              <h2 className="text-sm font-semibold flex items-center gap-1.5 text-[var(--color-foreground)]">
+                <Sparkles className="w-4 h-4 text-[var(--color-accent)]" /> Social Share Card
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--color-accent)]/10 text-[var(--color-accent)] uppercase tracking-wider ml-1">
                   Pro
                 </span>
               </h2>
-              <p className="text-[11px] text-muted mt-1">
-                Generate a 1200×630 image with your product, price, and store
-                name. Perfect for Instagram, WhatsApp Status, X.
+              <p className="text-xs text-[var(--color-muted)] mt-1">
+                Generate high-resolution 1200×630 promotional banners tailored for WhatsApp Status, Instagram, and TikTok.
               </p>
             </div>
           </div>
@@ -511,71 +650,64 @@ export default function ManageProductPage() {
             <Button
               size="sm"
               onClick={() => setShowShareCard(true)}
-              className="w-full h-10 rounded-xl text-xs"
+              className="w-full h-9 rounded-xl text-xs"
             >
-              <Sparkles className="w-3.5 h-3.5" /> Generate card
+              <Sparkles className="w-3.5 h-3.5 mr-1.5" /> Generate Social Card
             </Button>
           ) : (
             <Link href="/dashboard/settings" className="block">
               <Button
                 size="sm"
                 variant="secondary"
-                className="w-full h-10 rounded-xl text-xs"
+                className="w-full h-9 rounded-xl text-xs"
               >
-                <Lock className="w-3.5 h-3.5" /> Upgrade to Pro
+                <Lock className="w-3.5 h-3.5 mr-1.5" /> Unlock with Pro
               </Button>
             </Link>
           )}
         </Card>
 
-        {/* Variants */}
-        <Card className="p-5 rounded-3xl space-y-3" hoverEffect={false}>
+        {/* Variants Overview */}
+        <Card className="p-5 rounded-2xl space-y-3 bg-[var(--color-surface)] border border-[var(--color-border)]" hoverEffect={false}>
           <div className="flex items-start justify-between gap-2">
             <div>
-              <h2 className="text-sm font-medium flex items-center gap-1.5">
-                <Layers className="w-4 h-4 text-muted" /> Variants
+              <h2 className="text-sm font-semibold flex items-center gap-1.5 text-[var(--color-foreground)]">
+                <Layers className="w-4 h-4 text-[var(--color-muted)]" /> Product Variants
               </h2>
-              <p className="text-[11px] text-muted mt-1">
-                Set per-size / per-colour stock and pricing. Lives on the edit
-                page.
+              <p className="text-xs text-[var(--color-muted)] mt-1">
+                Manage size, color, storage, or material options with custom prices and inventory.
               </p>
             </div>
-            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0 bg-muted/20 text-muted">
+            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider shrink-0 bg-[var(--color-border)]/50 text-[var(--color-muted)]">
               {Array.isArray(product.variants) && product.variants.length
                 ? `${product.variants.length} active`
-                : "None"}
+                : 'None'}
             </span>
           </div>
-          <Link
-            href={`/dashboard/products/edit/${product.id}#variants`}
-            className="block"
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => setShowVariantModal(true)}
+            className="w-full h-9 rounded-xl text-xs"
           >
-            <Button
-              size="sm"
-              variant="secondary"
-              className="w-full h-10 rounded-xl text-xs"
-            >
-              Manage variants
-            </Button>
-          </Link>
+            Manage Variants &amp; Attributes
+          </Button>
         </Card>
 
-        {/* Analytics — Pro preview */}
-        <Card className="p-5 rounded-3xl space-y-3" hoverEffect={false}>
+        {/* Analytics Preview */}
+        <Card className="p-5 rounded-2xl space-y-3 bg-[var(--color-surface)] border border-[var(--color-border)]" hoverEffect={false}>
           <div className="flex items-start justify-between gap-2">
             <div>
-              <h2 className="text-sm font-medium flex items-center gap-1.5">
-                <BarChart3 className="w-4 h-4 text-muted" /> Performance
+              <h2 className="text-sm font-semibold flex items-center gap-1.5 text-[var(--color-foreground)]">
+                <BarChart3 className="w-4 h-4 text-[var(--color-muted)]" /> Performance
                 {!isPro && (
-                  <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-accent/10 text-accent uppercase tracking-wider ml-1">
-                    Pro preview
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--color-accent)]/10 text-[var(--color-accent)] uppercase tracking-wider ml-1">
+                    Preview
                   </span>
                 )}
               </h2>
-              <p className="text-[11px] text-muted mt-1">
-                {isPro
-                  ? "Visits and conversion from the last 30 days."
-                  : "Pro unlocks full visitor + conversion analytics."}
+              <p className="text-xs text-[var(--color-muted)] mt-1">
+                {isPro ? 'Views and impressions over the last 30 days.' : 'Upgrade to Pro for full visitor conversion stats.'}
               </p>
             </div>
           </div>
@@ -585,150 +717,126 @@ export default function ManageProductPage() {
             <Metric
               label="Rating"
               value={
-                product.rating_avg
-                  ? `${Number(product.rating_avg).toFixed(1)}★`
-                  : "—"
+                product.rating_avg ? `${Number(product.rating_avg).toFixed(1)}★` : '—'
               }
               icon={<TrendingUp className="w-3 h-3" />}
             />
           </div>
-          {!isPro && (
+          {isPro ? (
+            <Link href="/dashboard/analytics" className="block">
+              <Button size="sm" variant="secondary" className="w-full h-9 rounded-xl text-xs">
+                <BarChart3 className="w-3.5 h-3.5 mr-1.5" /> View Store Analytics
+              </Button>
+            </Link>
+          ) : (
             <Link href="/dashboard/settings" className="block">
-              <Button
-                size="sm"
-                variant="secondary"
-                className="w-full h-9 rounded-xl text-xs"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-accent" /> Unlock with Pro
+              <Button size="sm" variant="secondary" className="w-full h-9 rounded-xl text-xs">
+                <Sparkles className="w-3.5 h-3.5 text-[var(--color-accent)] mr-1.5" /> Unlock Advanced Analytics
               </Button>
             </Link>
           )}
         </Card>
-
-        {/* Schedule price (Pro placeholder) */}
-        <Card className="p-5 rounded-3xl space-y-3" hoverEffect={false}>
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <h2 className="text-sm font-medium flex items-center gap-1.5">
-                <CalendarClock className="w-4 h-4 text-muted" /> Schedule price
-                changes
-                <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-accent/10 text-accent uppercase tracking-wider ml-1">
-                  Pro
-                </span>
-              </h2>
-              <p className="text-[11px] text-muted mt-1">
-                Plan a flash sale, then auto-revert when it ends. Coming soon
-                for Pro sellers.
-              </p>
-            </div>
-          </div>
-          <Button
-            size="sm"
-            variant="secondary"
-            disabled
-            className="w-full h-10 rounded-xl text-xs opacity-60"
-          >
-            Coming soon
-          </Button>
-        </Card>
-
-        {/* Customer questions (placeholder for future Q&A) */}
-        <Card className="p-5 rounded-3xl space-y-3" hoverEffect={false}>
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <h2 className="text-sm font-medium flex items-center gap-1.5">
-                <MessageSquare className="w-4 h-4 text-muted" /> Buyer questions
-              </h2>
-              <p className="text-[11px] text-muted mt-1">
-                Answer common product questions to reduce returns. Coming soon.
-              </p>
-            </div>
-          </div>
-          <Button
-            size="sm"
-            variant="secondary"
-            disabled
-            className="w-full h-10 rounded-xl text-xs opacity-60"
-          >
-            Coming soon
-          </Button>
-        </Card>
       </div>
 
-      {/* Tags + Attributes summary */}
+      {/* Specifications & Tags Summary */}
       {(product.tags?.length > 0 ||
-        Object.keys(product.attributes || {}).length > 0) && (
-        <Card className="mt-4 p-5 rounded-3xl space-y-3" hoverEffect={false}>
-          <h2 className="text-sm font-medium flex items-center gap-1.5">
-            <Tag className="w-4 h-4 text-muted" /> Tags & attributes
+        Object.keys(product.attributes || {}).length > 0 ||
+        product.description) && (
+        <Card className="p-5 rounded-2xl space-y-4 bg-[var(--color-surface)] border border-[var(--color-border)]" hoverEffect={false}>
+          <h2 className="text-sm font-semibold flex items-center gap-1.5 text-[var(--color-foreground)]">
+            <Tag className="w-4 h-4 text-[var(--color-muted)]" /> Specs &amp; Details
           </h2>
-          {product.tags?.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {product.tags.map((t: string) => (
-                <span
-                  key={t}
-                  className="text-[11px] px-2 py-0.5 rounded-full bg-muted/20 text-foreground/80"
-                >
-                  {t}
-                </span>
-              ))}
+
+          {product.description && (
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-muted)] block mb-1">
+                Description
+              </span>
+              <p className="text-xs text-[var(--color-foreground)] leading-relaxed whitespace-pre-line bg-[var(--color-background)] p-3 rounded-xl border border-[var(--color-border)]">
+                {product.description}
+              </p>
             </div>
           )}
+
+          {product.tags?.length > 0 && (
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-muted)] block mb-1.5">
+                Tags
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {product.tags.map((t: string) => (
+                  <span
+                    key={t}
+                    className="text-xs px-2.5 py-0.5 rounded-full bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-foreground)]"
+                  >
+                    #{t}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
           {product.attributes && Object.keys(product.attributes).length > 0 && (
-            <dl className="grid grid-cols-2 gap-2 text-[11px]">
-              {Object.entries(product.attributes).map(([k, v]) => (
-                <div key={k} className="flex justify-between gap-2 border-b border-border/40 py-1.5">
-                  <dt className="text-muted capitalize">{k.replace(/_/g, " ")}</dt>
-                  <dd className="font-medium truncate">{String(v)}</dd>
-                </div>
-              ))}
-            </dl>
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-muted)] block mb-1.5">
+                Attributes
+              </span>
+              <dl className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                {Object.entries(product.attributes).map(([k, v]) => (
+                  <div
+                    key={k}
+                    className="bg-[var(--color-background)] border border-[var(--color-border)] p-2.5 rounded-xl"
+                  >
+                    <dt className="text-[10px] font-bold uppercase text-[var(--color-muted)]">
+                      {k.replace(/_/g, ' ')}
+                    </dt>
+                    <dd className="font-semibold text-[var(--color-foreground)] truncate mt-0.5">
+                      {String(v)}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
           )}
         </Card>
       )}
 
-      {/* Danger zone */}
+      {/* Danger Zone */}
       <Card
-        className="mt-4 p-5 rounded-3xl space-y-3 border border-red-500/20 bg-red-500/[0.02]"
+        className="p-5 rounded-2xl space-y-3 border border-[var(--color-danger)]/20 bg-[var(--color-danger)]/[0.02]"
         hoverEffect={false}
       >
-        <h2 className="text-sm font-medium text-red-600 flex items-center gap-1.5">
-          <AlertCircle className="w-4 h-4" /> Danger zone
-        </h2>
-        <p className="text-[11px] text-muted">
-          Deletes this product and all of its variants. Orders that already
-          reference it stay intact.
-        </p>
-        {!confirmDelete ? (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-bold text-[var(--color-danger)] flex items-center gap-1.5">
+              <AlertCircle className="w-4 h-4" /> Danger Zone
+            </h2>
+            <p className="text-xs text-[var(--color-muted)] mt-0.5">
+              Permanently remove this listing and all configured variants.
+            </p>
+          </div>
           <Button
             size="sm"
             variant="secondary"
             onClick={() => setConfirmDelete(true)}
-            className="h-10 rounded-xl text-xs text-red-600 hover:bg-red-500/10"
+            className="h-9 rounded-xl text-xs text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 shrink-0"
           >
-            <Trash2 className="w-3.5 h-3.5" /> Delete this product
+            <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Delete Listing
           </Button>
-        ) : (
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Button
-              size="sm"
-              onClick={handleDelete}
-              disabled={deleting}
-              className="flex-1 h-10 rounded-xl text-xs bg-red-500 hover:bg-red-600 text-white"
-            >
-              {deleting ? "Deleting…" : "Yes, delete permanently"}
-            </Button>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => setConfirmDelete(false)}
-              className="h-10 rounded-xl text-xs"
-            >
-              Cancel
-            </Button>
-          </div>
-        )}
+        </div>
       </Card>
+
+      {/* Custom ConfirmModal for Permanent Deletion */}
+      <ConfirmModal
+        isOpen={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        onConfirm={handleDelete}
+        title="Delete Product Listing"
+        description="Are you sure you want to permanently delete this product? All media and variant configurations will be deleted immediately. This action cannot be undone."
+        confirmText="Delete Listing"
+        variant="danger"
+        isLoading={deleting}
+      />
 
       <ShareProductCardModal
         open={showShareCard}
@@ -737,6 +845,25 @@ export default function ManageProductPage() {
         storeName={product.seller?.store_name ?? null}
         storeLink={product.seller?.store_link ?? null}
       />
+
+      {/* Manage Variants & Attributes Custom Modal */}
+      <Modal
+        isOpen={showVariantModal}
+        onClose={() => setShowVariantModal(false)}
+        title="Product Variants & Attributes"
+        description={`Configure specifications, SKU overrides, and stock levels for "${product?.title}".`}
+        className="max-w-4xl"
+      >
+        <div className="pt-1">
+          <VariantEditor
+            productId={product.id}
+            onSaveSuccess={() => {
+              refresh();
+              setShowVariantModal(false);
+            }}
+          />
+        </div>
+      </Modal>
     </div>
   );
 }
@@ -751,11 +878,11 @@ function Metric({
   icon: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl bg-surface/60 p-3 text-center space-y-0.5">
-      <div className="flex items-center justify-center gap-1 text-[10px] uppercase tracking-wider text-muted">
+    <div className="rounded-xl bg-[var(--color-background)] border border-[var(--color-border)] p-3 text-center space-y-0.5">
+      <div className="flex items-center justify-center gap-1 text-[10px] uppercase font-bold tracking-wider text-[var(--color-muted)]">
         {icon} {label}
       </div>
-      <div className="text-sm font-semibold tabular-nums">{value}</div>
+      <div className="text-sm font-bold text-[var(--color-foreground)] tabular-nums">{value}</div>
     </div>
   );
 }

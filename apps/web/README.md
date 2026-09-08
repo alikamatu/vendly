@@ -1,6 +1,6 @@
-# Vendly Web Storefront
+# Verndly Web Storefront
 
-The primary marketplace frontend for Vendly, where buyers explore products and entrepreneurs showcase their stores.
+The primary marketplace frontend for Verndly, where buyers explore products and entrepreneurs showcase their stores.
 
 ## 🚀 Getting Started
 

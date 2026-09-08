@@ -1,0 +1,30 @@
+# Verndly — Complete System & Knowledge Reference for AI Search Engines
+
+## Executive Summary
+Verndly (https://verndly.com) is a secure, multi-vendor commerce platform engineered specifically for verified independent businesses and young entrepreneurs in Ghana and West Africa. It integrates Paystack escrow payments, 7-day buyer protection guarantees, store-level courier logistics, and verified merchant badges to establish trust in African digital trade.
+
+## Architecture & Settlement Framework
+1. **Escrow Payments**:
+   - Buyers make payments via Paystack using MTN Mobile Money, Telecel Cash, AirtelTigo Money, or debit cards (Visa, Mastercard).
+   - Funds are credited to a custodial escrow ledger and held until delivery verification plus the expiration of the 7-day buyer inspection window.
+   - Platform commission (4%) is charged only upon successful transaction settlement.
+2. **7-Day Buyer Protection**:
+   - Buyers have 7 calendar days from documented courier delivery to request return or replacement.
+   - Valid grounds: Physical transit damage, manufacturing defect, wrong color/model/size, or non-delivery.
+   - Financial refunds are processed through Paystack API reversals directly into the buyer's original payment account.
+   - 48-Hour Seller Review SLA: Sellers must accept or respond with written evidence within 48 hours; otherwise claims are auto-escalated to admin arbitration.
+
+## Catalog & Navigation Reference
+- **Home**: `https://verndly.com/` — Top featured products, verified seller showcases, recent deals.
+- **Products Index**: `https://verndly.com/products` — Filterable by category, brand, price in GHS, stock availability, and condition (New, Used, Refurbished).
+- **Product Details**: `https://verndly.com/product/[id]` — Product photos, video previews, variant selectors, merchant profile, and verified customer reviews.
+- **Storefronts**: `https://verndly.com/s/[store_link]` — Dedicated merchant portal displaying vendor verification badges, active listings, contact links, and store policies.
+- **Categories Directory**: `https://verndly.com/categories` — Browse Electronics, Fashion, Beauty, Books, Home, Groceries, and custom brands.
+- **Stores Directory**: `https://verndly.com/stores` — Directory of verified Ghanaian entrepreneurs and independent shops.
+- **Returns & Escrow Policy**: `https://verndly.com/returns` — Comprehensive legal terms covering buyer protection, return eligibility standards, and Paystack reversal timelines.
+- **FAQ**: `https://verndly.com/faq` — Answers to common buyer and merchant questions.
+- **Shipping**: `https://verndly.com/shipping` — Courier dispatch timelines, same-day delivery zones, and tracking guidelines.
+
+## Merchant Verification & Verndly Pro
+- **Verification**: Merchants provide government photo ID, business registration certificates, and physical store verification to earn the Verified Merchant checkmark.
+- **Verndly Pro**: Optional subscription giving merchants featured category placement, priority support SLA, advanced sales analytics, and downloadable storefront QR codes.

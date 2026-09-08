@@ -8,7 +8,6 @@ import {
   Globe,
   Info,
   Camera,
-  Loader2,
   Check,
   MapPin,
   Truck,
@@ -24,12 +23,16 @@ import {
   Smartphone,
   Landmark,
   Banknote,
+  MessageCircle,
+  Youtube,
 } from 'lucide-react';
 import Link from 'next/link';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
+import Spinner from '@/components/ui/Spinner';
+import Select from '@/components/ui/Select';
 import { useAuth } from '@/lib/contexts/auth-context';
 import { storeApi } from '@/lib/api/store';
 import { onboardingApi, LocationCity } from '@/lib/api/onboarding';
@@ -163,7 +166,7 @@ export default function StoreSettingsPage() {
     delivery_policies: seller?.delivery_policies || '',
     business_hours: seller?.business_hours || '',
     whatsapp_number: seller?.whatsapp_number || '',
-    social_links: seller?.social_links || { instagram: '', twitter: '', facebook: '' },
+    social_links: seller?.social_links || { instagram: '', twitter: '', facebook: '', tiktok: '', youtube: '', website: '' },
     accepted_payment_methods: seller?.accepted_payment_methods || [],
     payment_timing: seller?.payment_timing || '',
     service_area: seller?.service_area || '',
@@ -197,7 +200,7 @@ export default function StoreSettingsPage() {
       delivery_policies: seller.delivery_policies || '',
       business_hours: seller.business_hours || '',
       whatsapp_number: seller.whatsapp_number || '',
-      social_links: seller.social_links || { instagram: '', twitter: '', facebook: '' },
+      social_links: seller.social_links || { instagram: '', twitter: '', facebook: '', tiktok: '', youtube: '', website: '' },
       accepted_payment_methods: seller.accepted_payment_methods || [],
       payment_timing: seller.payment_timing || '',
       service_area: seller.service_area || '',
@@ -523,36 +526,24 @@ export default function StoreSettingsPage() {
                       borderColor: 'color-mix(in srgb, var(--color-border) 10%, transparent)',
                     }}
                   >
-                    <Loader2
-                      className="h-3 w-3 animate-spin"
-                      style={{ color: 'var(--color-muted)' }}
-                    />
+                    <Spinner size="xs" />
                     <span
                       className="text-[10px] font-normal"
                       style={{ color: 'var(--color-muted)' }}
                     >
-                      Loading...
+                      Loading…
                     </span>
                   </div>
                 ) : (
-                  <select
+                  <Select
                     value={selectedRegion}
-                    onChange={(e) => setSelectedRegion(e.target.value)}
-                    className={selectCls}
-                    style={{
-                      backgroundColor:
-                        'color-mix(in srgb, var(--color-background) 50%, transparent)',
-                      borderColor: 'color-mix(in srgb, var(--color-border) 10%, transparent)',
-                      color: 'var(--color-foreground)',
-                    }}
-                  >
-                    <option value="">Select Region</option>
-                    {regions.map((r) => (
-                      <option key={r} value={r}>
-                        {r}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) => setSelectedRegion(val)}
+                    options={[
+                      { value: '', label: 'Select Region' },
+                      ...regions.map((r) => ({ value: r, label: r })),
+                    ]}
+                    size="sm"
+                  />
                 )}
               </div>
 
@@ -569,39 +560,28 @@ export default function StoreSettingsPage() {
                       borderColor: 'color-mix(in srgb, var(--color-border) 10%, transparent)',
                     }}
                   >
-                    <Loader2
-                      className="h-3 w-3 animate-spin"
-                      style={{ color: 'var(--color-muted)' }}
-                    />
+                    <Spinner size="xs" />
                     <span
                       className="text-[10px] font-normal"
                       style={{ color: 'var(--color-muted)' }}
                     >
-                      Loading...
+                      Loading…
                     </span>
                   </div>
                 ) : (
-                  <select
+                  <Select
                     value={formData.location_id}
-                    onChange={(e) => setFormData({ ...formData, location_id: e.target.value })}
+                    onChange={(val) => setFormData({ ...formData, location_id: val })}
+                    options={[
+                      {
+                        value: '',
+                        label: selectedRegion ? 'Select City' : 'Select Region First',
+                      },
+                      ...cities.map((c) => ({ value: c.id, label: c.city })),
+                    ]}
                     disabled={!selectedRegion}
-                    className={`${selectCls} disabled:opacity-40`}
-                    style={{
-                      backgroundColor:
-                        'color-mix(in srgb, var(--color-background) 50%, transparent)',
-                      borderColor: 'color-mix(in srgb, var(--color-border) 10%, transparent)',
-                      color: 'var(--color-foreground)',
-                    }}
-                  >
-                    <option value="">
-                      {selectedRegion ? 'Select City' : 'Select Region First'}
-                    </option>
-                    {cities.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.city}
-                      </option>
-                    ))}
-                  </select>
+                    size="sm"
+                  />
                 )}
               </div>
             </div>
@@ -869,41 +849,25 @@ export default function StoreSettingsPage() {
                     >
                       Bank / Provider
                     </label>
-                    <select
+                    <Select
                       value={formData.bank_code}
-                      onChange={(e) =>
+                      onChange={(val) =>
                         setFormData({
                           ...formData,
-                          bank_code: e.target.value,
+                          bank_code: val,
                           bank_name:
-                            GHANA_BANKS.find((b) => b.code === e.target.value)?.name ||
-                            MOMO_PROVIDERS.find((p) => p.code === e.target.value)?.name ||
+                            GHANA_BANKS.find((b) => b.code === val)?.name ||
+                            MOMO_PROVIDERS.find((p) => p.code === val)?.name ||
                             '',
                         })
                       }
-                      className={selectCls}
-                      style={{
-                        backgroundColor: 'var(--color-background)',
-                        borderColor: 'color-mix(in srgb, var(--color-border) 10%, transparent)',
-                        color: 'var(--color-foreground)',
-                      }}
-                    >
-                      <option value="">Select Provider</option>
-                      <optgroup label="Banks">
-                        {GHANA_BANKS.map((b) => (
-                          <option key={b.id} value={b.code}>
-                            {b.name}
-                          </option>
-                        ))}
-                      </optgroup>
-                      <optgroup label="Mobile Money">
-                        {MOMO_PROVIDERS.map((p) => (
-                          <option key={p.id} value={p.code}>
-                            {p.name}
-                          </option>
-                        ))}
-                      </optgroup>
-                    </select>
+                      options={[
+                        { value: '', label: 'Select Provider' },
+                        ...GHANA_BANKS.map((b) => ({ value: b.code, label: b.name, badge: 'Bank' })),
+                        ...MOMO_PROVIDERS.map((p) => ({ value: p.code, label: p.name, badge: 'MoMo' })),
+                      ]}
+                      size="sm"
+                    />
                   </div>
                   <div className="space-y-2">
                     <label
@@ -1005,7 +969,7 @@ export default function StoreSettingsPage() {
           </div>
         </Card>
 
-        {/* ────────────────── Social Channels ────────────────── */}
+        {/* ────────────────── Social Channels & Direct Messaging ────────────────── */}
         <Card className="space-y-6 p-6 md:p-8" hoverEffect={false}>
           <div
             className={sectionHeaderCls}
@@ -1019,22 +983,66 @@ export default function StoreSettingsPage() {
             >
               <Share2 className="h-4 w-4" style={{ color: 'var(--color-accent)' }} />
             </div>
-            <h3
-              className="text-xs font-medium uppercase tracking-wider"
-              style={{ color: 'var(--color-foreground)' }}
-            >
-              Social Channels
-            </h3>
+            <div>
+              <h3
+                className="text-xs font-medium uppercase tracking-wider"
+                style={{ color: 'var(--color-foreground)' }}
+              >
+                Social Channels & Customer DM
+              </h3>
+              <p className="text-[11px] text-[var(--color-muted)] mt-0.5">
+                Connect your direct WhatsApp number and public profiles. Storefront &quot;Message&quot; clicks route directly to your WhatsApp DM.
+              </p>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <div className="space-y-2">
-              <label className={labelCls} style={{ color: 'var(--color-muted)' }}>
-                WhatsApp Number
-              </label>
+          <div className="space-y-6">
+            {/* WhatsApp Direct DM Box */}
+            <div
+              className="rounded-2xl border p-4 space-y-3"
+              style={{
+                borderColor: 'color-mix(in srgb, var(--color-border) 60%, transparent)',
+                backgroundColor: 'color-mix(in srgb, var(--color-background) 60%, transparent)',
+              }}
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600">
+                    <MessageCircle className="h-4 w-4" />
+                  </div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-[var(--color-foreground)]">
+                    WhatsApp DM Number
+                  </label>
+                </div>
+
+                {formData.whatsapp_number && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      let clean = formData.whatsapp_number.replace(/[^\d]/g, '');
+                      if (clean.startsWith('0') && clean.length === 10) clean = '233' + clean.slice(1);
+                      window.open(
+                        `https://wa.me/${clean}?text=${encodeURIComponent(
+                          `Test inquiry to ${formData.store_name || 'store'} on Verndly`
+                        )}`,
+                        '_blank',
+                        'noopener,noreferrer'
+                      );
+                    }}
+                    className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 hover:text-emerald-500 transition-colors"
+                  >
+                    <ExternalLink className="h-3 w-3" /> Test WhatsApp DM Link
+                  </button>
+                )}
+              </div>
+
+              <p className="text-[11px] text-[var(--color-muted)] leading-relaxed">
+                When buyers tap &quot;Message&quot; or &quot;Contact&quot; on your public storefront or products, it immediately opens a direct WhatsApp chat with your store.
+              </p>
+
               <div className="relative">
                 <div
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-[11px] font-normal"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-[11px] font-medium"
                   style={{ color: 'var(--color-muted)' }}
                 >
                   +
@@ -1042,7 +1050,7 @@ export default function StoreSettingsPage() {
                 <Input
                   value={formData.whatsapp_number}
                   onChange={(e) => setFormData({ ...formData, whatsapp_number: e.target.value })}
-                  placeholder="2348000000000"
+                  placeholder="233540000000 or 0540000000"
                   className="h-11 rounded-xl pl-8 text-[11px] font-normal"
                   style={{
                     backgroundColor: 'color-mix(in srgb, var(--color-background) 50%, transparent)',
@@ -1051,36 +1059,113 @@ export default function StoreSettingsPage() {
               </div>
             </div>
 
-            <div className="space-y-4">
-              <div className="relative">
-                <Instagram
-                  className="absolute left-4 top-1/2 h-3 w-3 -translate-y-1/2"
-                  style={{ color: 'var(--color-muted)' }}
-                />
-                <Input
-                  value={(formData.social_links as any).instagram}
-                  onChange={(e) => updateSocialLink('instagram', e.target.value)}
-                  placeholder="Instagram Username"
-                  className="h-11 rounded-xl pl-12 text-[11px] font-normal"
-                  style={{
-                    backgroundColor: 'color-mix(in srgb, var(--color-background) 50%, transparent)',
-                  }}
-                />
-              </div>
-              <div className="relative">
-                <Twitter
-                  className="absolute left-4 top-1/2 h-3 w-3 -translate-y-1/2"
-                  style={{ color: 'var(--color-muted)' }}
-                />
-                <Input
-                  value={(formData.social_links as any).twitter}
-                  onChange={(e) => updateSocialLink('twitter', e.target.value)}
-                  placeholder="Twitter Handle"
-                  className="h-11 rounded-xl pl-12 text-[11px] font-normal"
-                  style={{
-                    backgroundColor: 'color-mix(in srgb, var(--color-background) 50%, transparent)',
-                  }}
-                />
+            {/* Social Media Profiles */}
+            <div className="space-y-3">
+              <label className={labelCls} style={{ color: 'var(--color-muted)' }}>
+                Social Profiles & Online Presence
+              </label>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {/* Instagram */}
+                <div className="relative">
+                  <Instagram
+                    className="absolute left-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-pink-500"
+                  />
+                  <Input
+                    value={(formData.social_links as any)?.instagram || ''}
+                    onChange={(e) => updateSocialLink('instagram', e.target.value)}
+                    placeholder="Instagram username or URL"
+                    className="h-11 rounded-xl pl-12 text-[11px] font-normal"
+                    style={{
+                      backgroundColor: 'color-mix(in srgb, var(--color-background) 50%, transparent)',
+                    }}
+                  />
+                </div>
+
+                {/* TikTok */}
+                <div className="relative">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-foreground)]">
+                    <svg className="h-3.5 w-3.5 fill-current" viewBox="0 0 24 24">
+                      <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.24 1.07-.14 1.61.24 1.64 1.82 2.89 3.5 2.75 1.44-.07 2.67-.97 3.09-2.31.25-.72.31-1.5.29-2.26.03-5.27.01-10.54.02-15.81z" />
+                    </svg>
+                  </div>
+                  <Input
+                    value={(formData.social_links as any)?.tiktok || ''}
+                    onChange={(e) => updateSocialLink('tiktok', e.target.value)}
+                    placeholder="TikTok username or URL"
+                    className="h-11 rounded-xl pl-12 text-[11px] font-normal"
+                    style={{
+                      backgroundColor: 'color-mix(in srgb, var(--color-background) 50%, transparent)',
+                    }}
+                  />
+                </div>
+
+                {/* Twitter / X */}
+                <div className="relative">
+                  <Twitter
+                    className="absolute left-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2"
+                    style={{ color: 'var(--color-muted)' }}
+                  />
+                  <Input
+                    value={(formData.social_links as any)?.twitter || ''}
+                    onChange={(e) => updateSocialLink('twitter', e.target.value)}
+                    placeholder="X / Twitter handle or URL"
+                    className="h-11 rounded-xl pl-12 text-[11px] font-normal"
+                    style={{
+                      backgroundColor: 'color-mix(in srgb, var(--color-background) 50%, transparent)',
+                    }}
+                  />
+                </div>
+
+                {/* Facebook */}
+                <div className="relative">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600">
+                    <svg className="h-3.5 w-3.5 fill-current" viewBox="0 0 24 24">
+                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                    </svg>
+                  </div>
+                  <Input
+                    value={(formData.social_links as any)?.facebook || ''}
+                    onChange={(e) => updateSocialLink('facebook', e.target.value)}
+                    placeholder="Facebook page name or URL"
+                    className="h-11 rounded-xl pl-12 text-[11px] font-normal"
+                    style={{
+                      backgroundColor: 'color-mix(in srgb, var(--color-background) 50%, transparent)',
+                    }}
+                  />
+                </div>
+
+                {/* YouTube */}
+                <div className="relative">
+                  <Youtube
+                    className="absolute left-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-red-500"
+                  />
+                  <Input
+                    value={(formData.social_links as any)?.youtube || ''}
+                    onChange={(e) => updateSocialLink('youtube', e.target.value)}
+                    placeholder="YouTube channel or handle"
+                    className="h-11 rounded-xl pl-12 text-[11px] font-normal"
+                    style={{
+                      backgroundColor: 'color-mix(in srgb, var(--color-background) 50%, transparent)',
+                    }}
+                  />
+                </div>
+
+                {/* External Website */}
+                <div className="relative">
+                  <Globe
+                    className="absolute left-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-emerald-500"
+                  />
+                  <Input
+                    value={(formData.social_links as any)?.website || ''}
+                    onChange={(e) => updateSocialLink('website', e.target.value)}
+                    placeholder="Website or portfolio URL"
+                    className="h-11 rounded-xl pl-12 text-[11px] font-normal"
+                    style={{
+                      backgroundColor: 'color-mix(in srgb, var(--color-background) 50%, transparent)',
+                    }}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -1095,20 +1180,17 @@ export default function StoreSettingsPage() {
         >
           <Button
             type="submit"
-            disabled={isLoading}
-            className="h-14 w-full rounded-2xl text-[10px] font-medium uppercase tracking-wider transition-all hover:scale-[1.01] active:scale-[0.99]"
+            isLoading={isLoading}
+            loadingText="Deploying Changes…"
+            className="h-14 w-full rounded-2xl text-xs font-medium transition-all"
             style={{
               boxShadow: '0 8px 32px color-mix(in srgb, var(--color-accent) 20%, transparent)',
             }}
           >
-            {isLoading ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <span className="flex items-center gap-2">
-                Deploy Changes
-                <ExternalLink className="h-3 w-3" />
-              </span>
-            )}
+            <span className="flex items-center gap-2">
+              Deploy Changes
+              <ExternalLink className="h-3 w-3" />
+            </span>
           </Button>
         </div>
       </form>

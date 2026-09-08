@@ -7,7 +7,6 @@ import {
   ShieldCheck,
   Smartphone,
   AlertTriangle,
-  Loader2,
   Copy,
   CheckCircle2,
   Key,
@@ -15,6 +14,7 @@ import {
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import Spinner from "@/components/ui/Spinner";
 import { authApi } from "@/lib/api/auth";
 import { useAuth } from "@/lib/contexts/auth-context";
 
@@ -204,8 +204,8 @@ export default function TwoFactorPanel() {
 
   if (stage === "loading") {
     return (
-      <Card className="p-6">
-        <Loader2 className="w-4 h-4 animate-spin text-muted" />
+      <Card className="p-8 flex items-center justify-center">
+        <Spinner size="md" />
       </Card>
     );
   }
@@ -335,8 +335,8 @@ export default function TwoFactorPanel() {
               >
                 Back
               </Button>
-              <Button type="submit" disabled={busy || !phoneInput.trim()}>
-                {busy ? "Sending…" : "Send code"}
+              <Button type="submit" isLoading={busy} loadingText="Sending…" disabled={!phoneInput.trim()}>
+                Send code
               </Button>
             </div>
           </form>
@@ -372,8 +372,8 @@ export default function TwoFactorPanel() {
               >
                 Back
               </Button>
-              <Button type="submit" disabled={busy || smsCode.length < 6}>
-                {busy ? "Verifying…" : "Enable SMS 2FA"}
+              <Button type="submit" isLoading={busy} loadingText="Verifying…" disabled={smsCode.length < 6}>
+                Enable SMS 2FA
               </Button>
             </div>
           </form>
@@ -452,8 +452,8 @@ export default function TwoFactorPanel() {
               >
                 Back
               </Button>
-              <Button type="submit" disabled={busy || verifyCode.length < 6}>
-                {busy ? "Verifying…" : "Enable 2FA"}
+              <Button type="submit" isLoading={busy} loadingText="Verifying…" disabled={verifyCode.length < 6}>
+                Enable 2FA
               </Button>
             </div>
           </form>
@@ -545,7 +545,9 @@ export default function TwoFactorPanel() {
               />
               <Button
                 onClick={doRegenerate}
-                disabled={busy || !regenPassword}
+                isLoading={busy}
+                loadingText="Regenerating…"
+                disabled={!regenPassword}
                 className="shrink-0"
               >
                 Regenerate
@@ -592,7 +594,9 @@ export default function TwoFactorPanel() {
               </Button>
               <Button
                 type="submit"
-                disabled={busy || !disablePassword || !disableCode}
+                isLoading={busy}
+                loadingText="Disabling…"
+                disabled={!disablePassword || !disableCode}
                 className="bg-red-500 hover:bg-red-600 text-white"
               >
                 Disable 2FA

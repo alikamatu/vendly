@@ -1,5 +1,5 @@
 /**
- * Vendly transactional email templates.
+ * Verndly transactional email templates.
  *
  * Conventions:
  * - Inline styles only (most email clients strip <style>).
@@ -10,24 +10,40 @@
  *   point at the right place via FRONTEND_URL.
  */
 
+import {
+  emailShell,
+  renderOrderItemsComponent,
+  renderOrderSummaryCard,
+  renderDeliveryDetailsCard,
+  renderFinancialBreakdown,
+  renderStatusBanner,
+  renderActionButtons,
+  getStatusConfig,
+  OrderItemDisplay,
+} from './components';
+
+export * from './components';
+
 // ─── Brand tokens ────────────────────────────────────────────────────────────
 
 const BRAND = {
-  name: 'Vendly',
-  tagline: 'For young entrepreneurs and small businesses',
-  logo: 'https://vendly-omega.vercel.app/logos/vendly.png',
-  supportEmail: 'support@vendly.com',
+  name: 'Verndly',
+  tagline: 'Commerce engineered for independent businesses',
+  logo: 'https://res.cloudinary.com/du30sqscy/image/upload/w_112,h_112,c_limit,q_auto,f_png/logos/verndly-logo.png',
+  supportEmail: 'support@verndly.com',
+  securityEmail: 'security@verndly.com',
   whatsapp: '+233 24 000 0000',
-  primary: '#ff6b00',
-  text: '#0a0a0a',
-  muted: '#6b7280',
-  border: '#e5e7eb',
-  surface: '#f9fafb',
-  background: '#f3f4f6',
+  primary: '#0f172a',
+  accent: '#ef4444',
+  text: '#0f172a',
+  muted: '#64748b',
+  border: '#e2e8f0',
+  surface: '#f8fafc',
+  background: '#f1f5f9',
 };
 
 export interface EmailLinks {
-  /** e.g. https://vendly.com — no trailing slash */
+  /** e.g. https://verndly.com — no trailing slash */
   baseUrl: string;
 }
 
@@ -76,11 +92,12 @@ const formatDateTime = (d: string | Date): string => {
 // ─── Building blocks ─────────────────────────────────────────────────────────
 
 const button = (label: string, href: string, color = BRAND.primary): string => `
-<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 24px 0;">
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 26px 0 22px;">
   <tr>
-    <td align="center" style="border-radius: 10px; background:${color};">
+    <td align="left" style="border-radius: 6px; background: ${color};" class="email-btn-primary">
       <a href="${escape(href)}"
-        style="display:inline-block; padding:14px 28px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size:14px; color:#ffffff; text-decoration:none; border-radius:10px;">
+        class="email-btn-primary"
+        style="display: inline-block; padding: 13px 28px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13.5px; font-weight: 600; color: #ffffff; text-decoration: none; border-radius: 6px; letter-spacing: -0.01em;">
         ${escape(label)}
       </a>
     </td>
@@ -89,51 +106,78 @@ const button = (label: string, href: string, color = BRAND.primary): string => `
 
 const secondaryButton = (label: string, href: string): string => `
 <a href="${escape(href)}"
-  style="display:inline-block; padding:12px 22px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size:13px; color:${BRAND.text}; text-decoration:none; border:1px solid ${BRAND.border}; border-radius:10px; margin-top:8px;">
+  class="email-btn-secondary"
+  style="display: inline-block; padding: 11px 22px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 500; color: #0f172a; text-decoration: none; border: 1px solid #cbd5e1; border-radius: 6px; margin-top: 8px;">
   ${escape(label)}
 </a>`;
 
 const card = (inner: string, accent?: string): string => `
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"
-  style="background:${BRAND.surface}; border:1px solid ${BRAND.border};
-  ${accent ? `border-left:3px solid ${accent};` : ''}
-  border-radius:14px; margin:24px 0;">
-  <tr><td style="padding:20px 22px;">${inner}</td></tr>
+  class="email-card"
+  style="background: #f8fafc; border: 1px solid #e2e8f0;
+  ${accent ? `border-left: 3px solid ${accent};` : ''}
+  border-radius: 8px; margin: 22px 0;">
+  <tr><td style="padding: 18px 20px;">${inner}</td></tr>
 </table>`;
 
+const callout = (inner: string, variant: 'info' | 'warning' | 'error' | 'neutral' = 'info'): string => {
+  const borders = {
+    info: '#0284c7',
+    warning: '#ea580c',
+    error: '#dc2626',
+    neutral: '#94a3b8',
+  };
+  return `
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"
+  class="email-card"
+  style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid ${borders[variant]}; border-radius: 8px; margin: 22px 0;">
+  <tr><td style="padding: 16px 18px;">${inner}</td></tr>
+</table>`;
+};
+
+const fallbackUrlBox = (url: string, instruction = 'If you are having trouble selecting the button above, copy and paste the following URL into your web browser:'): string => `
+<div style="margin: 22px 0 0;">
+  <p class="email-muted" style="margin: 0 0 8px; font-size: 12px; line-height: 1.6; color: #64748b;">
+    ${escape(instruction)}
+  </p>
+  <div class="email-code-box" style="background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 14px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11.5px; line-height: 1.6; color: #0f172a; word-break: break-all;">
+    <a href="${escape(url)}" style="color: inherit; text-decoration: none;">${escape(url)}</a>
+  </div>
+</div>`;
+
 const kvRow = (label: string, value: string): string => `
-<tr>
-  <td style="padding:6px 0; font-size:12px; color:${BRAND.muted}; text-transform:uppercase; letter-spacing:0.04em;">${escape(label)}</td>
-  <td style="padding:6px 0; font-size:14px; color:${BRAND.text}; text-align:right;">${value}</td>
+<tr class="email-card-row">
+  <td class="email-muted" style="padding: 8px 0; font-size: 11.5px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; width: 38%; vertical-align: top;">${escape(label)}</td>
+  <td class="email-p" style="padding: 8px 0; font-size: 13.5px; font-weight: 500; color: #0f172a; text-align: right; vertical-align: top;">${value}</td>
 </tr>`;
 
 const divider = (): string => `
-<div style="height:1px; background:${BRAND.border}; margin:20px 0;"></div>`;
+<div class="email-divider" style="height: 1px; background: #e2e8f0; margin: 24px 0;"></div>`;
 
 const statusPill = (
   label: string,
   variant: 'success' | 'pending' | 'warning' | 'error' | 'info' = 'info',
 ): string => {
   const palette = {
-    success: { bg: '#ecfdf5', fg: '#059669' },
-    pending: { bg: '#fef3c7', fg: '#b45309' },
-    warning: { bg: '#fff7ed', fg: '#c2410c' },
-    error: { bg: '#fef2f2', fg: '#dc2626' },
-    info: { bg: '#eff6ff', fg: '#1d4ed8' },
+    success: { bg: '#ecfdf5', fg: '#047857', border: '#a7f3d0' },
+    pending: { bg: '#fffbeb', fg: '#b45309', border: '#fde68a' },
+    warning: { bg: '#fff7ed', fg: '#c2410c', border: '#ffedd5' },
+    error: { bg: '#fef2f2', fg: '#b91c1c', border: '#fecaca' },
+    info: { bg: '#f0fdf4', fg: '#15803d', border: '#bbf7d0' },
   }[variant];
-  return `<span style="display:inline-block; padding:4px 10px; background:${palette.bg}; color:${palette.fg}; font-size:11px; text-transform:uppercase; letter-spacing:0.06em; border-radius:9999px;">${escape(label)}</span>`;
+  return `<span class="email-status-pill" style="display: inline-block; padding: 4px 10px; background: ${palette.bg}; color: ${palette.fg}; border: 1px solid ${palette.border}; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; border-radius: 9999px;">${escape(label)}</span>`;
 };
 
 const orderItemsTable = (
   items: Array<{ title: string; quantity: number; price: number | string; image_url?: string | null }>,
   currency = 'GHS',
 ): string => `
-<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:8px 0 24px;">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin: 8px 0 24px;">
   <thead>
     <tr>
-      <th align="left" style="font-size:11px; color:${BRAND.muted}; text-transform:uppercase; letter-spacing:0.06em; padding:8px 0; border-bottom:1px solid ${BRAND.border};">Item</th>
-      <th align="center" style="font-size:11px; color:${BRAND.muted}; text-transform:uppercase; letter-spacing:0.06em; padding:8px 0; border-bottom:1px solid ${BRAND.border};">Qty</th>
-      <th align="right" style="font-size:11px; color:${BRAND.muted}; text-transform:uppercase; letter-spacing:0.06em; padding:8px 0; border-bottom:1px solid ${BRAND.border};">Price</th>
+      <th align="left" class="email-table-header" style="font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.06em; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">Item</th>
+      <th align="center" class="email-table-header" style="font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.06em; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">Qty</th>
+      <th align="right" class="email-table-header" style="font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.06em; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">Price</th>
     </tr>
   </thead>
   <tbody>
@@ -141,18 +185,18 @@ const orderItemsTable = (
       .map(
         (it) => `
     <tr>
-      <td style="padding:14px 0; border-bottom:1px solid ${BRAND.border}; font-size:14px; color:${BRAND.text};">
+      <td class="email-table-cell" style="padding: 14px 0; border-bottom: 1px solid #e2e8f0; font-size: 13.5px; color: #0f172a;">
         ${
           it.image_url
             ? `<table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr>
-                 <td style="padding-right:12px;"><img src="${escape(it.image_url)}" width="48" height="48" alt="" style="border-radius:8px; display:block; object-fit:cover;"></td>
-                 <td>${escape(it.title)}</td>
+                 <td style="padding-right: 12px;"><img src="${escape(it.image_url)}" width="44" height="44" alt="" style="border-radius: 6px; display: block; object-fit: cover;"></td>
+                 <td class="email-p" style="font-size: 13.5px; color: #0f172a;">${escape(it.title)}</td>
                </tr></table>`
             : escape(it.title)
         }
       </td>
-      <td align="center" style="padding:14px 0; border-bottom:1px solid ${BRAND.border}; font-size:14px; color:${BRAND.text};">${it.quantity}</td>
-      <td align="right" style="padding:14px 0; border-bottom:1px solid ${BRAND.border}; font-size:14px; color:${BRAND.text};">${money(Number(it.price) * it.quantity, currency)}</td>
+      <td align="center" class="email-table-cell" style="padding: 14px 0; border-bottom: 1px solid #e2e8f0; font-size: 13.5px; color: #0f172a;">${it.quantity}</td>
+      <td align="right" class="email-table-cell" style="padding: 14px 0; border-bottom: 1px solid #e2e8f0; font-size: 13.5px; color: #0f172a; font-weight: 500;">${money(Number(it.price) * it.quantity, currency)}</td>
     </tr>`,
       )
       .join('')}
@@ -162,8 +206,8 @@ const orderItemsTable = (
 const totalRow = (label: string, value: string, emphasis = false): string => `
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
   <tr>
-    <td style="font-size:${emphasis ? '15px' : '13px'}; color:${emphasis ? BRAND.text : BRAND.muted}; padding:6px 0;">${escape(label)}</td>
-    <td align="right" style="font-size:${emphasis ? '18px' : '13px'}; color:${BRAND.text}; padding:6px 0;">${value}</td>
+    <td class="${emphasis ? 'email-title' : 'email-muted'}" style="font-size: ${emphasis ? '14.5px' : '13px'}; font-weight: ${emphasis ? '600' : '400'}; color: ${emphasis ? '#0f172a' : '#64748b'}; padding: 6px 0;">${escape(label)}</td>
+    <td align="right" class="email-title" style="font-size: ${emphasis ? '17px' : '13px'}; font-weight: ${emphasis ? '700' : '500'}; color: #0f172a; padding: 6px 0;">${value}</td>
   </tr>
 </table>`;
 
@@ -172,67 +216,192 @@ const totalRow = (label: string, value: string, emphasis = false): string => `
 interface ShellOptions {
   title: string;
   preheader?: string;
+  category?: string;
   content: string;
   footerNote?: string;
 }
 
-const shell = ({ title, preheader, content, footerNote }: ShellOptions): string => `
+const shell = ({ title, preheader, category, content, footerNote }: ShellOptions): string => `
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
   <meta name="x-apple-disable-message-reformatting">
   <title>${escape(title)}</title>
+  <!--[if mso]>
+  <style type="text/css">
+    body, table, td, p, a, span { font-family: 'Segoe UI', Arial, sans-serif !important; }
+  </style>
+  <![endif]-->
+  <style>
+    :root {
+      color-scheme: light dark;
+      supported-color-schemes: light dark;
+    }
+    @media (prefers-color-scheme: dark) {
+      body, .email-body {
+        background-color: #090a0f !important;
+        color: #f1f5f9 !important;
+      }
+      .email-container {
+        background-color: #12141a !important;
+        border-color: #232732 !important;
+        box-shadow: 0 4px 28px rgba(0, 0, 0, 0.55) !important;
+      }
+      .email-header {
+        background-color: #12141a !important;
+        border-bottom-color: #232732 !important;
+      }
+      .email-brand-text {
+        color: #ffffff !important;
+      }
+      .email-category-pill {
+        background-color: #1c202a !important;
+        color: #94a3b8 !important;
+        border-color: #2d3342 !important;
+      }
+      .email-card {
+        background-color: #181b23 !important;
+        border-color: #272c38 !important;
+        color: #f1f5f9 !important;
+      }
+      .email-card-row {
+        border-bottom-color: #232732 !important;
+      }
+      .email-code-box {
+        background-color: #0d0f14 !important;
+        border-color: #272c38 !important;
+        color: #e2e8f0 !important;
+      }
+      .email-h1, .email-title {
+        color: #ffffff !important;
+      }
+      .email-p {
+        color: #cbd5e1 !important;
+      }
+      .email-p strong {
+        color: #f8fafc !important;
+      }
+      .email-muted {
+        color: #94a3b8 !important;
+      }
+      .email-border {
+        border-color: #232732 !important;
+      }
+      .email-divider {
+        background-color: #232732 !important;
+      }
+      .email-footer {
+        background-color: #0d0f14 !important;
+        border-top-color: #232732 !important;
+      }
+      .email-footer-link {
+        color: #cbd5e1 !important;
+      }
+      .email-btn-primary {
+        background-color: #ffffff !important;
+        color: #090a0f !important;
+      }
+      .email-btn-secondary {
+        background-color: #181b23 !important;
+        border-color: #2d3342 !important;
+        color: #f1f5f9 !important;
+      }
+      .email-table-header {
+        color: #94a3b8 !important;
+        border-bottom-color: #232732 !important;
+      }
+      .email-table-cell {
+        border-bottom-color: #232732 !important;
+        color: #f1f5f9 !important;
+      }
+    }
+    /* Outlook.com / Webmail targeting */
+    [data-ogsc] body, [data-ogsc] .email-body { background-color: #090a0f !important; color: #f1f5f9 !important; }
+    [data-ogsc] .email-container { background-color: #12141a !important; border-color: #232732 !important; }
+    [data-ogsc] .email-header { background-color: #12141a !important; border-bottom-color: #232732 !important; }
+    [data-ogsc] .email-card { background-color: #181b23 !important; border-color: #272c38 !important; }
+    [data-ogsc] .email-h1 { color: #ffffff !important; }
+    [data-ogsc] .email-p { color: #cbd5e1 !important; }
+    [data-ogsc] .email-muted { color: #94a3b8 !important; }
+    [data-ogsc] .email-footer { background-color: #0d0f14 !important; border-top-color: #232732 !important; }
+    [data-ogsc] .email-code-box { background-color: #0d0f14 !important; border-color: #272c38 !important; }
+  </style>
 </head>
-<body style="margin:0; padding:0; background:${BRAND.background}; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color:${BRAND.text};">
-  ${preheader ? `<div style="display:none; max-height:0; overflow:hidden; mso-hide:all;">${escape(preheader)}</div>` : ''}
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:${BRAND.background};">
+<body class="email-body" style="margin: 0; padding: 0; background: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0f172a; -webkit-font-smoothing: antialiased;">
+  ${preheader ? `<div style="display: none; max-height: 0; overflow: hidden; mso-hide: all;">${escape(preheader)}</div>` : ''}
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="email-body" style="background: #f1f5f9; table-layout: fixed;">
     <tr>
-      <td align="center" style="padding:32px 16px;">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width:600px; width:100%; background:#ffffff; border-radius:18px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+      <td align="center" style="padding: 36px 16px;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" class="email-container" style="max-width: 600px; width: 100%; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);">
 
+          <!-- Header -->
           <tr>
-            <td style="padding:28px 32px; border-bottom:1px solid ${BRAND.border};">
+            <td class="email-header" style="padding: 22px 32px; border-bottom: 1px solid #e2e8f0; background: #ffffff;">
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                 <tr>
-                  <td>
-                    <a href="https://vendly.com" style="text-decoration:none; color:${BRAND.text};">
-                      <img src="${BRAND.logo}" alt="Vendly" width="32" height="32" style="vertical-align:middle; border-radius:6px;">
-                      <span style="font-size:18px; vertical-align:middle; margin-left:10px; letter-spacing:-0.01em;">Vendly</span>
+                  <td align="left" style="vertical-align: middle;">
+                    <a href="https://verndly.com" style="text-decoration: none; display: inline-block;">
+                      <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                        <tr>
+                          <td width="28" height="28" style="vertical-align: middle; padding-right: 10px; width: 28px; height: 28px; max-width: 28px; max-height: 28px;">
+                            <img src="${BRAND.logo}" alt="Verndly" width="28" height="28" border="0" style="display: block; width: 28px !important; max-width: 28px !important; height: 28px !important; max-height: 28px !important; border: 0; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic;">
+                          </td>
+                          <td style="vertical-align: middle;">
+                            <span class="email-brand-text" style="font-size: 17px; font-weight: 600; color: #0f172a; letter-spacing: -0.02em;">Verndly</span>
+                          </td>
+                        </tr>
+                      </table>
                     </a>
                   </td>
-                  <td align="right" style="font-size:11px; color:${BRAND.muted};">${escape(BRAND.tagline)}</td>
+                  <td align="right" style="vertical-align: middle;">
+                    <span class="email-category-pill" style="display: inline-block; padding: 4px 10px; font-size: 11px; font-weight: 500; color: #64748b; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 9999px; letter-spacing: 0.02em;">
+                      ${escape(category || BRAND.tagline)}
+                    </span>
+                  </td>
                 </tr>
               </table>
             </td>
           </tr>
 
+          <!-- Main Content -->
           <tr>
-            <td style="padding:36px 32px 24px;">
+            <td style="padding: 36px 32px 28px;">
               ${content}
             </td>
           </tr>
 
+          <!-- Footer -->
           <tr>
-            <td style="padding:24px 32px 36px; background:${BRAND.surface}; border-top:1px solid ${BRAND.border};">
+            <td class="email-footer" style="padding: 26px 32px 32px; background: #f8fafc; border-top: 1px solid #e2e8f0;">
               ${
                 footerNote
-                  ? `<p style="font-size:12px; color:${BRAND.muted}; margin:0 0 12px;">${footerNote}</p>`
+                  ? `<p class="email-muted" style="font-size: 12px; line-height: 1.6; color: #64748b; margin: 0 0 14px;">${footerNote}</p>`
                   : ''
               }
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                 <tr>
-                  <td style="font-size:11px; color:${BRAND.muted}; line-height:1.7;">
-                    Questions? Email
-                    <a href="mailto:${BRAND.supportEmail}" style="color:${BRAND.primary}; text-decoration:none;">${BRAND.supportEmail}</a>
-                    · WhatsApp ${BRAND.whatsapp}
+                  <td class="email-muted" style="font-size: 11px; line-height: 1.65; color: #64748b; padding-bottom: 12px;">
+                    This is a mandatory security and service communication regarding your Verndly account. Verndly will never ask for your password, PIN, or multi-factor authentication code via email.
                   </td>
                 </tr>
                 <tr>
-                  <td style="padding-top:14px; font-size:11px; color:${BRAND.muted};">
-                    © ${new Date().getFullYear()} Vendly. All rights reserved.<br>
-                    You received this email because you have an account with Vendly.
+                  <td style="font-size: 11.5px; color: #64748b; padding-bottom: 14px;">
+                    <a href="https://verndly.com/privacy" class="email-footer-link" style="color: #64748b; text-decoration: underline;">Privacy Statement</a>
+                    &nbsp;·&nbsp;
+                    <a href="https://verndly.com/terms" class="email-footer-link" style="color: #64748b; text-decoration: underline;">Terms of Service</a>
+                    &nbsp;·&nbsp;
+                    <a href="mailto:${BRAND.supportEmail}" class="email-footer-link" style="color: #64748b; text-decoration: underline;">Support</a>
+                    &nbsp;·&nbsp;
+                    <a href="mailto:${BRAND.securityEmail}" class="email-footer-link" style="color: #64748b; text-decoration: underline;">Security</a>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="email-muted" style="font-size: 11px; color: #94a3b8; line-height: 1.5;">
+                    © ${new Date().getFullYear()} Verndly Technologies Inc. Accra, Ghana. All rights reserved.
                   </td>
                 </tr>
               </table>
@@ -249,88 +418,206 @@ const shell = ({ title, preheader, content, footerNote }: ShellOptions): string 
 // ─── Heading + paragraph helpers used inside content blocks ──────────────────
 
 const H1 = (text: string) =>
-  `<h1 style="margin:0 0 12px; font-size:22px; color:${BRAND.text}; letter-spacing:-0.015em;">${escape(text)}</h1>`;
+  `<h1 class="email-h1" style="margin: 0 0 14px; font-size: 21px; font-weight: 600; color: #0f172a; letter-spacing: -0.02em; line-height: 1.3;">${escape(text)}</h1>`;
 
 const P = (text: string) =>
-  `<p style="margin:0 0 16px; font-size:14px; line-height:1.65; color:#3f3f46;">${text}</p>`;
+  `<p class="email-p" style="margin: 0 0 16px; font-size: 13.5px; line-height: 1.68; color: #334155;">${text}</p>`;
 
 const eyebrow = (text: string) =>
-  `<p style="margin:0 0 12px; font-size:11px; color:${BRAND.primary}; text-transform:uppercase; letter-spacing:0.1em;">${escape(text)}</p>`;
+  `<p class="email-muted" style="margin: 0 0 10px; font-size: 11px; font-weight: 600; color: #ef4444; text-transform: uppercase; letter-spacing: 0.08em;">${escape(text)}</p>`;
 
 // ═══════════════════════════════════════════════════════════════════════════
 //   TEMPLATES
 // ═══════════════════════════════════════════════════════════════════════════
 
-// 1. Welcome (buyer)
-export const getWelcomeEmail = (name: string, links: EmailLinks = { baseUrl: 'https://vendly.com' }) =>
+// 1. Welcome (buyer & new user)
+export const getWelcomeEmail = (
+  name: string,
+  links: EmailLinks = { baseUrl: 'https://verndly.com' },
+) =>
   shell({
-    title: `Welcome to Vendly, ${name}`,
-    preheader: `You're in. Here's how to get the most out of Vendly.`,
+    title: `Welcome to Verndly, ${name}`,
+    preheader: 'Your Verndly account is active. Explore verified independent businesses and merchant tools.',
+    category: 'Account Confirmation',
     content: `
-      ${eyebrow('Welcome')}
-      ${H1(`Welcome to Vendly, ${escape(name.split(' ')[0] || name)}.`)}
-      ${P(`Vendly is the curated marketplace for verified young entrepreneurs and small businesses across Ghana. You can shop, save your favourites, and (whenever you're ready) open your own storefront.`)}
-      ${button('Start exploring', `${links.baseUrl}/products`)}
-      ${divider()}
-      <p style="margin:0 0 8px; font-size:13px; color:${BRAND.muted};">A quick tour:</p>
-      <ul style="margin:0 0 16px; padding-left:18px; color:#3f3f46; font-size:13.5px; line-height:1.8;">
-        <li><strong>Discover</strong> — browse categories, brands, and top deals on the homepage</li>
-        <li><strong>Trust</strong> — every seller is verified, payments are processed through Paystack</li>
-        <li><strong>Track</strong> — every order lives under <a href="${links.baseUrl}/orders" style="color:${BRAND.primary};">My orders</a> with live status updates</li>
-        <li><strong>Sell</strong> — when you're ready, <a href="${links.baseUrl}/seller-verification" style="color:${BRAND.primary};">open your storefront</a> in under 60 seconds</li>
-      </ul>
+      <div style="margin-bottom: 18px;">${statusPill('Account Active', 'success')}</div>
+      ${eyebrow('Verndly Commerce • Getting Started')}
+      ${H1(`Welcome to Verndly, ${escape(name.split(' ')[0] || name)}.`)}
+      ${P(`Your account has been successfully created and verified. Verndly is the dedicated commerce engine empowering verified independent brands, young entrepreneurs, and modern businesses across Ghana.`)}
+      
+      ${button('Explore marketplace', `${links.baseUrl}/products`)}
+
+      ${card(`
+        <div style="padding: 4px 0;">
+          <h3 class="email-title" style="margin: 0 0 14px; font-size: 14px; font-weight: 600; color: #0f172a; letter-spacing: -0.01em;">
+            What you can do with your Verndly account
+          </h3>
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+            <tr>
+              <td style="padding: 8px 0; vertical-align: top; width: 24px;">
+                <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #ef4444; margin-top: 6px;"></span>
+              </td>
+              <td style="padding: 8px 0; vertical-align: top;">
+                <strong class="email-title" style="font-size: 13.5px; color: #0f172a;">Curated Marketplace & Buyer Protection</strong>
+                <p class="email-muted" style="margin: 3px 0 0; font-size: 12.5px; line-height: 1.6; color: #64748b;">
+                  Shop directly from independently verified merchants with end-to-end order tracking and a 7-day return guarantee.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; vertical-align: top; width: 24px;">
+                <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #ef4444; margin-top: 6px;"></span>
+              </td>
+              <td style="padding: 8px 0; vertical-align: top;">
+                <strong class="email-title" style="font-size: 13.5px; color: #0f172a;">Integrated Ghana MoMo & Card Payments</strong>
+                <p class="email-muted" style="margin: 3px 0 0; font-size: 12.5px; line-height: 1.6; color: #64748b;">
+                  Instant checkout rails powered by Paystack supporting MTN Mobile Money, Telecel Cash, AT Money, and Visa/Mastercard.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; vertical-align: top; width: 24px;">
+                <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #ef4444; margin-top: 6px;"></span>
+              </td>
+              <td style="padding: 8px 0; vertical-align: top;">
+                <strong class="email-title" style="font-size: 13.5px; color: #0f172a;">Launch Your Own Storefront</strong>
+                <p class="email-muted" style="margin: 3px 0 0; font-size: 12.5px; line-height: 1.6; color: #64748b;">
+                  Whenever you are ready to sell, open your custom branded storefront at <a href="${links.baseUrl}/create-store" style="color: #0284c7; text-decoration: none;">verndly.com/create-store</a> with zero upfront setup fees.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </div>
+      `)}
+
+      <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid #e2e8f0;" class="email-border">
+        <p class="email-muted" style="margin: 0 0 10px; font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #64748b;">
+          Quick Account Navigation
+        </p>
+        <p class="email-p" style="margin: 0; font-size: 13px; line-height: 1.8; color: #475569;">
+          · Manage your profile: <a href="${links.baseUrl}/dashboard/settings/profile" style="color: #0284c7; text-decoration: none;">Account Settings</a><br>
+          · Configure security & 2FA: <a href="${links.baseUrl}/dashboard/settings/security" style="color: #0284c7; text-decoration: none;">Security Center</a><br>
+          · View your order history: <a href="${links.baseUrl}/orders" style="color: #0284c7; text-decoration: none;">My Orders</a>
+        </p>
+      </div>
     `,
+    footerNote: 'Thank you for choosing Verndly as your digital commerce platform.',
   });
 
 // 2. Email verification
 export const getVerificationEmail = (url: string) =>
   shell({
-    title: 'Verify your Vendly email',
-    preheader: 'Confirm your email so we can secure your account.',
+    title: 'Verify your email address — Verndly Security',
+    preheader: 'Please confirm your email address to complete your Verndly account registration.',
+    category: 'Identity Verification',
     content: `
-      ${eyebrow('Confirm email')}
+      ${eyebrow('Verndly Security • Identity Verification')}
       ${H1('Verify your email address')}
-      ${P(`Tap the button below to confirm this is your email. The link expires in 24 hours.`)}
-      ${button('Verify email', url)}
-      ${P(`If the button doesn't work, copy and paste this link into your browser:<br><a href="${escape(url)}" style="color:${BRAND.primary}; word-break:break-all;">${escape(url)}</a>`)}
-      ${divider()}
-      <p style="font-size:12px; color:${BRAND.muted};">Didn't sign up for Vendly? You can safely ignore this email — no account will be created without verification.</p>
+      ${P(`We received a request to register or verify this email address for a Verndly account. To confirm your ownership of this address and activate your account credentials, please select the button below.`)}
+      
+      ${button('Verify email address', url)}
+
+      ${card(`
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+          ${kvRow('Request type', 'Email address verification')}
+          ${kvRow('Validity window', '24 hours')}
+          ${kvRow('Service', 'Verndly Commerce Platform')}
+          ${kvRow('Security standard', 'TLS 1.3 / Cryptographic HMAC token')}
+        </table>
+      `)}
+
+      ${fallbackUrlBox(url, 'If you are having trouble selecting the button above, copy and paste this verification URL into your web browser:')}
+
+      ${callout(`
+        <p class="email-p" style="margin: 0; font-size: 12.5px; line-height: 1.65; color: #475569;">
+          <strong>Did not request this verification?</strong><br>
+          If you did not initiate this request, someone may have entered your email address by mistake. You can safely disregard this message. No account credentials will be activated without completing this verification step.
+        </p>
+      `, 'neutral')}
     `,
+    footerNote: 'This security verification email was automatically generated by the Verndly Identity Service.',
   });
 
 // 3. Password reset request
 export const getPasswordResetEmail = (url: string) =>
   shell({
-    title: 'Reset your Vendly password',
-    preheader: 'A password reset was requested for your account.',
+    title: 'Reset your password — Verndly Security',
+    preheader: 'A password reset was requested for your Verndly account credentials.',
+    category: 'Security Alert',
     content: `
-      ${eyebrow('Reset password')}
-      ${H1('Reset your password')}
-      ${P(`We got a request to reset your Vendly password. Tap below to choose a new one. The link expires in 60 minutes.`)}
+      ${eyebrow('Verndly Security • Account Recovery')}
+      ${H1('Reset your account password')}
+      ${P(`We received an authorization request to reset the password associated with your Verndly account. If you initiated this request, select the button below to establish new credentials.`)}
+      
       ${button('Reset password', url)}
-      ${P(`If the button doesn't work, copy and paste this link into your browser:<br><a href="${escape(url)}" style="color:${BRAND.primary}; word-break:break-all;">${escape(url)}</a>`)}
-      ${divider()}
-      <p style="font-size:12px; color:${BRAND.muted};">Didn't request this? Your account is still safe — you can ignore this email. If this keeps happening, contact ${BRAND.supportEmail}.</p>
+
+      ${card(`
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+          ${kvRow('Request type', 'Account password reset')}
+          ${kvRow('Link validity', '60 minutes')}
+          ${kvRow('Service', 'Verndly Identity & Access Management')}
+          ${kvRow('Security policy', 'Single-use link. Automatically invalidated upon update')}
+        </table>
+      `)}
+
+      ${fallbackUrlBox(url, 'If the button above does not load, copy and paste the following link directly into your browser navigation bar:')}
+
+      ${callout(`
+        <p class="email-p" style="margin: 0; font-size: 12.5px; line-height: 1.65; color: #475569;">
+          <strong style="color: #0f172a;">Important security advisory:</strong><br>
+          If you did not request a password reset, your credentials have not been modified and your account remains secure. If you suspect unauthorized access attempts, we recommend reviewing your recent account activity or contacting our Trust & Safety team immediately at <a href="mailto:${BRAND.securityEmail}" style="color: #0284c7; text-decoration: none;">${BRAND.securityEmail}</a>.
+        </p>
+      `, 'warning')}
     `,
+    footerNote: 'This is a time-sensitive security notification regarding your Verndly credentials.',
   });
 
 // 4. Password changed confirmation
-export const getPasswordChangedEmail = (name: string) =>
-  shell({
-    title: 'Your Vendly password was changed',
-    preheader: 'Your account password was just updated.',
+export const getPasswordChangedEmail = (name: string) => {
+  const formattedDate = formatDateTime(new Date());
+  return shell({
+    title: 'Security Alert: Password updated — Verndly Security',
+    preheader: 'The password for your Verndly account was recently updated.',
+    category: 'Security Notification',
     content: `
-      ${eyebrow('Security notice')}
-      ${H1('Your password was changed')}
-      ${P(`Hi ${escape(name.split(' ')[0] || name)}, this is a confirmation that your Vendly password was just updated at ${formatDateTime(new Date())}.`)}
-      ${card(
-        `<p style="margin:0; font-size:13px; color:${BRAND.text};"><strong>Didn't change your password?</strong><br>Email <a href="mailto:${BRAND.supportEmail}" style="color:${BRAND.primary};">${BRAND.supportEmail}</a> immediately and we'll secure your account.</p>`,
-        '#dc2626',
-      )}
+      <div style="margin-bottom: 18px;">${statusPill('Security Update', 'info')}</div>
+      ${eyebrow('Verndly Security • Credential Update')}
+      ${H1('Your password was recently changed')}
+      ${P(`Hello ${escape(name.split(' ')[0] || name)},`)}
+      ${P(`This notification confirms that the password for your Verndly account was successfully updated.`)}
+
+      ${card(`
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+          ${kvRow('Security event', 'Password credential update')}
+          ${kvRow('Timestamp', `${escape(formattedDate)} UTC`)}
+          ${kvRow('Account', escape(name))}
+          ${kvRow('Status', '<span style="color: #059669; font-weight: 600;">Successful</span>')}
+          ${kvRow('Active sessions', 'Updated across all client devices')}
+        </table>
+      `)}
+
+      ${P(`<strong>If you initiated this change:</strong><br>No further action is required. Your updated password is now in effect across your storefront management dashboard, order tracking, and account settings.`)}
+
+      ${callout(`
+        <p class="email-p" style="margin: 0 0 10px; font-size: 13px; line-height: 1.6; color: #991b1b;">
+          <strong>Did you not make this change?</strong>
+        </p>
+        <p class="email-p" style="margin: 0 0 12px; font-size: 12.5px; line-height: 1.65; color: #475569;">
+          If you did not authorize this password update, your account may have been compromised. We strongly recommend taking immediate action:
+        </p>
+        <ol style="margin: 0; padding-left: 20px; font-size: 12.5px; line-height: 1.75; color: #475569;">
+          <li>Reset your password immediately at <a href="https://verndly.com/forgot-password" style="color: #0284c7; text-decoration: underline;">verndly.com/forgot-password</a>.</li>
+          <li>Contact the Verndly Security Team immediately at <a href="mailto:${BRAND.securityEmail}" style="color: #0284c7; text-decoration: underline;">${BRAND.securityEmail}</a> so we can protect your storefront, buyer orders, and settlement payouts.</li>
+        </ol>
+      `, 'error')}
     `,
+    footerNote: 'Security notifications are mandatory service communications and cannot be unsubscribed from.',
   });
+};
 
 // ─── Order lifecycle ─────────────────────────────────────────────────────────
+
+export type OrderEmailItem = OrderItemDisplay;
 
 export interface OrderEmailData {
   orderNumber: string;
@@ -343,185 +630,422 @@ export interface OrderEmailData {
   deliveryNotes?: string | null;
   storeName: string;
   storeLink?: string;
-  items: Array<{
-    title: string;
-    quantity: number;
-    price: number | string;
-    image_url?: string | null;
-  }>;
+  items: OrderEmailItem[];
   subtotal: number | string;
   shipping?: number | string;
   total: number | string;
   currency?: string;
   paymentMethod?: string;
   paymentReference?: string;
+  isPaid?: boolean;
 }
 
-const renderOrderSummaryBlock = (o: OrderEmailData): string => {
-  const currency = o.currency || 'GHS';
-  return `
-    ${card(`
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-        ${kvRow('Order ID', `<span style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace;">${escape(o.orderNumber)}</span>`)}
-        ${kvRow('Placed', escape(formatDateTime(o.date)))}
-        ${o.storeName ? kvRow('Store', escape(o.storeName)) : ''}
-        ${o.paymentMethod ? kvRow('Payment', escape(o.paymentMethod)) : ''}
-        ${o.paymentReference ? kvRow('Reference', `<span style="font-family: ui-monospace, monospace; font-size:12px;">${escape(o.paymentReference)}</span>`) : ''}
-      </table>
-    `)}
-
-    ${orderItemsTable(o.items, currency)}
-
-    <div style="padding:0 4px;">
-      ${o.subtotal != null ? totalRow('Subtotal', money(o.subtotal, currency)) : ''}
-      ${o.shipping != null ? totalRow('Delivery', money(o.shipping, currency)) : ''}
-      ${divider()}
-      ${totalRow('Total paid', money(o.total, currency), true)}
-    </div>
-
-    ${
-      o.deliveryMethod || o.deliveryLocation
-        ? card(`
-            <p style="margin:0 0 8px; font-size:11px; color:${BRAND.muted}; text-transform:uppercase; letter-spacing:0.06em;">
-              ${o.deliveryMethod === 'PICKUP' ? 'Pickup details' : 'Delivery to'}
-            </p>
-            ${o.customerName ? `<p style="margin:0 0 2px; font-size:14px; color:${BRAND.text};">${escape(o.customerName)}</p>` : ''}
-            ${o.customerPhone ? `<p style="margin:0 0 2px; font-size:13px; color:${BRAND.muted};">${escape(o.customerPhone)}</p>` : ''}
-            ${o.deliveryLocation ? `<p style="margin:0; font-size:13px; color:${BRAND.muted};">${escape(o.deliveryLocation)}</p>` : ''}
-            ${o.deliveryNotes ? `<p style="margin:8px 0 0; font-size:12px; color:${BRAND.muted}; font-style:italic;">"${escape(o.deliveryNotes)}"</p>` : ''}
-          `)
-        : ''
-    }
-  `;
-};
+export interface OrderStatusEmailData {
+  orderNumber: string;
+  date?: string | Date;
+  customerName: string;
+  customerPhone?: string;
+  storeName: string;
+  storeLink?: string;
+  status:
+    | 'PENDING'
+    | 'AWAITING_PAYMENT'
+    | 'PAID'
+    | 'CONFIRMED'
+    | 'PROCESSING'
+    | 'PROCESSED'
+    | 'ON THE WAY'
+    | 'SHIPPED'
+    | 'AVAILABLE FOR PICKUP'
+    | 'DELIVERED'
+    | 'COMPLETED'
+    | 'CANCELLED'
+    | 'REFUNDED'
+    | string;
+  items?: OrderEmailItem[];
+  subtotal?: number | string;
+  shipping?: number | string;
+  total: number | string;
+  currency?: string;
+  deliveryMethod?: string;
+  deliveryLocation?: string | null;
+  deliveryNotes?: string | null;
+  reason?: string | null;
+  cancelledBy?: 'buyer' | 'seller' | 'admin';
+}
 
 // 5. Order confirmation (buyer)
 export const getOrderConfirmationEmail = (
   o: OrderEmailData,
-  links: EmailLinks = { baseUrl: 'https://vendly.com' },
-) =>
-  shell({
-    title: `Order #${o.orderNumber} confirmed`,
-    preheader: `Thanks ${o.customerName.split(' ')[0] || ''} — we'll keep you posted as your order moves.`,
-    content: `
-      <div style="margin-bottom:16px;">${statusPill('Order confirmed', 'success')}</div>
-      ${H1(`Thanks for your order, ${escape(o.customerName.split(' ')[0] || o.customerName)}.`)}
-      ${P(`We've received your payment and let ${escape(o.storeName)} know to start preparing it. We'll email you again the moment it's dispatched.`)}
-      ${renderOrderSummaryBlock(o)}
-      ${button('Track your order', `${links.baseUrl}/orders`)}
-      ${o.storeLink ? secondaryButton('Visit the store', `${links.baseUrl}/s/${o.storeLink}`) : ''}
-    `,
-    footerNote: 'Keep this email for your records. You can also view this order any time from My orders.',
+  links: EmailLinks = { baseUrl: 'https://verndly.com' },
+) => {
+  const isPickup =
+    o.deliveryMethod && o.deliveryMethod.trim().toUpperCase().includes('PICKUP');
+  const isPaid = Boolean(
+    o.isPaid ||
+      (o.paymentMethod &&
+        !o.paymentMethod.toLowerCase().includes('delivery') &&
+        !o.paymentMethod.toLowerCase().includes('cash')),
+  );
+
+  const paymentStateText = isPaid
+    ? 'We’ve received your payment and notified the store to start preparing your items.'
+    : 'Your order has been placed with Pay on Delivery. Please prepare the exact cash or mobile money upon receiving your items.';
+
+  const content = `
+    ${renderStatusBanner(isPaid ? 'PAID' : 'CONFIRMED')}
+    <p class="email-p" style="margin: 0 0 16px; font-size: 14px; line-height: 1.65; color: #334155;">
+      Hi <strong>${escape(o.customerName.split(' ')[0] || o.customerName)}</strong>, thank you for your order with <strong>${escape(o.storeName)}</strong>! ${paymentStateText}
+    </p>
+
+    ${renderOrderSummaryCard({
+      orderNumber: o.orderNumber,
+      date: o.date,
+      storeName: o.storeName,
+      storeLink: o.storeLink,
+      paymentMethod: o.paymentMethod || (isPaid ? 'Paystack' : 'Cash on Delivery'),
+      paymentReference: o.paymentReference,
+      isPaid,
+    })}
+
+    ${renderOrderItemsComponent(o.items, o.currency)}
+
+    ${renderFinancialBreakdown({
+      subtotal: o.subtotal,
+      shipping: o.shipping,
+      total: o.total,
+      currency: o.currency,
+      totalLabel: isPaid ? 'Total Paid' : 'Total Due upon Delivery',
+    })}
+
+    ${renderDeliveryDetailsCard({
+      customerName: o.customerName,
+      customerPhone: o.customerPhone,
+      deliveryMethod: o.deliveryMethod,
+      deliveryLocation: o.deliveryLocation,
+      deliveryNotes: o.deliveryNotes,
+    })}
+
+    ${renderActionButtons({
+      primaryLabel: 'Track Your Order',
+      primaryHref: `${links.baseUrl}/orders`,
+      secondaryLabel: o.storeLink ? `Visit ${o.storeName}` : 'Browse More Products',
+      secondaryHref: o.storeLink ? `${links.baseUrl}/s/${o.storeLink}` : `${links.baseUrl}/products`,
+    })}
+  `;
+
+  return emailShell({
+    title: `Order #${o.orderNumber} confirmed — ${o.storeName}`,
+    preheader: `Thanks for your order with ${o.storeName}. We'll keep you posted every step of the way.`,
+    category: 'Order Confirmation',
+    content,
+    links,
+    footerNote: 'Keep this email for your records. You can track this order anytime from your Verndly account.',
   });
+};
+
+// 5b. Payment Receipt (buyer)
+export const getPaymentReceiptEmail = (
+  o: OrderEmailData & { orderId?: string; transactionId?: string },
+  links: EmailLinks = { baseUrl: 'https://verndly.com' },
+) => {
+  const content = `
+    <div style="margin-bottom: 20px;">
+      <span style="display: inline-block; padding: 5px 14px; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; border-radius: 9999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">
+        Official Payment Receipt
+      </span>
+    </div>
+
+    <h1 style="margin: 0 0 10px; font-size: 22px; font-weight: 700; color: #0f172a; letter-spacing: -0.02em; line-height: 1.25;">
+      Payment Received — Order #${escape(o.orderNumber)}
+    </h1>
+    <p class="email-p" style="margin: 0 0 20px; font-size: 14px; line-height: 1.65; color: #334155;">
+      Hi <strong>${escape(o.customerName.split(' ')[0] || o.customerName)}</strong>, your payment to <strong>${escape(o.storeName)}</strong> has been processed and verified via Paystack. Your items are now being prepared for fulfillment.
+    </p>
+
+    ${renderOrderSummaryCard({
+      orderNumber: o.orderNumber,
+      date: o.date,
+      storeName: o.storeName,
+      storeLink: o.storeLink,
+      paymentMethod: o.paymentMethod || 'Paystack (Card / MoMo)',
+      paymentReference: o.paymentReference,
+      isPaid: true,
+    })}
+
+    ${renderOrderItemsComponent(o.items, o.currency)}
+
+    ${renderFinancialBreakdown({
+      subtotal: o.subtotal,
+      shipping: o.shipping,
+      total: o.total,
+      currency: o.currency,
+      totalLabel: 'Total Paid (Verified)',
+    })}
+
+    ${renderDeliveryDetailsCard({
+      customerName: o.customerName,
+      customerPhone: o.customerPhone,
+      deliveryMethod: o.deliveryMethod,
+      deliveryLocation: o.deliveryLocation,
+      deliveryNotes: o.deliveryNotes,
+    })}
+
+    ${renderActionButtons({
+      primaryLabel: 'View & Download PDF Receipt',
+      primaryHref: `${links.baseUrl}/orders/${o.orderId || ''}?receipt=1`,
+      secondaryLabel: o.storeLink ? `Visit ${o.storeName}` : 'Return to Store',
+      secondaryHref: o.storeLink ? `${links.baseUrl}/s/${o.storeLink}` : `${links.baseUrl}/orders`,
+    })}
+  `;
+
+  return emailShell({
+    title: `Payment Receipt: Order #${o.orderNumber} — ${o.storeName}`,
+    preheader: `Your payment of ${o.currency || 'GH¢'} ${Number(o.total || 0).toFixed(2)} to ${o.storeName} was successful.`,
+    category: 'Payment Receipt',
+    content,
+    links,
+    footerNote: `This official receipt is issued by Verndly on behalf of ${o.storeName}. Retain this for your tax and personal records.`,
+  });
+};
 
 // 6. New order alert (seller)
 export const getSellerOrderAlertEmail = (
   o: OrderEmailData,
-  links: EmailLinks = { baseUrl: 'https://vendly.com' },
-) =>
-  shell({
-    title: `New order #${o.orderNumber}`,
-    preheader: `${o.customerName} just placed an order with your store.`,
-    content: `
-      <div style="margin-bottom:16px;">${statusPill('New order', 'success')}</div>
-      ${H1(`You've made a sale.`)}
-      ${P(`<strong>${escape(o.customerName)}</strong> just placed an order with your store. Get it ready for ${o.deliveryMethod === 'PICKUP' ? 'pickup' : 'dispatch'} and update the status from your dashboard.`)}
-      ${renderOrderSummaryBlock(o)}
-      ${button('Process this order', `${links.baseUrl}/dashboard/orders`)}
-      ${
-        o.customerPhone
-          ? secondaryButton(
-              `WhatsApp ${o.customerName.split(' ')[0] || 'customer'}`,
-              `https://wa.me/${o.customerPhone.replace(/[^\d]/g, '')}`,
-            )
-          : ''
-      }
-    `,
-    footerNote: 'Update the order status promptly — buyers will get an email at every step.',
+  links: EmailLinks = { baseUrl: 'https://verndly.com' },
+) => {
+  const isPickup =
+    o.deliveryMethod && o.deliveryMethod.trim().toUpperCase().includes('PICKUP');
+  const isPaid = Boolean(
+    o.isPaid ||
+      (o.paymentMethod &&
+        !o.paymentMethod.toLowerCase().includes('delivery') &&
+        !o.paymentMethod.toLowerCase().includes('cash')),
+  );
+  const cleanPhone = o.customerPhone ? o.customerPhone.replace(/[^\d]/g, '') : '';
+  const firstName = o.customerName.split(' ')[0] || o.customerName;
+
+  const content = `
+    <div style="margin-bottom: 20px;">
+      <span style="display: inline-block; padding: 4px 12px; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; border-radius: 9999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">
+        New Sale Alert
+      </span>
+    </div>
+    <h1 style="margin: 0 0 10px; font-size: 22px; font-weight: 700; color: #0f172a; letter-spacing: -0.02em; line-height: 1.25;">
+      You've made a sale!
+    </h1>
+    <p class="email-p" style="margin: 0 0 16px; font-size: 14px; line-height: 1.65; color: #334155;">
+      <strong>${escape(o.customerName)}</strong> just placed order <strong>#${escape(o.orderNumber)}</strong> with your store. Get the package ready for <strong>${isPickup ? 'customer pickup' : 'courier dispatch'}</strong> and update the order status in your dashboard.
+    </p>
+
+    ${renderOrderSummaryCard({
+      orderNumber: o.orderNumber,
+      date: o.date,
+      storeName: o.storeName,
+      paymentMethod: o.paymentMethod || (isPaid ? 'Paid Online' : 'Cash on Delivery'),
+      paymentReference: o.paymentReference,
+      isPaid,
+    })}
+
+    ${renderDeliveryDetailsCard({
+      customerName: o.customerName,
+      customerPhone: o.customerPhone,
+      deliveryMethod: o.deliveryMethod,
+      deliveryLocation: o.deliveryLocation,
+      deliveryNotes: o.deliveryNotes,
+      isVendorView: true,
+    })}
+
+    ${renderOrderItemsComponent(o.items, o.currency)}
+
+    ${renderFinancialBreakdown({
+      subtotal: o.subtotal,
+      shipping: o.shipping,
+      total: o.total,
+      currency: o.currency,
+      totalLabel: 'Store Order Value',
+    })}
+
+    ${renderActionButtons({
+      primaryLabel: 'Process Order in Dashboard',
+      primaryHref: `${links.baseUrl}/dashboard/orders`,
+      whatsAppNumber: cleanPhone,
+      whatsAppMessage: `Hello ${firstName}, thank you for your order #${o.orderNumber} with ${o.storeName} on Verndly! We are preparing your items now.`,
+    })}
+  `;
+
+  return emailShell({
+    title: `New sale: Order #${o.orderNumber} from ${o.customerName}`,
+    preheader: `${o.customerName} placed order #${o.orderNumber} with your store. Open your dashboard to view and process.`,
+    category: 'New Sale Alert',
+    content,
+    links,
+    footerNote: 'Tip: Updating your order status promptly keeps buyers happy and builds trust for your store.',
   });
-
-// 7. Order status change (buyer-facing)
-export interface OrderStatusEmailData {
-  orderNumber: string;
-  customerName: string;
-  storeName: string;
-  status: 'PAID' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED' | string;
-  total: number | string;
-  currency?: string;
-  reason?: string | null;
-}
-
-const STATUS_COPY: Record<
-  string,
-  { eyebrow: string; title: string; body: string; pill: 'success' | 'pending' | 'warning' | 'error' | 'info' }
-> = {
-  PAID: {
-    eyebrow: 'Payment received',
-    title: 'Payment received',
-    body: `Your payment has been received and the seller has been notified.`,
-    pill: 'success',
-  },
-  PROCESSING: {
-    eyebrow: 'Order processing',
-    title: 'Your order is being prepared',
-    body: `The seller is getting your order ready. We'll let you know the moment it's dispatched.`,
-    pill: 'info',
-  },
-  SHIPPED: {
-    eyebrow: 'On the way',
-    title: 'Your order is on the way',
-    body: `Your order has been dispatched and is on its way to you. Reach out to the seller via WhatsApp if you need to coordinate the drop-off.`,
-    pill: 'info',
-  },
-  DELIVERED: {
-    eyebrow: 'Delivered',
-    title: 'Your order was delivered',
-    body: `Hope you love it. If anything's off, you have 7 days to request a return.`,
-    pill: 'success',
-  },
-  CANCELLED: {
-    eyebrow: 'Cancelled',
-    title: 'Your order was cancelled',
-    body: `Your order has been cancelled. If you were charged, a refund is on the way within 5–10 business days.`,
-    pill: 'error',
-  },
-  REFUNDED: {
-    eyebrow: 'Refund issued',
-    title: 'Your refund is on the way',
-    body: `A refund has been issued to your original payment method. Allow 5–10 business days for it to land.`,
-    pill: 'warning',
-  },
 };
 
+// 7. Order status change (buyer-facing)
 export const getOrderStatusEmail = (
   o: OrderStatusEmailData,
-  links: EmailLinks = { baseUrl: 'https://vendly.com' },
+  links: EmailLinks = { baseUrl: 'https://verndly.com' },
 ) => {
-  const copy = STATUS_COPY[o.status] || {
-    eyebrow: 'Order update',
-    title: `Order ${o.status.toLowerCase()}`,
-    body: `Your order status is now ${o.status.toLowerCase()}.`,
-    pill: 'info' as const,
-  };
-  return shell({
-    title: `${copy.title} — Order #${o.orderNumber}`,
-    preheader: copy.body,
-    content: `
-      <div style="margin-bottom:16px;">${statusPill(o.status, copy.pill)}</div>
-      ${eyebrow(copy.eyebrow)}
-      ${H1(copy.title)}
-      ${P(copy.body)}
-      ${card(`
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-          ${kvRow('Order ID', `<span style="font-family: ui-monospace, monospace;">${escape(o.orderNumber)}</span>`)}
-          ${kvRow('Store', escape(o.storeName))}
-          ${kvRow('Order total', money(o.total, o.currency))}
-        </table>
-      `)}
-      ${o.reason ? P(`<strong>Note from the seller:</strong> ${escape(o.reason)}`) : ''}
-      ${button('View your order', `${links.baseUrl}/orders`)}
-      ${o.status === 'DELIVERED' ? secondaryButton('Browse more', `${links.baseUrl}/products`) : ''}
-    `,
+  const normStatus = (o.status || '').trim().toUpperCase();
+  const cfg = getStatusConfig(normStatus, o.reason);
+
+  const content = `
+    ${renderStatusBanner(normStatus, o.reason)}
+
+    ${
+      o.reason
+        ? `
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"
+      style="background: #fff7ed; border-left: 4px solid #f97316; border-radius: 8px; margin: 16px 0;">
+      <tr>
+        <td style="padding: 14px 16px; font-size: 13px; line-height: 1.55; color: #9a3412;">
+          <strong>Message regarding this update:</strong><br>
+          ${escape(o.reason)}
+        </td>
+      </tr>
+    </table>`
+        : ''
+    }
+
+    ${renderOrderSummaryCard({
+      orderNumber: o.orderNumber,
+      date: o.date || new Date(),
+      storeName: o.storeName,
+      storeLink: o.storeLink,
+    })}
+
+    ${
+      o.items && o.items.length > 0
+        ? renderOrderItemsComponent(o.items, o.currency)
+        : ''
+    }
+
+    ${
+      o.total != null
+        ? renderFinancialBreakdown({
+            subtotal: o.subtotal ?? o.total,
+            shipping: o.shipping,
+            total: o.total,
+            currency: o.currency,
+          })
+        : ''
+    }
+
+    ${
+      o.deliveryLocation || o.deliveryMethod
+        ? renderDeliveryDetailsCard({
+            customerName: o.customerName,
+            customerPhone: o.customerPhone,
+            deliveryMethod: o.deliveryMethod,
+            deliveryLocation: o.deliveryLocation,
+            deliveryNotes: o.deliveryNotes,
+          })
+        : ''
+    }
+
+    ${renderActionButtons({
+      primaryLabel: 'View Order Details',
+      primaryHref: `${links.baseUrl}/orders`,
+      secondaryLabel: o.storeLink ? `Visit ${o.storeName}` : 'Browse Marketplace',
+      secondaryHref: o.storeLink ? `${links.baseUrl}/s/${o.storeLink}` : `${links.baseUrl}/products`,
+    })}
+  `;
+
+  return emailShell({
+    title: `${cfg.headline} — Order #${o.orderNumber}`,
+    preheader: cfg.subtext,
+    category: 'Order Status Update',
+    content,
+    links,
+    footerNote: 'You can check your order progress or report any issues from your Verndly dashboard.',
+  });
+};
+
+// 7b. Order status change (seller-facing, e.g. cancellation)
+export const getSellerOrderStatusEmail = (
+  o: OrderStatusEmailData,
+  links: EmailLinks = { baseUrl: 'https://verndly.com' },
+) => {
+  const normStatus = (o.status || '').trim().toUpperCase();
+  const isCancelled = normStatus === 'CANCELLED';
+
+  const headline = isCancelled
+    ? `Order #${o.orderNumber} was cancelled by ${o.cancelledBy === 'buyer' ? 'customer' : 'admin'}`
+    : `Order #${o.orderNumber} status changed to ${normStatus}`;
+
+  const subtext = isCancelled
+    ? o.reason
+      ? `Cancellation reason: "${o.reason}".`
+      : 'The customer cancelled this order before it was dispatched.'
+    : `The status of order #${o.orderNumber} was updated to ${normStatus}.`;
+
+  const content = `
+    <div style="margin-bottom: 20px;">
+      <span style="display: inline-block; padding: 4px 12px; background: ${isCancelled ? '#fef2f2' : '#eff6ff'}; color: ${isCancelled ? '#b91c1c' : '#1d4ed8'}; border: 1px solid ${isCancelled ? '#fecaca' : '#bfdbfe'}; border-radius: 9999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">
+        ${isCancelled ? 'Order Cancelled' : `Order ${normStatus}`}
+      </span>
+    </div>
+    <h1 style="margin: 0 0 10px; font-size: 22px; font-weight: 700; color: #0f172a; letter-spacing: -0.02em; line-height: 1.25;">
+      ${escape(headline)}
+    </h1>
+    <p class="email-p" style="margin: 0 0 16px; font-size: 14px; line-height: 1.65; color: #475569;">
+      ${escape(subtext)}
+    </p>
+
+    ${
+      isCancelled
+        ? `
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"
+      style="background: #f8fafc; border-left: 4px solid #64748b; border-radius: 8px; margin: 16px 0;">
+      <tr>
+        <td style="padding: 14px 16px; font-size: 12.5px; line-height: 1.55; color: #475569;">
+          <strong>Inventory notice:</strong> For Pay on Delivery orders, product quantities have been automatically restored to your active inventory.
+        </td>
+      </tr>
+    </table>`
+        : ''
+    }
+
+    ${renderOrderSummaryCard({
+      orderNumber: o.orderNumber,
+      date: o.date || new Date(),
+      storeName: o.storeName,
+    })}
+
+    ${
+      o.items && o.items.length > 0
+        ? renderOrderItemsComponent(o.items, o.currency)
+        : ''
+    }
+
+    ${
+      o.total != null
+        ? renderFinancialBreakdown({
+            subtotal: o.subtotal ?? o.total,
+            shipping: o.shipping,
+            total: o.total,
+            currency: o.currency,
+            totalLabel: 'Store Total',
+          })
+        : ''
+    }
+
+    ${renderActionButtons({
+      primaryLabel: 'Open Orders Dashboard',
+      primaryHref: `${links.baseUrl}/dashboard/orders`,
+    })}
+  `;
+
+  return emailShell({
+    title: `${headline} — Verndly Store Alert`,
+    preheader: subtext,
+    category: 'Store Order Alert',
+    content,
+    links,
+    footerNote: 'Manage your store orders, payouts, and customer communications from your Verndly dashboard.',
   });
 };
 
@@ -531,16 +1055,16 @@ export const getOrderStatusEmail = (
 export const getSellerApprovedEmail = (
   name: string,
   storeLink: string,
-  links: EmailLinks = { baseUrl: 'https://vendly.com' },
+  links: EmailLinks = { baseUrl: 'https://verndly.com' },
 ) =>
   shell({
-    title: "You're approved to sell on Vendly",
+    title: "You're approved to sell on Verndly",
     preheader: 'Your store is live. Time to add your first product.',
     content: `
       <div style="margin-bottom:16px;">${statusPill('Approved', 'success')}</div>
       ${eyebrow('Verification approved')}
       ${H1(`You're a verified seller, ${escape(name.split(' ')[0] || name)}.`)}
-      ${P(`Welcome to Vendly. Your store is live at <a href="${links.baseUrl}/s/${escape(storeLink)}" style="color:${BRAND.primary};">${links.baseUrl.replace(/^https?:\/\//, '')}/s/${escape(storeLink)}</a>.`)}
+      ${P(`Welcome to Verndly. Your store is live at <a href="${links.baseUrl}/s/${escape(storeLink)}" style="color:${BRAND.primary};">${links.baseUrl.replace(/^https?:\/\//, '')}/s/${escape(storeLink)}</a>.`)}
       ${button('Open your dashboard', `${links.baseUrl}/dashboard`)}
       ${divider()}
       <p style="margin:0 0 8px; font-size:13px; color:${BRAND.muted};">First moves:</p>
@@ -558,7 +1082,7 @@ export const getSellerApprovedEmail = (
 export const getSellerRejectedEmail = (
   name: string,
   reason?: string,
-  links: EmailLinks = { baseUrl: 'https://vendly.com' },
+  links: EmailLinks = { baseUrl: 'https://verndly.com' },
 ) =>
   shell({
     title: 'Your seller application needs another look',
@@ -567,7 +1091,7 @@ export const getSellerRejectedEmail = (
       <div style="margin-bottom:16px;">${statusPill('Not approved', 'error')}</div>
       ${eyebrow('Verification update')}
       ${H1(`We need a bit more from you, ${escape(name.split(' ')[0] || name)}.`)}
-      ${P(`Thanks for applying to sell on Vendly. Unfortunately we weren't able to approve your application this round.`)}
+      ${P(`Thanks for applying to sell on Verndly. Unfortunately we weren't able to approve your application this round.`)}
       ${reason ? card(`<p style="margin:0; font-size:13px;"><strong>Reviewer note:</strong> ${escape(reason)}</p>`, '#dc2626') : ''}
       ${P(`You're welcome to reapply once you've addressed the points above. Take your time — a strong application moves faster on the next round.`)}
       ${button('Resubmit your application', `${links.baseUrl}/seller-verification`)}
@@ -586,19 +1110,19 @@ export interface ProActivatedData {
 
 export const getProActivatedEmail = (
   d: ProActivatedData,
-  links: EmailLinks = { baseUrl: 'https://vendly.com' },
+  links: EmailLinks = { baseUrl: 'https://verndly.com' },
 ) =>
   shell({
-    title: d.isExtension ? 'Vendly Pro extended' : 'Welcome to Vendly Pro',
+    title: d.isExtension ? 'Verndly Pro extended' : 'Welcome to Verndly Pro',
     preheader: `Pro perks unlock right now. Your membership runs through ${formatDate(d.proExpiresAt)}.`,
     content: `
       <div style="margin-bottom:16px;">${statusPill('Pro active', 'success')}</div>
       ${eyebrow(d.isExtension ? 'Membership extended' : 'Welcome to Pro')}
-      ${H1(d.isExtension ? `Pro is extended through ${formatDate(d.proExpiresAt)}.` : `Welcome to Vendly Pro, ${escape(d.name.split(' ')[0] || d.name)}.`)}
+      ${H1(d.isExtension ? `Pro is extended through ${formatDate(d.proExpiresAt)}.` : `Welcome to Verndly Pro, ${escape(d.name.split(' ')[0] || d.name)}.`)}
       ${P(`Your Pro perks are live right now. Use them to ship more, sell faster, and stand out in search.`)}
       ${card(`
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-          ${kvRow('Plan', 'Vendly Pro')}
+          ${kvRow('Plan', 'Verndly Pro')}
           ${kvRow('Amount', money(d.amountPaid))}
           ${d.reference ? kvRow('Reference', `<span style="font-family: ui-monospace, monospace; font-size:12px;">${escape(d.reference)}</span>`) : ''}
           ${kvRow('Active until', escape(formatDate(d.proExpiresAt)))}
@@ -620,63 +1144,224 @@ export const getProActivatedEmail = (
 export const getProExpiringEmail = (
   name: string,
   expiresAt: string | Date,
-  links: EmailLinks = { baseUrl: 'https://vendly.com' },
+  links: EmailLinks = { baseUrl: 'https://verndly.com' },
 ) =>
   shell({
-    title: 'Your Vendly Pro membership expires soon',
+    title: 'Your Verndly Pro membership expires soon',
     preheader: `Renew before ${formatDate(expiresAt)} to keep your Pro perks active.`,
     content: `
       <div style="margin-bottom:16px;">${statusPill('Expiring soon', 'warning')}</div>
       ${eyebrow('Renew Pro')}
       ${H1(`Your Pro membership expires ${formatDate(expiresAt)}.`)}
-      ${P(`Hi ${escape(name.split(' ')[0] || name)} — your Vendly Pro membership ends in a few days. Renew now to keep featured placement, stock alerts, and your QR code active without a gap.`)}
+      ${P(`Hi ${escape(name.split(' ')[0] || name)} — your Verndly Pro membership ends in a few days. Renew now to keep featured placement, stock alerts, and your QR code active without a gap.`)}
       ${button('Renew for GH₵57', `${links.baseUrl}/dashboard/settings`)}
       ${secondaryButton('Compare plans', `${links.baseUrl}/help`)}
     `,
   });
 
-// 12. Payout sent (seller)
+// 12. Payout Receipt (seller)
 export interface PayoutEmailData {
   storeName: string;
+  sellerName?: string;
   amount: number | string;
   currency?: string;
   reference: string;
+  providerRef?: string;
   bankName?: string;
+  accountNumber?: string;
   accountLastFour?: string;
+  mode?: 'AUTO' | 'MANUAL' | string;
+  grossAmount?: number | string;
+  platformFee?: number | string;
+  orderNumber?: string;
+  orderId?: string;
+  storeLink?: string;
   processedAt: string | Date;
 }
 
 export const getPayoutSentEmail = (
   d: PayoutEmailData,
-  links: EmailLinks = { baseUrl: 'https://vendly.com' },
-) =>
-  shell({
-    title: `Payout sent — ${money(d.amount, d.currency)}`,
-    preheader: 'Your earnings are on the way to your bank.',
-    content: `
-      <div style="margin-bottom:16px;">${statusPill('Payout sent', 'success')}</div>
-      ${eyebrow('Payout')}
-      ${H1(`${money(d.amount, d.currency)} is on the way.`)}
-      ${P(`We just sent a payout to ${escape(d.storeName)}'s linked account. Funds usually land within 1–2 business days.`)}
-      ${card(`
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-          ${kvRow('Amount', money(d.amount, d.currency))}
-          ${d.bankName ? kvRow('Bank', escape(d.bankName)) : ''}
-          ${d.accountLastFour ? kvRow('Account', `•••• ${escape(d.accountLastFour)}`) : ''}
-          ${kvRow('Reference', `<span style="font-family: ui-monospace, monospace; font-size:12px;">${escape(d.reference)}</span>`)}
-          ${kvRow('Processed', escape(formatDateTime(d.processedAt)))}
-        </table>
-      `)}
-      ${button('View payouts', `${links.baseUrl}/dashboard/payouts`)}
-    `,
-    footerNote: 'Funds not in your account after 3 business days? Email us with the reference above.',
+  links: EmailLinks = { baseUrl: 'https://verndly.com' },
+) => {
+  const curr = d.currency || 'GHS';
+  const formattedAmount = money(d.amount, curr);
+  const formattedDate = formatDateTime(d.processedAt || new Date());
+  const destinationText = d.bankName
+    ? `${d.bankName} ${d.accountLastFour ? `(•••• ${d.accountLastFour})` : ''}`
+    : d.accountLastFour
+      ? `Account ending in •••• ${d.accountLastFour}`
+      : 'Linked Payout Account';
+
+  const channelText =
+    d.mode === 'AUTO'
+      ? 'Automated Split Transfer (Paystack)'
+      : 'Direct Settlement Disbursement';
+
+  const grossNum = d.grossAmount ? Number(d.grossAmount) : null;
+  const feeNum =
+    d.platformFee != null
+      ? Number(d.platformFee)
+      : grossNum != null
+        ? Number((grossNum * 0.04).toFixed(2))
+        : null;
+
+  const content = `
+    <div style="margin-bottom: 20px;">
+      <span style="display: inline-block; padding: 5px 14px; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; border-radius: 9999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">
+        Official Settlement Receipt
+      </span>
+    </div>
+
+    <h1 style="margin: 0 0 10px; font-size: 22px; font-weight: 700; color: #0f172a; letter-spacing: -0.02em; line-height: 1.25;">
+      Disbursement Confirmed — ${formattedAmount}
+    </h1>
+    <p class="email-p" style="margin: 0 0 20px; font-size: 14px; line-height: 1.65; color: #334155;">
+      Hello <strong>${escape(d.sellerName || d.storeName)}</strong>, your payout for <strong>${escape(d.storeName)}</strong> has been processed successfully and transferred to your account.
+    </p>
+
+    <!-- Receipt Details Card -->
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"
+      style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; margin: 20px 0 24px;">
+      <tr>
+        <td style="padding: 18px 20px;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+            <tr>
+              <td style="padding: 6px 0; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; width: 40%;">
+                Receipt ID
+              </td>
+              <td align="right" style="padding: 6px 0; font-size: 13px; font-weight: 600; font-family: ui-monospace, monospace; color: #0f172a;">
+                REC-${escape(d.reference.replace(/[^A-Za-z0-9]/g, '').slice(-10).toUpperCase())}
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">
+                Payout Reference
+              </td>
+              <td align="right" style="padding: 6px 0; font-size: 12.5px; font-family: ui-monospace, monospace; color: #0f172a;">
+                ${escape(d.reference)}
+              </td>
+            </tr>
+            ${
+              d.providerRef
+                ? `
+            <tr>
+              <td style="padding: 6px 0; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">
+                Transfer Code
+              </td>
+              <td align="right" style="padding: 6px 0; font-size: 12.5px; font-family: ui-monospace, monospace; color: #0f172a;">
+                ${escape(d.providerRef)}
+              </td>
+            </tr>`
+                : ''
+            }
+            <tr>
+              <td style="padding: 6px 0; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">
+                Disbursed At
+              </td>
+              <td align="right" style="padding: 6px 0; font-size: 13px; font-weight: 500; color: #0f172a;">
+                ${escape(formattedDate)}
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">
+                Destination
+              </td>
+              <td align="right" style="padding: 6px 0; font-size: 13px; font-weight: 600; color: #0f172a;">
+                ${escape(destinationText)}
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">
+                Settlement Channel
+              </td>
+              <td align="right" style="padding: 6px 0; font-size: 12.5px; font-weight: 500; color: #0f172a;">
+                ${escape(channelText)}
+              </td>
+            </tr>
+            ${
+              d.orderNumber
+                ? `
+            <tr>
+              <td style="padding: 6px 0; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">
+                Associated Order
+              </td>
+              <td align="right" style="padding: 6px 0; font-size: 13px; font-weight: 600; color: #0f172a;">
+                ${escape(d.orderNumber)}
+              </td>
+            </tr>`
+                : ''
+            }
+          </table>
+        </td>
+      </tr>
+    </table>
+
+    <!-- Financial Breakdown Box -->
+    <div style="margin: 20px 0 24px; padding: 16px 20px; border-radius: 12px; background: #ffffff; border: 1px solid #e2e8f0;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+        ${
+          grossNum != null
+            ? `
+        <tr>
+          <td style="padding: 6px 0; font-size: 13px; color: #64748b;">Gross Order Volume</td>
+          <td align="right" style="padding: 6px 0; font-size: 13px; font-weight: 500; color: #0f172a;">
+            ${money(grossNum, curr)}
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 6px 0; font-size: 13px; color: #64748b;">Verndly Platform Commission (4%)</td>
+          <td align="right" style="padding: 6px 0; font-size: 13px; font-weight: 500; color: #ef4444;">
+            - ${money(feeNum ?? 0, curr)}
+          </td>
+        </tr>
+        <tr>
+          <td colspan="2" style="padding: 8px 0;">
+            <div style="height: 1px; background: #e2e8f0;"></div>
+          </td>
+        </tr>`
+            : ''
+        }
+        <tr>
+          <td style="padding: 8px 0; font-size: 14.5px; font-weight: 700; color: #0f172a;">
+            Net Disbursed (96%)
+          </td>
+          <td align="right" style="padding: 8px 0; font-size: 20px; font-weight: 800; color: #047857; letter-spacing: -0.02em;">
+            ${formattedAmount}
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Settlement Notice -->
+    <div style="margin: 20px 0 24px; padding: 14px 18px; border-radius: 10px; background: #f8fafc; border: 1px solid #e2e8f0; font-size: 12.5px; color: #475569; line-height: 1.6;">
+      <strong>Settlement Notice:</strong> Mobile Money transfers are typically credited immediately. Interbank transfers may require 1 to 2 business days to clear depending on your financial institution's processing schedule.
+    </div>
+
+    ${renderActionButtons({
+      primaryLabel: 'View in Seller Dashboard',
+      primaryHref: `${links.baseUrl}/dashboard/transactions`,
+      secondaryLabel: d.storeLink ? `Visit ${d.storeName}` : 'Seller Dashboard',
+      secondaryHref: d.storeLink ? `${links.baseUrl}/s/${d.storeLink}` : `${links.baseUrl}/dashboard`,
+    })}
+  `;
+
+  return emailShell({
+    title: `Payout Receipt: ${formattedAmount} — ${d.storeName}`,
+    preheader: `Your payout of ${formattedAmount} for ${d.storeName} has been processed and transferred.`,
+    category: 'Payout Receipt',
+    content,
+    links,
+    footerNote: `This official payout receipt confirms the disbursement of funds from Verndly to your linked account. Retain this record for your business accounting and reconciliation.`,
   });
+};
+
+export const getPayoutReceiptEmail = getPayoutSentEmail;
 
 // 13. Low-stock alert (seller)
 export const getLowStockEmail = (
   storeName: string,
   product: { id: string; title: string; quantity: number; image_url?: string | null },
-  links: EmailLinks = { baseUrl: 'https://vendly.com' },
+  links: EmailLinks = { baseUrl: 'https://verndly.com' },
 ) =>
   shell({
     title: `Low stock — ${product.title}`,
@@ -700,17 +1385,39 @@ export const getLowStockEmail = (
 // 14. Account suspended / warning
 export const getAccountSuspendedEmail = (name: string, reason: string) =>
   shell({
-    title: 'Your Vendly account has been suspended',
-    preheader: 'Action required — your account is currently restricted.',
+    title: 'Notice of account restriction — Verndly Trust & Safety',
+    preheader: 'Your Verndly account has been temporarily restricted pending compliance review.',
+    category: 'Account Notice',
     content: `
-      <div style="margin-bottom:16px;">${statusPill('Suspended', 'error')}</div>
-      ${eyebrow('Account notice')}
-      ${H1('Your account has been suspended.')}
-      ${P(`Hi ${escape(name.split(' ')[0] || name)}, we've temporarily suspended your Vendly account.`)}
-      ${card(`<p style="margin:0; font-size:13px;"><strong>Reason:</strong> ${escape(reason)}</p>`, '#dc2626')}
-      ${P(`If you believe this is a mistake or want to appeal, reply to this email and our trust team will review your case within 48 hours.`)}
-      ${secondaryButton('Email support', `mailto:${BRAND.supportEmail}`)}
+      <div style="margin-bottom: 18px;">${statusPill('Account Restricted', 'error')}</div>
+      ${eyebrow('Verndly Trust & Safety • Enforcement Notice')}
+      ${H1('Notice of account restriction')}
+      ${P(`Hello ${escape(name.split(' ')[0] || name)},`)}
+      ${P(`In accordance with the Verndly Terms of Service and Merchant Trust Policies, your Verndly account access has been temporarily restricted pending review.`)}
+
+      ${card(`
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+          ${kvRow('Account status', '<span style="color: #dc2626; font-weight: 600;">Temporarily Restricted</span>')}
+          ${kvRow('Review basis', escape(reason))}
+          ${kvRow('Effective date', `${formatDate(new Date())}`)}
+          ${kvRow('Impact', 'Storefront visibility, checkout, and payouts paused')}
+        </table>
+      `, '#dc2626')}
+
+      ${P(`While this restriction is active, you will not be able to publish new products, accept incoming customer orders, or modify settlement payout settings.`)}
+
+      ${callout(`
+        <p class="email-p" style="margin: 0 0 8px; font-size: 13px; font-weight: 600; color: #0f172a;">
+          Appeals and resolution process
+        </p>
+        <p class="email-p" style="margin: 0; font-size: 12.5px; line-height: 1.65; color: #475569;">
+          If you believe this determination was made in error or if you have resolved the underlying issue, you may submit an appeal for reconsideration. Please reply directly to this notification or contact our compliance team at <a href="mailto:${BRAND.supportEmail}" style="color: #0284c7; text-decoration: none;">${BRAND.supportEmail}</a> with your merchant credentials. Cases are typically evaluated within 2 business days.
+        </p>
+      `, 'neutral')}
+
+      ${secondaryButton('Contact Trust & Safety', `mailto:${BRAND.supportEmail}`)}
     `,
+    footerNote: 'This is an official administrative notice from the Verndly Trust & Safety Team.',
   });
 
 // 15. Contact Form Admin Alert
@@ -747,7 +1454,7 @@ export const getSellerVerificationAdminAlertEmail = (
     verificationData: string;
     submittedAt: Date;
   },
-  links: EmailLinks = { baseUrl: 'https://vendly.com' },
+  links: EmailLinks = { baseUrl: 'https://verndly.com' },
 ) =>
   shell({
     title: `New seller verification: ${d.userName}`,
@@ -767,23 +1474,23 @@ export const getSellerVerificationAdminAlertEmail = (
           ${kvRow('Data', escape(d.verificationData || '—'))}
         </table>
       `)}
-      ${button('Review in dashboard', `${links.baseUrl}/vendly/verifications`)}
+      ${button('Review in dashboard', `${links.baseUrl}/verndly/verifications`)}
     `,
   });
 
 // 16. Newsletter Welcome
 export const getNewsletterWelcomeEmail = (
   email: string,
-  links: EmailLinks = { baseUrl: 'https://vendly.com' },
+  links: EmailLinks = { baseUrl: 'https://verndly.com' },
 ) =>
   shell({
-    title: 'Welcome to the Vendly Newsletter',
+    title: 'Welcome to the Verndly Newsletter',
     preheader: 'You are on the list for updates, deals, and seller tips.',
     content: `
       <div style="margin-bottom:16px;">${statusPill('Subscribed', 'success')}</div>
       ${eyebrow('Newsletter')}
       ${H1(`You're on the list.`)}
-      ${P(`Thanks for subscribing to the Vendly newsletter. We'll keep you posted with the latest updates, special deals, and tips to grow your business.`)}
+      ${P(`Thanks for subscribing to the Verndly newsletter. We'll keep you posted with the latest updates, special deals, and tips to grow your business.`)}
       ${button('Start exploring', `${links.baseUrl}/products`)}
     `,
   });

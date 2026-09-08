@@ -18,30 +18,31 @@ export function StoreGuard({ children }: { children: React.ReactNode }) {
     if (isLoading) return;
 
     if (isAuthenticated && user) {
-      const isApprovedSeller = user.role === 'SELLER';
-      const hasNoStore = !user.seller_profile;
-      const isOnboardingPage = pathname === '/onboarding';
+      const isSellerVerified =
+        user.approval_status === 'APPROVED' ||
+        user.role === 'SELLER' ||
+        user.role === 'ADMIN';
       const isCreateStorePage = pathname === '/create-store';
+      const isOnboardingPage = pathname === '/onboarding';
 
-      // 1. Approved seller with no store → must create store first
-      if (isApprovedSeller && hasNoStore && !isCreateStorePage) {
+      // 1. User has to be seller verified before they can create a store
+      if (!isSellerVerified && isCreateStorePage) {
+        router.replace('/seller-verification?redirect=/create-store');
+        return;
+      }
+
+      // 2. Approved seller with no store OR onboarding not complete → must complete setup on /create-store
+      if (
+        isSellerVerified &&
+        (!user.seller_profile || !user.seller_profile?.onboarding_completed) &&
+        !isCreateStorePage
+      ) {
         router.push('/create-store');
         return;
       }
 
-      // 2. Approved seller with store, but onboarding not complete → must finish onboarding
-      if (
-        isApprovedSeller &&
-        !hasNoStore &&
-        !user.seller_profile?.onboarding_completed &&
-        !isOnboardingPage
-      ) {
-        router.push('/onboarding');
-        return;
-      }
-
       // 3. Prevent sellers with completed onboarding from visiting /create-store or /onboarding
-      if (isApprovedSeller && !hasNoStore && user.seller_profile?.onboarding_completed) {
+      if (isSellerVerified && user.seller_profile?.onboarding_completed) {
         if (isCreateStorePage || isOnboardingPage) {
           router.push('/dashboard');
           return;

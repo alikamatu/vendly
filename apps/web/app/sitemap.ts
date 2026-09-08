@@ -30,19 +30,17 @@ async function safeFetchJson<T>(url: string): Promise<T | null> {
 
 const STATIC_ROUTES: Array<{ path: string; changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"]; priority: number }> = [
   { path: "/", changeFrequency: "daily", priority: 1.0 },
-  { path: "/products", changeFrequency: "hourly", priority: 0.9 },
-  { path: "/stores", changeFrequency: "daily", priority: 0.8 },
-  { path: "/categories", changeFrequency: "weekly", priority: 0.7 },
-  { path: "/about", changeFrequency: "monthly", priority: 0.5 },
+  { path: "/products", changeFrequency: "hourly", priority: 0.95 },
+  { path: "/categories", changeFrequency: "daily", priority: 0.9 },
+  { path: "/stores", changeFrequency: "daily", priority: 0.9 },
+  { path: "/returns", changeFrequency: "weekly", priority: 0.8 },
+  { path: "/faq", changeFrequency: "weekly", priority: 0.8 },
+  { path: "/shipping", changeFrequency: "weekly", priority: 0.7 },
+  { path: "/about", changeFrequency: "monthly", priority: 0.6 },
   { path: "/contact", changeFrequency: "monthly", priority: 0.5 },
-  { path: "/help", changeFrequency: "monthly", priority: 0.4 },
-  { path: "/faq", changeFrequency: "monthly", priority: 0.4 },
-  { path: "/shipping", changeFrequency: "monthly", priority: 0.3 },
-  { path: "/returns", changeFrequency: "monthly", priority: 0.3 },
-  { path: "/privacy", changeFrequency: "yearly", priority: 0.3 },
-  { path: "/terms", changeFrequency: "yearly", priority: 0.3 },
-  { path: "/login", changeFrequency: "yearly", priority: 0.2 },
-  { path: "/register", changeFrequency: "yearly", priority: 0.2 },
+  { path: "/help", changeFrequency: "weekly", priority: 0.5 },
+  { path: "/privacy", changeFrequency: "monthly", priority: 0.4 },
+  { path: "/terms", changeFrequency: "monthly", priority: 0.4 },
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -55,7 +53,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   // Products: take the first ~5000 to keep the sitemap under 50k entries.
-  // For very large catalogs, split into multiple sitemap routes later.
   const productsResp = await safeFetchJson<{ data?: ProductSlim[] } | ProductSlim[]>(
     `${API_URL}/products?page=1&limit=5000`,
   );
@@ -66,8 +63,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const productEntries: MetadataRoute.Sitemap = products.map((p) => ({
     url: `${SITE_URL}/product/${p.id}`,
     lastModified: p.updated_at ? new Date(p.updated_at) : p.created_at ? new Date(p.created_at) : now,
-    changeFrequency: "weekly" as const,
-    priority: 0.7,
+    changeFrequency: "daily" as const,
+    priority: 0.85,
   }));
 
   // Stores
@@ -78,8 +75,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           {
             url: `${SITE_URL}/s/${s.store_link}`,
             lastModified: s.updated_at ? new Date(s.updated_at) : now,
-            changeFrequency: "weekly" as const,
-            priority: 0.6,
+            changeFrequency: "daily" as const,
+            priority: 0.8,
           },
         ]
       : [],
@@ -94,7 +91,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             url: `${SITE_URL}/products?category=${encodeURIComponent(c.name)}`,
             lastModified: now,
             changeFrequency: "daily" as const,
-            priority: 0.6,
+            priority: 0.75,
           },
         ]
       : [],

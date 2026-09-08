@@ -11,20 +11,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const getTitle = (path: string) => {
-    switch (path) {
-      case '/dashboard':
-        return 'Overview';
-      case '/dashboard/products':
-        return 'Products';
-      case '/dashboard/orders':
-        return 'Orders';
-      case '/dashboard/reviews':
-        return 'Store Reviews';
-      case '/dashboard/settings':
-        return 'Settings';
-      default:
-        return 'Dashboard';
-    }
+    if (path === '/dashboard') return 'Overview';
+    if (path.startsWith('/dashboard/products')) return 'My Products';
+    if (path.startsWith('/dashboard/orders')) return 'Orders';
+    if (path.startsWith('/dashboard/analytics')) return 'Analytics';
+    if (path.startsWith('/dashboard/reviews')) return 'Store Reviews';
+    if (path.startsWith('/dashboard/notifications')) return 'Notifications';
+    if (path === '/dashboard/settings/activity') return 'Activity Log';
+    if (path === '/dashboard/settings/store') return 'Store Settings';
+    if (path === '/dashboard/settings/profile') return 'Personal Info';
+    if (path === '/dashboard/settings/security') return 'Security & Password';
+    if (path === '/dashboard/settings/personalization') return 'Appearance';
+    if (path === '/dashboard/settings/help') return 'Help & FAQ';
+    if (path === '/dashboard/settings/terms') return 'Terms & Policies';
+    if (path.startsWith('/dashboard/settings')) return 'Settings';
+    return 'Dashboard';
   };
 
   return (
@@ -33,7 +34,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
         <div className="flex min-h-screen flex-col transition-all duration-300 lg:ml-72">
           <DashboardHeader title={getTitle(pathname)} onMenuToggle={() => setIsSidebarOpen(true)} />
-          <main className="container mx-auto flex-1 p-4 md:p-8">{children}</main>
+          <main className="w-full max-w-7xl mx-auto flex-1 px-4 py-5 sm:px-6 sm:py-6 md:px-8 md:py-8">{children}</main>
         </div>
       </div>
     </ProtectedRoute>

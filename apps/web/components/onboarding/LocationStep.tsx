@@ -27,7 +27,7 @@ interface LocationStepProps {
 }
 
 const baseInput =
-  "w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-4 py-3 text-sm text-[var(--color-foreground)] focus:ring-2 focus:ring-[var(--color-accent)]/30 focus:border-[var(--color-accent)]/50 outline-none transition-all placeholder:text-[var(--color-muted)]/50";
+  "w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-4 py-3 text-sm text-[var(--color-foreground)] focus:border-secondary outline-none transition-all placeholder:text-[var(--color-muted)]/50";
 
 export default function LocationStep({
   data,

@@ -1,51 +1,35 @@
 import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
-import { readFileSync } from "fs";
-import { join } from "path";
 
 /**
- * Pro-only shareable product card.
+ * Modern Google-Style Product Poster & Social Card Generator
  *
- *   GET /api/cards/product/<productId>
+ *   GET /api/cards/product/<productId>?theme=dark|light&format=portrait|landscape
  *
- * Returns a 1200×630 PNG with:
- *  - Product photo (left half)
- *  - Vendly logo (top-right corner of the info panel)
- *  - Seller logo + store name (below the Vendly branding)
- *  - Product title + price
- *  - "Shop now" CTA
- *
- * The download button lives in ShareProductCardModal on the frontend.
+ * Modern Google Store / Material Design aesthetic:
+ *  - High-clarity typography with zero missing glyphs (clean "GH¢ " currency formatting)
+ *  - Sculptural product showcase stage with seamless studio backdrop
+ *  - Material You pill chips for specs and categories
+ *  - Google Store-style pill CTA button and proud price lockup
+ *  - Portrait: 1080×1350 (4:5 poster ratio, WhatsApp Status, Instagram Post/Story, TikTok)
+ *  - Landscape: 1200×630 (16:9 social ratio, Twitter/X cards, WhatsApp links, iMessage, Facebook)
  */
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:1000";
 
-/**
- * Render-scale multiplier. 2 = retina quality (2400×1260). Every numeric
- * dimension below is multiplied by S, so the layout proportions stay
- * identical while the output PNG gets sharper. Bump to 3 for print.
- *
- * File size grows roughly quadratically with S — 2x is ~3–4x the bytes
- * of 1x, which CDN caching makes a non-issue.
- */
-const S = 2;
-// 4:5 — 1080×1350 base → 2160×2700 retina. Ideal for Instagram portrait.
-const CARD_W = 1080 * S;
-const CARD_H = 1350 * S;
-
 interface Product {
   id: string;
   title: string;
   price: string | number;
+  original_price?: string | number | null;
   currency?: string | null;
+  condition?: string | null;
+  category?: string | null;
+  brand?: string | null;
   image_urls?: string[];
   tags?: string[];
-  /**
-   * Free-form key/value JSON. Common keys we surface on the card include
-   * "size" and "color". Anything else is ignored to keep the layout tight.
-   */
   attributes?: Record<string, string | number | null> | null;
   seller?: {
     store_name?: string | null;
@@ -72,16 +56,11 @@ async function fetchProduct(id: string): Promise<Product | null> {
   }
 }
 
-/**
- * Fetch an image and return it as `data:image/...;base64,...`. Falls back
- * to null on any failure so the caller can render a graceful placeholder
- * instead of crashing the whole route.
- */
 async function fetchImageAsDataUri(url: string): Promise<string | null> {
   try {
     const res = await fetch(url, {
       cache: "no-store",
-      headers: { "User-Agent": "Vendly-Card-Renderer/1.0" },
+      headers: { "User-Agent": "Verndly-Card-Renderer/1.0" },
     });
     if (!res.ok) return null;
     const ct = res.headers.get("content-type") || "image/jpeg";
@@ -92,31 +71,28 @@ async function fetchImageAsDataUri(url: string): Promise<string | null> {
   }
 }
 
-/** Read the Vendly logo from public/logos/vendly.png and return a data URI. */
-function getVendlyLogoDataUri(): string | null {
-  try {
-    const logoPath = join(process.cwd(), "public", "logos", "vendly.png");
-    const buf = readFileSync(logoPath);
-    return `data:image/png;base64,${buf.toString("base64")}`;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Format the price for the share card with the Ghana cedi symbol.
- */
-function formatPrice(price: string | number, currency?: string | null) {
+function getPriceComponents(price: string | number, currency?: string | null) {
   const code = (currency || "GHS").toUpperCase();
-  const symbol = code === "GHS" ? "GH₵" : code === "USD" ? "$" : `${code} `;
+  const symbol =
+    code === "GHS"
+      ? "GH¢"
+      : code === "USD"
+        ? "$"
+        : code === "EUR"
+          ? "€"
+          : code === "GBP"
+            ? "£"
+            : code;
   const n = Number(price);
-  if (!Number.isFinite(n)) return `${symbol}${price}`;
-  return `${symbol}${n.toLocaleString(undefined, {
-    maximumFractionDigits: 2,
-  })}`;
+  const formattedNumber = Number.isFinite(n)
+    ? n.toLocaleString("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })
+    : String(price);
+  return { symbol, formattedNumber, full: `${symbol} ${formattedNumber}` };
 }
 
-/** PNG of a friendly error so the UI never shows a broken-image icon. */
 function errorImage(title: string, subtitle: string) {
   return new ImageResponse(
     (
@@ -128,19 +104,18 @@ function errorImage(title: string, subtitle: string) {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          background:
-            "linear-gradient(135deg, #fafaf9 0%, #f5f5f4 60%, #e7e5e4 100%)",
-          color: "#0a0a0a",
+          backgroundColor: "#0b0c0e",
+          color: "#ffffff",
           fontFamily: "system-ui, -apple-system, sans-serif",
-          padding: 64 * S,
+          padding: 60,
           textAlign: "center",
         }}
       >
         <div
           style={{
-            fontSize: 36 * S,
-            fontWeight: 600,
-            letterSpacing: -1 * S,
+            fontSize: 40,
+            fontWeight: 700,
+            letterSpacing: -1,
             display: "flex",
           }}
         >
@@ -148,9 +123,9 @@ function errorImage(title: string, subtitle: string) {
         </div>
         <div
           style={{
-            fontSize: 22 * S,
-            color: "#525252",
-            marginTop: 16 * S,
+            fontSize: 20,
+            color: "#9ca3af",
+            marginTop: 12,
             display: "flex",
           }}
         >
@@ -158,132 +133,186 @@ function errorImage(title: string, subtitle: string) {
         </div>
       </div>
     ),
-    { width: CARD_W, height: CARD_H },
+    { width: 1080, height: 1350 },
   );
 }
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   ctx: { params: Promise<{ id: string }> },
 ) {
   const { id } = await ctx.params;
 
+  const searchParams = req.nextUrl.searchParams;
+  const themeParam = searchParams.get("theme") || "dark";
+  const formatParam = searchParams.get("format") || "portrait";
+
+  const isDark = themeParam !== "light";
+  const isLandscape = formatParam === "landscape";
+
   const product = await fetchProduct(id);
   if (!product) {
-    return errorImage("Product not found", "We couldn't load that product.");
+    return errorImage(
+      "Product Not Found",
+      "Unable to load product specifications.",
+    );
   }
 
-  // Inline the product image
+  // Fetch product photo and seller avatar
   const remoteUrl = product.image_urls?.[0];
-  const imageData = remoteUrl ? await fetchImageAsDataUri(remoteUrl) : null;
+  const [imageData, sellerLogoData] = await Promise.all([
+    remoteUrl ? fetchImageAsDataUri(remoteUrl) : Promise.resolve(null),
+    product.seller?.logo_url
+      ? fetchImageAsDataUri(product.seller.logo_url)
+      : Promise.resolve(null),
+  ]);
 
-  // Inline the seller logo
-  const sellerLogoUrl = product.seller?.logo_url;
-  const sellerLogoData = sellerLogoUrl
-    ? await fetchImageAsDataUri(sellerLogoUrl)
-    : null;
+  // Modern Price Formatting (Zero missing tofu glyphs)
+  const price = getPriceComponents(product.price, product.currency);
+  const numPrice = Number(product.price);
+  const numOriginal =
+    product.original_price != null ? Number(product.original_price) : null;
+  const hasDiscount = Boolean(
+    numOriginal && numOriginal > numPrice && numPrice > 0,
+  );
+  const discountPercent =
+    hasDiscount && numOriginal
+      ? Math.round(((numOriginal - numPrice) / numOriginal) * 100)
+      : 0;
+  const originalPrice =
+    hasDiscount && numOriginal
+      ? getPriceComponents(numOriginal, product.currency)
+      : null;
 
-  // Inline the Vendly logo from /public/logos/vendly.png
-  const vendlyLogoData = getVendlyLogoDataUri();
-
-  const priceLabel = formatPrice(product.price, product.currency);
-  const storeName = product.seller?.store_name || "Vendly seller";
+  const storeName = product.seller?.store_name || "Verified Merchant";
   const isPro = Boolean(product.seller?.user?.is_pro);
-  // Trim the title manually since satori's line-clamp is brittle.
   const safeTitle =
-    product.title.length > 80
-      ? `${product.title.slice(0, 78).trimEnd()}…`
+    product.title.length > 55
+      ? `${product.title.slice(0, 52).trimEnd()}…`
       : product.title;
 
-  // ─── Detail chips ───────────────────────────────────────────────────
-  // Tags (show up to 3, then "+N" overflow chip if more).
-  const allTags = (product.tags || []).map((t) => String(t).trim()).filter(Boolean);
-  const visibleTags = allTags.slice(0, 3);
-  const extraTagCount = Math.max(0, allTags.length - visibleTags.length);
+  const category = (product.category || "Featured Listing").toUpperCase();
+  const location = (product.seller?.location || "Accra, Ghana").toUpperCase();
 
-  // Common attribute keys we surface as chips. Falls through silently if
-  // a seller hasn't set them — apparel sellers get size/color, electronics
-  // sellers might get neither, which is fine.
+  // Modern Google-Style Palette Tokens
+  const c = isDark
+    ? {
+        canvasBg: "#0c0d10",
+        cardBg: "#131519",
+        cardBorder: "rgba(255, 255, 255, 0.09)",
+        stageBg: "#ffffff",
+        stageBorder: "rgba(255, 255, 255, 0.08)",
+        badgeBg: "#1c2026",
+        badgeBorder: "rgba(255, 255, 255, 0.08)",
+        badgeText: "#f1f3f4",
+        textPrimary: "#f8f9fa",
+        textSecondary: "#9aa0a6",
+        textTertiary: "#5f6368",
+        currencyText: "#ef4444",
+        accent: "#ef4444",
+        pillBg: "#1e2229",
+        pillBorder: "rgba(255, 255, 255, 0.08)",
+        pillText: "#e8eaed",
+        actionBarBg: "#181b20",
+        actionBarBorder: "rgba(255, 255, 255, 0.08)",
+        ctaBg: "#ef4444",
+        ctaText: "#ffffff",
+      }
+    : {
+        canvasBg: "#edf0f4",
+        cardBg: "#ffffff",
+        cardBorder: "rgba(0, 0, 0, 0.07)",
+        stageBg: "#ffffff",
+        stageBorder: "rgba(0, 0, 0, 0.06)",
+        badgeBg: "#f1f3f4",
+        badgeBorder: "rgba(0, 0, 0, 0.06)",
+        badgeText: "#202124",
+        textPrimary: "#202124",
+        textSecondary: "#5f6368",
+        textTertiary: "#80868b",
+        currencyText: "#ef4444",
+        accent: "#ef4444",
+        pillBg: "#f1f3f4",
+        pillBorder: "rgba(0, 0, 0, 0.06)",
+        pillText: "#3c4043",
+        actionBarBg: "#f8f9fa",
+        actionBarBorder: "rgba(0, 0, 0, 0.07)",
+        ctaBg: "#202124",
+        ctaText: "#ffffff",
+      };
+
+  // Structured specification pills (Material You Chips)
   const attrs = product.attributes || {};
-  const detailChips: Array<{ label: string; value: string }> = [];
-  const pushAttr = (label: string, key: string) => {
-    const raw = attrs?.[key];
-    const val = raw == null ? "" : String(raw).trim();
-    if (val) detailChips.push({ label, value: val });
-  };
-  pushAttr("Size", "size");
-  pushAttr("Color", "color");
+  const chips: string[] = [];
+  if (product.brand) chips.push(product.brand);
+  if (attrs.dietary_info) chips.push(String(attrs.dietary_info));
+  if (attrs.food_type) chips.push(String(attrs.food_type));
+  if (attrs.size) chips.push(`Size: ${attrs.size}`);
+  if (attrs.color) chips.push(`Color: ${attrs.color}`);
+  if (attrs.material) chips.push(String(attrs.material));
+  if (attrs.storage) chips.push(String(attrs.storage));
+  if (attrs.quantity_unit) chips.push(String(attrs.quantity_unit));
 
-  // Service area pill — only render when the seller has set one.
-  const SERVICE_AREA_LABELS: Record<string, string> = {
-    SAME_CITY: "Local · same city",
-    NEARBY_STATES: "Nearby regions",
-    NATIONWIDE: "Nationwide delivery",
-  };
-  const serviceAreaLabel = product.seller?.service_area
-    ? SERVICE_AREA_LABELS[product.seller.service_area] ||
-    String(product.seller.service_area).replace(/_/g, " ").toLowerCase()
-    : null;
+  // Dynamic fallback for custom attributes
+  if (chips.length < 3) {
+    for (const [k, v] of Object.entries(attrs)) {
+      if (
+        v &&
+        typeof v === "string" &&
+        !chips.includes(v) &&
+        !["expiry", "delivery_until"].includes(k)
+      ) {
+        chips.push(v.length > 20 ? `${v.slice(0, 18)}…` : v);
+        if (chips.length >= 3) break;
+      }
+    }
+  }
 
-  // "Free Delivery until DD/MM/YYYY" pill, mirroring the inspiration card.
-  // We default the deadline to two weeks out — long enough to feel real,
-  // short enough to push urgency. Sellers who want a different window can
-  // set `attributes.delivery_until` to an ISO date and we honour it.
-  const deliveryUntilRaw = (attrs?.["delivery_until"] as string | undefined) || null;
-  const deliveryUntil = (() => {
-    const d = deliveryUntilRaw ? new Date(deliveryUntilRaw) : null;
-    const target =
-      d && !Number.isNaN(d.getTime())
-        ? d
-        : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
-    const dd = String(target.getDate()).padStart(2, "0");
-    const mm = String(target.getMonth() + 1).padStart(2, "0");
-    const yy = target.getFullYear();
-    return `${dd}/${mm}/${yy}`;
-  })();
-  const deliveryLabel = serviceAreaLabel
-    ? `Free Delivery · ${serviceAreaLabel} · until ${deliveryUntil}`
-    : `Free Delivery until ${deliveryUntil}`;
+  if (product.condition && product.condition.toLowerCase() !== "new") {
+    chips.push(product.condition);
+  }
+  chips.push("In Stock");
+
+  const width = isLandscape ? 1200 : 1080;
+  const height = isLandscape ? 630 : 1350;
 
   try {
-    return new ImageResponse(
-      (
-        // Outer canvas — solid black bleed so the card reads cleanly on any
-        // share surface. The actual "card" sits inside with rounded corners
-        // so the result mirrors the inspiration's softened silhouette.
+    const imgRes = new ImageResponse(
+      isLandscape ? (
+        // ────────────────── LANDSCAPE 1200×630 (OG / Social Card) ──────────────────
         <div
           style={{
             width: "100%",
             height: "100%",
             display: "flex",
-            backgroundColor: "#000000",
+            backgroundColor: c.canvasBg,
             fontFamily: "system-ui, -apple-system, sans-serif",
-            padding: 40 * S,
+            padding: 24,
           }}
         >
           <div
             style={{
               flex: 1,
               display: "flex",
-              flexDirection: "column",
-              backgroundColor: "#000000",
-              border: `${2 * S}px solid #1a1a1a`,
-              borderRadius: 56 * S,
+              flexDirection: "row",
+              backgroundColor: c.cardBg,
+              border: `1px solid ${c.cardBorder}`,
+              borderRadius: 32,
               overflow: "hidden",
             }}
           >
-            {/* Photo region — ~62% of the card. Rounded only on the inside
-                so it tucks under the outer card's border seamlessly. */}
+            {/* Left Column: Product Showcase Stage */}
             <div
               style={{
-                width: "100%",
-                flex: 62,
+                width: 480,
+                height: "100%",
                 position: "relative",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                backgroundColor: "#0a0a0a",
-                overflow: "hidden",
+                backgroundColor: c.stageBg,
+                borderRight: `1px solid ${c.cardBorder}`,
+                padding: 24,
               }}
             >
               {imageData ? (
@@ -291,77 +320,118 @@ export async function GET(
                 <img
                   src={imageData}
                   alt=""
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "contain",
+                  }}
                 />
               ) : (
-                <div style={{ fontSize: 32 * S, color: "#525252", display: "flex" }}>
-                  No image
+                <div
+                  style={{
+                    fontSize: 24,
+                    color: c.textTertiary,
+                    display: "flex",
+                  }}
+                >
+                  Product Photo
                 </div>
               )}
 
-              {/* Top-left: Vendly logo. Sits over a subtle dark chip so it
-                  stays legible on bright product shots. */}
-              {vendlyLogoData && (
+              {/* Discount pill */}
+              {hasDiscount && (
                 <div
                   style={{
                     position: "absolute",
-                    top: 32 * S,
-                    left: 32 * S,
+                    top: 20,
+                    right: 20,
                     display: "flex",
                     alignItems: "center",
-                    backgroundColor: "rgba(0,0,0,0.55)",
-                    padding: `${8 * S}px ${16 * S}px`,
+                    backgroundColor: c.accent,
+                    color: "#ffffff",
+                    padding: "6px 14px",
+                    borderRadius: 999,
+                    fontSize: 13,
+                    fontWeight: 800,
+                    letterSpacing: 0.5,
+                  }}
+                >
+                  {`SAVE ${discountPercent}%`}
+                </div>
+              )}
+            </div>
+
+            {/* Right Column: Information & Pricing */}
+            <div
+              style={{
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
+                padding: "32px 36px",
+              }}
+            >
+              {/* Header: Verndly & Store Info */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  width: "100%",
+                }}
+              >
+                {/* Verndly Badge */}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    backgroundColor: c.badgeBg,
+                    border: `1px solid ${c.badgeBorder}`,
+                    padding: "6px 14px",
                     borderRadius: 999,
                   }}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={vendlyLogoData}
-                    alt="Vendly"
-                    style={{ height: 28 * S, objectFit: "contain" }}
-                  />
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 100 100"
+                    fill="none"
+                  >
+                    <circle cx="27" cy="33" r="14" fill="#ef4444" />
+                    <rect
+                      x="37"
+                      y="16"
+                      width="28"
+                      height="74"
+                      rx="14"
+                      transform="rotate(-36 51 53)"
+                      fill="#ef4444"
+                    />
+                  </svg>
+                  <span
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 700,
+                      letterSpacing: 1.2,
+                      color: c.badgeText,
+                      display: "flex",
+                    }}
+                  >
+                    VERNDLY
+                  </span>
                 </div>
-              )}
 
-              {/* Top-right: PRO badge — only for pro sellers. */}
-              {isPro && (
+                {/* Seller Store Badge */}
                 <div
                   style={{
-                    position: "absolute",
-                    top: 32 * S,
-                    right: 32 * S,
                     display: "flex",
                     alignItems: "center",
-                    backgroundColor: "#ef4444",
-                    color: "#ffffff",
-                    padding: `${8 * S}px ${18 * S}px`,
+                    gap: 8,
+                    backgroundColor: c.badgeBg,
+                    border: `1px solid ${c.badgeBorder}`,
+                    padding: "4px 12px 4px 6px",
                     borderRadius: 999,
-                    fontSize: 16 * S,
-                    fontWeight: 700,
-                    letterSpacing: 1 * S,
-                  }}
-                >
-                  PRO
-                </div>
-              )}
-
-              {/* Bottom-left: seller chip with logo + store name. Optional,
-                  but it carries the brand for screenshots. */}
-              {storeName && (
-                <div
-                  style={{
-                    position: "absolute",
-                    bottom: 32 * S,
-                    left: 32 * S,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10 * S,
-                    backgroundColor: "rgba(0,0,0,0.6)",
-                    padding: `${8 * S}px ${16 * S}px ${8 * S}px ${8 * S}px`,
-                    borderRadius: 999,
-                    color: "#ffffff",
-                    fontSize: 18 * S,
-                    fontWeight: 600,
                   }}
                 >
                   {sellerLogoData ? (
@@ -370,8 +440,8 @@ export async function GET(
                       src={sellerLogoData}
                       alt=""
                       style={{
-                        width: 32 * S,
-                        height: 32 * S,
+                        width: 26,
+                        height: 26,
                         borderRadius: 999,
                         objectFit: "cover",
                       }}
@@ -379,219 +449,687 @@ export async function GET(
                   ) : (
                     <div
                       style={{
-                        width: 32 * S,
-                        height: 32 * S,
+                        width: 26,
+                        height: 26,
                         borderRadius: 999,
-                        backgroundColor: "#1f1f1f",
+                        backgroundColor: c.accent,
+                        color: "#fff",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 12,
+                        fontWeight: 700,
+                      }}
+                    >
+                      {storeName.slice(0, 1).toUpperCase()}
+                    </div>
+                  )}
+                  <span
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: c.textPrimary,
+                      display: "flex",
+                    }}
+                  >
+                    {storeName}
+                  </span>
+                  {isPro && (
+                    <span
+                      style={{
+                        fontSize: 9,
+                        fontWeight: 800,
+                        backgroundColor: c.accent,
+                        color: "#ffffff",
+                        padding: "2px 6px",
+                        borderRadius: 999,
                         display: "flex",
                       }}
-                    />
+                    >
+                      PRO
+                    </span>
                   )}
-                  <span>{storeName}</span>
                 </div>
-              )}
-            </div>
+              </div>
 
-            {/* Slim delivery banner — the visual hinge between photo and
-                metadata. Keeps the inspiration's "Free Delivery until …"
-                cue but on a dark fill so it stays on-brand. */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: "100%",
-                paddingTop: 16 * S,
-                paddingBottom: 16 * S,
-                backgroundColor: "#0d0d0d",
-                color: "#a3a3a3",
-                fontSize: 18 * S,
-                fontWeight: 500,
-                letterSpacing: 0.5 * S,
-                borderTop: `${1 * S}px solid #1a1a1a`,
-                borderBottom: `${1 * S}px solid #1a1a1a`,
-              }}
-            >
-              {deliveryLabel}
-            </div>
+              {/* Title & Metadata */}
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: 8 }}
+              >
+                <div
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 700,
+                    letterSpacing: 2,
+                    textTransform: "uppercase",
+                    color: c.textSecondary,
+                    display: "flex",
+                  }}
+                >
+                  {`${category}  •  ${location}`}
+                </div>
+                <div
+                  style={{
+                    fontSize: 34,
+                    fontWeight: 800,
+                    letterSpacing: -1,
+                    lineHeight: 1.15,
+                    color: c.textPrimary,
+                    display: "flex",
+                  }}
+                >
+                  {safeTitle}
+                </div>
 
-            {/* Footer — title + price on one baseline (mirrors inspiration
-                B), chips beneath. ~38% of card height. */}
-            <div
-              style={{
-                width: "100%",
-                flex: 38,
-                display: "flex",
-                flexDirection: "column",
-                padding: `${36 * S}px ${44 * S}px ${40 * S}px ${44 * S}px`,
-                justifyContent: "space-between",
-              }}
-            >
+                {/* Specs chips */}
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: 8,
+                    marginTop: 4,
+                  }}
+                >
+                  {chips.slice(0, 3).map((chip) => (
+                    <div
+                      key={chip}
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 600,
+                        backgroundColor: c.pillBg,
+                        color: c.pillText,
+                        border: `1px solid ${c.pillBorder}`,
+                        padding: "5px 14px",
+                        borderRadius: 999,
+                        display: "flex",
+                      }}
+                    >
+                      {chip}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Price & Pill CTA Bar */}
               <div
                 style={{
                   display: "flex",
-                  alignItems: "flex-end",
+                  alignItems: "center",
                   justifyContent: "space-between",
-                  width: "100%",
-                  gap: 24 * S,
+                  backgroundColor: c.actionBarBg,
+                  border: `1px solid ${c.actionBarBorder}`,
+                  borderRadius: 24,
+                  padding: "14px 22px",
                 }}
               >
                 <div
                   style={{
                     display: "flex",
-                    flexDirection: "column",
-                    maxWidth: "62%",
-                    gap: 6 * S,
+                    alignItems: "baseline",
+                    gap: 6,
                   }}
                 >
-                  <div
+                  <span
                     style={{
-                      fontSize: 14 * S,
-                      color: "#737373",
-                      letterSpacing: 2 * S,
-                      textTransform: "uppercase",
-                      fontWeight: 600,
-                      display: "flex",
-                    }}
-                  >
-                    {(product.seller?.location || "Vendly").toString().slice(0, 40)}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 56 * S,
+                      fontSize: 22,
                       fontWeight: 700,
-                      color: "#ffffff",
-                      lineHeight: 1.05,
-                      letterSpacing: -1.5 * S,
+                      color: c.currencyText,
                       display: "flex",
                     }}
                   >
-                    {safeTitle}
-                  </div>
+                    {price.symbol}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 40,
+                      fontWeight: 800,
+                      letterSpacing: -1.2,
+                      color: c.textPrimary,
+                      display: "flex",
+                    }}
+                  >
+                    {price.formattedNumber}
+                  </span>
+                  {originalPrice && (
+                    <span
+                      style={{
+                        fontSize: 16,
+                        fontWeight: 500,
+                        textDecoration: "line-through",
+                        color: c.textTertiary,
+                        display: "flex",
+                        marginLeft: 8,
+                      }}
+                    >
+                      {originalPrice.full}
+                    </span>
+                  )}
                 </div>
 
                 <div
                   style={{
                     display: "flex",
-                    flexDirection: "column",
-                    alignItems: "flex-end",
-                    gap: 8 * S,
+                    alignItems: "center",
+                    gap: 6,
+                    backgroundColor: c.ctaBg,
+                    color: c.ctaText,
+                    padding: "10px 20px",
+                    borderRadius: 999,
+                    fontSize: 13,
+                    fontWeight: 700,
                   }}
                 >
-                  <div
-                    style={{
-                      fontSize: 64 * S,
-                      fontWeight: 800,
-                      color: "#ef4444",
-                      letterSpacing: -2 * S,
-                      lineHeight: 1,
-                      display: "flex",
-                    }}
+                  <span>Order Now</span>
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                   >
-                    {priceLabel}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 18 * S,
-                      fontWeight: 600,
-                      color: "#ffffff",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 6 * S,
-                    }}
-                  >
-                    Order Now <span style={{ color: "#ef4444" }}>↗</span>
-                  </div>
+                    <path d="M7 17L17 7" />
+                    <path d="M7 7h10v10" />
+                  </svg>
                 </div>
               </div>
 
-              {/* Chip rail — size/color first (most useful), then tags,
-                  then a "+N" overflow. Reads left-to-right at a glance. */}
-              {(detailChips.length > 0 || visibleTags.length > 0) && (
+              {/* Trust Footer */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  fontSize: 11,
+                  color: c.textTertiary,
+                  fontWeight: 500,
+                  marginTop: -6,
+                }}
+              >
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: 5 }}
+                >
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                  <span style={{ display: "flex" }}>
+                    Verndly Escrow Protected
+                  </span>
+                </div>
+                <span style={{ display: "flex" }}>•</span>
+                <span style={{ display: "flex" }}>
+                  Verified Independent Merchant
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        // ────────────────── PORTRAIT 1080×1350 (Google-Style Poster) ──────────────────
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            backgroundColor: c.canvasBg,
+            fontFamily: "system-ui, -apple-system, sans-serif",
+            padding: 36,
+          }}
+        >
+          <div
+            style={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              backgroundColor: c.cardBg,
+              border: `1px solid ${c.cardBorder}`,
+              borderRadius: 44,
+              overflow: "hidden",
+              padding: 32,
+              justifyContent: "space-between",
+            }}
+          >
+            {/* Top Header Row */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                width: "100%",
+                height: 52,
+                marginBottom: 16,
+              }}
+            >
+              {/* Verndly Brand Tag */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  backgroundColor: c.badgeBg,
+                  border: `1px solid ${c.badgeBorder}`,
+                  padding: "8px 18px",
+                  borderRadius: 999,
+                }}
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 100 100"
+                  fill="none"
+                >
+                  <circle cx="27" cy="33" r="14" fill="#ef4444" />
+                  <rect
+                    x="37"
+                    y="16"
+                    width="28"
+                    height="74"
+                    rx="14"
+                    transform="rotate(-36 51 53)"
+                    fill="#ef4444"
+                  />
+                </svg>
+                <span
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 700,
+                    letterSpacing: 1.5,
+                    color: c.badgeText,
+                    display: "flex",
+                  }}
+                >
+                  VERNDLY MARKETPLACE
+                </span>
+              </div>
+
+              {/* Merchant Pill */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  backgroundColor: c.badgeBg,
+                  border: `1px solid ${c.badgeBorder}`,
+                  padding: "6px 16px 6px 8px",
+                  borderRadius: 999,
+                }}
+              >
+                {sellerLogoData ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={sellerLogoData}
+                    alt=""
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 999,
+                      objectFit: "cover",
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 999,
+                      backgroundColor: c.accent,
+                      color: "#fff",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 14,
+                      fontWeight: 700,
+                    }}
+                  >
+                    {storeName.slice(0, 1).toUpperCase()}
+                  </div>
+                )}
+                <span
+                  style={{
+                    fontSize: 15,
+                    fontWeight: 600,
+                    color: c.textPrimary,
+                    display: "flex",
+                  }}
+                >
+                  {storeName}
+                </span>
+                {isPro && (
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 800,
+                      backgroundColor: c.accent,
+                      color: "#ffffff",
+                      padding: "3px 8px",
+                      borderRadius: 999,
+                      display: "flex",
+                    }}
+                  >
+                    PRO
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Center Product Showcase Stage */}
+            <div
+              style={{
+                width: "100%",
+                height: 660,
+                borderRadius: 32,
+                overflow: "hidden",
+                position: "relative",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: c.stageBg,
+                border: `1px solid ${c.stageBorder}`,
+                padding: 28,
+              }}
+            >
+              {imageData ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={imageData}
+                  alt=""
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "contain",
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    fontSize: 32,
+                    color: c.textTertiary,
+                    display: "flex",
+                  }}
+                >
+                  Product Photo Unavailable
+                </div>
+              )}
+
+              {/* Category Pill Floating */}
+              <div
+                style={{
+                  position: "absolute",
+                  top: 20,
+                  left: 20,
+                  display: "flex",
+                  alignItems: "center",
+                  backgroundColor: "rgba(18, 20, 24, 0.8)",
+                  color: "#ffffff",
+                  padding: "6px 16px",
+                  borderRadius: 999,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: 1.2,
+                }}
+              >
+                {category}
+              </div>
+
+              {/* Discount Pill Floating */}
+              {hasDiscount && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 20,
+                    right: 20,
+                    display: "flex",
+                    alignItems: "center",
+                    backgroundColor: c.accent,
+                    color: "#ffffff",
+                    padding: "8px 18px",
+                    borderRadius: 999,
+                    fontSize: 14,
+                    fontWeight: 800,
+                    letterSpacing: 0.5,
+                  }}
+                >
+                  {`SAVE ${discountPercent}%`}
+                </div>
+              )}
+            </div>
+
+            {/* Bottom Section: Title, Specs & Price Bar */}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
+                paddingTop: 18,
+                gap: 14,
+              }}
+            >
+              {/* Category & Location Subtitle */}
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  letterSpacing: 2.5,
+                  textTransform: "uppercase",
+                  color: c.textSecondary,
+                  display: "flex",
+                }}
+              >
+                {`${category}  •  ${location}`}
+              </div>
+
+              {/* Title */}
+              <div
+                style={{
+                  fontSize: 46,
+                  fontWeight: 800,
+                  letterSpacing: -1.5,
+                  lineHeight: 1.15,
+                  color: c.textPrimary,
+                  display: "flex",
+                }}
+              >
+                {safeTitle}
+              </div>
+
+              {/* Material You Chips Rail */}
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 8,
+                }}
+              >
+                {chips.slice(0, 4).map((chip) => (
+                  <div
+                    key={chip}
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 600,
+                      backgroundColor: c.pillBg,
+                      color: c.pillText,
+                      border: `1px solid ${c.pillBorder}`,
+                      padding: "7px 18px",
+                      borderRadius: 999,
+                      display: "flex",
+                    }}
+                  >
+                    {chip}
+                  </div>
+                ))}
+              </div>
+
+              {/* High-Impact Price & Pill CTA Bar */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  backgroundColor: c.actionBarBg,
+                  border: `1px solid ${c.actionBarBorder}`,
+                  borderRadius: 28,
+                  padding: "16px 28px",
+                  marginTop: 4,
+                }}
+              >
                 <div
                   style={{
                     display: "flex",
-                    flexWrap: "wrap",
-                    gap: 10 * S,
-                    marginTop: 24 * S,
+                    alignItems: "baseline",
+                    gap: 8,
                   }}
                 >
-                  {detailChips.map((c) => (
-                    <div
-                      key={c.label}
+                  <span
+                    style={{
+                      fontSize: 26,
+                      fontWeight: 700,
+                      color: c.currencyText,
+                      display: "flex",
+                    }}
+                  >
+                    {price.symbol}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 52,
+                      fontWeight: 800,
+                      letterSpacing: -1.8,
+                      color: c.textPrimary,
+                      display: "flex",
+                    }}
+                  >
+                    {price.formattedNumber}
+                  </span>
+                  {originalPrice && (
+                    <span
                       style={{
-                        display: "flex",
-                        gap: 6 * S,
-                        backgroundColor: "#171717",
-                        color: "#a3a3a3",
-                        borderRadius: 999,
-                        padding: `${8 * S}px ${16 * S}px`,
-                        fontSize: 16 * S,
+                        fontSize: 20,
                         fontWeight: 500,
-                        border: `${1 * S}px solid #262626`,
-                      }}
-                    >
-                      <span>{c.label}</span>
-                      <span style={{ color: "#ffffff", fontWeight: 600 }}>
-                        {c.value}
-                      </span>
-                    </div>
-                  ))}
-                  {visibleTags.map((t) => (
-                    <div
-                      key={t}
-                      style={{
-                        backgroundColor: "#171717",
-                        color: "#ffffff",
-                        borderRadius: 999,
-                        padding: `${8 * S}px ${16 * S}px`,
-                        fontSize: 16 * S,
-                        fontWeight: 500,
-                        border: `${1 * S}px solid #262626`,
+                        textDecoration: "line-through",
+                        color: c.textTertiary,
                         display: "flex",
+                        marginLeft: 8,
                       }}
                     >
-                      {t}
-                    </div>
-                  ))}
-                  {extraTagCount > 0 && (
-                    <div
-                      style={{
-                        backgroundColor: "#ef4444",
-                        color: "#ffffff",
-                        borderRadius: 999,
-                        padding: `${8 * S}px ${16 * S}px`,
-                        fontSize: 16 * S,
-                        fontWeight: 700,
-                        display: "flex",
-                      }}
-                    >
-                      +{extraTagCount}
-                    </div>
+                      {originalPrice.full}
+                    </span>
                   )}
                 </div>
-              )}
+
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    backgroundColor: c.ctaBg,
+                    color: c.ctaText,
+                    padding: "14px 28px",
+                    borderRadius: 999,
+                    fontSize: 15,
+                    fontWeight: 700,
+                  }}
+                >
+                  <span>Order on verndly.com</span>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M7 17L17 7" />
+                    <path d="M7 7h10v10" />
+                  </svg>
+                </div>
+              </div>
+
+              {/* Security and Buyer Trust Bar */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 12,
+                  fontSize: 12,
+                  color: c.textTertiary,
+                  fontWeight: 500,
+                  letterSpacing: 0.3,
+                  marginTop: 2,
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                  <span style={{ display: "flex" }}>
+                    100% Buyer Protected
+                  </span>
+                </div>
+                <span style={{ display: "flex" }}>•</span>
+                <span style={{ display: "flex" }}>
+                  Direct WhatsApp & In-App Chat
+                </span>
+                <span style={{ display: "flex" }}>•</span>
+                <span style={{ display: "flex" }}>
+                  Official Express Delivery
+                </span>
+              </div>
             </div>
           </div>
         </div>
       ),
       {
-        width: CARD_W,
-        height: CARD_H,
-        headers: {
-          "Cache-Control":
-            "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400",
-        },
+        width,
+        height,
       },
     );
-  } catch (err) {
-    // Don't 500 the route — return a PNG with the error so the UI shows
-    // something. Logged for ops.
-     
+
+    const buf = await imgRes.arrayBuffer();
+
+    return new Response(buf, {
+      status: 200,
+      headers: {
+        "Content-Type": "image/png",
+        "Cache-Control":
+          "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400",
+      },
+    });
+  } catch (err: any) {
     console.error("[product-card] render failed:", err);
     return errorImage(
-      "Couldn't render this card",
-      "Please try again in a moment.",
+      "Unable to Generate Card",
+      "Please refresh to retry rendering.",
     );
   }
 }

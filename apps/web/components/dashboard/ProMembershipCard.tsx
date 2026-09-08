@@ -3,7 +3,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { Sparkles, CheckCircle2, Loader2, ChevronRight } from "lucide-react";
+import { Sparkles, CheckCircle2, ChevronRight } from "lucide-react";
+import Spinner from "@/components/ui/Spinner";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { useProStatus } from "@/hooks/useProStatus";
 import { subscriptionApi, PRO_PRICE_GHS, type ProPlan } from "@/lib/api/subscription";
@@ -71,7 +72,7 @@ export default function ProMembershipCard() {
   if (isLoading) {
     return (
       <div className="rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 flex items-center gap-3">
-        <Loader2 className="w-4 h-4 animate-spin text-[var(--color-muted)]" />
+        <Spinner size="xs" />
         <span className="text-xs text-[var(--color-muted)]">Loading membership…</span>
       </div>
     );
@@ -102,7 +103,7 @@ export default function ProMembershipCard() {
       animate={{ opacity: 1, y: 0 }}
       className={`relative overflow-hidden rounded-3xl border p-5 ${
         isPro
-          ? "border-[var(--color-accent)]/40 bg-gradient-to-br from-[var(--color-accent)]/10 via-[var(--color-surface)] to-[var(--color-surface)]"
+          ? "border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10"
           : "border-[var(--color-border)] bg-[var(--color-surface)]"
       }`}
     >
@@ -119,7 +120,7 @@ export default function ProMembershipCard() {
           </div>
           <div className="space-y-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-sm font-medium text-[var(--color-foreground)]">Vendly Pro</h2>
+              <h2 className="text-sm font-medium text-[var(--color-foreground)]">Verndly Pro</h2>
               {isPro ? (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-normal bg-emerald-500/10 text-emerald-600">
                   <CheckCircle2 className="w-3 h-3" />
@@ -152,7 +153,7 @@ export default function ProMembershipCard() {
         >
           {starting ? (
             <>
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <Spinner size="xs" />
               Starting…
             </>
           ) : (

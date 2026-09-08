@@ -5,7 +5,7 @@ import { buildMetadata } from '@/lib/seo';
 export const metadata = buildMetadata({
   title: 'Discover independent stores',
   description:
-    'Explore verified vendor stores on Vendly. Support young local entrepreneurs, check active product showcases, and visit curated storefronts.',
+    'Explore verified vendor stores on Verndly. Support young local entrepreneurs, check active product showcases, and visit curated storefronts.',
   path: '/stores',
   keywords: ['independent stores', 'Ghana sellers', 'small businesses', 'vendors'],
 });

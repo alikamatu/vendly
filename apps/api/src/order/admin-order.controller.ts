@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Patch,
+  Post,
   Param,
   Body,
   Query,
@@ -47,4 +48,20 @@ export class AdminOrderController {
   ) {
     return this.adminOrderService.updateStatus(id, dto, actorFromReq(req));
   }
+
+  @Post(':id/refund')
+  async refundOrder(
+    @Param('id') id: string,
+    @Body()
+    body: {
+      amount?: number;
+      reason?: string;
+      customer_note?: string;
+      merchant_note?: string;
+    },
+    @Req() req,
+  ) {
+    return this.adminOrderService.refundOrder(id, body, actorFromReq(req));
+  }
 }
+

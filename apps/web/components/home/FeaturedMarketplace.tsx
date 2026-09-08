@@ -18,12 +18,12 @@ export default function FeaturedMarketplace({ products, limit = 10 }: FeaturedMa
   return (
     <section className="space-y-8">
       <div className="flex items-center gap-4">
-        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/20 to-primary/40" />
+        <div className="h-px flex-1 bg-border/60" />
         <h2 className="text-[10px] uppercase tracking-wider text-primary font-medium flex items-center gap-2">
           <Sparkles className="w-3 h-3" />
           Featured Marketplace
         </h2>
-        <div className="h-px flex-1 bg-gradient-to-l from-transparent via-primary/20 to-primary/40" />
+        <div className="h-px flex-1 bg-border/60" />
       </div>
 
       <div className="columns-2 md:columns-3 lg:columns-4 gap-4">

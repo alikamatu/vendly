@@ -7,22 +7,31 @@ import {
   Package,
   Calendar,
   ChevronRight,
-  Loader2,
   AlertCircle,
   ArrowLeft,
   CheckCircle2,
   Clock,
+  Receipt,
+  CreditCard,
+  XCircle,
 } from 'lucide-react';
 import Link from 'next/link';
-import DashboardHeader from '@/components/dashboard/DashboardHeader';
+import Header from '@/components/layout/Header';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
+import Spinner from '@/components/ui/Spinner';
 import { useAuth } from '@/lib/contexts/auth-context';
 import { orderApi } from '@/lib/api/order';
+import { launchPaystackInline } from '@/lib/paystack';
+import PaymentProcessingModal from '@/components/orders/PaymentProcessingModal';
+import CancelOrderModal from '@/components/orders/CancelOrderModal';
+import OrderReceiptModal from '@/components/orders/OrderReceiptModal';
+import { useRealtimeOrders } from '@/hooks/useRealtimeOrders';
+import { toast } from 'sonner';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 export default function BuyerOrdersPage() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -31,7 +40,15 @@ export default function BuyerOrdersPage() {
   const [error, setError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isRetrying, setIsRetrying] = useState<string | null>(null);
-  const [isCancelling, setIsCancelling] = useState<string | null>(null);
+  const [cancellingOrder, setCancellingOrder] = useState<any | null>(null);
+  const [receiptOrder, setReceiptOrder] = useState<any | null>(null);
+  const [paymentModalState, setPaymentModalState] = useState<'verifying' | 'success' | 'failed' | null>(null);
+  const [paymentErrorMessage, setPaymentErrorMessage] = useState('');
+
+  // Real-time synchronization
+  useRealtimeOrders({
+    onOrderEvent: () => fetchOrders(),
+  });
 
   async function fetchOrders() {
     try {
@@ -94,35 +111,43 @@ export default function BuyerOrdersPage() {
     return () => clearInterval(interval);
   }, [token]);
 
-  const handleRetryPayment = async (orderId: string) => {
+  const handleRetryPayment = async (order: any) => {
     if (!token) return;
     try {
-      setIsRetrying(orderId);
-      const result = await orderApi.retryPayment(token, orderId);
-      if (result.authorization_url) {
-        window.location.assign(result.authorization_url);
-      }
-    } catch (err: any) {
-      setError(err.message || 'Failed to re-initialize payment');
-      setIsRetrying(null);
-    }
-  };
+      setIsRetrying(order.id);
+      const buyerEmail =
+        (order.buyer?.email && order.buyer.email.includes('@'))
+          ? order.buyer.email
+          : (user?.email && user.email.includes('@'))
+            ? user.email
+            : 'customer@verndly.com';
 
-  const handleCancel = async (orderId: string) => {
-    if (!token) return;
-    const reason = window.prompt(
-      'Cancel this order? Optionally provide a reason for the seller:',
-      '',
-    );
-    if (reason === null) return; // user dismissed
-    try {
-      setIsCancelling(orderId);
-      await orderApi.cancelOrder(token, orderId, reason || undefined);
-      await fetchOrders();
+      const initResult = await orderApi.retryPayment(token, order.id);
+
+      await launchPaystackInline({
+        email: buyerEmail,
+        amount: Number(order.total_amount),
+        reference: initResult.reference,
+        accessCode: initResult.access_code,
+        authorizationUrl: initResult.authorization_url,
+        onSuccess: async (res) => {
+          setPaymentModalState('verifying');
+          try {
+            await orderApi.verifyOrderPayment(token, res.reference, order.id);
+            setPaymentModalState('success');
+            fetchOrders();
+          } catch (err: any) {
+            setPaymentErrorMessage(err.message || 'Payment verification failed');
+            setPaymentModalState('failed');
+          }
+        },
+        onClose: () => {
+          setIsRetrying(null);
+        },
+      });
     } catch (err: any) {
-      setError(err.message || 'Failed to cancel order');
-    } finally {
-      setIsCancelling(null);
+      toast.error(err.message || 'Failed to re-initialize payment');
+      setIsRetrying(null);
     }
   };
 
@@ -144,14 +169,14 @@ export default function BuyerOrdersPage() {
   if (isLoading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
-        <Loader2 className="text-primary h-8 w-8 animate-spin" />
+        <Spinner size="lg" />
       </div>
     );
   }
 
   return (
     <div className="bg-background min-h-screen">
-      <DashboardHeader title="My Orders" />
+      <Header />
 
       <main className="mx-auto max-w-3xl px-4 pb-20 pt-24 sm:px-6 md:px-8">
         <Link
@@ -180,7 +205,7 @@ export default function BuyerOrdersPage() {
 
         {isVerifying && (
           <div className="bg-primary/10 text-primary border-primary/20 mb-8 flex items-center gap-3 rounded-2xl border p-4">
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <Spinner size="sm" />
             <p className="text-[10px] font-medium uppercase tracking-wider">
               Verifying payment and syncing order status...
             </p>
@@ -198,12 +223,12 @@ export default function BuyerOrdersPage() {
                   transition={{ delay: idx * 0.05 }}
                 >
                   <Card
-                    className="border-border/50 hover:bg-surface/30 overflow-hidden rounded-3xl border p-5 transition-all sm:p-6"
+                    className="overflow-hidden rounded-3xl bg-surface/40 hover:bg-surface/60 p-5 transition-colors sm:p-6 border-0 shadow-none"
                     hoverEffect={false}
                   >
-                    <div className="border-border/50 mb-6 flex flex-col justify-between gap-4 border-b pb-6 sm:flex-row sm:items-center">
+                    <div className="mb-6 flex flex-col justify-between gap-4 border-b border-border/30 pb-6 sm:flex-row sm:items-center">
                       <div className="flex items-center gap-3">
-                        <div className="bg-surface border-border/50 rounded-2xl border p-3">
+                        <div className="bg-surface rounded-2xl p-3">
                           <ShoppingBag className="text-primary h-5 w-5" />
                         </div>
                         <div>
@@ -226,7 +251,7 @@ export default function BuyerOrdersPage() {
                           </p>
                         </div>
                         <div
-                          className={`border-border/50 bg-surface/50 flex items-center gap-2 rounded-xl border px-3 py-1.5`}
+                          className="bg-surface/80 flex items-center gap-2 rounded-xl px-3.5 py-1.5 shadow-none"
                         >
                           {getStatusIcon(order.status)}
                           <span className="text-[10px] font-medium uppercase tracking-wider">
@@ -238,9 +263,9 @@ export default function BuyerOrdersPage() {
 
                     {/* Seller Info */}
                     {order.items[0]?.product?.seller && (
-                      <div className="bg-surface/50 border-border/30 mb-6 flex items-center justify-between rounded-2xl border px-4 py-3">
+                      <div className="bg-surface/30 mb-6 flex items-center justify-between rounded-2xl px-4 py-3 border-0 shadow-none">
                         <div className="flex items-center gap-3">
-                          <div className="bg-background border-border/50 flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg border">
+                          <div className="bg-background flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg">
                             {order.items[0].product.seller.logo_url ? (
                               <img
                                 src={order.items[0].product.seller.logo_url}
@@ -277,10 +302,10 @@ export default function BuyerOrdersPage() {
                       </div>
                     )}
 
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {order.items.map((item: any) => (
-                        <div key={item.id} className="flex items-center gap-4">
-                          <div className="border-border/50 bg-surface group relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border">
+                        <div key={item.id} className="flex items-center gap-4 bg-surface/20 rounded-2xl p-3 border-0 shadow-none">
+                          <div className="bg-surface group relative h-16 w-16 shrink-0 overflow-hidden rounded-xl">
                             {item.product.video_url ? (
                               <video
                                 src={item.product.video_url}
@@ -314,7 +339,7 @@ export default function BuyerOrdersPage() {
                                   href={`/product/${item.product.id}#reviews`}
                                   className="inline-block"
                                 >
-                                  <span className="inline-flex h-6 cursor-pointer items-center rounded-md border border-amber-500/20 bg-amber-500/5 px-2 text-[9px] font-medium uppercase tracking-wider text-amber-600 transition-colors hover:bg-amber-500/10 dark:text-amber-400">
+                                  <span className="inline-flex h-6 cursor-pointer items-center rounded-md bg-amber-500/10 px-2 text-[9px] font-medium uppercase tracking-wider text-amber-600 transition-colors hover:bg-amber-500/20 dark:text-amber-400">
                                     Review Product
                                   </span>
                                 </Link>
@@ -332,9 +357,9 @@ export default function BuyerOrdersPage() {
                     </div>
 
                     {/* Order & Payment Details */}
-                    <div className="border-border/50 mt-6 grid grid-cols-1 gap-4 border-t pt-6 sm:grid-cols-2">
+                    <div className="mt-6 grid grid-cols-1 gap-4 border-t border-border/30 pt-6 sm:grid-cols-2">
                       <div className="space-y-3">
-                        <p className="text-muted border-border/50 border-b pb-2 text-[10px] font-medium uppercase tracking-wider">
+                        <p className="text-muted border-b border-border/20 pb-2 text-[10px] font-medium uppercase tracking-wider">
                           Delivery Details
                         </p>
                         <div className="space-y-2">
@@ -348,7 +373,7 @@ export default function BuyerOrdersPage() {
                           </p>
                           <p className="text-xs">
                             <span className="text-muted font-normal">Method:</span>{' '}
-                            <span className="bg-surface border-border/50 rounded-md border px-2 py-0.5 text-[10px] font-normal uppercase">
+                            <span className="bg-surface rounded-md px-2 py-0.5 text-[10px] font-normal uppercase">
                               {order.delivery_method}
                             </span>
                           </p>
@@ -367,14 +392,14 @@ export default function BuyerOrdersPage() {
                       </div>
 
                       <div className="space-y-3">
-                        <p className="text-muted border-border/50 border-b pb-2 text-[10px] font-medium uppercase tracking-wider">
+                        <p className="text-muted border-b border-border/20 pb-2 text-[10px] font-medium uppercase tracking-wider">
                           Payment Details
                         </p>
                         <div className="space-y-2">
                           <p className="text-xs">
                             <span className="text-muted font-normal">Provider:</span>{' '}
                             <span
-                              className={`rounded-md border px-2 py-0.5 text-[10px] font-normal uppercase ${order.payment_info?.provider === 'PAYSTACK' ? 'bg-primary/10 text-primary border-primary/20' : 'bg-surface border-border/50'}`}
+                              className={`rounded-md px-2 py-0.5 text-[10px] font-normal uppercase ${order.payment_info?.provider === 'PAYSTACK' ? 'bg-primary/10 text-primary' : 'bg-surface'}`}
                             >
                               {order.payment_info?.provider || 'Unknown'}
                             </span>
@@ -407,7 +432,7 @@ export default function BuyerOrdersPage() {
                             <div className="pt-2">
                               <Button
                                 size="sm"
-                                onClick={() => handleRetryPayment(order.id)}
+                                onClick={() => handleRetryPayment(order)}
                                 isLoading={isRetrying === order.id}
                                 className="flex h-8 items-center gap-2 rounded-xl px-4 text-[9px] font-medium uppercase tracking-wider"
                               >
@@ -421,8 +446,7 @@ export default function BuyerOrdersPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleCancel(order.id)}
-                                isLoading={isCancelling === order.id}
+                                onClick={() => setCancellingOrder(order)}
                                 className="flex h-8 items-center gap-2 rounded-xl px-3 text-[9px] font-medium uppercase tracking-wider text-red-600 hover:bg-red-500/5"
                               >
                                 <AlertCircle className="h-3 w-3" /> Cancel order
@@ -433,27 +457,45 @@ export default function BuyerOrdersPage() {
                       </div>
                     </div>
 
-                    <div className="border-border/50 mt-6 flex items-center justify-between border-t pt-6">
+                    <div className="mt-6 flex items-center justify-between border-t border-border/30 pt-6 gap-2 flex-wrap">
                       <div>
-                        <p className="text-muted text-[10px] font-medium uppercase tracking-wider mb-1">
-                          Total Amount
-                        </p>
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-muted text-[10px] font-medium uppercase tracking-wider">
+                            Total Amount
+                          </p>
+                          <span className="text-[9px] px-1.5 py-0.2 rounded bg-foreground/10 text-foreground font-semibold">
+                            Incl. 4% Escrow Fee
+                          </span>
+                        </div>
                         <p className="text-primary text-lg font-medium leading-none">
-                          GH₵{parseFloat(order.total_amount).toLocaleString()}
+                          GH₵{parseFloat(order.total_amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                       </div>
-                      <Link href={`/orders/${order.id}`}>
-                        <Button variant="secondary" size="sm" className="h-9 px-5 rounded-xl text-[10px] font-medium uppercase tracking-wider gap-2">
-                          View Details
-                          <ChevronRight className="w-3.5 h-3.5" />
-                        </Button>
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        {(order.status === 'PAID' || order.payment_info?.status === 'SUCCESS') && (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => setReceiptOrder(order)}
+                            className="h-9 px-3.5 rounded-xl text-[10px] font-medium uppercase tracking-wider gap-1.5"
+                          >
+                            <Receipt className="w-3.5 h-3.5" />
+                            Receipt
+                          </Button>
+                        )}
+                        <Link href={`/orders/${order.id}`}>
+                          <Button variant="secondary" size="sm" className="h-9 px-5 rounded-xl text-[10px] font-medium uppercase tracking-wider gap-2">
+                            View Details
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </Button>
+                        </Link>
+                      </div>
                     </div>
                   </Card>
                 </motion.div>
               ))
             ) : (
-              <div className="border-border/50 bg-surface/10 space-y-4 rounded-[2.5rem] border border-dashed py-20 text-center">
+              <div className="bg-surface/20 space-y-4 rounded-3xl py-20 text-center border-0 shadow-none">
                 <Package className="text-muted mx-auto h-12 w-12 opacity-10" />
                 <div className="space-y-1">
                   <p className="text-muted text-[11px] font-medium uppercase tracking-wider">
@@ -477,6 +519,39 @@ export default function BuyerOrdersPage() {
           </AnimatePresence>
         </div>
       </main>
+
+      {paymentModalState && (
+        <PaymentProcessingModal
+          isOpen={!!paymentModalState}
+          onClose={() => setPaymentModalState(null)}
+          status={paymentModalState}
+          errorMessage={paymentErrorMessage}
+          onViewReceipt={() => {
+            const paid = orders.find((o) => o.id === isRetrying);
+            setPaymentModalState(null);
+            if (paid) setReceiptOrder(paid);
+          }}
+        />
+      )}
+
+      {cancellingOrder && (
+        <CancelOrderModal
+          isOpen={!!cancellingOrder}
+          onClose={() => setCancellingOrder(null)}
+          orderId={cancellingOrder.id}
+          orderNumber={cancellingOrder.id.slice(-8).toUpperCase()}
+          token={token!}
+          onOrderCancelled={fetchOrders}
+        />
+      )}
+
+      {receiptOrder && (
+        <OrderReceiptModal
+          isOpen={!!receiptOrder}
+          onClose={() => setReceiptOrder(null)}
+          order={receiptOrder}
+        />
+      )}
     </div>
   );
 }

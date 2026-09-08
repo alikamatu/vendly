@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import { Loader2, SlidersHorizontal } from "lucide-react";
+import { SlidersHorizontal } from "lucide-react";
+import Spinner from "@/components/ui/Spinner";
 import SortDropdown from "./SortDropdown";
 import ViewToggle, { type ViewMode } from "./ViewToggle";
 import type { BrowseSort } from "@/lib/api/product";
@@ -32,7 +33,7 @@ export default function ResultsHeader({
           {total.toLocaleString()}
         </span>
         product{total === 1 ? "" : "s"}
-        {isRefreshing && <Loader2 className="w-3 h-3 animate-spin" />}
+        {isRefreshing && <Spinner size="xs" />}
       </p>
 
       <div className="flex items-center gap-2 ml-auto">

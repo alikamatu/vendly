@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
   keywords: [
-    "Vendly",
+    "Verndly",
     "marketplace",
     "Ghana marketplace",
     "young entrepreneurs",
@@ -93,6 +93,7 @@ export const viewport: Viewport = {
 
 import { FavoriteProvider } from "../lib/contexts/favorite-context";
 import SiteFooter from "../components/layout/SiteFooter";
+import Toaster from "../components/ui/Toaster";
 
 export default function RootLayout({
   children,
@@ -130,7 +131,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
       >
         <OrganizationJsonLd />
         <ThemeProvider>
@@ -142,6 +143,7 @@ export default function RootLayout({
                     {children}
                     <SiteFooter />
                     <AuthModal />
+                    <Toaster />
                   </StoreGuard>
                 </CartProvider>
               </FavoriteProvider>

@@ -3,7 +3,9 @@ import {
   ConflictException,
   BadRequestException,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
+import { Role, ApprovalStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateStoreDto } from './dto/create-store.dto';
 import { CloudinaryService } from '../common/cloudinary.service';
@@ -20,7 +22,33 @@ export class StoreService {
     dto: CreateStoreDto,
     logoFile?: Express.Multer.File,
   ) {
-    // Check if user already has a store
+    // 1. Verify user exists and has seller verification approved
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        admin_approvals: {
+          orderBy: { created_at: 'desc' },
+          take: 1,
+        },
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const isVerifiedSeller =
+      user.role === Role.SELLER ||
+      user.role === Role.ADMIN ||
+      user.admin_approvals[0]?.status === ApprovalStatus.APPROVED;
+
+    if (!isVerifiedSeller) {
+      throw new ForbiddenException(
+        'You must complete seller verification before creating a store. Visit /seller-verification to submit your verification.',
+      );
+    }
+
+    // 2. Check if user already has a store
     const existingStore = await this.prisma.sellerProfile.findUnique({
       where: { user_id: userId },
     });
@@ -59,6 +87,7 @@ export class StoreService {
         business_hours: dto.business_hours,
         social_links: dto.social_links || {},
         logo_url: logo_url,
+        store_profile_completed: true,
       },
     });
 
@@ -185,7 +214,7 @@ export class StoreService {
       throw new NotFoundException('Store not found');
     }
 
-    const [productCount, orderItems] = await Promise.all([
+    const [productCount, orderItems, balanceSnapshot] = await Promise.all([
       this.prisma.product.count({
         where: { seller_id: store.id },
       }),
@@ -218,13 +247,21 @@ export class StoreService {
         },
         take: 50, // Get last 50 items for aggregation
       }),
+      this.prisma.vendorBalanceSnapshot.findUnique({
+        where: { seller_id: store.id },
+      }),
     ]);
 
     // Calculate total sales and orders
-    const totalSales = orderItems.reduce(
+    const grossSales = orderItems.reduce(
       (acc, item) => acc + Number(item.price) * item.quantity,
       0,
     );
+    const platformFee = Number((grossSales * 0.04).toFixed(2));
+    const netEarnings = Number((grossSales - platformFee).toFixed(2));
+    const availableBalance = Number(balanceSnapshot?.available_balance || 0);
+    const totalWithdrawn = Number(balanceSnapshot?.total_withdrawn || 0);
+
     const uniqueOrders = Array.from(
       new Set(orderItems.map((item) => item.order_id.toString())),
     );
@@ -233,7 +270,7 @@ export class StoreService {
     const recentOrders = orderItems.slice(0, 5).map((item) => ({
       id: `${item.order_id.toString()}-${item.id.toString()}`,
       displayId: `#ORD-${item.order_id.toString().slice(-4)}`,
-      customer: item.order.buyer.full_name,
+      customer: item.order.buyer?.full_name || 'Customer',
       product: item.product.title,
       status: item.order.status,
       amount: `GH₵${(Number(item.price) * item.quantity).toLocaleString()}`,
@@ -241,38 +278,46 @@ export class StoreService {
     }));
 
     return {
+      financials: {
+        gross_sales: grossSales,
+        platform_fee_percent: 4,
+        total_platform_fees: platformFee,
+        net_earnings: netEarnings,
+        available_balance: availableBalance,
+        total_withdrawn: totalWithdrawn,
+      },
       stats: [
         {
-          label: 'Total Sales',
-          value: `GH₵${totalSales.toLocaleString()}`,
-          change: '+0%',
+          label: 'Net Earnings',
+          value: `GH₵${netEarnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          change: '96% Net',
           isPositive: true,
-          icon: 'ShoppingBag',
+          icon: 'TrendingUp',
           color: 'bg-emerald-500/10 text-emerald-500',
         },
         {
-          label: 'Total Orders',
-          value: uniqueOrders.length.toString(),
+          label: 'Gross Sales',
+          value: `GH₵${grossSales.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
           change: '+0%',
           isPositive: true,
           icon: 'ShoppingBag',
           color: 'bg-blue-500/10 text-blue-500',
         },
         {
-          label: 'Products',
-          value: productCount.toString(),
-          change: '0%',
+          label: 'Platform Fee (4%)',
+          value: `GH₵${platformFee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          change: '4% Fee',
+          isPositive: true,
+          icon: 'TrendingUp',
+          color: 'bg-purple-500/10 text-purple-500',
+        },
+        {
+          label: 'Total Orders',
+          value: uniqueOrders.length.toString(),
+          change: `${productCount} items`,
           isPositive: true,
           icon: 'Package',
           color: 'bg-amber-500/10 text-amber-500',
-        },
-        {
-          label: 'Store Views',
-          value: '0', // Placeholder
-          change: '0%',
-          isPositive: true,
-          icon: 'Users',
-          color: 'bg-purple-500/10 text-purple-500',
         },
       ],
       recentOrders,
