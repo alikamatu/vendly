@@ -13,7 +13,7 @@
     "test:cov": "turbo test:cov",
     "type-check": "turbo type-check",
     "clean": "turbo clean && find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +",
-    "prepare": "husky"
+    "prepare": "if [ -f node_modules/.bin/husky ]; then husky install; fi"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.6.1",
