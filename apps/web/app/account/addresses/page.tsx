@@ -2,10 +2,12 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, MapPin, Plus, Trash2, Edit2, CheckCircle2, Loader2, Star } from 'lucide-react';
+import { ArrowLeft, MapPin, Plus, Trash2, Edit2, Loader2, Star } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/auth-context';
 import { addressApi, Address } from '@/lib/api/address';
+import { sanitizePhoneNumber, validatePhoneNumber } from '@/lib/utils/phone';
+import { toast } from 'sonner';
 
 export default function AddressesPage() {
   const { token, user } = useAuth();
@@ -27,13 +29,7 @@ export default function AddressesPage() {
 
   const [isSaving, setIsSaving] = useState(false);
 
-  useEffect(() => {
-    if (token) {
-      loadAddresses();
-    }
-  }, [token]);
-
-  const loadAddresses = async () => {
+  const loadAddresses = React.useCallback(async () => {
     try {
       if (!token) return;
       const data = await addressApi.getAddresses(token);
@@ -43,7 +39,14 @@ export default function AddressesPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    if (token) {
+      /* eslint-disable-next-line react-hooks/set-state-in-effect */
+      loadAddresses();
+    }
+  }, [token, loadAddresses]);
 
   const handleOpenForm = (address?: Address) => {
     if (address) {
@@ -80,6 +83,11 @@ export default function AddressesPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) return;
+    const phoneErr = validatePhoneNumber(formData.phone);
+    if (phoneErr) {
+      toast.error(phoneErr);
+      return;
+    }
     setIsSaving(true);
     try {
       if (editingId) {
@@ -156,101 +164,111 @@ export default function AddressesPage() {
             className="space-y-4 rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5"
           >
             <form onSubmit={handleSave} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2">
-                <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="h-12 w-full rounded-2xl border border-[var(--color-border)]/80 bg-[var(--color-background)] px-4 text-[13px] outline-none focus:border-[var(--color-accent)] focus:ring-4 focus:ring-[var(--color-accent)]/10"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
+                    Full Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="border-[var(--color-border)]/80 focus:ring-[var(--color-accent)]/10 h-12 w-full rounded-2xl border bg-[var(--color-background)] px-4 text-[13px] outline-none focus:border-[var(--color-accent)] focus:ring-4"
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <label className="block text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
+                      Phone Number
+                    </label>
+                    <span className="font-mono text-[10px] text-[var(--color-muted)]">
+                      {formData.phone.length}/10 digits
+                    </span>
+                  </div>
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    maxLength={10}
+                    required
+                    placeholder="e.g. 0244123456"
+                    value={formData.phone}
+                    onChange={(e) =>
+                      setFormData({ ...formData, phone: sanitizePhoneNumber(e.target.value) })
+                    }
+                    className="border-[var(--color-border)]/80 focus:ring-[var(--color-accent)]/10 h-12 w-full rounded-2xl border bg-[var(--color-background)] px-4 text-[13px] outline-none focus:border-[var(--color-accent)] focus:ring-4"
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
+                    Street Address
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.street}
+                    onChange={(e) => setFormData({ ...formData, street: e.target.value })}
+                    className="border-[var(--color-border)]/80 focus:ring-[var(--color-accent)]/10 h-12 w-full rounded-2xl border bg-[var(--color-background)] px-4 text-[13px] outline-none focus:border-[var(--color-accent)] focus:ring-4"
+                  />
+                </div>
+
+                <div className="col-span-1">
+                  <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
+                    City
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.city}
+                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    className="border-[var(--color-border)]/80 focus:ring-[var(--color-accent)]/10 h-12 w-full rounded-2xl border bg-[var(--color-background)] px-4 text-[13px] outline-none focus:border-[var(--color-accent)] focus:ring-4"
+                  />
+                </div>
+
+                <div className="col-span-1">
+                  <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
+                    Region / State
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.region}
+                    onChange={(e) => setFormData({ ...formData, region: e.target.value })}
+                    className="border-[var(--color-border)]/80 focus:ring-[var(--color-accent)]/10 h-12 w-full rounded-2xl border bg-[var(--color-background)] px-4 text-[13px] outline-none focus:border-[var(--color-accent)] focus:ring-4"
+                  />
+                </div>
+
+                <div className="col-span-2 flex items-center gap-2 pt-2">
+                  <input
+                    type="checkbox"
+                    id="is_default"
+                    checked={formData.is_default}
+                    onChange={(e) => setFormData({ ...formData, is_default: e.target.checked })}
+                    className="h-4 w-4 rounded border-[var(--color-border)] text-[var(--color-accent)] focus:ring-[var(--color-accent)]"
+                  />
+                  <label htmlFor="is_default" className="text-sm font-medium">
+                    Set as default delivery address
+                  </label>
+                </div>
               </div>
 
-              <div className="col-span-2">
-                <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
-                  Phone Number
-                </label>
-                <input
-                  type="tel"
-                  required
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="h-12 w-full rounded-2xl border border-[var(--color-border)]/80 bg-[var(--color-background)] px-4 text-[13px] outline-none focus:border-[var(--color-accent)] focus:ring-4 focus:ring-[var(--color-accent)]/10"
-                />
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={handleCloseForm}
+                  className="hover:bg-[var(--color-border)]/50 flex h-12 flex-1 items-center justify-center rounded-2xl border border-[var(--color-border)] bg-transparent text-sm font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-[var(--color-foreground)] text-sm font-medium text-[var(--color-background)] transition-colors hover:opacity-90 disabled:opacity-50"
+                >
+                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save Address'}
+                </button>
               </div>
-
-              <div className="col-span-2">
-                <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
-                  Street Address
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.street}
-                  onChange={(e) => setFormData({ ...formData, street: e.target.value })}
-                  className="h-12 w-full rounded-2xl border border-[var(--color-border)]/80 bg-[var(--color-background)] px-4 text-[13px] outline-none focus:border-[var(--color-accent)] focus:ring-4 focus:ring-[var(--color-accent)]/10"
-                />
-              </div>
-
-              <div className="col-span-1">
-                <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
-                  City
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.city}
-                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                  className="h-12 w-full rounded-2xl border border-[var(--color-border)]/80 bg-[var(--color-background)] px-4 text-[13px] outline-none focus:border-[var(--color-accent)] focus:ring-4 focus:ring-[var(--color-accent)]/10"
-                />
-              </div>
-
-              <div className="col-span-1">
-                <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
-                  Region / State
-                </label>
-                <input
-                  type="text"
-                  value={formData.region}
-                  onChange={(e) => setFormData({ ...formData, region: e.target.value })}
-                  className="h-12 w-full rounded-2xl border border-[var(--color-border)]/80 bg-[var(--color-background)] px-4 text-[13px] outline-none focus:border-[var(--color-accent)] focus:ring-4 focus:ring-[var(--color-accent)]/10"
-                />
-              </div>
-
-              <div className="col-span-2 flex items-center gap-2 pt-2">
-                <input
-                  type="checkbox"
-                  id="is_default"
-                  checked={formData.is_default}
-                  onChange={(e) => setFormData({ ...formData, is_default: e.target.checked })}
-                  className="h-4 w-4 rounded border-[var(--color-border)] text-[var(--color-accent)] focus:ring-[var(--color-accent)]"
-                />
-                <label htmlFor="is_default" className="text-sm font-medium">
-                  Set as default delivery address
-                </label>
-              </div>
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <button
-                type="button"
-                onClick={handleCloseForm}
-                className="flex h-12 flex-1 items-center justify-center rounded-2xl border border-[var(--color-border)] bg-transparent text-sm font-medium transition-colors hover:bg-[var(--color-border)]/50"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isSaving}
-                className="flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-[var(--color-foreground)] text-sm font-medium text-[var(--color-background)] transition-colors hover:opacity-90 disabled:opacity-50"
-              >
-                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save Address'}
-              </button>
-            </div>
             </form>
           </motion.div>
         ) : isLoading ? (
@@ -262,7 +280,7 @@ export default function AddressesPage() {
             key="empty"
             className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-[var(--color-border)] py-12 text-center"
           >
-            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-border)]/50">
+            <div className="bg-[var(--color-border)]/50 mb-3 flex h-12 w-12 items-center justify-center rounded-full">
               <MapPin className="h-5 w-5 text-[var(--color-muted)]" />
             </div>
             <p className="text-sm font-medium">No addresses saved</p>
@@ -278,7 +296,7 @@ export default function AddressesPage() {
                 className={`group relative flex flex-col gap-3 rounded-3xl border p-4 transition-all ${
                   address.is_default
                     ? 'border-[var(--color-accent)]/50 bg-[var(--color-accent)]/5'
-                    : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-border)]/80'
+                    : 'hover:border-[var(--color-border)]/80 border-[var(--color-border)] bg-[var(--color-surface)]'
                 }`}
               >
                 <div className="flex items-start justify-between">
@@ -302,7 +320,7 @@ export default function AddressesPage() {
                     </div>
                   </div>
                   {address.is_default && (
-                    <span className="flex items-center gap-1 rounded-full bg-[var(--color-accent)]/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[var(--color-accent)]">
+                    <span className="bg-[var(--color-accent)]/10 flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[var(--color-accent)]">
                       <Star className="h-3 w-3 fill-current" /> Default
                     </span>
                   )}

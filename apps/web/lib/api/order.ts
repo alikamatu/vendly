@@ -1,27 +1,35 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:1000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1000';
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    const msg = Array.isArray(errorData.message) ? errorData.message[0] : errorData.message || 'Something went wrong';
+    const msg = Array.isArray(errorData.message)
+      ? errorData.message[0]
+      : errorData.message || 'Something went wrong';
     throw new Error(msg);
   }
   const json = await response.json();
-  return (json && typeof json === 'object' && 'data' in json) ? json.data : json;
+  return json && typeof json === 'object' && 'data' in json ? json.data : json;
 }
 
 export const orderApi = {
-  async createOrder(token: string, storeLink: string, items: { productId: string; variantId?: string | null; quantity: number }[], checkoutDetails: {
-    customerName: string;
-    customerPhone: string;
-    deliveryMethod: string;
-    deliveryLocation: string;
-    deliveryNotes?: string;
-  }) {
+  async createOrder(
+    token: string,
+    storeLink: string,
+    items: { productId: string; variantId?: string | null; quantity: number }[],
+    checkoutDetails: {
+      customerName: string;
+      customerPhone: string;
+      deliveryMethod: string;
+      deliveryLocation: string;
+      deliveryNotes?: string;
+      paymentMethod?: string;
+    },
+  ) {
     const response = await fetch(`${API_URL}/orders`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ storeLink, items, ...checkoutDetails }),
@@ -52,9 +60,9 @@ export const orderApi = {
 
   async updateOrderStatus(token: string, orderId: string, status: string) {
     const response = await fetch(`${API_URL}/orders/${orderId}/status`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ status }),
@@ -73,9 +81,9 @@ export const orderApi = {
     },
   ) {
     const response = await fetch(`${API_URL}/orders/${orderId}/payment-status`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(data),
@@ -94,11 +102,7 @@ export const orderApi = {
     return handleResponse<any>(response);
   },
 
-  async verifyOrderPayment(
-    token: string,
-    reference: string,
-    orderId: string,
-  ) {
+  async verifyOrderPayment(token: string, reference: string, orderId: string) {
     const response = await fetch(
       `${API_URL}/orders/verify/payment?reference=${encodeURIComponent(reference)}&order_id=${encodeURIComponent(orderId)}`,
       {
@@ -117,23 +121,25 @@ export const orderApi = {
 
   async retryPayment(token: string, orderId: string) {
     const response = await fetch(`${API_URL}/orders/${orderId}/retry-payment`, {
-      method: "POST",
+      method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
 
-    return handleResponse<{ authorization_url: string; reference: string; access_code?: string }>(response);
+    return handleResponse<{ authorization_url: string; reference: string; access_code?: string }>(
+      response,
+    );
   },
 
   async cancelOrder(token: string, orderId: string, reason?: string) {
     const response = await fetch(`${API_URL}/orders/${orderId}/cancel`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ reason: reason ?? "" }),
+      body: JSON.stringify({ reason: reason ?? '' }),
     });
     return handleResponse<{ message: string; status: string }>(response);
   },
@@ -154,9 +160,9 @@ export const orderApi = {
     data: { reason: string; description: string; photo_urls?: string[] },
   ) {
     const response = await fetch(`${API_URL}/orders/${orderId}/return`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(data),
@@ -175,9 +181,9 @@ export const orderApi = {
     },
   ) {
     const response = await fetch(`${API_URL}/orders/${orderId}/return/status`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(data),
@@ -186,15 +192,11 @@ export const orderApi = {
     return handleResponse<any>(response);
   },
 
-  async escalateReturnRequest(
-    token: string,
-    orderId: string,
-    reason: string,
-  ) {
+  async escalateReturnRequest(token: string, orderId: string, reason: string) {
     const response = await fetch(`${API_URL}/orders/${orderId}/return/escalate`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ reason }),
@@ -203,24 +205,16 @@ export const orderApi = {
     return handleResponse<any>(response);
   },
 
-  async confirmReturnReceivedAndRefund(
-    token: string,
-    orderId: string,
-    note?: string,
-  ) {
-    const response = await fetch(
-      `${API_URL}/orders/${orderId}/return/confirm-refund`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ note }),
+  async confirmReturnReceivedAndRefund(token: string, orderId: string, note?: string) {
+    const response = await fetch(`${API_URL}/orders/${orderId}/return/confirm-refund`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
       },
-    );
+      body: JSON.stringify({ note }),
+    });
 
     return handleResponse<any>(response);
   },
 };
-

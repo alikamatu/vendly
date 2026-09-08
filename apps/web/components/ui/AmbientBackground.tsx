@@ -4,20 +4,26 @@ import React from 'react';
 
 interface AmbientBackgroundProps {
   className?: string;
+  hidePatternOnMobile?: boolean;
 }
 
-export default function AmbientBackground({ className = '' }: AmbientBackgroundProps) {
+export default function AmbientBackground({
+  className = '',
+  hidePatternOnMobile = true,
+}: AmbientBackgroundProps) {
   return (
     <div
-      className={`pointer-events-none absolute inset-0 overflow-hidden select-none z-0 ${className}`}
+      className={`pointer-events-none absolute inset-0 z-0 select-none overflow-hidden ${className}`}
       aria-hidden="true"
     >
       {/* Soft warm ambient glow at the top using Verndly's secondary red color */}
-      <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[850px] h-[360px] bg-red-500/[0.045] dark:bg-red-500/[0.065] rounded-full blur-[120px]" />
+      <div className="absolute -top-32 left-1/2 h-[360px] w-[850px] -translate-x-1/2 rounded-full bg-red-500/[0.045] blur-[120px] dark:bg-red-500/[0.065]" />
 
-      {/* Visible, ultra-refined geometric dot grid + micro-cross SVG pattern */}
+      {/* Visible, ultra-refined geometric dot grid + micro-cross SVG pattern (hidden on mobile to ensure crisp text readability) */}
       <svg
-        className="absolute inset-0 h-full w-full [mask-image:radial-gradient(ellipse_85%_70%_at_50%_15%,#000_40%,transparent_90%)]"
+        className={`absolute inset-0 h-full w-full [mask-image:radial-gradient(ellipse_85%_70%_at_50%_15%,#000_40%,transparent_90%)] ${
+          hidePatternOnMobile ? 'hidden sm:block' : ''
+        }`}
         xmlns="http://www.w3.org/2000/svg"
       >
         <defs>

@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import React, { useMemo, useState, useEffect } from "react";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import React, { useMemo, useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   ArrowLeft,
   Store,
@@ -11,80 +11,69 @@ import {
   Banknote,
   CheckCircle2,
   ShieldCheck,
-  ShoppingBag,
-  Sparkles,
-} from "lucide-react";
-import Header from "@/components/layout/Header";
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
-import Textarea from "@/components/ui/Textarea";
-import Alert from "@/components/ui/Alert";
-import { useCart } from "@/lib/contexts/cart-context";
-import { useAuth } from "@/lib/contexts/auth-context";
-import { storeApi } from "@/lib/api/store";
-import { orderApi } from "@/lib/api/order";
-import { addressApi, Address } from "@/lib/api/address";
-import { launchPaystackInline } from "@/lib/paystack";
-import PaymentProcessingModal from "@/components/orders/PaymentProcessingModal";
-import clsx from "@/utils/clsx";
+} from 'lucide-react';
+import Header from '@/components/layout/Header';
+import Button from '@/components/ui/Button';
+import Input from '@/components/ui/Input';
+import Textarea from '@/components/ui/Textarea';
+import Alert from '@/components/ui/Alert';
+import { useCart } from '@/lib/contexts/cart-context';
+import { useAuth } from '@/lib/contexts/auth-context';
+import { storeApi } from '@/lib/api/store';
+import { orderApi } from '@/lib/api/order';
+import { addressApi, Address } from '@/lib/api/address';
+import { launchPaystackInline } from '@/lib/paystack';
+import PaymentProcessingModal from '@/components/orders/PaymentProcessingModal';
+import { sanitizePhoneNumber, validatePhoneNumber } from '@/lib/utils/phone';
+import clsx from '@/utils/clsx';
 
 // ─── Input sanitizers ────────────────────────────────────────────────────────
 
 const sanitizeName = (raw: string) =>
-  raw.replace(/[^\p{L}\s'\-]/gu, "").replace(/\s+/g, " ").slice(0, 60);
+  raw
+    .replace(/[^\p{L}\s'\-]/gu, '')
+    .replace(/\s+/g, ' ')
+    .slice(0, 60);
 
-const sanitizePhone = (raw: string) => {
-  let v = raw.replace(/[^\d+]/g, "");
-  if (v.includes("+")) v = "+" + v.replace(/\+/g, "");
-  return v.slice(0, 16);
-};
+const sanitizeFreeText = (raw: string, max = 200) => raw.replace(/[ -  ]/g, '').slice(0, max);
 
-const sanitizeFreeText = (raw: string, max = 200) =>
-  raw.replace(/[ -  ]/g, "").slice(0, max);
-
-const validateName = (v: string) =>
-  v.trim().length < 2 ? "Please enter your full name" : null;
-const validatePhone = (v: string) => {
-  const digits = v.replace(/\D/g, "");
-  if (digits.length < 9) return "Phone number looks too short";
-  if (digits.length > 15) return "Phone number looks too long";
-  return null;
-};
+const validateName = (v: string) => (v.trim().length < 2 ? 'Please enter your full name' : null);
+const validatePhone = (v: string) => validatePhoneNumber(v);
 const validateLocation = (v: string) =>
-  v.trim().length < 3 ? "Please enter a delivery / pickup location" : null;
+  v.trim().length < 3 ? 'Please enter a delivery / pickup location' : null;
 
 export default function CheckoutPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const storeLink = searchParams.get("store");
+  const storeLink = searchParams.get('store');
   const { groupedByVendor, removeItem } = useCart();
   const { token, user } = useAuth();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingStore, setIsLoadingStore] = useState(false);
-  const [paymentTiming, setPaymentTiming] = useState("BOTH");
+  const [paymentTiming, setPaymentTiming] = useState('BOTH');
   const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
-    customerName: "",
-    customerPhone: "",
-    deliveryMethod: "PICKUP",
-    deliveryLocation: "Store Pickup",
-    deliveryNotes: "",
-    paymentMethod: "PAYSTACK",
+    customerName: '',
+    customerPhone: '',
+    deliveryMethod: 'PICKUP',
+    deliveryLocation: 'Store Pickup',
+    deliveryNotes: '',
+    paymentMethod: 'PAYSTACK',
   });
 
   const [savedAddresses, setSavedAddresses] = useState<Address[]>([]);
-  const [selectedAddressId, setSelectedAddressId] = useState<string | "new">("new");
+  const [selectedAddressId, setSelectedAddressId] = useState<string | 'new'>('new');
 
   const [paymentModalState, setPaymentModalState] = useState<
-    "verifying" | "success" | "failed" | null
+    'verifying' | 'success' | 'failed' | null
   >(null);
-  const [paymentOrderId, setPaymentOrderId] = useState<string>("");
-  const [paymentOrderNumber, setPaymentOrderNumber] = useState<string>("");
-  const [paymentOrderTotal, setPaymentOrderTotal] = useState<number | string>("");
-  const [paymentReference, setPaymentReference] = useState<string>("");
-  const [paymentErrorMessage, setPaymentErrorMessage] = useState<string>("");
+  const [paymentOrderId, setPaymentOrderId] = useState<string>('');
+  const [paymentOrderNumber, setPaymentOrderNumber] = useState<string>('');
+  const [paymentOrderTotal, setPaymentOrderTotal] = useState<number | string>('');
+  const [paymentReference, setPaymentReference] = useState<string>('');
+  const [paymentErrorMessage, setPaymentErrorMessage] = useState<string>('');
 
   const group = useMemo(
     () => groupedByVendor.find((vendor) => vendor.storeLink === storeLink),
@@ -97,25 +86,52 @@ export default function CheckoutPage() {
       setIsLoadingStore(true);
       try {
         const store = await storeApi.getStoreBySlug(storeLink);
-        const timing = store.payment_timing || "BOTH";
+        const timing = store.payment_timing || 'BOTH';
         setPaymentTiming(timing);
         setFormData((prev) => ({
           ...prev,
           paymentMethod:
-            timing === "UPFRONT_ONLY"
-              ? "PAYSTACK"
-              : timing === "DELIVERY_ONLY"
-              ? "CASH_ON_DELIVERY"
-              : prev.paymentMethod,
+            timing === 'UPFRONT_ONLY'
+              ? 'PAYSTACK'
+              : timing === 'DELIVERY_ONLY'
+                ? 'CASH_ON_DELIVERY'
+                : prev.paymentMethod,
         }));
       } catch (err: any) {
-        setError(err.message || "Failed to load store payment setup");
+        setError(err.message || 'Failed to load store payment setup');
       } finally {
         setIsLoadingStore(false);
       }
     };
     loadStore();
   }, [storeLink]);
+
+  const handleAddressSelect = React.useCallback(
+    (id: string | 'new', addressesList = savedAddresses) => {
+      setSelectedAddressId(id);
+      if (id === 'new') {
+        setFormData((prev) => ({
+          ...prev,
+          customerName: user?.full_name || '',
+          customerPhone: sanitizePhoneNumber(user?.phone_e164 || ''),
+          deliveryLocation: '',
+        }));
+      } else {
+        const addr = addressesList.find((a) => a.id === id);
+        if (addr) {
+          setFormData((prev) => ({
+            ...prev,
+            customerName: addr.name,
+            customerPhone: sanitizePhoneNumber(addr.phone),
+            deliveryLocation: `${addr.street}, ${addr.city}${
+              addr.region ? `, ${addr.region}` : ''
+            }`,
+          }));
+        }
+      }
+    },
+    [savedAddresses, user],
+  );
 
   useEffect(() => {
     const loadAddresses = async () => {
@@ -129,40 +145,16 @@ export default function CheckoutPage() {
         } else if (user?.full_name) {
           setFormData((prev) => ({
             ...prev,
-            customerName: user.full_name || "",
-            customerPhone: user.phone_e164 || "",
+            customerName: user.full_name || '',
+            customerPhone: sanitizePhoneNumber(user.phone_e164 || ''),
           }));
         }
       } catch (err) {
-        console.error("Failed to load addresses", err);
+        console.error('Failed to load addresses', err);
       }
     };
     loadAddresses();
-  }, [token, user]);
-
-  const handleAddressSelect = (id: string | "new", addressesList = savedAddresses) => {
-    setSelectedAddressId(id);
-    if (id === "new") {
-      setFormData((prev) => ({
-        ...prev,
-        customerName: user?.full_name || "",
-        customerPhone: user?.phone_e164 || "",
-        deliveryLocation: "",
-      }));
-    } else {
-      const addr = addressesList.find((a) => a.id === id);
-      if (addr) {
-        setFormData((prev) => ({
-          ...prev,
-          customerName: addr.name,
-          customerPhone: addr.phone,
-          deliveryLocation: `${addr.street}, ${addr.city}${
-            addr.region ? `, ${addr.region}` : ""
-          }`,
-        }));
-      }
-    }
-  };
+  }, [token, user, handleAddressSelect]);
 
   const fieldErrors = {
     customerName: validateName(formData.customerName),
@@ -170,9 +162,7 @@ export default function CheckoutPage() {
     deliveryLocation: validateLocation(formData.deliveryLocation),
   };
   const formValid =
-    !fieldErrors.customerName &&
-    !fieldErrors.customerPhone &&
-    !fieldErrors.deliveryLocation;
+    !fieldErrors.customerName && !fieldErrors.customerPhone && !fieldErrors.deliveryLocation;
 
   const submitOrder = async () => {
     if (!token || !group) return;
@@ -181,7 +171,7 @@ export default function CheckoutPage() {
         fieldErrors.customerName ||
           fieldErrors.customerPhone ||
           fieldErrors.deliveryLocation ||
-          "Please complete all required fields.",
+          'Please complete all required fields.',
       );
       return;
     }
@@ -189,6 +179,15 @@ export default function CheckoutPage() {
     setIsSubmitting(true);
     setError(null);
     try {
+      const orderPayload = {
+        customerName: formData.customerName.trim(),
+        customerPhone: formData.customerPhone.trim(),
+        deliveryMethod: formData.deliveryMethod,
+        deliveryLocation: formData.deliveryLocation.trim(),
+        deliveryNotes: formData.deliveryNotes.trim() ? formData.deliveryNotes.trim() : undefined,
+        paymentMethod: formData.paymentMethod,
+      };
+
       const result = await orderApi.createOrder(
         token,
         group.storeLink,
@@ -197,53 +196,53 @@ export default function CheckoutPage() {
           variantId: i.variantId ?? null,
           quantity: i.quantity,
         })),
-        formData,
+        orderPayload,
       );
 
       group.items.forEach((item) => {
-        const key = item.variantId
-          ? `${item.productId}::${item.variantId}`
-          : item.productId;
+        const key = item.variantId ? `${item.productId}::${item.variantId}` : item.productId;
         removeItem(key);
       });
 
+      const orderId = result.orderId || result.id;
+      const orderTotal = Number(result.total ?? result.total_amount ?? subtotal);
+      const orderNumber = (orderId ? orderId.slice(-8) : '').toUpperCase();
+      const reference = result.reference;
+
       if (result.authorization_url || result.access_code) {
-        setPaymentOrderId(result.id);
-        setPaymentOrderNumber(result.id.slice(-8).toUpperCase());
-        setPaymentOrderTotal(result.total_amount);
+        setPaymentOrderId(orderId);
+        setPaymentOrderNumber(orderNumber);
+        setPaymentOrderTotal(orderTotal);
+        setPaymentReference(reference || '');
         const checkoutEmail =
-          (user?.email && user.email.includes('@'))
-            ? user.email
-            : 'customer@verndly.com';
+          user?.email && user.email.includes('@') ? user.email : 'customer@verndly.com';
 
         await launchPaystackInline({
           email: checkoutEmail,
-          amount: Number(result.total_amount),
-          reference: result.reference,
+          amount: orderTotal,
+          reference: reference,
           accessCode: result.access_code,
           authorizationUrl: result.authorization_url,
           onSuccess: async (res) => {
-            setPaymentModalState("verifying");
+            setPaymentModalState('verifying');
             try {
-              await orderApi.verifyOrderPayment(token, res.reference, result.id);
-              setPaymentModalState("success");
+              await orderApi.verifyOrderPayment(token, res.reference, orderId);
+              setPaymentModalState('success');
             } catch (verifyErr: any) {
-              setPaymentErrorMessage(
-                verifyErr.message || "Payment verification failed",
-              );
-              setPaymentModalState("failed");
+              setPaymentErrorMessage(verifyErr.message || 'Payment verification failed');
+              setPaymentModalState('failed');
             }
           },
           onClose: () => {
-            router.push(`/orders/${result.id}`);
+            router.push(`/orders/${orderId}`);
           },
         });
         return;
       }
 
-      router.push(`/orders/${result.id}`);
+      router.push(`/orders/${orderId}`);
     } catch (err: any) {
-      setError(err.message || "Failed to place order");
+      setError(err.message || 'Failed to place order');
     } finally {
       setIsSubmitting(false);
     }
@@ -251,12 +250,12 @@ export default function CheckoutPage() {
 
   if (!group || !storeLink) {
     return (
-      <div className="min-h-screen bg-background text-foreground">
+      <div className="bg-background text-foreground min-h-screen">
         <Header />
-        <main className="max-w-2xl mx-auto px-4 pt-16 pb-20">
-          <div className="p-8 rounded-2xl bg-surface/40 space-y-4">
+        <main className="mx-auto max-w-2xl px-4 pb-20 pt-16">
+          <div className="bg-surface/40 space-y-4 rounded-2xl p-8">
             <h2 className="text-base font-semibold">Store group not found in cart.</h2>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               The products you selected may have already been checked out or removed.
             </p>
             <Link href="/cart">
@@ -273,30 +272,30 @@ export default function CheckoutPage() {
   const subtotal = group.totalPrice;
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="bg-background text-foreground min-h-screen">
       <Header />
 
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 pt-8 pb-28 space-y-6">
+      <main className="mx-auto max-w-3xl space-y-6 px-4 pb-28 pt-8 sm:px-6">
         {/* Navigation Breadcrumb */}
         <Link
           href="/cart"
-          className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          className="text-muted-foreground hover:text-foreground inline-flex items-center gap-2 text-xs transition-colors"
         >
-          <ArrowLeft className="w-3.5 h-3.5" />
+          <ArrowLeft className="h-3.5 w-3.5" />
           Back to Cart
         </Link>
 
         {/* Page Header */}
-        <div className="flex items-end justify-between flex-wrap gap-2 pb-2">
+        <div className="flex flex-wrap items-end justify-between gap-2 pb-2">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Checkout</h1>
-            <p className="text-xs text-muted-foreground mt-1">
-              Store: <span className="font-semibold text-foreground">{group.storeName}</span>
+            <p className="text-muted-foreground mt-1 text-xs">
+              Store: <span className="text-foreground font-semibold">{group.storeName}</span>
             </p>
           </div>
-          <div className="flex items-center gap-1.5 text-xs text-emerald-600 bg-emerald-500/10 px-2.5 py-1 rounded-full">
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span className="font-semibold text-[11px]">Protected Checkout</span>
+          <div className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs text-emerald-600">
+            <ShieldCheck className="h-3.5 w-3.5" />
+            <span className="text-[11px] font-semibold">Protected Checkout</span>
           </div>
         </div>
 
@@ -312,26 +311,29 @@ export default function CheckoutPage() {
         {/* Main Content Form (Borderless & Shadowless) */}
         <div className="space-y-6">
           {/* Order Summary Strip */}
-          <div className="p-5 rounded-2xl bg-surface/40 space-y-3">
-            <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          <div className="bg-surface/40 space-y-3 rounded-2xl p-5">
+            <div className="text-muted-foreground flex items-center justify-between text-xs font-semibold uppercase tracking-wider">
               <span>Items ({group.items.length})</span>
               <span>Subtotal</span>
             </div>
-            <div className="divide-y divide-border/40">
+            <div className="divide-border/40 divide-y">
               {group.items.map((item) => (
-                <div key={item.productId} className="py-2.5 flex items-center justify-between gap-3 text-xs">
-                  <div className="flex items-center gap-3 min-w-0">
+                <div
+                  key={item.productId}
+                  className="flex items-center justify-between gap-3 py-2.5 text-xs"
+                >
+                  <div className="flex min-w-0 items-center gap-3">
                     <img
-                      src={item.imageUrl || "/placeholder-product.png"}
+                      src={item.imageUrl || '/placeholder-product.png'}
                       alt=""
-                      className="w-10 h-10 rounded-xl object-cover bg-surface shrink-0"
+                      className="bg-surface h-10 w-10 shrink-0 rounded-xl object-cover"
                     />
                     <div className="min-w-0">
-                      <p className="font-medium text-foreground truncate">{item.title}</p>
-                      <p className="text-[11px] text-muted-foreground">Qty: {item.quantity}</p>
+                      <p className="text-foreground truncate font-medium">{item.title}</p>
+                      <p className="text-muted-foreground text-[11px]">Qty: {item.quantity}</p>
                     </div>
                   </div>
-                  <span className="font-semibold text-foreground shrink-0">
+                  <span className="text-foreground shrink-0 font-semibold">
                     GH₵ {(Number(item.price) * item.quantity).toFixed(2)}
                   </span>
                 </div>
@@ -340,51 +342,53 @@ export default function CheckoutPage() {
           </div>
 
           {/* 1. Order Type Selection */}
-          <div className="p-5 rounded-2xl bg-surface/40 space-y-4">
+          <div className="bg-surface/40 space-y-4 rounded-2xl p-5">
             <div>
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <h2 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
                 1. Delivery Method
               </h2>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <button
                 type="button"
                 onClick={() =>
                   setFormData((prev) => ({
                     ...prev,
-                    deliveryMethod: "PICKUP",
-                    deliveryLocation: "Store Pickup",
+                    deliveryMethod: 'PICKUP',
+                    deliveryLocation: 'Store Pickup',
                   }))
                 }
                 className={clsx(
-                  "flex items-start gap-3 p-4 rounded-2xl text-left transition-all",
-                  formData.deliveryMethod === "PICKUP"
-                    ? "bg-foreground/[0.08] text-foreground"
-                    : "bg-surface/40 hover:bg-surface/70 text-muted-foreground",
+                  'flex items-start gap-3 rounded-2xl p-4 text-left transition-all',
+                  formData.deliveryMethod === 'PICKUP'
+                    ? 'bg-foreground/[0.08] text-foreground'
+                    : 'bg-surface/40 hover:bg-surface/70 text-muted-foreground',
                 )}
               >
                 <div
                   className={clsx(
-                    "p-2.5 rounded-xl shrink-0",
-                    formData.deliveryMethod === "PICKUP"
-                      ? "bg-foreground text-background"
-                      : "bg-surface text-muted-foreground",
+                    'shrink-0 rounded-xl p-2.5',
+                    formData.deliveryMethod === 'PICKUP'
+                      ? 'bg-foreground text-background'
+                      : 'bg-surface text-muted-foreground',
                   )}
                 >
-                  <Store className="w-4 h-4" />
+                  <Store className="h-4 w-4" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-foreground">Store Pickup</span>
-                    {formData.deliveryMethod === "PICKUP" && (
-                      <CheckCircle2 className="w-4 h-4 text-foreground" />
+                    <span className="text-foreground text-xs font-semibold">Store Pickup</span>
+                    {formData.deliveryMethod === 'PICKUP' && (
+                      <CheckCircle2 className="text-foreground h-4 w-4" />
                     )}
                   </div>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                  <p className="text-muted-foreground mt-0.5 text-[11px]">
                     Collect directly from the seller premises
                   </p>
-                  <span className="text-[10px] font-semibold text-emerald-600 block mt-1">Free</span>
+                  <span className="mt-1 block text-[10px] font-semibold text-emerald-600">
+                    Free
+                  </span>
                 </div>
               </button>
 
@@ -393,89 +397,91 @@ export default function CheckoutPage() {
                 onClick={() => {
                   setFormData((prev) => ({
                     ...prev,
-                    deliveryMethod: "DELIVERY",
-                    deliveryLocation: "",
+                    deliveryMethod: 'DELIVERY',
+                    deliveryLocation: '',
                   }));
-                  if (savedAddresses.length > 0 && selectedAddressId !== "new") {
+                  if (savedAddresses.length > 0 && selectedAddressId !== 'new') {
                     handleAddressSelect(selectedAddressId);
                   }
                 }}
                 className={clsx(
-                  "flex items-start gap-3 p-4 rounded-2xl text-left transition-all",
-                  formData.deliveryMethod === "DELIVERY"
-                    ? "bg-foreground/[0.08] text-foreground"
-                    : "bg-surface/40 hover:bg-surface/70 text-muted-foreground",
+                  'flex items-start gap-3 rounded-2xl p-4 text-left transition-all',
+                  formData.deliveryMethod === 'DELIVERY'
+                    ? 'bg-foreground/[0.08] text-foreground'
+                    : 'bg-surface/40 hover:bg-surface/70 text-muted-foreground',
                 )}
               >
                 <div
                   className={clsx(
-                    "p-2.5 rounded-xl shrink-0",
-                    formData.deliveryMethod === "DELIVERY"
-                      ? "bg-foreground text-background"
-                      : "bg-surface text-muted-foreground",
+                    'shrink-0 rounded-xl p-2.5',
+                    formData.deliveryMethod === 'DELIVERY'
+                      ? 'bg-foreground text-background'
+                      : 'bg-surface text-muted-foreground',
                   )}
                 >
-                  <Truck className="w-4 h-4" />
+                  <Truck className="h-4 w-4" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-foreground">Courier Delivery</span>
-                    {formData.deliveryMethod === "DELIVERY" && (
-                      <CheckCircle2 className="w-4 h-4 text-foreground" />
+                    <span className="text-foreground text-xs font-semibold">Courier Delivery</span>
+                    {formData.deliveryMethod === 'DELIVERY' && (
+                      <CheckCircle2 className="text-foreground h-4 w-4" />
                     )}
                   </div>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                  <p className="text-muted-foreground mt-0.5 text-[11px]">
                     Dispatched directly to your address
                   </p>
-                  <span className="text-[10px] font-semibold text-emerald-600 block mt-1">Included</span>
+                  <span className="mt-1 block text-[10px] font-semibold text-emerald-600">
+                    Included
+                  </span>
                 </div>
               </button>
             </div>
           </div>
 
           {/* 2. Contact & Address Details */}
-          <div className="p-5 rounded-2xl bg-surface/40 space-y-4">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className="bg-surface/40 space-y-4 rounded-2xl p-5">
+            <h2 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
               2. Contact &amp; Location
             </h2>
 
             {/* Address Switcher for Delivery */}
-            {formData.deliveryMethod === "DELIVERY" && savedAddresses.length > 0 && (
+            {formData.deliveryMethod === 'DELIVERY' && savedAddresses.length > 0 && (
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">
+                <label className="text-muted-foreground text-xs font-medium">
                   Select Delivery Address
                 </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   {savedAddresses.map((addr) => (
                     <button
                       key={addr.id}
                       type="button"
                       onClick={() => handleAddressSelect(addr.id)}
                       className={clsx(
-                        "p-3.5 rounded-xl text-left transition-all text-xs",
+                        'rounded-xl p-3.5 text-left text-xs transition-all',
                         selectedAddressId === addr.id
-                          ? "bg-foreground/[0.08] text-foreground font-semibold"
-                          : "bg-surface/30 text-muted-foreground hover:bg-surface/60",
+                          ? 'bg-foreground/[0.08] text-foreground font-semibold'
+                          : 'bg-surface/30 text-muted-foreground hover:bg-surface/60',
                       )}
                     >
-                      <p className="font-semibold text-foreground">
-                        {addr.label ? `${addr.label} · ` : ""}
+                      <p className="text-foreground font-semibold">
+                        {addr.label ? `${addr.label} · ` : ''}
                         {addr.name}
                       </p>
-                      <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+                      <p className="text-muted-foreground mt-0.5 truncate text-[11px]">
                         {addr.street}, {addr.city}
                       </p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">{addr.phone}</p>
+                      <p className="text-muted-foreground mt-0.5 text-[10px]">{addr.phone}</p>
                     </button>
                   ))}
                   <button
                     type="button"
-                    onClick={() => handleAddressSelect("new")}
+                    onClick={() => handleAddressSelect('new')}
                     className={clsx(
-                      "p-3.5 rounded-xl text-left transition-all text-xs flex items-center justify-center",
-                      selectedAddressId === "new"
-                        ? "bg-foreground/[0.08] text-foreground font-semibold"
-                        : "bg-surface/30 text-muted-foreground hover:bg-surface/60",
+                      'flex items-center justify-center rounded-xl p-3.5 text-left text-xs transition-all',
+                      selectedAddressId === 'new'
+                        ? 'bg-foreground/[0.08] text-foreground font-semibold'
+                        : 'bg-surface/30 text-muted-foreground hover:bg-surface/60',
                     )}
                   >
                     + Enter new address
@@ -485,7 +491,7 @@ export default function CheckoutPage() {
             )}
 
             {/* Inputs using Custom Components */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <div className="grid grid-cols-1 gap-3 pt-1 sm:grid-cols-2">
               <Input
                 label="Full Name"
                 placeholder="e.g. Ama Mensah"
@@ -502,22 +508,36 @@ export default function CheckoutPage() {
 
               <Input
                 label="Phone Number (Mobile Money / SMS)"
+                labelRight={
+                  <span
+                    className={clsx(
+                      'font-mono text-[10px] font-medium tracking-wide',
+                      formData.customerPhone.length === 10
+                        ? 'text-emerald-600 dark:text-emerald-400'
+                        : 'text-muted-foreground',
+                    )}
+                  >
+                    {formData.customerPhone.length}/10 digits
+                  </span>
+                }
                 placeholder="e.g. 0244123456"
                 type="tel"
+                inputMode="numeric"
+                maxLength={10}
                 value={formData.customerPhone}
                 onChange={(e) =>
                   setFormData((prev) => ({
                     ...prev,
-                    customerPhone: sanitizePhone(e.target.value),
+                    customerPhone: sanitizePhoneNumber(e.target.value),
                   }))
                 }
                 error={formData.customerPhone ? fieldErrors.customerPhone || undefined : undefined}
-                hint="Used for rider updates and payment SMS"
+                hint="Used for rider updates and payment SMS (strictly 10 digits)"
                 required
               />
             </div>
 
-            {formData.deliveryMethod === "DELIVERY" && selectedAddressId === "new" && (
+            {formData.deliveryMethod === 'DELIVERY' && selectedAddressId === 'new' && (
               <Input
                 label="Delivery Address / Landmark"
                 placeholder="e.g. Room 4B, Pentagon Hall, Legon"
@@ -529,9 +549,7 @@ export default function CheckoutPage() {
                   }))
                 }
                 error={
-                  formData.deliveryLocation
-                    ? fieldErrors.deliveryLocation || undefined
-                    : undefined
+                  formData.deliveryLocation ? fieldErrors.deliveryLocation || undefined : undefined
                 }
                 required
               />
@@ -539,14 +557,14 @@ export default function CheckoutPage() {
 
             <Textarea
               label={
-                formData.deliveryMethod === "DELIVERY"
-                  ? "Delivery Instructions (Optional)"
-                  : "Pickup Notes (Optional)"
+                formData.deliveryMethod === 'DELIVERY'
+                  ? 'Delivery Instructions (Optional)'
+                  : 'Pickup Notes (Optional)'
               }
               placeholder={
-                formData.deliveryMethod === "DELIVERY"
-                  ? "e.g. Call when outside the gate"
-                  : "e.g. Picking up around 3pm"
+                formData.deliveryMethod === 'DELIVERY'
+                  ? 'e.g. Call when outside the gate'
+                  : 'e.g. Picking up around 3pm'
               }
               value={formData.deliveryNotes}
               onChange={(e) =>
@@ -560,49 +578,47 @@ export default function CheckoutPage() {
           </div>
 
           {/* 3. Payment Method Selection */}
-          <div className="p-5 rounded-2xl bg-surface/40 space-y-4">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className="bg-surface/40 space-y-4 rounded-2xl p-5">
+            <h2 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
               3. Payment Channel
             </h2>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <button
                 type="button"
-                onClick={() =>
-                  setFormData((prev) => ({ ...prev, paymentMethod: "PAYSTACK" }))
-                }
-                disabled={paymentTiming === "DELIVERY_ONLY"}
+                onClick={() => setFormData((prev) => ({ ...prev, paymentMethod: 'PAYSTACK' }))}
+                disabled={paymentTiming === 'DELIVERY_ONLY'}
                 className={clsx(
-                  "flex items-start gap-3 p-4 rounded-2xl text-left transition-all",
-                  formData.paymentMethod === "PAYSTACK"
-                    ? "bg-foreground/[0.08] text-foreground"
-                    : "bg-surface/40 hover:bg-surface/70 text-muted-foreground",
-                  paymentTiming === "DELIVERY_ONLY" && "opacity-40 cursor-not-allowed",
+                  'flex items-start gap-3 rounded-2xl p-4 text-left transition-all',
+                  formData.paymentMethod === 'PAYSTACK'
+                    ? 'bg-foreground/[0.08] text-foreground'
+                    : 'bg-surface/40 hover:bg-surface/70 text-muted-foreground',
+                  paymentTiming === 'DELIVERY_ONLY' && 'cursor-not-allowed opacity-40',
                 )}
               >
                 <div
                   className={clsx(
-                    "p-2.5 rounded-xl shrink-0",
-                    formData.paymentMethod === "PAYSTACK"
-                      ? "bg-foreground text-background"
-                      : "bg-surface text-muted-foreground",
+                    'shrink-0 rounded-xl p-2.5',
+                    formData.paymentMethod === 'PAYSTACK'
+                      ? 'bg-foreground text-background'
+                      : 'bg-surface text-muted-foreground',
                   )}
                 >
-                  <CreditCard className="w-4 h-4" />
+                  <CreditCard className="h-4 w-4" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-foreground">
+                    <span className="text-foreground text-xs font-semibold">
                       Pay Online (Paystack)
                     </span>
-                    {formData.paymentMethod === "PAYSTACK" && (
-                      <CheckCircle2 className="w-4 h-4 text-foreground" />
+                    {formData.paymentMethod === 'PAYSTACK' && (
+                      <CheckCircle2 className="text-foreground h-4 w-4" />
                     )}
                   </div>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                  <p className="text-muted-foreground mt-0.5 text-[11px]">
                     Instant MoMo, Card, and Bank Transfer
                   </p>
-                  <span className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 block mt-1">
+                  <span className="mt-1 block text-[10px] font-semibold text-blue-600 dark:text-blue-400">
                     Instant Verification
                   </span>
                 </div>
@@ -611,40 +627,40 @@ export default function CheckoutPage() {
               <button
                 type="button"
                 onClick={() =>
-                  setFormData((prev) => ({ ...prev, paymentMethod: "CASH_ON_DELIVERY" }))
+                  setFormData((prev) => ({ ...prev, paymentMethod: 'CASH_ON_DELIVERY' }))
                 }
-                disabled={paymentTiming === "UPFRONT_ONLY"}
+                disabled={paymentTiming === 'UPFRONT_ONLY'}
                 className={clsx(
-                  "flex items-start gap-3 p-4 rounded-2xl text-left transition-all",
-                  formData.paymentMethod === "CASH_ON_DELIVERY"
-                    ? "bg-foreground/[0.08] text-foreground"
-                    : "bg-surface/40 hover:bg-surface/70 text-muted-foreground",
-                  paymentTiming === "UPFRONT_ONLY" && "opacity-40 cursor-not-allowed",
+                  'flex items-start gap-3 rounded-2xl p-4 text-left transition-all',
+                  formData.paymentMethod === 'CASH_ON_DELIVERY'
+                    ? 'bg-foreground/[0.08] text-foreground'
+                    : 'bg-surface/40 hover:bg-surface/70 text-muted-foreground',
+                  paymentTiming === 'UPFRONT_ONLY' && 'cursor-not-allowed opacity-40',
                 )}
               >
                 <div
                   className={clsx(
-                    "p-2.5 rounded-xl shrink-0",
-                    formData.paymentMethod === "CASH_ON_DELIVERY"
-                      ? "bg-foreground text-background"
-                      : "bg-surface text-muted-foreground",
+                    'shrink-0 rounded-xl p-2.5',
+                    formData.paymentMethod === 'CASH_ON_DELIVERY'
+                      ? 'bg-foreground text-background'
+                      : 'bg-surface text-muted-foreground',
                   )}
                 >
-                  <Banknote className="w-4 h-4" />
+                  <Banknote className="h-4 w-4" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-foreground">
+                    <span className="text-foreground text-xs font-semibold">
                       Pay on Delivery / Pickup
                     </span>
-                    {formData.paymentMethod === "CASH_ON_DELIVERY" && (
-                      <CheckCircle2 className="w-4 h-4 text-foreground" />
+                    {formData.paymentMethod === 'CASH_ON_DELIVERY' && (
+                      <CheckCircle2 className="text-foreground h-4 w-4" />
                     )}
                   </div>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                  <p className="text-muted-foreground mt-0.5 text-[11px]">
                     Pay cash upon receiving your order
                   </p>
-                  <span className="text-[10px] font-semibold text-muted-foreground block mt-1">
+                  <span className="text-muted-foreground mt-1 block text-[10px] font-semibold">
                     Cash Handover
                   </span>
                 </div>
@@ -653,29 +669,25 @@ export default function CheckoutPage() {
           </div>
 
           {/* 4. Financial Breakdown */}
-          <div className="p-5 rounded-2xl bg-surface/40 space-y-3">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className="bg-surface/40 space-y-3 rounded-2xl p-5">
+            <h2 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
               Order Total Breakdown
             </h2>
 
-            <div className="space-y-2 text-xs pt-1">
-              <div className="flex justify-between text-muted-foreground">
+            <div className="space-y-2 pt-1 text-xs">
+              <div className="text-muted-foreground flex justify-between">
                 <span>Items Subtotal</span>
-                <span className="font-medium text-foreground">
-                  GH₵ {subtotal.toFixed(2)}
-                </span>
+                <span className="text-foreground font-medium">GH₵ {subtotal.toFixed(2)}</span>
               </div>
 
-              <div className="flex justify-between text-muted-foreground">
+              <div className="text-muted-foreground flex justify-between">
                 <span>Delivery &amp; Logistics</span>
-                <span className="text-emerald-600 font-medium">Free / Included</span>
+                <span className="font-medium text-emerald-600">Free / Included</span>
               </div>
 
-              <div className="flex justify-between items-center pt-3 border-t border-border/60 text-sm">
-                <span className="font-bold text-foreground">Total to Pay</span>
-                <span className="font-bold text-lg text-foreground">
-                  GH₵ {subtotal.toFixed(2)}
-                </span>
+              <div className="border-border/60 flex items-center justify-between border-t pt-3 text-sm">
+                <span className="text-foreground font-bold">Total to Pay</span>
+                <span className="text-foreground text-lg font-bold">GH₵ {subtotal.toFixed(2)}</span>
               </div>
             </div>
 
@@ -685,13 +697,13 @@ export default function CheckoutPage() {
                 onClick={submitOrder}
                 isLoading={isSubmitting}
                 disabled={isSubmitting || isLoadingStore || !formValid}
-                className="w-full h-12 rounded-xl text-xs font-semibold uppercase tracking-wider"
+                className="h-12 w-full rounded-xl text-xs font-semibold uppercase tracking-wider"
               >
                 {isSubmitting
-                  ? "Processing Order..."
-                  : formData.paymentMethod === "PAYSTACK"
-                  ? `Pay GH₵ ${subtotal.toFixed(2)} Now`
-                  : "Confirm & Place Order"}
+                  ? 'Processing Order...'
+                  : formData.paymentMethod === 'PAYSTACK'
+                    ? `Pay GH₵ ${subtotal.toFixed(2)} Now`
+                    : 'Confirm & Place Order'}
               </Button>
             </div>
           </div>

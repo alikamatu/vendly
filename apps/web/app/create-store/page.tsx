@@ -23,12 +23,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/lib/contexts/auth-context';
 import { storeApi } from '@/lib/api/store';
-import {
-  onboardingApi,
-  OnboardingStatus,
-  ServiceArea,
-  DeliveryTime,
-} from '@/lib/api/onboarding';
+import { onboardingApi, OnboardingStatus, ServiceArea, DeliveryTime } from '@/lib/api/onboarding';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
@@ -58,9 +53,24 @@ function slugify(text: string): string {
 // ───────── Constants ─────────
 
 const STEPS = [
-  { id: 'identity', title: 'Brand Identity', icon: Store, description: 'Store name, handle & logo' },
-  { id: 'location', title: 'Location & Delivery', icon: MapPin, description: 'Pickup and shipping zones' },
-  { id: 'settlement', title: 'Payouts & Settlement', icon: CreditCard, description: 'Where you receive customer payments' },
+  {
+    id: 'identity',
+    title: 'Brand Identity',
+    icon: Store,
+    description: 'Store name, handle & logo',
+  },
+  {
+    id: 'location',
+    title: 'Location & Delivery',
+    icon: MapPin,
+    description: 'Pickup and shipping zones',
+  },
+  {
+    id: 'settlement',
+    title: 'Payouts & Settlement',
+    icon: CreditCard,
+    description: 'Where you receive customer payments',
+  },
 ];
 
 const GHANA_BANKS = [
@@ -124,8 +134,6 @@ const PAYMENT_TIMINGS = [
   },
 ];
 
-
-
 // ───────── Stepper Indicator ─────────
 
 function Stepper({
@@ -138,8 +146,8 @@ function Stepper({
   onStepClick?: (index: number) => void;
 }) {
   return (
-    <div className="w-full max-w-xl mx-auto px-2">
-      <div className="flex items-center justify-between relative">
+    <div className="mx-auto w-full max-w-xl px-2">
+      <div className="relative flex items-center justify-between">
         {STEPS.map((step, idx) => {
           const isDone = completedSteps[idx];
           const isCurrent = idx === currentStep;
@@ -152,26 +160,23 @@ function Stepper({
                 type="button"
                 onClick={() => canClick && onStepClick?.(idx)}
                 disabled={!canClick}
-                className={`group flex flex-col items-center gap-2 relative z-10 transition-all text-left outline-none ${
+                className={`group relative z-10 flex flex-col items-center gap-2 text-left outline-none transition-all ${
                   canClick ? 'cursor-pointer' : 'cursor-default opacity-60'
                 }`}
               >
                 <div
-                  className={`
-                    w-11 h-11 rounded-2xl flex items-center justify-center transition-all duration-300
-                    ${
-                      isDone
-                        ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/25 ring-2 ring-emerald-500/20'
-                        : isCurrent
-                        ? 'bg-foreground text-background shadow-lg shadow-black/10 ring-4 ring-secondary/20 scale-105'
-                        : 'bg-surface border border-border text-foreground/40'
-                    }
-                  `}
+                  className={`flex h-11 w-11 items-center justify-center rounded-2xl transition-all duration-300 ${
+                    isDone
+                      ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/25 ring-2 ring-emerald-500/20'
+                      : isCurrent
+                        ? 'bg-foreground text-background ring-secondary/20 scale-105 shadow-lg shadow-black/10 ring-4'
+                        : 'bg-surface border-border text-foreground/40 border'
+                  } `}
                 >
                   {isDone ? (
-                    <Check className="w-5 h-5" strokeWidth={2.8} />
+                    <Check className="h-5 w-5" strokeWidth={2.8} />
                   ) : (
-                    <Icon className="w-5 h-5" />
+                    <Icon className="h-5 w-5" />
                   )}
                 </div>
                 <div className="text-center">
@@ -180,8 +185,8 @@ function Stepper({
                       isCurrent
                         ? 'text-foreground font-semibold'
                         : isDone
-                        ? 'text-emerald-500'
-                        : 'text-foreground/40'
+                          ? 'text-emerald-500'
+                          : 'text-foreground/40'
                     }`}
                   >
                     {step.title}
@@ -190,9 +195,9 @@ function Stepper({
               </button>
 
               {idx < STEPS.length - 1 && (
-                <div className="flex-1 h-[2px] mx-2 -mt-5 relative overflow-hidden bg-border/70 rounded-full">
+                <div className="bg-border/70 relative mx-2 -mt-5 h-[2px] flex-1 overflow-hidden rounded-full">
                   <motion.div
-                    className="absolute inset-y-0 left-0 bg-emerald-500 rounded-full"
+                    className="absolute inset-y-0 left-0 rounded-full bg-emerald-500"
                     initial={{ width: '0%' }}
                     animate={{ width: completedSteps[idx] ? '100%' : '0%' }}
                     transition={{ duration: 0.4 }}
@@ -209,13 +214,7 @@ function Stepper({
 
 // ───────── Success Screen ─────────
 
-function CelebrationScreen({
-  storeName,
-  storeSlug,
-}: {
-  storeName: string;
-  storeSlug: string;
-}) {
+function CelebrationScreen({ storeName, storeSlug }: { storeName: string; storeSlug: string }) {
   const router = useRouter();
 
   useEffect(() => {
@@ -230,45 +229,46 @@ function CelebrationScreen({
       initial={{ opacity: 0, scale: 0.94 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.4, ease: 'easeOut' }}
-      className="max-w-md mx-auto py-12 text-center space-y-7"
+      className="mx-auto max-w-md space-y-7 py-12 text-center"
     >
       <motion.div
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
         transition={{ type: 'spring', damping: 12, stiffness: 200, delay: 0.1 }}
-        className="w-20 h-20 mx-auto rounded-3xl bg-emerald-500 text-white flex items-center justify-center shadow-xl shadow-emerald-500/30 ring-8 ring-emerald-500/10"
+        className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-emerald-500 text-white shadow-xl shadow-emerald-500/30 ring-8 ring-emerald-500/10"
       >
-        <Check className="w-10 h-10" strokeWidth={3} />
+        <Check className="h-10 w-10" strokeWidth={3} />
       </motion.div>
 
       <div className="space-y-2">
-        <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground">
+        <h2 className="text-foreground text-2xl font-semibold tracking-tight sm:text-3xl">
           You&apos;re Ready to Sell! 🎉
         </h2>
-        <p className="text-xs sm:text-sm text-foreground/60 leading-relaxed max-w-sm mx-auto">
-          <strong className="text-foreground font-semibold">{storeName || 'Your store'}</strong> is live on Verndly. Start adding products and receiving orders!
+        <p className="text-foreground/60 mx-auto max-w-sm text-xs leading-relaxed sm:text-sm">
+          <strong className="text-foreground font-semibold">{storeName || 'Your store'}</strong> is
+          live on Verndly. Start adding products and receiving orders!
         </p>
       </div>
 
-      <div className="p-4 rounded-2xl bg-surface border border-border space-y-1 text-left">
-        <p className="text-[10px] uppercase tracking-wider font-semibold text-foreground/40">
+      <div className="bg-surface border-border space-y-1 rounded-2xl border p-4 text-left">
+        <p className="text-foreground/40 text-[10px] font-semibold uppercase tracking-wider">
           Your Public Storefront
         </p>
-        <p className="text-sm font-mono font-medium text-secondary truncate flex items-center gap-1.5">
+        <p className="text-secondary flex items-center gap-1.5 truncate font-mono text-sm font-medium">
           <span>verndly.com/s/{storeSlug}</span>
-          <ExternalLink className="w-3.5 h-3.5 opacity-60" />
+          <ExternalLink className="h-3.5 w-3.5 opacity-60" />
         </p>
       </div>
 
-      <div className="pt-2 flex flex-col items-center gap-3">
+      <div className="flex flex-col items-center gap-3 pt-2">
         <Button
           onClick={() => router.push('/dashboard')}
           variant="primary"
-          className="w-full h-12 rounded-xl text-sm font-medium"
+          className="h-12 w-full rounded-xl text-sm font-medium"
         >
           Go to Dashboard Now
         </Button>
-        <div className="flex items-center gap-2 text-xs text-foreground/50">
+        <div className="text-foreground/50 flex items-center gap-2 text-xs">
           <Spinner size="xs" />
           <span>Redirecting to your dashboard...</span>
         </div>
@@ -326,7 +326,7 @@ export default function CreateStorePage() {
         value: p.code,
         label: p.name,
       })),
-    []
+    [],
   );
 
   const bankOptions = useMemo(
@@ -335,7 +335,7 @@ export default function CreateStorePage() {
         value: b.code,
         label: b.name,
       })),
-    []
+    [],
   );
 
   // ───────── Pre-fill & Status Synchronization ─────────
@@ -351,9 +351,7 @@ export default function CreateStorePage() {
 
     // User has to be seller verified before they can create a store
     const isSellerVerified =
-      user?.approval_status === 'APPROVED' ||
-      user?.role === 'SELLER' ||
-      user?.role === 'ADMIN';
+      user?.approval_status === 'APPROVED' || user?.role === 'SELLER' || user?.role === 'ADMIN';
 
     if (!isSellerVerified) {
       router.replace('/seller-verification?redirect=/create-store');
@@ -363,11 +361,9 @@ export default function CreateStorePage() {
     // Pick initial phone & brand name from Auth/User if available
     const authBrandName = user?.seller_profile?.store_name || user?.school || '';
     const authPhone =
-      user?.seller_profile?.whatsapp_number ||
-      user?.phone_e164 ||
-      (user as any)?.phone ||
-      '';
+      user?.seller_profile?.whatsapp_number || user?.phone_e164 || (user as any)?.phone || '';
 
+    /* eslint-disable react-hooks/set-state-in-effect */
     if (authBrandName && !storeName) {
       setStoreName(authBrandName);
       if (!storeSlug) {
@@ -385,6 +381,7 @@ export default function CreateStorePage() {
     if (user?.seller_profile?.logo_url && !logoPreview) {
       setLogoPreview(user.seller_profile.logo_url);
     }
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     // Fetch onboarding status from backend
     onboardingApi
@@ -619,25 +616,19 @@ export default function CreateStorePage() {
   // ───────── Toggle payment methods ─────────
   const toggleMethod = (id: string) => {
     setPaymentMethods((prev) =>
-      prev.includes(id)
-        ? prev.length > 1
-          ? prev.filter((m) => m !== id)
-          : prev
-        : [...prev, id]
+      prev.includes(id) ? (prev.length > 1 ? prev.filter((m) => m !== id) : prev) : [...prev, id],
     );
   };
 
   // ───────── Verification & Loading State ─────────
   const isSellerVerified =
-    user?.approval_status === 'APPROVED' ||
-    user?.role === 'SELLER' ||
-    user?.role === 'ADMIN';
+    user?.approval_status === 'APPROVED' || user?.role === 'SELLER' || user?.role === 'ADMIN';
 
   if (isInitializing || authLoading || !isSellerVerified) {
     return (
-      <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center relative">
+      <div className="bg-background text-foreground relative flex min-h-screen flex-col items-center justify-center">
         <AmbientBackground />
-        <div className="flex flex-col items-center gap-4 text-center px-4">
+        <div className="relative z-10 flex flex-col items-center gap-4 px-4 text-center">
           <Image
             src="/logos/verndly.png"
             alt="Verndly Logo"
@@ -646,7 +637,7 @@ export default function CreateStorePage() {
             className="h-9 w-9 object-contain"
             priority
           />
-          <div className="flex items-center gap-2 text-xs font-medium text-foreground/60">
+          <div className="text-foreground/60 flex items-center gap-2 text-xs font-medium">
             <Spinner size="sm" />
             <span>
               {!isSellerVerified && !authLoading
@@ -660,12 +651,12 @@ export default function CreateStorePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground selection:bg-secondary/15 relative flex flex-col">
+    <div className="bg-background text-foreground selection:bg-secondary/15 relative flex min-h-screen flex-col">
       <AmbientBackground />
 
       {/* Top Header */}
-      <header className="w-full border-b border-border/40 bg-background sticky top-0 z-30">
-        <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+      <header className="border-border/40 bg-background sticky top-0 z-30 w-full border-b">
+        <div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-4">
           <div className="flex items-center gap-2.5">
             <Image
               src="/logos/verndly.png"
@@ -675,42 +666,43 @@ export default function CreateStorePage() {
               className="h-6.5 w-6.5 object-contain"
               priority
             />
-            <span className="text-lg font-bold tracking-tight text-foreground">
-              Verndly
-            </span>
-            <span className="hidden sm:inline-block text-[11px] font-medium tracking-wide uppercase px-2 py-0.5 rounded-full bg-secondary/10 text-secondary ml-1">
+            <span className="text-foreground text-lg font-bold tracking-tight">Verndly</span>
+            <span className="bg-secondary/10 text-secondary ml-1 hidden rounded-full px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide sm:inline-block">
               Seller Setup
             </span>
           </div>
 
-          <div className="flex items-center gap-2 text-xs text-foreground/50">
-            <Clock className="w-3.5 h-3.5" />
+          <div className="text-foreground/50 flex items-center gap-2 text-xs">
+            <Clock className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Takes ~2 minutes</span>
           </div>
         </div>
       </header>
 
       {/* Main Container */}
-      <main className="flex-1 container mx-auto max-w-2xl px-4 py-8 md:py-12 flex flex-col justify-center">
+      <main className="container relative z-10 mx-auto flex max-w-2xl flex-1 flex-col justify-center px-4 py-8 md:py-12">
         {isComplete ? (
           <CelebrationScreen storeName={storeName} storeSlug={storeSlug} />
         ) : (
           <div className="space-y-8">
             {/* Header Title */}
-            <div className="text-center space-y-2">
+            <div className="space-y-2 text-center">
               <motion.h1
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground"
+                className="text-foreground text-2xl font-semibold tracking-tight sm:text-3xl"
               >
                 {currentStep === 0 && 'Set Up Your Store'}
                 {currentStep === 1 && 'Where Do You Ship From?'}
                 {currentStep === 2 && 'How Do You Get Paid?'}
               </motion.h1>
-              <p className="text-xs sm:text-sm text-foreground/60 max-w-md mx-auto leading-relaxed">
-                {currentStep === 0 && 'Configure your brand identity and claim your unique Verndly store link.'}
-                {currentStep === 1 && 'Set your pickup location so customers nearby can find and order from you.'}
-                {currentStep === 2 && 'Connect your Mobile Money or bank account to receive customer payouts directly.'}
+              <p className="text-foreground/60 mx-auto max-w-md text-xs leading-relaxed sm:text-sm">
+                {currentStep === 0 &&
+                  'Configure your brand identity and claim your unique Verndly store link.'}
+                {currentStep === 1 &&
+                  'Set your pickup location so customers nearby can find and order from you.'}
+                {currentStep === 2 &&
+                  'Connect your Mobile Money or bank account to receive customer payouts directly.'}
               </p>
             </div>
 
@@ -739,179 +731,182 @@ export default function CreateStorePage() {
                       transition={{ duration: 0.25 }}
                       className="space-y-6"
                     >
-                    {/* Logo Picker */}
-                    <div className="flex flex-col items-center">
-                      <div
-                        onClick={() => document.getElementById('logo-file-input')?.click()}
-                        className="group relative cursor-pointer"
-                        role="button"
-                        tabIndex={0}
-                        aria-label="Upload store logo"
-                      >
-                        <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl border-2 border-dashed border-border group-hover:border-secondary/60 flex items-center justify-center bg-input-bg transition-all duration-200 overflow-hidden shadow-sm">
-                          {logoPreview ? (
-                            <img
-                              src={logoPreview}
-                              alt="Store logo preview"
-                              className="w-full h-full object-cover"
-                            />
+                      {/* Logo Picker */}
+                      <div className="flex flex-col items-center">
+                        <div
+                          onClick={() => document.getElementById('logo-file-input')?.click()}
+                          className="group relative cursor-pointer"
+                          role="button"
+                          tabIndex={0}
+                          aria-label="Upload store logo"
+                        >
+                          <div className="border-border group-hover:border-secondary/60 bg-input-bg flex h-24 w-24 items-center justify-center overflow-hidden rounded-3xl border-2 border-dashed shadow-sm transition-all duration-200 sm:h-28 sm:w-28">
+                            {logoPreview ? (
+                              <img
+                                src={logoPreview}
+                                alt="Store logo preview"
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="text-foreground/40 group-hover:text-secondary flex flex-col items-center gap-1.5 transition-colors">
+                                <Camera className="h-7 w-7" />
+                                <span className="text-[10px] font-medium uppercase tracking-wider">
+                                  Logo
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="bg-secondary absolute -bottom-1 -right-1 rounded-xl p-2 text-white shadow-md transition-transform group-hover:scale-105">
+                            <Camera className="h-3.5 w-3.5" />
+                          </div>
+                          <input
+                            id="logo-file-input"
+                            type="file"
+                            accept="image/png,image/jpeg,image/webp"
+                            className="hidden"
+                            onChange={handleLogoChange}
+                          />
+                        </div>
+                        <p className="text-foreground/50 mt-2 text-[11px]">PNG or JPG • Max 5MB</p>
+                      </div>
+
+                      {/* Brand Name Input */}
+                      <div className="space-y-1.5">
+                        <Input
+                          label="Store / Brand Name"
+                          placeholder="e.g. Accra Kicks & Apparel"
+                          value={storeName}
+                          onChange={(e) => handleBrandNameChange(e.target.value)}
+                          icon={<Building2 size={16} />}
+                          required
+                          hint={
+                            user?.school && storeName === user.school
+                              ? '✨ Automatically picked from your registration'
+                              : 'This is the name your buyers will see.'
+                          }
+                        />
+                      </div>
+
+                      {/* Auto Slug Generator with Live Preview */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <label className="text-foreground/80 text-xs font-medium tracking-tight">
+                            Store Handle (URL Slug)
+                          </label>
+                          {isCustomSlug ? (
+                            <button
+                              type="button"
+                              onClick={handleResetSlug}
+                              className="text-secondary inline-flex items-center gap-1 text-[11px] font-medium hover:underline"
+                            >
+                              <RotateCcw className="h-3 w-3" />
+                              Sync with name
+                            </button>
                           ) : (
-                            <div className="flex flex-col items-center gap-1.5 text-foreground/40 group-hover:text-secondary transition-colors">
-                              <Camera className="w-7 h-7" />
-                              <span className="text-[10px] font-medium uppercase tracking-wider">Logo</span>
-                            </div>
+                            <span className="flex items-center gap-1 text-[11px] font-medium text-emerald-500">
+                              <Sparkles className="h-3 w-3" />
+                              Auto-generated
+                            </span>
                           )}
                         </div>
-                        <div className="absolute -bottom-1 -right-1 p-2 bg-secondary text-white rounded-xl shadow-md group-hover:scale-105 transition-transform">
-                          <Camera className="w-3.5 h-3.5" />
+
+                        <div className="relative">
+                          <Input
+                            placeholder="accra-kicks"
+                            value={storeSlug}
+                            onChange={(e) => handleCustomSlugChange(e.target.value)}
+                            required
+                          />
                         </div>
-                        <input
-                          id="logo-file-input"
-                          type="file"
-                          accept="image/png,image/jpeg,image/webp"
-                          className="hidden"
-                          onChange={handleLogoChange}
-                        />
-                      </div>
-                      <p className="mt-2 text-[11px] text-foreground/50">
-                        PNG or JPG • Max 5MB
-                      </p>
-                    </div>
 
-                    {/* Brand Name Input */}
-                    <div className="space-y-1.5">
-                      <Input
-                        label="Store / Brand Name"
-                        placeholder="e.g. Accra Kicks & Apparel"
-                        value={storeName}
-                        onChange={(e) => handleBrandNameChange(e.target.value)}
-                        icon={<Building2 size={16} />}
-                        required
-                        hint={
-                          user?.school && storeName === user.school
-                            ? '✨ Automatically picked from your registration'
-                            : 'This is the name your buyers will see.'
-                        }
-                      />
-                    </div>
-
-                    {/* Auto Slug Generator with Live Preview */}
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-medium text-foreground/80 tracking-tight">
-                          Store Handle (URL Slug)
-                        </label>
-                        {isCustomSlug ? (
-                          <button
-                            type="button"
-                            onClick={handleResetSlug}
-                            className="inline-flex items-center gap-1 text-[11px] font-medium text-secondary hover:underline"
-                          >
-                            <RotateCcw className="w-3 h-3" />
-                            Sync with name
-                          </button>
-                        ) : (
-                          <span className="text-[11px] font-medium text-emerald-500 flex items-center gap-1">
-                            <Sparkles className="w-3 h-3" />
-                            Auto-generated
+                        {/* Live Storefront Link Preview */}
+                        <div className="bg-surface border-border/70 flex items-center justify-between rounded-xl border px-3.5 py-2.5 text-xs">
+                          <div className="flex items-center gap-1.5 truncate">
+                            <span className="text-foreground/50">Store Link:</span>
+                            <span className="text-foreground/80 font-mono font-medium">
+                              verndly.com/s/
+                            </span>
+                            <span className="text-secondary truncate font-mono font-semibold">
+                              {storeSlug || 'your-brand'}
+                            </span>
+                          </div>
+                          <span className="hidden rounded-md bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-emerald-500 sm:inline-block">
+                            Live URL
                           </span>
-                        )}
+                        </div>
                       </div>
 
-                      <div className="relative">
+                      {/* WhatsApp / Phone Number */}
+                      <div className="space-y-1.5">
                         <Input
-                          placeholder="accra-kicks"
-                          value={storeSlug}
-                          onChange={(e) => handleCustomSlugChange(e.target.value)}
-                          required
+                          label="WhatsApp / Contact Number"
+                          placeholder="+233 24 123 4567"
+                          value={whatsapp}
+                          onChange={(e) => setWhatsapp(e.target.value)}
+                          icon={<Phone size={16} />}
+                          hint={
+                            whatsapp &&
+                            (whatsapp === user?.phone_e164 || whatsapp === (user as any)?.phone)
+                              ? '✨ Automatically picked from your verified phone'
+                              : 'Used for direct customer chats and instant payout notices.'
+                          }
                         />
                       </div>
 
-                      {/* Live Storefront Link Preview */}
-                      <div className="rounded-xl px-3.5 py-2.5 bg-surface border border-border/70 flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-1.5 truncate">
-                          <span className="text-foreground/50">Store Link:</span>
-                          <span className="font-mono text-foreground/80 font-medium">verndly.com/s/</span>
-                          <span className="font-mono text-secondary font-semibold truncate">
-                            {storeSlug || 'your-brand'}
-                          </span>
+                      {/* Store Description */}
+                      <div className="space-y-1.5">
+                        <Textarea
+                          label="Store Bio / Tagline (Optional)"
+                          placeholder="Tell buyers what you sell and why they should choose your products..."
+                          value={bio}
+                          onChange={(e) => setBio(e.target.value)}
+                          rows={3}
+                        />
+                      </div>
+
+                      {/* Policies & Hours Compact Section */}
+                      <div className="grid grid-cols-1 gap-4 pt-1 sm:grid-cols-2">
+                        <div className="space-y-1">
+                          <label className="text-foreground/70 text-[11px] font-medium uppercase tracking-wider">
+                            Business Hours
+                          </label>
+                          <input
+                            type="text"
+                            value={businessHours}
+                            onChange={(e) => setBusinessHours(e.target.value)}
+                            placeholder="e.g. Mon–Sat: 8am–6pm"
+                            className="border-input-border bg-input-bg text-foreground focus:border-secondary w-full rounded-xl border px-3.5 py-2.5 text-xs outline-none transition-all"
+                          />
                         </div>
-                        <span className="hidden sm:inline-block text-[10px] uppercase tracking-wider text-emerald-500 font-medium bg-emerald-500/10 px-2 py-0.5 rounded-md">
-                          Live URL
-                        </span>
-                      </div>
-                    </div>
 
-                    {/* WhatsApp / Phone Number */}
-                    <div className="space-y-1.5">
-                      <Input
-                        label="WhatsApp / Contact Number"
-                        placeholder="+233 24 123 4567"
-                        value={whatsapp}
-                        onChange={(e) => setWhatsapp(e.target.value)}
-                        icon={<Phone size={16} />}
-                        hint={
-                          whatsapp && (whatsapp === user?.phone_e164 || whatsapp === (user as any)?.phone)
-                            ? '✨ Automatically picked from your verified phone'
-                            : 'Used for direct customer chats and instant payout notices.'
-                        }
-                      />
-                    </div>
-
-                    {/* Store Description */}
-                    <div className="space-y-1.5">
-                      <Textarea
-                        label="Store Bio / Tagline (Optional)"
-                        placeholder="Tell buyers what you sell and why they should choose your products..."
-                        value={bio}
-                        onChange={(e) => setBio(e.target.value)}
-                        rows={3}
-                      />
-                    </div>
-
-                    {/* Policies & Hours Compact Section */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-                      <div className="space-y-1">
-                        <label className="text-[11px] font-medium text-foreground/70 uppercase tracking-wider">
-                          Business Hours
-                        </label>
-                        <input
-                          type="text"
-                          value={businessHours}
-                          onChange={(e) => setBusinessHours(e.target.value)}
-                          placeholder="e.g. Mon–Sat: 8am–6pm"
-                          className="w-full rounded-xl border border-input-border bg-input-bg px-3.5 py-2.5 text-xs text-foreground outline-none focus:border-secondary transition-all"
-                        />
+                        <div className="space-y-1">
+                          <label className="text-foreground/70 text-[11px] font-medium uppercase tracking-wider">
+                            Delivery Note
+                          </label>
+                          <input
+                            type="text"
+                            value={deliveryPolicies}
+                            onChange={(e) => setDeliveryPolicies(e.target.value)}
+                            placeholder="e.g. Dispatched in 24–48 hrs"
+                            className="border-input-border bg-input-bg text-foreground focus:border-secondary w-full rounded-xl border px-3.5 py-2.5 text-xs outline-none transition-all"
+                          />
+                        </div>
                       </div>
 
-                      <div className="space-y-1">
-                        <label className="text-[11px] font-medium text-foreground/70 uppercase tracking-wider">
-                          Delivery Note
-                        </label>
-                        <input
-                          type="text"
-                          value={deliveryPolicies}
-                          onChange={(e) => setDeliveryPolicies(e.target.value)}
-                          placeholder="e.g. Dispatched in 24–48 hrs"
-                          className="w-full rounded-xl border border-input-border bg-input-bg px-3.5 py-2.5 text-xs text-foreground outline-none focus:border-secondary transition-all"
-                        />
+                      {/* Step 1 Actions */}
+                      <div className="pt-3">
+                        <Button
+                          type="submit"
+                          variant="primary"
+                          size="lg"
+                          className="h-12 w-full rounded-xl text-sm font-medium"
+                          isLoading={isSaving}
+                          loadingText="Saving brand identity..."
+                        >
+                          <span>Continue to Location</span>
+                          <ChevronRight className="h-4 w-4 shrink-0" />
+                        </Button>
                       </div>
-                    </div>
-
-                    {/* Step 1 Actions */}
-                    <div className="pt-3">
-                      <Button
-                        type="submit"
-                        variant="primary"
-                        size="lg"
-                        className="w-full h-12 rounded-xl text-sm font-medium"
-                        isLoading={isSaving}
-                        loadingText="Saving brand identity..."
-                      >
-                        <span>Continue to Location</span>
-                        <ChevronRight className="w-4 h-4 shrink-0" />
-                      </Button>
-                    </div>
                     </motion.div>
                   </form>
                 )}
@@ -927,62 +922,62 @@ export default function CreateStorePage() {
                       transition={{ duration: 0.25 }}
                       className="space-y-6"
                     >
-                    <RegionCityPicker
-                      initialRegion={region}
-                      initialCityId={locationId}
-                      onChange={({ region: r, cityId: c }) => {
-                        setRegion(r);
-                        setLocationId(c);
-                      }}
-                      onError={(msg) => toast.error(msg)}
-                    />
-
-                    {/* Specific Neighborhood / Landmark */}
-                    <div className="space-y-1.5">
-                      <Input
-                        label="Neighborhood / Area / Landmark (Optional)"
-                        placeholder="e.g. East Legon, Osu, Adum, Airport Residential"
-                        value={area}
-                        onChange={(e) => setArea(e.target.value)}
-                        hint="Helps nearby buyers easily recognize your base."
+                      <RegionCityPicker
+                        initialRegion={region}
+                        initialCityId={locationId}
+                        onChange={({ region: r, cityId: c }) => {
+                          setRegion(r);
+                          setLocationId(c);
+                        }}
+                        onError={(msg) => toast.error(msg)}
                       />
-                    </div>
 
-                    {/* Service Area */}
-                    <ServiceAreaSelect
-                      value={serviceArea}
-                      onChange={(val) => setServiceArea(val)}
-                    />
+                      {/* Specific Neighborhood / Landmark */}
+                      <div className="space-y-1.5">
+                        <Input
+                          label="Neighborhood / Area / Landmark (Optional)"
+                          placeholder="e.g. East Legon, Osu, Adum, Airport Residential"
+                          value={area}
+                          onChange={(e) => setArea(e.target.value)}
+                          hint="Helps nearby buyers easily recognize your base."
+                        />
+                      </div>
 
-                    {/* Delivery Time */}
-                    <DeliveryTimeSelect
-                      value={deliveryTime}
-                      onChange={(val) => setDeliveryTime(val)}
-                    />
+                      {/* Service Area */}
+                      <ServiceAreaSelect
+                        value={serviceArea}
+                        onChange={(val) => setServiceArea(val)}
+                      />
 
-                    {/* Step 2 Actions */}
-                    <div className="flex items-center gap-3 pt-3">
-                      <Button
-                        type="button"
-                        onClick={() => setCurrentStep(0)}
-                        variant="secondary"
-                        className="flex-1 h-12 rounded-xl text-sm font-medium"
-                      >
-                        <ChevronLeft className="w-4 h-4 shrink-0" />
-                        <span>Back</span>
-                      </Button>
+                      {/* Delivery Time */}
+                      <DeliveryTimeSelect
+                        value={deliveryTime}
+                        onChange={(val) => setDeliveryTime(val)}
+                      />
 
-                      <Button
-                        type="submit"
-                        variant="primary"
-                        className="flex-[2] h-12 rounded-xl text-sm font-medium"
-                        isLoading={isSaving}
-                        loadingText="Saving location..."
-                      >
-                        <span>Continue to Payouts</span>
-                        <ChevronRight className="w-4 h-4 shrink-0" />
-                      </Button>
-                    </div>
+                      {/* Step 2 Actions */}
+                      <div className="flex items-center gap-3 pt-3">
+                        <Button
+                          type="button"
+                          onClick={() => setCurrentStep(0)}
+                          variant="secondary"
+                          className="h-12 flex-1 rounded-xl text-sm font-medium"
+                        >
+                          <ChevronLeft className="h-4 w-4 shrink-0" />
+                          <span>Back</span>
+                        </Button>
+
+                        <Button
+                          type="submit"
+                          variant="primary"
+                          className="h-12 flex-[2] rounded-xl text-sm font-medium"
+                          isLoading={isSaving}
+                          loadingText="Saving location..."
+                        >
+                          <span>Continue to Payouts</span>
+                          <ChevronRight className="h-4 w-4 shrink-0" />
+                        </Button>
+                      </div>
                     </motion.div>
                   </form>
                 )}
@@ -998,198 +993,202 @@ export default function CreateStorePage() {
                       transition={{ duration: 0.25 }}
                       className="space-y-6"
                     >
-                    {/* Accepted Payment Methods */}
-                    <div className="space-y-3">
-                      <label className="text-xs font-medium text-foreground/80 tracking-tight flex items-center justify-between">
-                        <span>Accepted Payment Channels</span>
-                        <span className="text-[11px] text-foreground/40 font-normal">Select all that apply</span>
-                      </label>
+                      {/* Accepted Payment Methods */}
+                      <div className="space-y-3">
+                        <label className="text-foreground/80 flex items-center justify-between text-xs font-medium tracking-tight">
+                          <span>Accepted Payment Channels</span>
+                          <span className="text-foreground/40 text-[11px] font-normal">
+                            Select all that apply
+                          </span>
+                        </label>
 
-                      <div className="grid gap-2.5">
-                        {PAYMENT_METHODS.map((method) => {
-                          const isSelected = paymentMethods.includes(method.id);
-                          return (
-                            <button
-                              key={method.id}
-                              type="button"
-                              onClick={() => toggleMethod(method.id)}
-                              className={`
-                                flex items-center gap-3.5 p-3.5 rounded-2xl border text-left transition-all duration-200 outline-none
-                                ${
+                        <div className="grid gap-2.5">
+                          {PAYMENT_METHODS.map((method) => {
+                            const isSelected = paymentMethods.includes(method.id);
+                            return (
+                              <button
+                                key={method.id}
+                                type="button"
+                                onClick={() => toggleMethod(method.id)}
+                                className={`flex items-center gap-3.5 rounded-2xl border p-3.5 text-left outline-none transition-all duration-200 ${
                                   isSelected
                                     ? 'border-secondary bg-secondary/[0.04] shadow-sm'
                                     : 'border-border bg-surface/40 hover:border-foreground/20 hover:bg-surface'
-                                }
-                              `}
-                            >
-                              <span className="text-2xl">{method.icon}</span>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-foreground">{method.label}</p>
-                                <p className="text-[11px] text-foreground/55 leading-tight mt-0.5">
-                                  {method.desc}
-                                </p>
-                              </div>
-                              <div
-                                className={`w-5 h-5 rounded-lg flex items-center justify-center border transition-all ${
-                                  isSelected
-                                    ? 'bg-secondary border-secondary text-white'
-                                    : 'border-input-border bg-input-bg'
-                                }`}
+                                } `}
                               >
-                                {isSelected && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
-                              </div>
-                            </button>
-                          );
-                        })}
+                                <span className="text-2xl">{method.icon}</span>
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-foreground text-sm font-medium">
+                                    {method.label}
+                                  </p>
+                                  <p className="text-foreground/55 mt-0.5 text-[11px] leading-tight">
+                                    {method.desc}
+                                  </p>
+                                </div>
+                                <div
+                                  className={`flex h-5 w-5 items-center justify-center rounded-lg border transition-all ${
+                                    isSelected
+                                      ? 'bg-secondary border-secondary text-white'
+                                      : 'border-input-border bg-input-bg'
+                                  }`}
+                                >
+                                  {isSelected && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
 
-                    {/* MoMo Provider Details (Cardless Section) */}
-                    {paymentMethods.includes('mobile_money') && (
-                      <div className="py-4 border-t border-b border-border/80 space-y-4">
-                        <div className="flex items-center justify-between">
-                          <p className="text-[11px] font-semibold uppercase tracking-wider text-secondary flex items-center gap-1.5">
-                            <span>📱 Mobile Money Settlement</span>
+                      {/* MoMo Provider Details (Cardless Section) */}
+                      {paymentMethods.includes('mobile_money') && (
+                        <div className="border-border/80 space-y-4 border-b border-t py-4">
+                          <div className="flex items-center justify-between">
+                            <p className="text-secondary flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider">
+                              <span>📱 Mobile Money Settlement</span>
+                            </p>
+                            <span className="rounded-md bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-500">
+                              Zero fees on payout
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-2">
+                            <div>
+                              <Select
+                                label="MoMo Provider"
+                                value={momoProvider}
+                                onChange={setMomoProvider}
+                                options={momoOptions}
+                              />
+                            </div>
+
+                            <div>
+                              <Input
+                                label="MoMo Wallet Number"
+                                type="tel"
+                                value={momoNumber}
+                                onChange={(e) => setMomoNumber(e.target.value)}
+                                placeholder="e.g. 0244123456"
+                              />
+                            </div>
+                          </div>
+
+                          {whatsapp && momoNumber === whatsapp && (
+                            <p className="text-foreground/50 text-[11px]">
+                              ✨ Pre-filled with your contact number for convenience.
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Bank Transfer Details (Cardless Section) */}
+                      {paymentMethods.includes('bank_transfer') && (
+                        <div className="space-y-4 py-4">
+                          <p className="text-secondary flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider">
+                            <span>🏦 Commercial Bank Account</span>
                           </p>
-                          <span className="text-[10px] text-emerald-500 font-medium bg-emerald-500/10 px-2 py-0.5 rounded-md">
-                            Zero fees on payout
-                          </span>
-                        </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
-                          <div>
-                            <Select
-                              label="MoMo Provider"
-                              value={momoProvider}
-                              onChange={setMomoProvider}
-                              options={momoOptions}
-                            />
-                          </div>
+                          <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-2">
+                            <div>
+                              <Select
+                                label="Bank Name"
+                                placeholder="Select your bank"
+                                value={bankCode}
+                                onChange={(val) => {
+                                  setBankCode(val);
+                                  setBankName(GHANA_BANKS.find((b) => b.code === val)?.name || '');
+                                }}
+                                options={bankOptions}
+                                searchable
+                              />
+                            </div>
 
-                          <div>
-                            <Input
-                              label="MoMo Wallet Number"
-                              type="tel"
-                              value={momoNumber}
-                              onChange={(e) => setMomoNumber(e.target.value)}
-                              placeholder="e.g. 0244123456"
-                            />
-                          </div>
-                        </div>
-
-                        {whatsapp && momoNumber === whatsapp && (
-                          <p className="text-[11px] text-foreground/50">
-                            ✨ Pre-filled with your contact number for convenience.
-                          </p>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Bank Transfer Details (Cardless Section) */}
-                    {paymentMethods.includes('bank_transfer') && (
-                      <div className="py-4 space-y-4">
-                        <p className="text-[11px] font-semibold uppercase tracking-wider text-secondary flex items-center gap-1.5">
-                          <span>🏦 Commercial Bank Account</span>
-                        </p>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
-                          <div>
-                            <Select
-                              label="Bank Name"
-                              placeholder="Select your bank"
-                              value={bankCode}
-                              onChange={(val) => {
-                                setBankCode(val);
-                                setBankName(GHANA_BANKS.find((b) => b.code === val)?.name || '');
-                              }}
-                              options={bankOptions}
-                              searchable
-                            />
-                          </div>
-
-                          <div>
-                            <Input
-                              label="Account Number"
-                              type="text"
-                              value={bankAccountNumber}
-                              onChange={(e) => setBankAccountNumber(e.target.value)}
-                              placeholder="e.g. 1029384756"
-                            />
+                            <div>
+                              <Input
+                                label="Account Number"
+                                type="text"
+                                value={bankAccountNumber}
+                                onChange={(e) => setBankAccountNumber(e.target.value)}
+                                placeholder="e.g. 1029384756"
+                              />
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {/* Payment Timing */}
-                    <div className="space-y-2.5">
-                      <label className="text-xs font-medium text-foreground/80 tracking-tight">
-                        Customer Payment Timing
-                      </label>
-                      <div className="grid gap-2">
-                        {PAYMENT_TIMINGS.map((timing) => {
-                          const isSelected = paymentTiming === timing.id;
-                          const Icon = timing.icon;
-                          return (
-                            <button
-                              key={timing.id}
-                              type="button"
-                              onClick={() => setPaymentTiming(timing.id)}
-                              className={`
-                                flex items-center gap-3.5 p-3 rounded-2xl border text-left transition-all outline-none
-                                ${
+                      {/* Payment Timing */}
+                      <div className="space-y-2.5">
+                        <label className="text-foreground/80 text-xs font-medium tracking-tight">
+                          Customer Payment Timing
+                        </label>
+                        <div className="grid gap-2">
+                          {PAYMENT_TIMINGS.map((timing) => {
+                            const isSelected = paymentTiming === timing.id;
+                            const Icon = timing.icon;
+                            return (
+                              <button
+                                key={timing.id}
+                                type="button"
+                                onClick={() => setPaymentTiming(timing.id)}
+                                className={`flex items-center gap-3.5 rounded-2xl border p-3 text-left outline-none transition-all ${
                                   isSelected
                                     ? 'border-secondary bg-secondary/[0.04]'
                                     : 'border-border bg-surface/30 hover:border-foreground/20 hover:bg-surface'
-                                }
-                              `}
-                            >
-                              <div
-                                className={`p-2 rounded-xl ${
-                                  isSelected ? 'bg-secondary/15 text-secondary' : 'bg-surface text-foreground/50'
-                                }`}
+                                } `}
                               >
-                                <Icon className="w-4 h-4" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs font-medium text-foreground">{timing.label}</p>
-                                <p className="text-[10px] text-foreground/50">{timing.desc}</p>
-                              </div>
-                              <div
-                                className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                                  isSelected ? 'border-secondary' : 'border-input-border'
-                                }`}
-                              >
-                                {isSelected && <div className="w-2 h-2 rounded-full bg-secondary" />}
-                              </div>
-                            </button>
-                          );
-                        })}
+                                <div
+                                  className={`rounded-xl p-2 ${
+                                    isSelected
+                                      ? 'bg-secondary/15 text-secondary'
+                                      : 'bg-surface text-foreground/50'
+                                  }`}
+                                >
+                                  <Icon className="h-4 w-4" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-foreground text-xs font-medium">
+                                    {timing.label}
+                                  </p>
+                                  <p className="text-foreground/50 text-[10px]">{timing.desc}</p>
+                                </div>
+                                <div
+                                  className={`flex h-4 w-4 items-center justify-center rounded-full border ${
+                                    isSelected ? 'border-secondary' : 'border-input-border'
+                                  }`}
+                                >
+                                  {isSelected && (
+                                    <div className="bg-secondary h-2 w-2 rounded-full" />
+                                  )}
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Step 3 Actions */}
-                    <div className="flex items-center gap-3 pt-3">
-                      <Button
-                        type="button"
-                        onClick={() => setCurrentStep(1)}
-                        variant="secondary"
-                        className="flex-1 h-12 rounded-xl text-sm font-medium"
-                      >
-                        <ChevronLeft className="w-4 h-4 shrink-0" />
-                        <span>Back</span>
-                      </Button>
+                      {/* Step 3 Actions */}
+                      <div className="flex items-center gap-3 pt-3">
+                        <Button
+                          type="button"
+                          onClick={() => setCurrentStep(1)}
+                          variant="secondary"
+                          className="h-12 flex-1 rounded-xl text-sm font-medium"
+                        >
+                          <ChevronLeft className="h-4 w-4 shrink-0" />
+                          <span>Back</span>
+                        </Button>
 
-                      <Button
-                        type="submit"
-                        variant="primary"
-                        className="flex-[2] h-12 rounded-xl text-sm font-medium bg-secondary hover:bg-secondary/90 text-white shadow-lg shadow-secondary/20"
-                        isLoading={isSaving}
-                        loadingText="Launching store..."
-                      >
-                        <Sparkles className="w-4 h-4 shrink-0" />
-                        <span>Launch Store & Sell</span>
-                      </Button>
-                    </div>
+                        <Button
+                          type="submit"
+                          variant="primary"
+                          className="bg-secondary hover:bg-secondary/90 shadow-secondary/20 h-12 flex-[2] rounded-xl text-sm font-medium text-white shadow-lg"
+                          isLoading={isSaving}
+                          loadingText="Launching store..."
+                        >
+                          <Sparkles className="h-4 w-4 shrink-0" />
+                          <span>Launch Store & Sell</span>
+                        </Button>
+                      </div>
                     </motion.div>
                   </form>
                 )}

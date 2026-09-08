@@ -84,11 +84,13 @@ export async function launchPaystackInline(
   try {
     const safeEmail = sanitizeEmail(options.email);
 
+    const parsedAmount = Number(options.amount);
+    const validAmountInPesewas =
+      !isNaN(parsedAmount) && parsedAmount > 0 ? Math.round(parsedAmount * 100) : undefined;
+
     const handlerConfig: any = {
       key: publicKey,
       email: safeEmail,
-      amount: Math.round(Number(options.amount || 0) * 100),
-      ref: options.reference,
       currency: options.currency || 'GHS',
       callback: (res: any) => {
         options.onSuccess({
@@ -103,6 +105,14 @@ export async function launchPaystackInline(
         }
       },
     };
+
+    if (validAmountInPesewas !== undefined) {
+      handlerConfig.amount = validAmountInPesewas;
+    }
+
+    if (options.reference) {
+      handlerConfig.ref = options.reference;
+    }
 
     if (options.accessCode) {
       handlerConfig.access_code = options.accessCode;

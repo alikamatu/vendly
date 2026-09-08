@@ -26,6 +26,8 @@ import { addressApi, type Address } from '@/lib/api/address';
 import { launchPaystackInline } from '@/lib/paystack';
 import Spinner from '@/components/ui/Spinner';
 import Select from '@/components/ui/Select';
+import PaymentProcessingModal from '@/components/orders/PaymentProcessingModal';
+import { sanitizePhoneNumber, validatePhoneNumber } from '@/lib/utils/phone';
 import { toast } from 'sonner';
 
 const MotionDiv = motion.div as any;
@@ -84,6 +86,15 @@ export default function QuickCheckoutModal({
   const [error, setError] = useState<string | null>(null);
   const [orderSuccess, setOrderSuccess] = useState<{ id: string; reference?: string } | null>(null);
 
+  const [paymentModalState, setPaymentModalState] = useState<
+    'verifying' | 'success' | 'failed' | null
+  >(null);
+  const [paymentOrderId, setPaymentOrderId] = useState<string>('');
+  const [paymentOrderNumber, setPaymentOrderNumber] = useState<string>('');
+  const [paymentOrderTotal, setPaymentOrderTotal] = useState<number | string>('');
+  const [paymentReference, setPaymentReference] = useState<string>('');
+  const [paymentErrorMessage, setPaymentErrorMessage] = useState<string>('');
+
   // Unit price determination
   const unitPrice = useMemo(() => {
     if (selectedVariant?.price != null && Number(selectedVariant.price) > 0) {
@@ -95,31 +106,33 @@ export default function QuickCheckoutModal({
   const subtotal = unitPrice * quantity;
   const totalAmount = subtotal;
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   // Initialize or update customer details when auth changes
   useEffect(() => {
     if (user) {
       if (!customerName && user.full_name) setCustomerName(user.full_name);
-      if (!customerPhone && user.phone_e164) setCustomerPhone(user.phone_e164);
+      if (!customerPhone && user.phone_e164) setCustomerPhone(sanitizePhoneNumber(user.phone_e164));
     }
   }, [user, customerName, customerPhone]);
 
   // Load user saved addresses
   useEffect(() => {
     if (!token) return;
-    addressApi.getAddresses(token)
+    addressApi
+      .getAddresses(token)
       .then((addresses) => {
         setSavedAddresses(addresses);
         if (addresses.length > 0) {
           const defaultAddr = addresses.find((a) => a.is_default) || addresses[0];
           setSelectedAddressId(defaultAddr.id);
           setCustomerName(defaultAddr.name);
-          setCustomerPhone(defaultAddr.phone);
+          setCustomerPhone(sanitizePhoneNumber(defaultAddr.phone));
           setDeliveryLocation(
-            `${defaultAddr.street}, ${defaultAddr.city}${defaultAddr.region ? `, ${defaultAddr.region}` : ''}`
+            `${defaultAddr.street}, ${defaultAddr.city}${defaultAddr.region ? `, ${defaultAddr.region}` : ''}`,
           );
         }
       })
-      .catch(() => { });
+      .catch(() => {});
   }, [token]);
 
   const handleSelectSavedAddress = (addrId: string) => {
@@ -130,10 +143,8 @@ export default function QuickCheckoutModal({
       const addr = savedAddresses.find((a) => a.id === addrId);
       if (addr) {
         setCustomerName(addr.name);
-        setCustomerPhone(addr.phone);
-        setDeliveryLocation(
-          `${addr.street}, ${addr.city}${addr.region ? `, ${addr.region}` : ''}`
-        );
+        setCustomerPhone(sanitizePhoneNumber(addr.phone));
+        setDeliveryLocation(`${addr.street}, ${addr.city}${addr.region ? `, ${addr.region}` : ''}`);
       }
     }
   };
@@ -146,6 +157,7 @@ export default function QuickCheckoutModal({
       setOrderSuccess(null);
     }
   }, [isOpen]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Handle ESC key
   useEffect(() => {
@@ -173,8 +185,9 @@ export default function QuickCheckoutModal({
       setError('Please provide your full name.');
       return;
     }
-    if (!customerPhone.trim() || customerPhone.trim().length < 9) {
-      setError('Please provide a valid phone number for delivery updates.');
+    const phoneErr = validatePhoneNumber(customerPhone);
+    if (phoneErr) {
+      setError(phoneErr);
       return;
     }
     if (deliveryMethod === 'DELIVERY' && !deliveryLocation.trim()) {
@@ -190,7 +203,7 @@ export default function QuickCheckoutModal({
         customerPhone: customerPhone.trim(),
         deliveryMethod,
         deliveryLocation: deliveryMethod === 'PICKUP' ? 'Store Pickup' : deliveryLocation.trim(),
-        deliveryNotes: deliveryNotes.trim() || undefined,
+        deliveryNotes: deliveryNotes.trim() ? deliveryNotes.trim() : undefined,
         paymentMethod: paymentMethod === 'PAYSTACK' ? 'PAYSTACK' : 'CASH_ON_DELIVERY',
       };
 
@@ -206,34 +219,41 @@ export default function QuickCheckoutModal({
         token,
         product.seller.store_link,
         itemsPayload,
-        orderPayload
+        orderPayload,
       );
+
+      const orderId = result.orderId || result.id;
+      const orderTotal = Number(result.total ?? result.total_amount ?? totalAmount);
+      const reference = result.reference;
 
       // If online payment (Paystack)
       if (paymentMethod === 'PAYSTACK' && (result.authorization_url || result.access_code)) {
+        setPaymentOrderId(orderId);
+        setPaymentOrderNumber(orderId ? orderId.slice(-8).toUpperCase() : '');
+        setPaymentOrderTotal(orderTotal);
+        setPaymentReference(reference || '');
+
         const quickEmail =
-          (user?.email && user.email.includes('@'))
-            ? user.email
-            : 'customer@verndly.com';
+          user?.email && user.email.includes('@') ? user.email : 'customer@verndly.com';
 
         await launchPaystackInline({
           email: quickEmail,
-          amount: Number(result.total_amount),
-          reference: result.reference,
+          amount: orderTotal,
+          reference: reference,
           accessCode: result.access_code,
           authorizationUrl: result.authorization_url,
           onSuccess: async (payRes) => {
+            setPaymentModalState('verifying');
             try {
-              await orderApi.verifyOrderPayment(token, payRes.reference, result.id);
-              toast.success('Payment verified successfully!');
-              router.push(`/orders/${result.id}`);
-            } catch {
-              // Still redirect to order page to see status
-              router.push(`/orders/${result.id}`);
+              await orderApi.verifyOrderPayment(token, payRes.reference, orderId);
+              setPaymentModalState('success');
+            } catch (verifyErr: any) {
+              setPaymentErrorMessage(verifyErr.message || 'Payment verification failed');
+              setPaymentModalState('failed');
             }
           },
           onClose: () => {
-            router.push(`/orders/${result.id}`);
+            router.push(`/orders/${orderId}`);
           },
         });
         return;
@@ -241,9 +261,9 @@ export default function QuickCheckoutModal({
 
       // Cash / Instant Confirmation
       toast.success('Order placed successfully!');
-      setOrderSuccess({ id: result.id, reference: result.reference });
+      setOrderSuccess({ id: orderId, reference });
       setTimeout(() => {
-        router.push(`/orders/${result.id}`);
+        router.push(`/orders/${orderId}`);
       }, 1200);
     } catch (err: any) {
       setError(err.message || 'Failed to place order. Please try again.');
@@ -253,20 +273,18 @@ export default function QuickCheckoutModal({
   };
 
   const imageThumbnail =
-    selectedVariant?.image_url ||
-    product.image_urls?.[0] ||
-    '/placeholder-product.png';
+    selectedVariant?.image_url || product.image_urls?.[0] || '/placeholder-product.png';
 
   const variantSummary = selectedVariantAttrs
     ? Object.entries(selectedVariantAttrs)
-      .map(([k, v]) => `${k}: ${v}`)
-      .join(' · ')
+        .map(([k, v]) => `${k}: ${v}`)
+        .join(' · ')
     : selectedVariant?.title;
 
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div className="fixed inset-0 z-[100] flex items-end justify-center p-0 sm:items-center sm:p-4">
           {/* Strictly solid backdrop overlay (borderless, shadowless, NO blur) */}
           <MotionDiv
             initial={{ opacity: 0 }}
@@ -287,24 +305,24 @@ export default function QuickCheckoutModal({
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}
             transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-            className="relative z-10 w-full sm:max-w-lg bg-background rounded-t-[2.5rem] sm:rounded-[2.5rem] border-0 shadow-none max-h-[92vh] flex flex-col overflow-hidden text-foreground"
+            className="bg-background text-foreground relative z-10 flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-[2.5rem] border-0 shadow-none sm:max-w-lg sm:rounded-[2.5rem]"
           >
             {/* Mobile drag handle */}
-            <div className="pt-3 pb-1 sm:hidden flex justify-center">
-              <div className="w-10 h-1 rounded-full bg-muted/40" />
+            <div className="flex justify-center pb-1 pt-3 sm:hidden">
+              <div className="bg-muted/40 h-1 w-10 rounded-full" />
             </div>
 
             {/* Header */}
-            <div className="flex items-center justify-between px-6 pt-3 sm:pt-6 pb-3 border-0">
+            <div className="flex items-center justify-between border-0 px-6 pb-3 pt-3 sm:pt-6">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-full bg-foreground/5 flex items-center justify-center text-foreground">
-                  <ShoppingBag className="w-3.5 h-3.5" />
+                <div className="bg-foreground/5 text-foreground flex h-7 w-7 items-center justify-center rounded-full">
+                  <ShoppingBag className="h-3.5 w-3.5" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-semibold uppercase tracking-wider text-foreground">
+                  <h2 className="text-foreground text-sm font-semibold uppercase tracking-wider">
                     Quick Checkout
                   </h2>
-                  <p className="text-[11px] text-muted">Fast 1-step direct purchase</p>
+                  <p className="text-muted text-[11px]">Fast 1-step direct purchase</p>
                 </div>
               </div>
               <button
@@ -312,91 +330,90 @@ export default function QuickCheckoutModal({
                 onClick={onClose}
                 disabled={isSubmitting}
                 aria-label="Close"
-                className="p-2 rounded-full bg-surface hover:bg-surface/80 text-foreground border-0 shadow-none transition-colors"
+                className="bg-surface hover:bg-surface/80 text-foreground rounded-full border-0 p-2 shadow-none transition-colors"
               >
-                <X className="w-4 h-4" />
+                <X className="h-4 w-4" />
               </button>
             </div>
 
             {/* Scrollable Content */}
-            <div className="px-6 py-2 overflow-y-auto space-y-5">
+            <div className="space-y-5 overflow-y-auto px-6 py-2">
               {/* Product Snippet */}
-              <div className="bg-surface rounded-2xl p-4 flex items-center gap-3.5 border-0 shadow-none">
+              <div className="bg-surface flex items-center gap-3.5 rounded-2xl border-0 p-4 shadow-none">
                 <img
                   src={imageThumbnail}
                   alt={product.title}
-                  className="w-16 h-16 rounded-xl object-cover bg-background shrink-0 border-0"
+                  className="bg-background h-16 w-16 shrink-0 rounded-xl border-0 object-cover"
                 />
                 <div className="min-w-0 flex-1 space-y-1">
-                  <h3 className="text-xs font-medium text-foreground line-clamp-2 uppercase tracking-tight">
+                  <h3 className="text-foreground line-clamp-2 text-xs font-medium uppercase tracking-tight">
                     {product.title}
                   </h3>
                   {variantSummary && (
-                    <p className="text-[10px] text-muted font-normal uppercase tracking-wider truncate">
+                    <p className="text-muted truncate text-[10px] font-normal uppercase tracking-wider">
                       {variantSummary}
                     </p>
                   )}
                   <div className="flex items-center justify-between pt-0.5">
-                    <span className="text-xs font-semibold text-primary">
+                    <span className="text-primary text-xs font-semibold">
                       GH₵ {unitPrice.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                     </span>
-                    <span className="text-[10px] text-muted">@{product.seller.store_link}</span>
+                    <span className="text-muted text-[10px]">@{product.seller.store_link}</span>
                   </div>
                 </div>
               </div>
 
               {/* Quantity Selector */}
-              <div className="bg-surface rounded-2xl p-3.5 flex items-center justify-between border-0 shadow-none">
-                <span className="text-xs font-medium text-foreground">Quantity</span>
+              <div className="bg-surface flex items-center justify-between rounded-2xl border-0 p-3.5 shadow-none">
+                <span className="text-foreground text-xs font-medium">Quantity</span>
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
                     onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                     disabled={quantity <= 1 || isSubmitting}
-                    className="w-8 h-8 rounded-xl bg-background hover:bg-background/80 text-foreground flex items-center justify-center disabled:opacity-40 border-0 shadow-none transition-colors"
+                    className="bg-background hover:bg-background/80 text-foreground flex h-8 w-8 items-center justify-center rounded-xl border-0 shadow-none transition-colors disabled:opacity-40"
                   >
-                    <Minus className="w-3.5 h-3.5" />
+                    <Minus className="h-3.5 w-3.5" />
                   </button>
-                  <span className="font-semibold text-xs min-w-[20px] text-center">
-                    {quantity}
-                  </span>
+                  <span className="min-w-[20px] text-center text-xs font-semibold">{quantity}</span>
                   <button
                     type="button"
                     onClick={() => setQuantity((q) => q + 1)}
                     disabled={isSubmitting}
-                    className="w-8 h-8 rounded-xl bg-background hover:bg-background/80 text-foreground flex items-center justify-center border-0 shadow-none transition-colors"
+                    className="bg-background hover:bg-background/80 text-foreground flex h-8 w-8 items-center justify-center rounded-xl border-0 shadow-none transition-colors"
                   >
-                    <Plus className="w-3.5 h-3.5" />
+                    <Plus className="h-3.5 w-3.5" />
                   </button>
                 </div>
               </div>
 
               {/* Error Message */}
               {error && (
-                <div className="bg-red-500/10 text-red-600 dark:text-red-400 p-3 rounded-2xl text-xs flex items-center gap-2 border-0 shadow-none">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
+                <div className="flex items-center gap-2 rounded-2xl border-0 bg-red-500/10 p-3 text-xs text-red-600 shadow-none dark:text-red-400">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
                   <span>{error}</span>
                 </div>
               )}
 
               {/* Unauthenticated Prompt */}
               {!isAuthenticated && (
-                <div className="bg-surface rounded-2xl p-4 space-y-3 border-0 shadow-none">
-                  <div className="flex items-center gap-2 text-foreground font-medium text-xs">
-                    <Lock className="w-3.5 h-3.5 text-primary" />
+                <div className="bg-surface space-y-3 rounded-2xl border-0 p-4 shadow-none">
+                  <div className="text-foreground flex items-center gap-2 text-xs font-medium">
+                    <Lock className="text-primary h-3.5 w-3.5" />
                     <span>Sign in for 1-click checkout</span>
                   </div>
-                  <p className="text-[11px] text-muted leading-relaxed">
-                    Sign in to track real-time delivery status, view instant digital receipts, and protect your purchase.
+                  <p className="text-muted text-[11px] leading-relaxed">
+                    Sign in to track real-time delivery status, view instant digital receipts, and
+                    protect your purchase.
                   </p>
                   <button
                     type="button"
                     onClick={() => {
                       router.push(
-                        `/login?redirect=${encodeURIComponent(`/product/${product.id}?buyNow=1`)}`
+                        `/login?redirect=${encodeURIComponent(`/product/${product.id}?buyNow=1`)}`,
                       );
                     }}
-                    className="w-full py-2.5 rounded-xl bg-foreground text-background text-xs font-semibold uppercase tracking-wider border-0 shadow-none hover:opacity-90 transition-opacity"
+                    className="bg-foreground text-background w-full rounded-xl border-0 py-2.5 text-xs font-semibold uppercase tracking-wider shadow-none transition-opacity hover:opacity-90"
                   >
                     Sign In to Continue
                   </button>
@@ -404,13 +421,13 @@ export default function QuickCheckoutModal({
               )}
 
               {/* Customer Contact Details */}
-              <div className="bg-surface rounded-2xl p-4 space-y-3 border-0 shadow-none">
-                <h4 className="text-[11px] font-semibold uppercase tracking-wider text-muted">
+              <div className="bg-surface space-y-3 rounded-2xl border-0 p-4 shadow-none">
+                <h4 className="text-muted text-[11px] font-semibold uppercase tracking-wider">
                   Recipient Information
                 </h4>
                 <div className="space-y-2.5">
                   <div>
-                    <label className="block text-[10px] font-medium text-muted uppercase tracking-wider mb-1">
+                    <label className="text-muted mb-1 block text-[10px] font-medium uppercase tracking-wider">
                       Full Name
                     </label>
                     <input
@@ -419,28 +436,44 @@ export default function QuickCheckoutModal({
                       onChange={(e) => setCustomerName(e.target.value)}
                       placeholder="e.g. Ama Mensah"
                       disabled={isSubmitting}
-                      className="w-full h-10 px-3 rounded-xl bg-background text-foreground text-xs placeholder:text-muted/60 border-0 shadow-none focus:outline-none focus:ring-1 focus:ring-primary/30"
+                      className="bg-background text-foreground placeholder:text-muted/60 focus:ring-primary/30 h-10 w-full rounded-xl border-0 px-3 text-xs shadow-none focus:outline-none focus:ring-1"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-medium text-muted uppercase tracking-wider mb-1">
-                      Phone Number (for delivery updates)
-                    </label>
+                    <div className="mb-1 flex items-center justify-between">
+                      <label className="text-muted block text-[10px] font-medium uppercase tracking-wider">
+                        Phone Number (Mobile Money / SMS)
+                      </label>
+                      <span
+                        className={`font-mono text-[10px] font-medium tracking-wide ${
+                          customerPhone.length === 10
+                            ? 'text-emerald-600 dark:text-emerald-400'
+                            : 'text-muted'
+                        }`}
+                      >
+                        {customerPhone.length}/10 digits
+                      </span>
+                    </div>
                     <input
                       type="tel"
+                      inputMode="numeric"
+                      maxLength={10}
                       value={customerPhone}
-                      onChange={(e) => setCustomerPhone(e.target.value)}
+                      onChange={(e) => setCustomerPhone(sanitizePhoneNumber(e.target.value))}
                       placeholder="e.g. 0244123456"
                       disabled={isSubmitting}
-                      className="w-full h-10 px-3 rounded-xl bg-background text-foreground text-xs placeholder:text-muted/60 border-0 shadow-none focus:outline-none focus:ring-1 focus:ring-primary/30"
+                      className="bg-background text-foreground placeholder:text-muted/60 focus:ring-primary/30 h-10 w-full rounded-xl border-0 px-3 text-xs shadow-none focus:outline-none focus:ring-1"
                     />
+                    <p className="text-muted/70 mt-1 text-[10px]">
+                      Must be strictly 10 digits for rider contact &amp; MoMo SMS
+                    </p>
                   </div>
                 </div>
               </div>
 
               {/* Delivery Method */}
-              <div className="bg-surface rounded-2xl p-4 space-y-3 border-0 shadow-none">
-                <h4 className="text-[11px] font-semibold uppercase tracking-wider text-muted">
+              <div className="bg-surface space-y-3 rounded-2xl border-0 p-4 shadow-none">
+                <h4 className="text-muted text-[11px] font-semibold uppercase tracking-wider">
                   Delivery Method
                 </h4>
                 <div className="grid grid-cols-2 gap-2">
@@ -448,13 +481,14 @@ export default function QuickCheckoutModal({
                     type="button"
                     onClick={() => setDeliveryMethod('DELIVERY')}
                     disabled={isSubmitting}
-                    className={`p-3 rounded-xl text-left border-0 shadow-none transition-colors ${deliveryMethod === 'DELIVERY'
+                    className={`rounded-xl border-0 p-3 text-left shadow-none transition-colors ${
+                      deliveryMethod === 'DELIVERY'
                         ? 'bg-foreground text-background font-medium'
                         : 'bg-background text-muted hover:text-foreground'
-                      }`}
+                    }`}
                   >
-                    <div className="flex items-center gap-2 mb-1">
-                      <Truck className="w-3.5 h-3.5" />
+                    <div className="mb-1 flex items-center gap-2">
+                      <Truck className="h-3.5 w-3.5" />
                       <span className="text-xs">Doorstep</span>
                     </div>
                     <p className="text-[10px] opacity-75">Dispatch to address</p>
@@ -464,13 +498,14 @@ export default function QuickCheckoutModal({
                     type="button"
                     onClick={() => setDeliveryMethod('PICKUP')}
                     disabled={isSubmitting}
-                    className={`p-3 rounded-xl text-left border-0 shadow-none transition-colors ${deliveryMethod === 'PICKUP'
+                    className={`rounded-xl border-0 p-3 text-left shadow-none transition-colors ${
+                      deliveryMethod === 'PICKUP'
                         ? 'bg-foreground text-background font-medium'
                         : 'bg-background text-muted hover:text-foreground'
-                      }`}
+                    }`}
                   >
-                    <div className="flex items-center gap-2 mb-1">
-                      <Store className="w-3.5 h-3.5" />
+                    <div className="mb-1 flex items-center gap-2">
+                      <Store className="h-3.5 w-3.5" />
                       <span className="text-xs">Pickup</span>
                     </div>
                     <p className="text-[10px] opacity-75">Collect at store</p>
@@ -496,7 +531,7 @@ export default function QuickCheckoutModal({
                     )}
 
                     <div>
-                      <label className="block text-[10px] font-medium text-muted uppercase tracking-wider mb-1">
+                      <label className="text-muted mb-1 block text-[10px] font-medium uppercase tracking-wider">
                         Delivery Address / Landmark
                       </label>
                       <input
@@ -505,12 +540,12 @@ export default function QuickCheckoutModal({
                         onChange={(e) => setDeliveryLocation(e.target.value)}
                         placeholder="e.g. Ring Road Central, near Danquah Circle, Accra"
                         disabled={isSubmitting}
-                        className="w-full h-10 px-3 rounded-xl bg-background text-foreground text-xs placeholder:text-muted/60 border-0 shadow-none focus:outline-none focus:ring-1 focus:ring-primary/30"
+                        className="bg-background text-foreground placeholder:text-muted/60 focus:ring-primary/30 h-10 w-full rounded-xl border-0 px-3 text-xs shadow-none focus:outline-none focus:ring-1"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-medium text-muted uppercase tracking-wider mb-1">
+                      <label className="text-muted mb-1 block text-[10px] font-medium uppercase tracking-wider">
                         Delivery Instructions (Optional)
                       </label>
                       <input
@@ -519,7 +554,7 @@ export default function QuickCheckoutModal({
                         onChange={(e) => setDeliveryNotes(e.target.value)}
                         placeholder="e.g. Call before arrival, leave with security"
                         disabled={isSubmitting}
-                        className="w-full h-10 px-3 rounded-xl bg-background text-foreground text-xs placeholder:text-muted/60 border-0 shadow-none focus:outline-none focus:ring-1 focus:ring-primary/30"
+                        className="bg-background text-foreground placeholder:text-muted/60 focus:ring-primary/30 h-10 w-full rounded-xl border-0 px-3 text-xs shadow-none focus:outline-none focus:ring-1"
                       />
                     </div>
                   </div>
@@ -527,8 +562,8 @@ export default function QuickCheckoutModal({
               </div>
 
               {/* Payment Method */}
-              <div className="bg-surface rounded-2xl p-4 space-y-3 border-0 shadow-none">
-                <h4 className="text-[11px] font-semibold uppercase tracking-wider text-muted">
+              <div className="bg-surface space-y-3 rounded-2xl border-0 p-4 shadow-none">
+                <h4 className="text-muted text-[11px] font-semibold uppercase tracking-wider">
                   Payment Method
                 </h4>
                 <div className="grid grid-cols-2 gap-2">
@@ -536,13 +571,14 @@ export default function QuickCheckoutModal({
                     type="button"
                     onClick={() => setPaymentMethod('PAYSTACK')}
                     disabled={isSubmitting}
-                    className={`p-3 rounded-xl text-left border-0 shadow-none transition-colors ${paymentMethod === 'PAYSTACK'
+                    className={`rounded-xl border-0 p-3 text-left shadow-none transition-colors ${
+                      paymentMethod === 'PAYSTACK'
                         ? 'bg-foreground text-background font-medium'
                         : 'bg-background text-muted hover:text-foreground'
-                      }`}
+                    }`}
                   >
-                    <div className="flex items-center gap-2 mb-1">
-                      <CreditCard className="w-3.5 h-3.5" />
+                    <div className="mb-1 flex items-center gap-2">
+                      <CreditCard className="h-3.5 w-3.5" />
                       <span className="text-xs">Paystack</span>
                     </div>
                     <p className="text-[10px] opacity-75">MoMo &amp; Card</p>
@@ -552,13 +588,14 @@ export default function QuickCheckoutModal({
                     type="button"
                     onClick={() => setPaymentMethod('CASH')}
                     disabled={isSubmitting}
-                    className={`p-3 rounded-xl text-left border-0 shadow-none transition-colors ${paymentMethod === 'CASH'
+                    className={`rounded-xl border-0 p-3 text-left shadow-none transition-colors ${
+                      paymentMethod === 'CASH'
                         ? 'bg-foreground text-background font-medium'
                         : 'bg-background text-muted hover:text-foreground'
-                      }`}
+                    }`}
                   >
-                    <div className="flex items-center gap-2 mb-1">
-                      <Banknote className="w-3.5 h-3.5" />
+                    <div className="mb-1 flex items-center gap-2">
+                      <Banknote className="h-3.5 w-3.5" />
                       <span className="text-xs">Cash on Delivery</span>
                     </div>
                     <p className="text-[10px] opacity-75">Pay on receipt</p>
@@ -567,18 +604,18 @@ export default function QuickCheckoutModal({
               </div>
 
               {/* Breakdown */}
-              <div className="bg-surface rounded-2xl p-4 space-y-2.5 border-0 shadow-none text-xs">
-                <div className="flex justify-between text-muted">
+              <div className="bg-surface space-y-2.5 rounded-2xl border-0 p-4 text-xs shadow-none">
+                <div className="text-muted flex justify-between">
                   <span>Items Subtotal</span>
                   <span className="text-foreground font-medium">
                     GH₵ {subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
-                <div className="flex justify-between text-muted">
+                <div className="text-muted flex justify-between">
                   <span>Delivery &amp; Logistics</span>
-                  <span className="text-emerald-600 font-medium">Free / Included</span>
+                  <span className="font-medium text-emerald-600">Free / Included</span>
                 </div>
-                <div className="pt-2 border-t border-border/20 flex justify-between items-center text-sm font-semibold text-foreground">
+                <div className="border-border/20 text-foreground flex items-center justify-between border-t pt-2 text-sm font-semibold">
                   <span>Total to Pay</span>
                   <span className="text-base font-bold">
                     GH₵ {totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
@@ -588,12 +625,12 @@ export default function QuickCheckoutModal({
             </div>
 
             {/* Footer Action */}
-            <div className="p-4 sm:p-6 bg-background border-0 shadow-none">
+            <div className="bg-background border-0 p-4 shadow-none sm:p-6">
               <button
                 type="button"
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className="w-full h-14 rounded-2xl bg-foreground text-background font-semibold text-xs uppercase tracking-wider flex items-center justify-center gap-2 disabled:opacity-50 border-0 shadow-none hover:opacity-90 transition-opacity"
+                className="bg-foreground text-background flex h-14 w-full items-center justify-center gap-2 rounded-2xl border-0 text-xs font-semibold uppercase tracking-wider shadow-none transition-opacity hover:opacity-90 disabled:opacity-50"
               >
                 {isSubmitting ? (
                   <>
@@ -603,20 +640,42 @@ export default function QuickCheckoutModal({
                 ) : paymentMethod === 'PAYSTACK' ? (
                   <>
                     <span>
-                      Pay GH₵ {totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })} Now
+                      Pay GH₵ {totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}{' '}
+                      Now
                     </span>
-                    <ArrowRight className="w-4 h-4" />
+                    <ArrowRight className="h-4 w-4" />
                   </>
                 ) : (
                   <>
-                    <span>Confirm Order · GH₵ {totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
-                    <ArrowRight className="w-4 h-4" />
+                    <span>
+                      Confirm Order · GH₵{' '}
+                      {totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    </span>
+                    <ArrowRight className="h-4 w-4" />
                   </>
                 )}
               </button>
             </div>
           </MotionDiv>
         </div>
+      )}
+
+      {paymentModalState && (
+        <PaymentProcessingModal
+          isOpen={!!paymentModalState}
+          onClose={() => {
+            setPaymentModalState(null);
+            if (paymentOrderId) router.push(`/orders/${paymentOrderId}`);
+          }}
+          status={paymentModalState}
+          errorMessage={paymentErrorMessage}
+          orderNumber={paymentOrderNumber}
+          orderId={paymentOrderId}
+          reference={paymentReference}
+          amount={paymentOrderTotal}
+          onViewOrder={() => router.push(`/orders/${paymentOrderId}`)}
+          onViewReceipt={() => router.push(`/orders/${paymentOrderId}?receipt=1`)}
+        />
       )}
     </AnimatePresence>
   );

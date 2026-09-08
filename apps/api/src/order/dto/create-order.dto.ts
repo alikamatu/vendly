@@ -49,9 +49,11 @@ export class CreateOrderDto {
   @IsNotEmpty()
   deliveryLocation: string;
 
+  @IsOptional()
   @IsString()
   deliveryNotes?: string;
 
+  @IsOptional()
   @IsString()
   paymentMethod?: string;
 }
