@@ -68,7 +68,7 @@ export class AdminController {
   async approveOrReject(
     @Param('id') id: string,
     @Body() dto: ApproveVerificationDto,
-    @Req() req,
+    @Req() req: any,
   ) {
     return this.adminService.approveOrReject(
       id,
@@ -92,7 +92,7 @@ export class AdminController {
   async updateRole(
     @Param('id') id: string,
     @Body() dto: UpdateUserRoleDto,
-    @Req() req,
+    @Req() req: any,
   ) {
     return this.adminService.updateUserRole(id, dto, actorFromReq(req));
   }
@@ -101,18 +101,18 @@ export class AdminController {
   async toggleSuspension(
     @Param('id') id: string,
     @Body() dto: ToggleSuspensionDto,
-    @Req() req,
+    @Req() req: any,
   ) {
     return this.adminService.toggleUserSuspension(id, dto, actorFromReq(req));
   }
 
   @Patch('users/:id/warn')
-  async warn(@Param('id') id: string, @Body() dto: WarnUserDto, @Req() req) {
+  async warn(@Param('id') id: string, @Body() dto: WarnUserDto, @Req() req: any) {
     return this.adminService.warnUser(id, dto, actorFromReq(req));
   }
 
   @Patch('users/:id/delete') // Or @Delete, but using Patch for soft-admin actions if preferred, though actual delete is implemented
-  async deleteUser(@Param('id') id: string, @Req() req) {
+  async deleteUser(@Param('id') id: string, @Req() req: any) {
     return this.adminService.deleteUser(id, actorFromReq(req));
   }
 
@@ -146,7 +146,7 @@ export class AdminController {
       status: 'APPROVED' | 'REJECTED' | 'COMPLETED' | 'ESCALATED' | 'REFUNDED';
       admin_note?: string;
     },
-    @Req() req,
+    @Req() req: any,
   ) {
     return this.adminService.updateReturnStatus(id, body, actorFromReq(req));
   }
@@ -155,7 +155,7 @@ export class AdminController {
   async refundReturn(
     @Param('id') id: string,
     @Body() body: { amount?: number; reason?: string; admin_note?: string },
-    @Req() req,
+    @Req() req: any,
   ) {
     return this.adminService.refundReturnRequest(id, body, actorFromReq(req));
   }
