@@ -190,7 +190,7 @@ export default function AddressesPage() {
                   <input
                     type="tel"
                     inputMode="numeric"
-                    maxLength={10}
+                    maxLength={17}
                     required
                     placeholder="e.g. 0244123456"
                     value={formData.phone}

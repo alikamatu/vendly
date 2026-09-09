@@ -14,7 +14,7 @@ export function sanitizePhoneNumber(raw: string): string {
   // Normalize international Ghana format (+233 or 233) to local 0 prefix
   if (cleaned.startsWith('+233')) {
     cleaned = '0' + cleaned.slice(4);
-  } else if (cleaned.startsWith('233') && cleaned.length >= 12) {
+  } else if (cleaned.startsWith('233')) {
     cleaned = '0' + cleaned.slice(3);
   }
 

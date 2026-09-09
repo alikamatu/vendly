@@ -457,7 +457,7 @@ export default function QuickCheckoutModal({
                     <input
                       type="tel"
                       inputMode="numeric"
-                      maxLength={10}
+                      maxLength={17}
                       value={customerPhone}
                       onChange={(e) => setCustomerPhone(sanitizePhoneNumber(e.target.value))}
                       placeholder="e.g. 0244123456"

@@ -106,15 +106,17 @@ export default function CheckoutPage() {
     loadStore();
   }, [storeLink]);
 
+  const hasInitializedAddressRef = React.useRef(false);
+
   const handleAddressSelect = React.useCallback(
     (id: string | 'new', addressesList = savedAddresses) => {
       setSelectedAddressId(id);
       if (id === 'new') {
         setFormData((prev) => ({
           ...prev,
-          customerName: user?.full_name || '',
-          customerPhone: sanitizePhoneNumber(user?.phone_e164 || ''),
           deliveryLocation: '',
+          customerName: prev.customerName || user?.full_name || '',
+          customerPhone: prev.customerPhone || sanitizePhoneNumber(user?.phone_e164 || ''),
         }));
       } else {
         const addr = addressesList.find((a) => a.id === id);
@@ -134,27 +136,50 @@ export default function CheckoutPage() {
   );
 
   useEffect(() => {
+    if (!token) return;
+    let isMounted = true;
+
     const loadAddresses = async () => {
-      if (!token) return;
       try {
         const addresses = await addressApi.getAddresses(token);
+        if (!isMounted) return;
         setSavedAddresses(addresses);
-        if (addresses.length > 0) {
-          const defaultAddr = addresses.find((a) => a.is_default) || addresses[0];
-          handleAddressSelect(defaultAddr.id, addresses);
-        } else if (user?.full_name) {
-          setFormData((prev) => ({
-            ...prev,
-            customerName: user.full_name || '',
-            customerPhone: sanitizePhoneNumber(user.phone_e164 || ''),
-          }));
+
+        if (!hasInitializedAddressRef.current) {
+          hasInitializedAddressRef.current = true;
+          if (addresses.length > 0) {
+            const defaultAddr = addresses.find((a) => a.is_default) || addresses[0];
+            setSelectedAddressId(defaultAddr.id);
+            setFormData((prev) => ({
+              ...prev,
+              customerName: prev.customerName || defaultAddr.name || '',
+              customerPhone: prev.customerPhone || sanitizePhoneNumber(defaultAddr.phone) || '',
+              deliveryLocation:
+                prev.deliveryLocation && prev.deliveryLocation !== 'Store Pickup'
+                  ? prev.deliveryLocation
+                  : `${defaultAddr.street}, ${defaultAddr.city}${
+                      defaultAddr.region ? `, ${defaultAddr.region}` : ''
+                    }`,
+            }));
+          } else if (user?.full_name) {
+            setFormData((prev) => ({
+              ...prev,
+              customerName: prev.customerName || user.full_name || '',
+              customerPhone: prev.customerPhone || sanitizePhoneNumber(user.phone_e164 || '') || '',
+            }));
+          }
         }
       } catch (err) {
         console.error('Failed to load addresses', err);
       }
     };
+
     loadAddresses();
-  }, [token, user, handleAddressSelect]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [token, user]);
 
   const fieldErrors = {
     customerName: validateName(formData.customerName),
@@ -523,7 +548,7 @@ export default function CheckoutPage() {
                 placeholder="e.g. 0244123456"
                 type="tel"
                 inputMode="numeric"
-                maxLength={10}
+                maxLength={17}
                 value={formData.customerPhone}
                 onChange={(e) =>
                   setFormData((prev) => ({
