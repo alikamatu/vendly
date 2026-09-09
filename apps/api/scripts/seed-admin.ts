@@ -4,9 +4,15 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
-
 async function main() {
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const rawUrl = process.env.DATABASE_URL || '';
+  const connectionString = rawUrl
+    .replace(/([?&])sslmode=[^&]+(&|$)/, '$1')
+    .replace(/[?&]$/, '');
+  const pool = new Pool({
+    connectionString,
+    ssl: { rejectUnauthorized: false },
+  });
   const adapter = new PrismaPg(pool);
   const prisma = new PrismaClient({ adapter });
   const email = process.env.ADMIN_NOTIFY_EMAIL || 'alikamatu14@gmail.com';

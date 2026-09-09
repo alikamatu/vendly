@@ -30,7 +30,8 @@ async function bootstrap() {
           for (const err of errs) {
             if (err.constraints) {
               for (const m of Object.values(err.constraints)) {
-                if (m) messages.push(String(m));
+                if (typeof m === 'string') messages.push(m);
+                else if (m) messages.push(JSON.stringify(m));
               }
             }
             if (err.children && err.children.length) walk(err.children);
@@ -39,7 +40,9 @@ async function bootstrap() {
         walk(errors);
         return new BadRequestException({
           statusCode: 400,
-          message: messages.length ? messages : 'Please check your input and try again.',
+          message: messages.length
+            ? messages
+            : 'Please check your input and try again.',
           error: 'Bad Request',
         });
       },
@@ -52,8 +55,13 @@ async function bootstrap() {
   app.use(compression());
 
   // Enable CORS
-  const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/+$/, '');
-  const adminUrl = (process.env.ADMIN_URL || 'http://localhost:3001').replace(/\/+$/, '');
+  const frontendUrl = (
+    process.env.FRONTEND_URL || 'http://localhost:3000'
+  ).replace(/\/+$/, '');
+  const adminUrl = (process.env.ADMIN_URL || 'http://localhost:3001').replace(
+    /\/+$/,
+    '',
+  );
 
   const allowedOrigins = new Set([
     frontendUrl,
@@ -71,11 +79,12 @@ async function bootstrap() {
       if (
         !origin ||
         allowedOrigins.has(origin) ||
-        /^https:\/\/.*\.vercel\.app$/.test(origin)
+        /^https:\/\/.*\.vercel\.app$/.test(origin) ||
+        /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)
       ) {
         callback(null, true);
       } else {
-        callback(new Error(`Origin ${origin} not allowed by CORS`));
+        callback(null, false);
       }
     },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
@@ -90,4 +99,3 @@ bootstrap().then(() => {
   const port = process.env.PORT || 1000;
   console.log(`Server running on port ${port}`);
 });
-

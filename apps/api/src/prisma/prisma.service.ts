@@ -13,7 +13,19 @@ export class PrismaService
 
   constructor() {
     // Initialize PostgreSQL pool and Prisma driver adapter
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    // Strip sslmode from the URL so pg doesn't force rejectUnauthorized: true
+    // when connecting to Supabase pooled connection (self-signed cert in chain)
+    const rawUrl = process.env.DATABASE_URL || '';
+    const connectionString = rawUrl
+      .replace(/([?&])sslmode=[^&]+(&|$)/, '$1')
+      .replace(/[?&]$/, '');
+
+    const pool = new Pool({
+      connectionString,
+      ssl: {
+        rejectUnauthorized: false,
+      },
+    });
     const adapter = new PrismaPg(pool);
 
     super({

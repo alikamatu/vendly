@@ -20,7 +20,7 @@ export default tseslint.config(
       sourceType: 'commonjs',
       parserOptions: {
         projectService: {
-          allowDefaultProject: ['test/*.ts'],
+          allowDefaultProject: ['test/*.ts', 'scripts/*.ts'],
           defaultProject: './tsconfig.eslint.json',
         },
         tsconfigRootDir: import.meta.dirname,
@@ -40,7 +40,10 @@ export default tseslint.config(
       '@typescript-eslint/require-await': 'warn',
       '@typescript-eslint/prefer-promise-reject-errors': 'warn',
       '@typescript-eslint/no-redundant-type-constituents': 'warn',
-      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        { argsIgnorePattern: '^_' },
+      ],
     },
   },
 );
