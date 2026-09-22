@@ -172,11 +172,7 @@ export class AdminOrderService {
     return order;
   }
 
-  async updateStatus(
-    id: string,
-    dto: AdminUpdateOrderStatusDto,
-    actor: Actor,
-  ) {
+  async updateStatus(id: string, dto: AdminUpdateOrderStatusDto, actor: Actor) {
     if (!ADMIN_ORDER_STATUSES.includes(dto.status)) {
       throw new BadRequestException('Invalid status');
     }
@@ -239,6 +235,14 @@ export class AdminOrderService {
 
     // Notify buyer & sellers about the status change. Fire-and-forget.
     if (existing.status !== dto.status) {
+      if (dto.status === 'DELIVERED') {
+        this.paymentsService
+          .releaseEscrowForOrder(id)
+          .catch((err) =>
+            console.error(`Failed to release escrow for order ${id}:`, err),
+          );
+      }
+
       const orderNumber = `ORD-${id.slice(-6).toUpperCase()}`;
       const storeName =
         existing.items[0]?.product?.seller?.store_name || 'Verndly seller';
@@ -269,9 +273,7 @@ export class AdminOrderService {
         quantity: item.quantity,
         price: item.price.toString(),
         image_url:
-          item.variant?.image_url ||
-          item.product?.image_urls?.[0] ||
-          null,
+          item.variant?.image_url || item.product?.image_urls?.[0] || null,
         variantDescription: formatVariantDesc(item.variant),
       }));
 
@@ -315,7 +317,10 @@ export class AdminOrderService {
           this.emailService
             .sendSellerOrderStatusNotification(email, statusData)
             .catch((err) =>
-              console.error('Failed to send order cancellation alert to seller:', err),
+              console.error(
+                'Failed to send order cancellation alert to seller:',
+                err,
+              ),
             );
         }
       }

@@ -106,13 +106,11 @@ export class PaymentsController {
     return this.paymentsService.retryPayout(id, actorFromReq(req));
   }
 
-  @Post('payouts/:id/settle')
+  @Post('payouts/:id/process')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
-  async settlePayout(@Param('id') id: string) {
-    return this.paymentsService.finalizePayoutSuccess(id, {
-      processed_at: new Date(),
-    });
+  async processPayout(@Param('id') id: string, @Req() req: any) {
+    return this.paymentsService.processManualPayout(id, actorFromReq(req));
   }
 
   @Get('history')

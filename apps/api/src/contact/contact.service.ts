@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { LoopsService } from '../loops/loops.service';
@@ -13,7 +13,12 @@ export class ContactService {
     private readonly loopsService: LoopsService,
   ) {}
 
-  async submitContact(data: { name: string; email: string; subject: string; message: string }) {
+  async submitContact(data: {
+    name: string;
+    email: string;
+    subject: string;
+    message: string;
+  }) {
     const normalisedEmail = data.email.trim().toLowerCase();
 
     // 1. Save to DB
@@ -31,23 +36,23 @@ export class ContactService {
       this.logger.error(`Failed to send contact alert: ${err}`);
     });
 
-    // 3. Sync to Loops as lead contact
-    const [firstName, ...rest] = (data.name || '').trim().split(' ');
+    // 3. Sync contact to Loops as a lead
     this.loopsService
       .createOrUpdateContact({
         email: normalisedEmail,
-        firstName,
-        lastName: rest.join(' '),
-        userGroup: 'Contact',
+        userGroup: 'Lead',
         source: 'Contact Form',
       })
       .then(() => {
-        return this.loopsService.sendEvent(normalisedEmail, 'contact_form_submitted', {
-          subject: data.subject,
-        });
+        return this.loopsService.sendEvent(
+          normalisedEmail,
+          'contact_form_submitted',
+        );
       })
       .catch((err) => {
-        this.logger.warn(`[Loops] Failed to sync contact form submission: ${err}`);
+        this.logger.warn(
+          `[Loops] Failed to sync contact form submission: ${err}`,
+        );
       });
 
     return message;
@@ -84,10 +89,15 @@ export class ContactService {
         subscribed: true,
       })
       .then(() => {
-        return this.loopsService.sendEvent(normalisedEmail, 'newsletter_subscribed');
+        return this.loopsService.sendEvent(
+          normalisedEmail,
+          'newsletter_subscribed',
+        );
       })
       .catch((err) => {
-        this.logger.warn(`[Loops] Failed to sync newsletter subscriber: ${err}`);
+        this.logger.warn(
+          `[Loops] Failed to sync newsletter subscriber: ${err}`,
+        );
       });
 
     // 3. Send welcome email (fire and forget)
@@ -114,8 +124,109 @@ export class ContactService {
     }
 
     // 2. Update status in Loops
-    await this.loopsService.updateContact(normalisedEmail, { subscribed: false });
+    await this.loopsService.updateContact(normalisedEmail, {
+      subscribed: false,
+    });
 
     return { status: 'unsubscribed' };
+  }
+
+  async listSubscribers(query: {
+    page?: string | number;
+    limit?: string | number;
+    search?: string;
+    status?: 'ALL' | 'ACTIVE' | 'INACTIVE';
+  }) {
+    const page = Math.max(1, parseInt(String(query.page || '1'), 10));
+    const limit = Math.min(
+      100,
+      Math.max(1, parseInt(String(query.limit || '20'), 10)),
+    );
+    const skip = (page - 1) * limit;
+
+    const where: Record<string, any> = {};
+
+    if (query.status === 'ACTIVE') {
+      where.is_active = true;
+    } else if (query.status === 'INACTIVE') {
+      where.is_active = false;
+    }
+
+    if (query.search?.trim()) {
+      where.email = {
+        contains: query.search.trim().toLowerCase(),
+        mode: 'insensitive',
+      };
+    }
+
+    const [data, total] = await Promise.all([
+      this.prisma.newsletterSubscriber.findMany({
+        where,
+        orderBy: { created_at: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.newsletterSubscriber.count({ where }),
+    ]);
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+    };
+  }
+
+  async getNewsletterStats() {
+    const [total, active, unsubscribed] = await Promise.all([
+      this.prisma.newsletterSubscriber.count(),
+      this.prisma.newsletterSubscriber.count({ where: { is_active: true } }),
+      this.prisma.newsletterSubscriber.count({ where: { is_active: false } }),
+    ]);
+
+    return {
+      total,
+      active,
+      unsubscribed,
+    };
+  }
+
+  async toggleSubscriberStatus(id: string) {
+    const subscriber = await this.prisma.newsletterSubscriber.findUnique({
+      where: { id },
+    });
+    if (!subscriber) {
+      throw new NotFoundException('Subscriber not found');
+    }
+
+    const nextStatus = !subscriber.is_active;
+    const updated = await this.prisma.newsletterSubscriber.update({
+      where: { id },
+      data: { is_active: nextStatus },
+    });
+
+    // Sync to Loops
+    this.loopsService
+      .updateContact(subscriber.email, { subscribed: nextStatus })
+      .catch((err) => {
+        this.logger.warn(`[Loops] Failed to sync status toggle: ${err}`);
+      });
+
+    return updated;
+  }
+
+  async deleteSubscriber(id: string) {
+    const subscriber = await this.prisma.newsletterSubscriber.findUnique({
+      where: { id },
+    });
+    if (!subscriber) {
+      throw new NotFoundException('Subscriber not found');
+    }
+
+    await this.prisma.newsletterSubscriber.delete({
+      where: { id },
+    });
+
+    return { message: 'Subscriber deleted successfully' };
   }
 }

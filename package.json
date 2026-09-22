@@ -35,6 +35,9 @@
     "apps/web/**/*.{ts,tsx,js,jsx,mjs}": [
       "pnpm --filter @vendly/web exec eslint --fix"
     ],
+    "apps/admin/**/*.{ts,tsx,js,jsx,mjs}": [
+      "pnpm --filter @vendly/admin exec eslint --fix"
+    ],
     "**/*.{ts,tsx,js,jsx,mjs,json,css,md}": [
       "prettier --write"
     ]

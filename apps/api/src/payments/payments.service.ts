@@ -325,12 +325,14 @@ export class PaymentsService {
     });
 
     // Real-time synchronization event across system & in-app notifications
-    this.triggerOrderRealtimeAndNotifications(orderId, reference).catch((err) => {
-      this.logger.error(
-        `Failed to trigger order real-time events for order ${orderId}`,
-        err,
-      );
-    });
+    this.triggerOrderRealtimeAndNotifications(orderId, reference).catch(
+      (err) => {
+        this.logger.error(
+          `Failed to trigger order real-time events for order ${orderId}`,
+          err,
+        );
+      },
+    );
 
     // Low-stock alerts (fire-and-forget)
     this.triggerLowStockAlerts(orderId).catch((err) => {
@@ -397,9 +399,8 @@ export class PaymentsService {
   }
 
   private async triggerLowStockAlerts(orderId: string) {
-    const low = await this.paymentsRepository.findLowStockProductsForOrder(
-      orderId,
-    );
+    const low =
+      await this.paymentsRepository.findLowStockProductsForOrder(orderId);
     for (const product of low) {
       const email = product.seller?.user?.email;
       if (!email) continue;
@@ -449,9 +450,7 @@ export class PaymentsService {
       quantity: item.quantity,
       price: item.price.toString(),
       image_url:
-        item.variant?.image_url ||
-        item.product?.image_urls?.[0] ||
-        null,
+        item.variant?.image_url || item.product?.image_urls?.[0] || null,
       variantDescription: formatVariantDesc(item.variant),
     }));
 
@@ -534,9 +533,7 @@ export class PaymentsService {
         quantity: item.quantity,
         price: item.price.toString(),
         image_url:
-          item.variant?.image_url ||
-          item.product?.image_urls?.[0] ||
-          null,
+          item.variant?.image_url || item.product?.image_urls?.[0] || null,
         variantDescription: formatVariantDesc(item.variant),
       });
     }
@@ -595,7 +592,9 @@ export class PaymentsService {
       const parts = reference.split('_');
       for (const part of parts) {
         if (part !== 'PAYOUT' && part !== 'TXN' && part.length > 10) {
-          payout = await this.paymentsRepository.getPayoutById(part).catch(() => null);
+          payout = await this.paymentsRepository
+            .getPayoutById(part)
+            .catch(() => null);
           if (payout) break;
         }
       }
@@ -623,7 +622,9 @@ export class PaymentsService {
       const parts = reference.split('_');
       for (const part of parts) {
         if (part !== 'PAYOUT' && part !== 'TXN' && part.length > 10) {
-          payout = await this.paymentsRepository.getPayoutById(part).catch(() => null);
+          payout = await this.paymentsRepository
+            .getPayoutById(part)
+            .catch(() => null);
           if (payout) break;
         }
       }
@@ -637,10 +638,7 @@ export class PaymentsService {
     });
   }
 
-  async createOrderSettlementRecords(
-    transactionId: string,
-    reference: string,
-  ) {
+  async createOrderSettlementRecords(transactionId: string, reference: string) {
     const transaction =
       await this.paymentsRepository.findTransactionByReference(reference);
     if (!transaction) return;
@@ -674,12 +672,115 @@ export class PaymentsService {
 
     await this.paymentsRepository.upsertVendorBalanceSnapshot({
       sellerId,
-      availableDelta: net,
+      pendingDelta: net,
       earnedDelta: gross,
     });
+  }
 
+  async getOrCreateTransferRecipient(sellerId: string) {
+    const seller = await this.paymentsRepository.getSellerProfile(sellerId);
+    if (!seller || !seller.bank_code || !seller.account_number) {
+      throw new BadRequestException('Seller bank details incomplete');
+    }
+
+    // In a real app we'd store recipient_code on the seller profile to avoid recreating it
+    // But Paystack's /transferrecipient is idempotent for the same account details
+    try {
+      const payload = {
+        type: 'nuban',
+        name: seller.store_name,
+        account_number: seller.account_number,
+        bank_code: seller.bank_code,
+        currency: 'GHS',
+      };
+      const { data } = await firstValueFrom(
+        this.httpService.post('/transferrecipient', payload),
+      );
+      return data.data.recipient_code;
+    } catch (error: any) {
+      this.logger.error(
+        `Failed to create transfer recipient for ${sellerId}: ${error.response?.data?.message || error.message}`,
+      );
+      throw new BadRequestException('Failed to create transfer recipient');
+    }
+  }
+
+  async processTransferToSeller(
+    sellerId: string,
+    amount: Prisma.Decimal,
+    reference: string,
+    reason: string,
+  ) {
+    const recipientCode = await this.getOrCreateTransferRecipient(sellerId);
+    try {
+      const payload = {
+        source: 'balance',
+        amount: Math.round(Number(amount) * 100),
+        reference,
+        recipient: recipientCode,
+        reason,
+      };
+      const { data } = await firstValueFrom(
+        this.httpService.post('/transfer', payload),
+      );
+      return data.data;
+    } catch (error: any) {
+      this.logger.error(
+        `Failed to initiate transfer ${reference}: ${error.response?.data?.message || error.message}`,
+      );
+      throw new BadRequestException(
+        `Transfer failed: ${error.response?.data?.message || error.message}`,
+      );
+    }
+  }
+
+  async releaseEscrowForOrder(orderId: string) {
+    const order = await this.paymentsRepository.findOrderWithDetails(orderId);
+    if (!order || !order.transaction) {
+      this.logger.warn(
+        `Cannot release escrow: Order ${orderId} or its transaction not found`,
+      );
+      return;
+    }
+    if (order.transaction.status !== 'SUCCESS') {
+      this.logger.warn(
+        `Cannot release escrow: Transaction for order ${orderId} is not SUCCESS`,
+      );
+      return;
+    }
+
+    const sellerId = await this.paymentsRepository.findSellerByOrder(orderId);
+    if (!sellerId) return;
+
+    // Check if payout already exists for this transaction
+    const existingPayout = await this.paymentsRepository.listPayouts({
+      sellerId,
+      page: 1,
+      limit: 100,
+    });
+    const payoutExists = existingPayout.items.some(
+      (p: any) => p.transaction_id === order.transaction!.id,
+    );
+    if (payoutExists) {
+      this.logger.log(`Escrow already released for order ${orderId}`);
+      return;
+    }
+
+    const gross = new Prisma.Decimal(order.transaction.amount);
+    const fee = gross.mul(this.platformFeePercent).div(100);
+    const net = gross.sub(fee);
+
+    // Move funds from pending to available
+    await this.paymentsRepository.upsertVendorBalanceSnapshot({
+      sellerId,
+      pendingDelta: net.mul(-1),
+      availableDelta: net,
+    });
+
+    // We can auto-process the transfer or queue it. Let's do it automatically based on payout mode.
+    // The previous flow used `AUTO` if eligible.
     await this.createPayoutFromTransaction(
-      transactionId,
+      order.transaction.id,
       sellerId,
       net,
       'AUTO',
@@ -717,9 +818,20 @@ export class PaymentsService {
     });
 
     if (isEligibleForAuto) {
-      await this.finalizePayoutSuccess(payout.id, {
-        processed_at: new Date(),
-      });
+      try {
+        await this.processTransferToSeller(
+          sellerId,
+          amount,
+          payout.reference,
+          'Order Payout',
+        );
+        // Let the webhook handle marking it as SUCCESS
+      } catch (error: any) {
+        await this.paymentsRepository.updatePayoutStatus(payout.id, 'FAILED', {
+          failure_reason: error.message,
+          processed_at: new Date(),
+        });
+      }
     }
 
     return payout;
@@ -896,35 +1008,82 @@ export class PaymentsService {
     return updated;
   }
 
+  async processManualPayout(id: string, actor?: Actor) {
+    const payout = await this.paymentsRepository.getPayoutById(id);
+    if (!payout) throw new NotFoundException('Payout not found');
+    if (
+      (payout as any).status === 'SUCCESS' ||
+      (payout as any).status === 'PROCESSING'
+    ) {
+      throw new BadRequestException(
+        'Payout is already processed or processing',
+      );
+    }
+
+    // Attempt transfer
+    await this.paymentsRepository.updatePayoutStatus(id, 'PROCESSING');
+
+    try {
+      await this.processTransferToSeller(
+        (payout as any).seller_id,
+        (payout as any).amount,
+        payout.reference,
+        'Manual Payout',
+      );
+
+      this.auditLogs.record({
+        actorId: actor?.id,
+        actorRole: actor?.role,
+        action: 'payout.process_manual',
+        entityType: 'payout',
+        entityId: id,
+        before: { status: (payout as any).status },
+        after: { status: 'PROCESSING' },
+        metadata: { amount: (payout as any).amount?.toString() },
+        ip: actor?.ip,
+        userAgent: actor?.userAgent,
+      });
+
+      return { status: 'PROCESSING', message: 'Transfer initiated' };
+    } catch (error: any) {
+      await this.paymentsRepository.updatePayoutStatus(id, 'FAILED', {
+        failure_reason: error.message,
+      });
+      throw new BadRequestException(error.message);
+    }
+  }
+
   async runManualPayoutQueue(actor?: Actor) {
     const queue = await this.paymentsRepository.listPayouts({
       status: 'PENDING',
       page: 1,
       limit: 100,
     });
-    const results = await Promise.all(
-      queue.items.map((item) =>
-        this.finalizePayoutSuccess(item.id, {
-          processed_at: new Date(),
-        }),
-      ),
-    );
+
+    let processed = 0;
+    for (const item of queue.items) {
+      try {
+        await this.processManualPayout(item.id, actor);
+        processed++;
+      } catch (err) {
+        this.logger.error(
+          `Failed to process manual payout ${item.id} from queue`,
+          err,
+        );
+      }
+    }
+
     this.auditLogs.record({
       actorId: actor?.id,
       actorRole: actor?.role,
       action: 'payout.run_queue',
       entityType: 'payout',
       entityId: null,
-      metadata: {
-        processed: results.length,
-        ids: queue.items.map((i: any) => i.id),
-      },
+      metadata: { processed, ids: queue.items.map((i: any) => i.id) },
       ip: actor?.ip,
       userAgent: actor?.userAgent,
     });
-    return {
-      processed: results.length,
-    };
+    return { processed };
   }
 
   async finalizePayoutSuccess(
@@ -985,10 +1144,9 @@ export class PaymentsService {
 
   async sendPayoutReceipt(payoutId: string, preloadedPayout?: any) {
     try {
-      const payout =
-        preloadedPayout?.seller?.user
-          ? preloadedPayout
-          : await this.paymentsRepository.getPayoutById(payoutId);
+      const payout = preloadedPayout?.seller?.user
+        ? preloadedPayout
+        : await this.paymentsRepository.getPayoutById(payoutId);
 
       if (!payout) {
         this.logger.warn(
@@ -1162,12 +1320,16 @@ export class PaymentsService {
     }
 
     if (order.status === 'REFUNDED') {
-      throw new BadRequestException('This order has already been fully refunded');
+      throw new BadRequestException(
+        'This order has already been fully refunded',
+      );
     }
 
     const transaction = order.transaction;
     if (!transaction) {
-      throw new BadRequestException('No transaction record found for this order');
+      throw new BadRequestException(
+        'No transaction record found for this order',
+      );
     }
 
     const txnAmount = Number(transaction.amount);
@@ -1203,8 +1365,7 @@ export class PaymentsService {
         );
         const paystackData = response?.data;
         providerRef =
-          paystackData?.data?.id?.toString() ||
-          paystackData?.data?.reference;
+          paystackData?.data?.id?.toString() || paystackData?.data?.reference;
         this.logger.log(
           `Paystack refund initiated for order ${orderId}: ref=${refundRef} provider_ref=${providerRef || 'success'}`,
         );
@@ -1257,9 +1418,14 @@ export class PaymentsService {
     );
 
     // 5. Restore inventory
-    await this.paymentsRepository.restoreOrderInventory(orderId).catch((err) => {
-      this.logger.error(`Failed to restore inventory for refunded order ${orderId}`, err);
-    });
+    await this.paymentsRepository
+      .restoreOrderInventory(orderId)
+      .catch((err) => {
+        this.logger.error(
+          `Failed to restore inventory for refunded order ${orderId}`,
+          err,
+        );
+      });
 
     // 6. Reverse Seller ledger & balance
     const sellerId = await this.paymentsRepository.findSellerByOrder(orderId);
@@ -1367,8 +1533,7 @@ export class PaymentsService {
       buyerId: order.buyer_id,
       sellerUserIds,
       total: order.total_amount ? order.total_amount.toString() : '0',
-      customerName:
-        order.customer_name || order.buyer?.full_name || 'Customer',
+      customerName: order.customer_name || order.buyer?.full_name || 'Customer',
       reference: refundRef,
       timestamp: new Date().toISOString(),
     });
@@ -1405,11 +1570,9 @@ export class PaymentsService {
     const statusData = {
       orderNumber,
       date: order.created_at,
-      customerName:
-        order.customer_name || order.buyer?.full_name || 'Customer',
+      customerName: order.customer_name || order.buyer?.full_name || 'Customer',
       customerPhone: order.customer_phone || undefined,
-      storeName:
-        order.items[0]?.product?.seller?.store_name || 'Verndly Store',
+      storeName: order.items[0]?.product?.seller?.store_name || 'Verndly Store',
       status: 'REFUNDED',
       items,
       subtotal: order.total_amount.toString(),

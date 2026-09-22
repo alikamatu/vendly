@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import React from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles } from "lucide-react";
-import ProductCard from "@/components/products/ProductCard";
-import type { HomeProduct } from "@/hooks/useHomeData";
+import React from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Sparkles } from 'lucide-react';
+import ProductCard from '@/components/products/ProductCard';
+import type { HomeProduct } from '@/hooks/useHomeData';
 
 interface FeaturedMarketplaceProps {
   products: HomeProduct[];
@@ -18,15 +18,15 @@ export default function FeaturedMarketplace({ products, limit = 10 }: FeaturedMa
   return (
     <section className="space-y-8">
       <div className="flex items-center gap-4">
-        <div className="h-px flex-1 bg-border/60" />
-        <h2 className="text-[10px] uppercase tracking-wider text-primary font-medium flex items-center gap-2">
-          <Sparkles className="w-3 h-3" />
+        <div className="bg-border/60 h-px flex-1" />
+        <h2 className="text-primary flex items-center gap-2 text-[10px] font-medium uppercase tracking-wider">
+          <Sparkles className="h-3 w-3" />
           Featured Marketplace
         </h2>
-        <div className="h-px flex-1 bg-border/60" />
+        <div className="bg-border/60 h-px flex-1" />
       </div>
 
-      <div className="columns-2 md:columns-3 lg:columns-4 gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 md:gap-4 lg:grid-cols-5">
         <AnimatePresence mode="popLayout">
           {items.map((product, idx) => (
             <motion.div
@@ -36,7 +36,7 @@ export default function FeaturedMarketplace({ products, limit = 10 }: FeaturedMa
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.3, delay: idx * 0.02 }}
-              className="break-inside-avoid mb-4"
+              className="h-full"
             >
               <ProductCard product={product as any} index={idx} />
             </motion.div>

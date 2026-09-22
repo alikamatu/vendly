@@ -18,6 +18,8 @@ import {
   EyeOff,
   Flame,
   Package,
+  Percent,
+  Sparkles,
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
@@ -79,6 +81,28 @@ export interface ProductFormProps {
   onCancel?: () => void;
 }
 
+const DISCOUNT_PRESETS = [5, 10, 15, 20, 25, 50];
+
+const getInitialPricing = (data?: Partial<ProductFormData>) => {
+  if (!data) return { basePrice: '', discountPercent: '' };
+  const orig =
+    data.original_price != null && data.original_price !== '' ? Number(data.original_price) : NaN;
+  const cur = data.price != null && data.price !== '' ? Number(data.price) : NaN;
+
+  if (Number.isFinite(orig) && Number.isFinite(cur) && orig > cur && orig > 0) {
+    const pct = Math.round(((orig - cur) / orig) * 100);
+    return {
+      basePrice: String(orig),
+      discountPercent: pct > 0 ? String(pct) : '',
+    };
+  }
+
+  return {
+    basePrice: data.price != null ? String(data.price) : '',
+    discountPercent: '',
+  };
+};
+
 export default function ProductForm({
   initialData,
   isEdit = false,
@@ -89,6 +113,10 @@ export default function ProductForm({
   isLoading = false,
   onCancel,
 }: ProductFormProps) {
+  const initialPricing = getInitialPricing(initialData);
+  const [basePrice, setBasePrice] = useState<string>(initialPricing.basePrice);
+  const [discountPercent, setDiscountPercent] = useState<string>(initialPricing.discountPercent);
+
   const [formData, setFormData] = useState<ProductFormData>({
     title: initialData?.title || '',
     description: initialData?.description || '',
@@ -98,7 +126,7 @@ export default function ProductForm({
     condition: (initialData?.condition as any) || 'new',
     quantity_available:
       initialData?.quantity_available != null ? String(initialData.quantity_available) : '1',
-    status: (initialData?.status as any) === 'active' ? 'active' : 'draft',
+    status: (initialData?.status as any) === 'draft' ? 'draft' : 'active',
     category: initialData?.category || '',
     brand: initialData?.brand || '',
     tags: initialData?.tags || [],
@@ -124,22 +152,32 @@ export default function ProductForm({
   // Sync existing images/video/formData if initial data changes
   useEffect(() => {
     if (initialData) {
+      const pricing = getInitialPricing(initialData);
+      setBasePrice(pricing.basePrice);
+      setDiscountPercent(pricing.discountPercent);
+
       setFormData((prev) => ({
         ...prev,
         title: initialData.title ?? prev.title,
         description: initialData.description ?? prev.description,
         price: initialData.price != null ? String(initialData.price) : prev.price,
-        original_price: initialData.original_price != null ? String(initialData.original_price) : prev.original_price,
+        original_price:
+          initialData.original_price != null
+            ? String(initialData.original_price)
+            : prev.original_price,
         currency: initialData.currency || prev.currency,
         condition: (initialData.condition as any) || prev.condition,
         quantity_available:
-          initialData.quantity_available != null ? String(initialData.quantity_available) : prev.quantity_available,
-        status: (initialData.status as any) === 'active' ? 'active' : 'draft',
+          initialData.quantity_available != null
+            ? String(initialData.quantity_available)
+            : prev.quantity_available,
+        status: (initialData.status as any) === 'draft' ? 'draft' : 'active',
         category: initialData.category ?? prev.category,
         brand: initialData.brand ?? prev.brand,
         tags: initialData.tags ?? prev.tags,
         attributes: initialData.attributes ?? prev.attributes,
-        is_featured: initialData.is_featured != null ? Boolean(initialData.is_featured) : prev.is_featured,
+        is_featured:
+          initialData.is_featured != null ? Boolean(initialData.is_featured) : prev.is_featured,
       }));
     }
     if (initialExistingImages.length > 0) {
@@ -161,13 +199,10 @@ export default function ProductForm({
           setFormData((prev) => ({
             ...prev,
             category: first.name,
-            attributes: (first.fields || []).reduce(
-              (acc, f) => {
-                const key = f.key || f.name;
-                return key ? { ...acc, [key]: f.defaultValue ?? '' } : acc;
-              },
-              {}
-            ),
+            attributes: (first.fields || []).reduce((acc, f) => {
+              const key = f.key || f.name;
+              return key ? { ...acc, [key]: f.defaultValue ?? '' } : acc;
+            }, {}),
           }));
         }
       })
@@ -189,12 +224,12 @@ export default function ProductForm({
 
   const categoryOptions: SelectOption[] = useMemo(
     () => categories.map((c) => ({ value: c.name, label: c.name })),
-    [categories]
+    [categories],
   );
 
   const brandOptions: SelectOption[] = useMemo(
     () => categoryBrands.map((b) => ({ value: b.name, label: b.name })),
-    [categoryBrands]
+    [categoryBrands],
   );
 
   // Handle category change
@@ -206,7 +241,7 @@ export default function ProductForm({
           const key = field.key || field.name;
           return key ? { ...acc, [key]: field.defaultValue ?? '' } : acc;
         },
-        {}
+        {},
       );
       setFormData((prev) => ({
         ...prev,
@@ -215,7 +250,7 @@ export default function ProductForm({
         attributes: newAttributes,
       }));
     },
-    [categories]
+    [categories],
   );
 
   // Dynamic attribute update
@@ -265,11 +300,9 @@ export default function ProductForm({
             fileType: 'image/webp',
           });
 
-          const webpFile = new File(
-            [compressed],
-            compressed.name.replace(/\.[^/.]+$/, '.webp'),
-            { type: 'image/webp' }
-          );
+          const webpFile = new File([compressed], compressed.name.replace(/\.[^/.]+$/, '.webp'), {
+            type: 'image/webp',
+          });
 
           compressedFiles.push(webpFile);
 
@@ -292,7 +325,7 @@ export default function ProductForm({
       setIsCompressing(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     },
-    [totalImagesCount]
+    [totalImagesCount],
   );
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
@@ -359,22 +392,36 @@ export default function ProductForm({
     setFormData((prev) => ({ ...prev, tags: prev.tags.filter((t) => t !== tag) }));
   };
 
-  // Discount calculation
-  const discountInfo = useMemo(() => {
-    const cur = parseFloat(formData.price);
-    const orig = parseFloat(formData.original_price);
-    if (!Number.isFinite(cur) || !Number.isFinite(orig) || orig <= cur || orig <= 0) {
-      return null;
+  // Auto-calculate selling price and discount savings
+  const { calculatedSellingPrice, savingsAmount, hasValidDiscount } = useMemo(() => {
+    const base = parseFloat(basePrice);
+    const discount = parseFloat(discountPercent);
+
+    if (!Number.isFinite(base) || base <= 0) {
+      return { calculatedSellingPrice: '0.00', savingsAmount: '0.00', hasValidDiscount: false };
     }
-    const percent = Math.round(((orig - cur) / orig) * 100);
-    const savings = (orig - cur).toFixed(2);
-    return { percent, savings };
-  }, [formData.price, formData.original_price]);
+
+    if (Number.isFinite(discount) && discount > 0 && discount < 100) {
+      const discounted = base * (1 - discount / 100);
+      const savings = base - discounted;
+      return {
+        calculatedSellingPrice: (Math.round(discounted * 100) / 100).toFixed(2),
+        savingsAmount: (Math.round(savings * 100) / 100).toFixed(2),
+        hasValidDiscount: true,
+      };
+    }
+
+    return {
+      calculatedSellingPrice: (Math.round(base * 100) / 100).toFixed(2),
+      savingsAmount: '0.00',
+      hasValidDiscount: false,
+    };
+  }, [basePrice, discountPercent]);
 
   // Selected category schema
   const selectedCategory = useMemo(
     () => categories.find((c) => c.name === formData.category),
-    [categories, formData.category]
+    [categories, formData.category],
   );
 
   // Form submission
@@ -382,33 +429,61 @@ export default function ProductForm({
     e.preventDefault();
     if (isLoading || isCompressing) return;
 
-    if (existingImages.length === 0 && images.length === 0 && !video && !existingVideo) {
-      toast.error('Please upload at least one photo or video.');
+    // 1. Required: Product Images
+    if (existingImages.length === 0 && images.length === 0) {
+      toast.error('Please upload at least one product photo.');
       return;
     }
 
-    const priceNum = parseFloat(formData.price);
-    if (!Number.isFinite(priceNum) || priceNum <= 0) {
+    // 2. Required: Product Name
+    if (!formData.title.trim()) {
+      toast.error('Please enter a product name.');
+      return;
+    }
+
+    // 3. Required: Price
+    const baseNum = parseFloat(basePrice);
+    if (!Number.isFinite(baseNum) || baseNum <= 0) {
       toast.error('Please enter a valid price greater than 0.');
       return;
     }
 
-    if (formData.original_price) {
-      const origNum = parseFloat(formData.original_price);
-      if (Number.isFinite(origNum) && origNum <= priceNum) {
-        toast.error('Original price must be greater than current price to show a discount.');
+    // Validate discount percentage if entered
+    if (discountPercent.trim()) {
+      const disc = parseFloat(discountPercent);
+      if (isNaN(disc) || disc < 0 || disc >= 100) {
+        toast.error('Discount percentage must be between 0% and 99.99%.');
         return;
       }
     }
 
-    const qtyNum = parseInt(formData.quantity_available, 10);
-    if (isNaN(qtyNum) || qtyNum < 0) {
-      toast.error('Please enter a valid quantity.');
-      return;
+    // Quantity (optional, default 1)
+    let qtyNum = 1;
+    if (formData.quantity_available && formData.quantity_available.trim()) {
+      const parsedQty = parseInt(formData.quantity_available, 10);
+      if (isNaN(parsedQty) || parsedQty < 0) {
+        toast.error('Quantity cannot be negative.');
+        return;
+      }
+      qtyNum = parsedQty;
     }
 
+    const finalSellingPrice = hasValidDiscount ? calculatedSellingPrice : baseNum.toFixed(2);
+    const finalOriginalPrice = hasValidDiscount ? baseNum.toFixed(2) : '';
+
+    const payloadData: ProductFormData = {
+      ...formData,
+      title: formData.title.trim(),
+      description: formData.description.trim(),
+      price: finalSellingPrice,
+      original_price: finalOriginalPrice,
+      quantity_available: String(qtyNum),
+      category: formData.category || categories[0]?.name || 'General',
+      status: formData.status || 'active',
+    };
+
     await onSubmit({
-      data: formData,
+      data: payloadData,
       images,
       video,
       existingImages,
@@ -426,27 +501,39 @@ export default function ProductForm({
       )}
 
       {/* ────────────────── 1. Product Media ────────────────── */}
-      <Card className="p-6 md:p-8 space-y-6 border border-[var(--color-border)] rounded-2xl" hoverEffect={false}>
-        <div className="flex items-center gap-3 border-b border-[var(--color-border)]/60 pb-4">
-          <div className="w-9 h-9 rounded-2xl bg-[var(--color-accent)]/10 flex items-center justify-center flex-shrink-0">
-            <Camera className="w-4 h-4 text-[var(--color-accent)]" />
+      <Card
+        className="space-y-6 rounded-2xl border border-[var(--color-border)] p-6 md:p-8"
+        hoverEffect={false}
+      >
+        <div className="border-[var(--color-border)]/60 flex items-center gap-3 border-b pb-4">
+          <div className="bg-[var(--color-accent)]/10 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-2xl">
+            <Camera className="h-4 w-4 text-[var(--color-accent)]" />
           </div>
           <div>
             <h3 className="text-sm font-medium text-[var(--color-foreground)]">Product Media</h3>
-            <p className="text-[11px] text-[var(--color-muted)]">Up to 3 high-res photos · 1 optional video</p>
+            <p className="text-[11px] text-[var(--color-muted)]">
+              Up to 3 high-res photos · 1 optional video
+            </p>
           </div>
         </div>
 
         {/* Photos grid */}
         <div>
-          <div className="flex items-center justify-between mb-3">
+          <div className="mb-3 flex items-center justify-between">
             <label className="text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
-              Product Photos ({totalImagesCount}/3) <span className="text-[var(--color-accent)]">*</span>
+              Product Photos ({totalImagesCount}/3){' '}
+              <span className="text-[var(--color-accent)]">*</span>
             </label>
-            <span className="text-[10px] text-[var(--color-muted)]">First photo is your cover image</span>
+            <span className="text-[10px] text-[var(--color-muted)]">
+              First photo is your cover image
+            </span>
           </div>
 
-          <div onDrop={handleDrop} onDragOver={(e) => e.preventDefault()} className="grid grid-cols-3 gap-3">
+          <div
+            onDrop={handleDrop}
+            onDragOver={(e) => e.preventDefault()}
+            className="grid grid-cols-3 gap-3"
+          >
             <AnimatePresence mode="popLayout">
               {/* Existing Images */}
               {existingImages.map((src, idx) => (
@@ -456,19 +543,19 @@ export default function ProductForm({
                   initial={{ opacity: 0, scale: 0.85 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.85 }}
-                  className="relative aspect-square rounded-2xl overflow-hidden border border-[var(--color-border)] group bg-[var(--color-surface)]"
+                  className="group relative aspect-square overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]"
                 >
-                  <img src={src} alt="Product preview" className="w-full h-full object-cover" />
+                  <img src={src} alt="Product preview" className="h-full w-full object-cover" />
                   <button
                     type="button"
                     onClick={() => removeExistingImage(src)}
-                    className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black cursor-pointer"
+                    className="absolute right-2 top-2 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-black/70 text-white opacity-0 transition-opacity hover:bg-black group-hover:opacity-100"
                     aria-label="Remove photo"
                   >
-                    <X className="w-3.5 h-3.5" />
+                    <X className="h-3.5 w-3.5" />
                   </button>
                   {idx === 0 && (
-                    <span className="absolute bottom-2 left-2 text-[9px] font-medium bg-black/85 text-white px-2.5 py-0.5 rounded-full">
+                    <span className="absolute bottom-2 left-2 rounded-full bg-black/85 px-2.5 py-0.5 text-[9px] font-medium text-white">
                       Cover
                     </span>
                   )}
@@ -485,22 +572,22 @@ export default function ProductForm({
                     initial={{ opacity: 0, scale: 0.85 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.85 }}
-                    className="relative aspect-square rounded-2xl overflow-hidden border-2 border-[var(--color-accent)]/30 group bg-[var(--color-surface)]"
+                    className="border-[var(--color-accent)]/30 group relative aspect-square overflow-hidden rounded-2xl border-2 bg-[var(--color-surface)]"
                   >
-                    <img src={src} alt="New upload" className="w-full h-full object-cover" />
-                    <span className="absolute top-2 left-2 text-[8px] font-medium bg-[var(--color-accent)] text-white px-1.5 py-0.5 rounded-full uppercase">
+                    <img src={src} alt="New upload" className="h-full w-full object-cover" />
+                    <span className="absolute left-2 top-2 rounded-full bg-[var(--color-accent)] px-1.5 py-0.5 text-[8px] font-medium uppercase text-white">
                       New
                     </span>
                     <button
                       type="button"
                       onClick={() => removeNewImage(idx)}
-                      className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black cursor-pointer"
+                      className="absolute right-2 top-2 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-black/70 text-white opacity-0 transition-opacity hover:bg-black group-hover:opacity-100"
                       aria-label="Remove photo"
                     >
-                      <X className="w-3.5 h-3.5" />
+                      <X className="h-3.5 w-3.5" />
                     </button>
                     {isCover && (
-                      <span className="absolute bottom-2 left-2 text-[9px] font-medium bg-black/85 text-white px-2.5 py-0.5 rounded-full">
+                      <span className="absolute bottom-2 left-2 rounded-full bg-black/85 px-2.5 py-0.5 text-[9px] font-medium text-white">
                         Cover
                       </span>
                     )}
@@ -515,16 +602,16 @@ export default function ProductForm({
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isCompressing}
-                className="aspect-square rounded-2xl border-2 border-dashed border-[var(--color-border)] hover:border-[var(--color-accent)]/50 hover:bg-[var(--color-accent)]/5 text-[var(--color-muted)] hover:text-[var(--color-accent)] flex flex-col items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-60 cursor-pointer"
+                className="hover:border-[var(--color-accent)]/50 hover:bg-[var(--color-accent)]/5 flex aspect-square cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[var(--color-border)] text-[var(--color-muted)] transition-all hover:text-[var(--color-accent)] active:scale-95 disabled:opacity-60"
               >
                 {isCompressing ? (
                   <>
-                    <Loader2 className="w-5 h-5 animate-spin text-[var(--color-accent)]" />
+                    <Loader2 className="h-5 w-5 animate-spin text-[var(--color-accent)]" />
                     <span className="text-[10px] font-medium">Optimising…</span>
                   </>
                 ) : (
                   <>
-                    <Plus className="w-5 h-5" />
+                    <Plus className="h-5 w-5" />
                     <span className="text-[10px] font-medium">Add Photo</span>
                   </>
                 )}
@@ -543,33 +630,33 @@ export default function ProductForm({
 
         {/* Video Upload */}
         <div className="pt-2">
-          <label className="text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted)] block mb-2">
+          <label className="mb-2 block text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
             Product Video (Optional)
           </label>
           {videoPreview || existingVideo ? (
-            <div className="relative rounded-2xl overflow-hidden border border-[var(--color-border)] bg-black max-h-52 flex items-center justify-center">
+            <div className="relative flex max-h-52 items-center justify-center overflow-hidden rounded-2xl border border-[var(--color-border)] bg-black">
               <video
                 src={videoPreview || existingVideo!}
-                className="w-full max-h-52 object-contain"
+                className="max-h-52 w-full object-contain"
                 controls
                 playsInline
               />
               <button
                 type="button"
                 onClick={removeVideo}
-                className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/70 text-white flex items-center justify-center hover:bg-black transition-colors cursor-pointer"
+                className="absolute right-3 top-3 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-black/70 text-white transition-colors hover:bg-black"
                 aria-label="Remove video"
               >
-                <X className="w-4 h-4" />
+                <X className="h-4 w-4" />
               </button>
             </div>
           ) : (
             <button
               type="button"
               onClick={() => videoInputRef.current?.click()}
-              className="w-full h-16 rounded-2xl border-2 border-dashed border-[var(--color-border)] hover:border-[var(--color-accent)]/50 hover:bg-[var(--color-accent)]/5 text-[var(--color-muted)] hover:text-[var(--color-accent)] flex items-center justify-center gap-3 transition-all cursor-pointer"
+              className="hover:border-[var(--color-accent)]/50 hover:bg-[var(--color-accent)]/5 flex h-16 w-full cursor-pointer items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-[var(--color-border)] text-[var(--color-muted)] transition-all hover:text-[var(--color-accent)]"
             >
-              <Video className="w-5 h-5" />
+              <Video className="h-5 w-5" />
               <span className="text-xs font-normal">Upload short video clip · Max 60 MB</span>
             </button>
           )}
@@ -584,24 +671,29 @@ export default function ProductForm({
       </Card>
 
       {/* ────────────────── 2. Core Information ────────────────── */}
-      <Card className="p-6 md:p-8 space-y-6 border border-[var(--color-border)] rounded-3xl" hoverEffect={false}>
-        <div className="flex items-center gap-3 border-b border-[var(--color-border)]/60 pb-4">
-          <div className="w-9 h-9 rounded-2xl bg-[var(--color-accent)]/10 flex items-center justify-center flex-shrink-0">
-            <ShoppingBag className="w-4 h-4 text-[var(--color-accent)]" />
+      <Card
+        className="space-y-6 rounded-3xl border border-[var(--color-border)] p-6 md:p-8"
+        hoverEffect={false}
+      >
+        <div className="border-[var(--color-border)]/60 flex items-center gap-3 border-b pb-4">
+          <div className="bg-[var(--color-accent)]/10 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-2xl">
+            <ShoppingBag className="h-4 w-4 text-[var(--color-accent)]" />
           </div>
           <div>
             <h3 className="text-sm font-medium text-[var(--color-foreground)]">Core Information</h3>
-            <p className="text-[11px] text-[var(--color-muted)]">Title, category classification &amp; brand</p>
+            <p className="text-[11px] text-[var(--color-muted)]">
+              Title, category classification &amp; brand
+            </p>
           </div>
         </div>
 
-        {/* Title */}
+        {/* Product Name */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <label className="text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
-              Product Title <span className="text-[var(--color-accent)]">*</span>
+              Product Name <span className="text-[var(--color-accent)]">*</span>
             </label>
-            <span className="text-[10px] text-[var(--color-muted)] tabular-nums">
+            <span className="text-[10px] tabular-nums text-[var(--color-muted)]">
               {formData.title.length}/200
             </span>
           </div>
@@ -616,7 +708,7 @@ export default function ProductForm({
         </div>
 
         {/* Category & Brand Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Select
             label="Category"
             value={formData.category}
@@ -640,7 +732,7 @@ export default function ProductForm({
           ) : (
             <div className="space-y-1.5">
               <label className="text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
-                Brand <span className="text-[var(--color-muted)] font-normal">(Optional)</span>
+                Brand <span className="font-normal text-[var(--color-muted)]">(Optional)</span>
               </label>
               <Input
                 value={formData.brand}
@@ -654,11 +746,11 @@ export default function ProductForm({
 
         {/* Dynamic Category Attributes */}
         {selectedCategory?.fields && selectedCategory.fields.length > 0 && (
-          <div className="pt-2 border-t border-[var(--color-border)]/50 space-y-4">
+          <div className="border-[var(--color-border)]/50 space-y-4 border-t pt-2">
             <p className="text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
               {formData.category} Specifications
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {selectedCategory.fields.map((field, idx) => {
                 const fieldKey = field.key || field.name || `field_${idx}`;
                 const currentValue =
@@ -671,24 +763,26 @@ export default function ProductForm({
                   <div key={fieldKey} className="space-y-1.5">
                     {field.type === 'select' ? (
                       <Select
-                        label={`${field.label}${field.required ? ' *' : ''}`}
+                        label={field.label}
                         value={currentValue}
                         onChange={(val) => handleAttributeChange(fieldKey, val)}
-                        options={Array.from(new Set(field.options || [])).map((opt) => ({ value: opt, label: opt }))}
+                        options={Array.from(new Set(field.options || [])).map((opt) => ({
+                          value: opt,
+                          label: opt,
+                        }))}
                         placeholder={`Select ${field.label.toLowerCase()}…`}
                         className="w-full"
                       />
                     ) : (
                       <>
                         <label className="text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
-                          {field.label} {field.required && <span className="text-[var(--color-accent)]">*</span>}
+                          {field.label}
                         </label>
                         <Input
                           type={field.type === 'number' ? 'number' : 'text'}
                           value={currentValue}
                           onChange={(e) => handleAttributeChange(fieldKey, e.target.value)}
                           placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
-                          required={field.required}
                           className="h-12 rounded-xl text-xs font-normal"
                         />
                       </>
@@ -702,22 +796,30 @@ export default function ProductForm({
       </Card>
 
       {/* ────────────────── 3. Pricing & Inventory ────────────────── */}
-      <Card className="p-6 md:p-8 space-y-6 border border-[var(--color-border)] rounded-3xl" hoverEffect={false}>
-        <div className="flex items-center gap-3 border-b border-[var(--color-border)]/60 pb-4">
-          <div className="w-9 h-9 rounded-2xl bg-[var(--color-accent)]/10 flex items-center justify-center flex-shrink-0">
-            <DollarSign className="w-4 h-4 text-[var(--color-accent)]" />
+      <Card
+        className="space-y-6 rounded-3xl border border-[var(--color-border)] p-6 md:p-8"
+        hoverEffect={false}
+      >
+        <div className="border-[var(--color-border)]/60 flex items-center gap-3 border-b pb-4">
+          <div className="bg-[var(--color-accent)]/10 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-2xl">
+            <DollarSign className="h-4 w-4 text-[var(--color-accent)]" />
           </div>
           <div>
-            <h3 className="text-sm font-medium text-[var(--color-foreground)]">Pricing &amp; Inventory</h3>
-            <p className="text-[11px] text-[var(--color-muted)]">Selling price, discounts &amp; available stock</p>
+            <h3 className="text-sm font-medium text-[var(--color-foreground)]">
+              Pricing &amp; Inventory
+            </h3>
+            <p className="text-[11px] text-[var(--color-muted)]">
+              Selling price, discounts &amp; available stock
+            </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Selling Price */}
+        {/* Pricing inputs: Base Price & Percentage Discount */}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {/* Price (GH₵) */}
           <div className="space-y-1.5">
             <label className="text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
-              Selling Price (GH₵) <span className="text-[var(--color-accent)]">*</span>
+              Price (GH₵) <span className="text-[var(--color-accent)]">*</span>
             </label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-[var(--color-muted)]">
@@ -727,55 +829,141 @@ export default function ProductForm({
                 type="number"
                 step="0.01"
                 min="0.01"
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                value={basePrice}
+                onChange={(e) => setBasePrice(e.target.value)}
                 placeholder="0.00"
                 required
-                className="h-12 pl-8 rounded-2xl text-xs font-normal"
+                className="h-12 rounded-2xl pl-8 text-xs font-normal"
               />
             </div>
+            <p className="text-[10px] text-[var(--color-muted)]">
+              Base retail price of the product
+            </p>
           </div>
 
-          {/* Original Price */}
+          {/* Discount (%) */}
           <div className="space-y-1.5">
-            <label className="text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
-              Original Price (GH₵) <span className="text-[var(--color-muted)] font-normal">(Optional)</span>
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
+                Discount (%){' '}
+                <span className="font-normal text-[var(--color-muted)]">(Optional)</span>
+              </label>
+              {hasValidDiscount && (
+                <span className="text-[10px] font-semibold text-emerald-600">
+                  Save GH₵{savingsAmount}
+                </span>
+              )}
+            </div>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-[var(--color-muted)]">
-                ₵
+              <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-[var(--color-muted)]">
+                %
               </span>
               <Input
                 type="number"
-                step="0.01"
-                min="0.01"
-                value={formData.original_price}
-                onChange={(e) => setFormData({ ...formData, original_price: e.target.value })}
-                placeholder="0.00"
-                className="h-12 pl-8 rounded-2xl text-xs font-normal"
+                step="any"
+                min="0"
+                max="99.99"
+                value={discountPercent}
+                onChange={(e) => setDiscountPercent(e.target.value)}
+                placeholder="0"
+                className="h-12 rounded-2xl pr-8 text-xs font-normal"
               />
             </div>
-            {discountInfo ? (
-              <p className="text-[11px] text-emerald-600 font-medium inline-flex items-center gap-1.5 pt-1">
-                <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-[10px]">
-                  −{discountInfo.percent}%
+            {/* Quick preset pills */}
+            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+              <span className="mr-0.5 text-[10px] text-[var(--color-muted)]">Quick:</span>
+              {DISCOUNT_PRESETS.map((pct) => {
+                const isSelected = discountPercent === String(pct);
+                return (
+                  <button
+                    key={pct}
+                    type="button"
+                    onClick={() => setDiscountPercent(isSelected ? '' : String(pct))}
+                    className={`cursor-pointer rounded-lg px-2 py-0.5 text-[10px] font-medium transition-all ${
+                      isSelected
+                        ? 'shadow-xs bg-[var(--color-accent)] text-white'
+                        : 'hover:border-[var(--color-accent)]/40 border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-muted)] hover:text-[var(--color-foreground)]'
+                    }`}
+                  >
+                    {pct}%
+                  </button>
+                );
+              })}
+              {discountPercent && (
+                <button
+                  type="button"
+                  onClick={() => setDiscountPercent('')}
+                  className="cursor-pointer rounded-lg px-1.5 py-0.5 text-[10px] font-medium text-[var(--color-muted)] transition-colors hover:text-red-500"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Auto-Calculated Selling Price Banner */}
+        <div
+          className={`rounded-2xl border p-4 transition-all md:p-5 ${
+            hasValidDiscount
+              ? 'border-emerald-500/30 bg-emerald-500/5'
+              : 'bg-[var(--color-surface)]/60 border-[var(--color-border)]'
+          }`}
+        >
+          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+            <div>
+              <div className="mb-1.5 flex items-center gap-2">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-muted)]">
+                  Selling Price (Auto-Calculated)
                 </span>
-                Buyers save GH₵{discountInfo.savings}
+                {hasValidDiscount ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-600">
+                    −{discountPercent}% OFF
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-border)] px-2 py-0.5 text-[10px] font-medium text-[var(--color-muted)]">
+                    Standard Price
+                  </span>
+                )}
+              </div>
+              <div className="flex items-baseline gap-2.5">
+                <span className="text-2xl font-bold tabular-nums tracking-tight text-[var(--color-foreground)] sm:text-3xl">
+                  GH₵{calculatedSellingPrice}
+                </span>
+                {hasValidDiscount && Number(basePrice) > 0 && (
+                  <span className="text-sm tabular-nums text-[var(--color-muted)] line-through">
+                    GH₵{Number(basePrice).toFixed(2)}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="text-xs text-[var(--color-muted)] sm:text-right">
+              {hasValidDiscount ? (
+                <p className="text-xs font-medium text-emerald-600">
+                  Buyers save GH₵{savingsAmount} ({discountPercent}% discount)
+                </p>
+              ) : (
+                <p className="text-xs text-[var(--color-muted)]">
+                  {Number(basePrice) > 0
+                    ? 'Buyers pay full price (no discount applied)'
+                    : 'Enter a price above to view selling price'}
+                </p>
+              )}
+              <p className="mt-0.5 text-[10px] text-[var(--color-muted)]">
+                System automatically calculates customer checkout price
               </p>
-            ) : (
-              <p className="text-[10px] text-[var(--color-muted)] pt-0.5">
-                Set higher than selling price to show a discount banner.
-              </p>
-            )}
+            </div>
           </div>
         </div>
 
         {/* Stock & Condition */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+        <div className="grid grid-cols-1 gap-4 pt-1 md:grid-cols-2">
           {/* Quantity in stock */}
           <div className="space-y-1.5">
             <label className="text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
-              Quantity Available <span className="text-[var(--color-accent)]">*</span>
+              Quantity Available{' '}
+              <span className="font-normal text-[var(--color-muted)]">(Optional)</span>
             </label>
             <Input
               type="number"
@@ -784,15 +972,15 @@ export default function ProductForm({
               value={formData.quantity_available}
               onChange={(e) => setFormData({ ...formData, quantity_available: e.target.value })}
               placeholder="1"
-              required
               className="h-12 rounded-2xl text-xs font-normal"
             />
+            <p className="text-[10px] text-[var(--color-muted)]">Defaults to 1 unit in stock</p>
           </div>
 
           {/* Condition */}
           <div className="space-y-1.5">
             <label className="text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
-              Item Condition <span className="text-[var(--color-accent)]">*</span>
+              Item Condition
             </label>
             <div className="grid grid-cols-3 gap-2">
               {(
@@ -808,10 +996,10 @@ export default function ProductForm({
                     key={value}
                     type="button"
                     onClick={() => setFormData({ ...formData, condition: value })}
-                    className={`h-12 rounded-2xl border text-xs font-medium transition-all duration-150 cursor-pointer ${
+                    className={`h-12 cursor-pointer rounded-2xl border text-xs font-medium transition-all duration-150 ${
                       active
-                        ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/10 text-[var(--color-accent)]'
-                        : 'border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-muted)] hover:border-[var(--color-accent)]/40'
+                        ? 'bg-[var(--color-accent)]/10 border-[var(--color-accent)] text-[var(--color-accent)]'
+                        : 'hover:border-[var(--color-accent)]/40 border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-muted)]'
                     }`}
                   >
                     {label}
@@ -824,14 +1012,21 @@ export default function ProductForm({
       </Card>
 
       {/* ────────────────── 4. Narrative & Tags ────────────────── */}
-      <Card className="p-6 md:p-8 space-y-6 border border-[var(--color-border)] rounded-3xl" hoverEffect={false}>
-        <div className="flex items-center gap-3 border-b border-[var(--color-border)]/60 pb-4">
-          <div className="w-9 h-9 rounded-2xl bg-[var(--color-accent)]/10 flex items-center justify-center flex-shrink-0">
-            <Tag className="w-4 h-4 text-[var(--color-accent)]" />
+      <Card
+        className="space-y-6 rounded-3xl border border-[var(--color-border)] p-6 md:p-8"
+        hoverEffect={false}
+      >
+        <div className="border-[var(--color-border)]/60 flex items-center gap-3 border-b pb-4">
+          <div className="bg-[var(--color-accent)]/10 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-2xl">
+            <Tag className="h-4 w-4 text-[var(--color-accent)]" />
           </div>
           <div>
-            <h3 className="text-sm font-medium text-[var(--color-foreground)]">Story &amp; Discoverability</h3>
-            <p className="text-[11px] text-[var(--color-muted)]">Detailed description and marketplace search tags</p>
+            <h3 className="text-sm font-medium text-[var(--color-foreground)]">
+              Story &amp; Discoverability
+            </h3>
+            <p className="text-[11px] text-[var(--color-muted)]">
+              Detailed description and marketplace search tags
+            </p>
           </div>
         </div>
 
@@ -841,7 +1036,7 @@ export default function ProductForm({
             <label className="text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
               Description
             </label>
-            <span className="text-[10px] text-[var(--color-muted)] tabular-nums">
+            <span className="text-[10px] tabular-nums text-[var(--color-muted)]">
               {formData.description.length}/2000
             </span>
           </div>
@@ -872,12 +1067,12 @@ export default function ProductForm({
               }}
               placeholder="Type tag and press Enter (e.g. vintage, cotton, handmade)"
               maxLength={50}
-              className="h-12 rounded-2xl text-xs font-normal flex-1"
+              className="h-12 flex-1 rounded-2xl text-xs font-normal"
             />
             <button
               type="button"
               onClick={addTag}
-              className="h-12 px-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] text-xs font-medium text-[var(--color-foreground)] hover:border-[var(--color-accent)]/50 hover:text-[var(--color-accent)] transition-all cursor-pointer"
+              className="hover:border-[var(--color-accent)]/50 h-12 cursor-pointer rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 text-xs font-medium text-[var(--color-foreground)] transition-all hover:text-[var(--color-accent)]"
             >
               Add
             </button>
@@ -889,16 +1084,16 @@ export default function ProductForm({
               {formData.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--color-accent)]/10 text-[var(--color-accent)] text-xs font-medium"
+                  className="bg-[var(--color-accent)]/10 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-[var(--color-accent)]"
                 >
                   #{tag}
                   <button
                     type="button"
                     onClick={() => removeTag(tag)}
-                    className="hover:opacity-75 transition-opacity cursor-pointer"
+                    className="cursor-pointer transition-opacity hover:opacity-75"
                     aria-label={`Remove tag ${tag}`}
                   >
-                    <X className="w-3.5 h-3.5" />
+                    <X className="h-3.5 w-3.5" />
                   </button>
                 </span>
               ))}
@@ -908,14 +1103,21 @@ export default function ProductForm({
       </Card>
 
       {/* ────────────────── 5. Visibility & Promotion ────────────────── */}
-      <Card className="p-6 md:p-8 space-y-6 border border-[var(--color-border)] rounded-3xl" hoverEffect={false}>
-        <div className="flex items-center gap-3 border-b border-[var(--color-border)]/60 pb-4">
-          <div className="w-9 h-9 rounded-2xl bg-[var(--color-accent)]/10 flex items-center justify-center flex-shrink-0">
-            <FileText className="w-4 h-4 text-[var(--color-accent)]" />
+      <Card
+        className="space-y-6 rounded-3xl border border-[var(--color-border)] p-6 md:p-8"
+        hoverEffect={false}
+      >
+        <div className="border-[var(--color-border)]/60 flex items-center gap-3 border-b pb-4">
+          <div className="bg-[var(--color-accent)]/10 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-2xl">
+            <FileText className="h-4 w-4 text-[var(--color-accent)]" />
           </div>
           <div>
-            <h3 className="text-sm font-medium text-[var(--color-foreground)]">Publishing &amp; Growth</h3>
-            <p className="text-[11px] text-[var(--color-muted)]">Control visibility and Hot Sales marketplace boost</p>
+            <h3 className="text-sm font-medium text-[var(--color-foreground)]">
+              Publishing &amp; Growth
+            </h3>
+            <p className="text-[11px] text-[var(--color-muted)]">
+              Control visibility and Hot Sales marketplace boost
+            </p>
           </div>
         </div>
 
@@ -945,14 +1147,14 @@ export default function ProductForm({
                   key={value}
                   type="button"
                   onClick={() => setFormData({ ...formData, status: value as any })}
-                  className={`flex items-start gap-3 p-4 rounded-2xl border text-left transition-all cursor-pointer ${
+                  className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 text-left transition-all ${
                     active
-                      ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/8'
-                      : 'border-[var(--color-border)] bg-[var(--color-background)] hover:border-[var(--color-accent)]/30'
+                      ? 'bg-[var(--color-accent)]/8 border-[var(--color-accent)]'
+                      : 'hover:border-[var(--color-accent)]/30 border-[var(--color-border)] bg-[var(--color-background)]'
                   }`}
                 >
                   <Icon
-                    className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
+                    className={`mt-0.5 h-4 w-4 flex-shrink-0 ${
                       active ? 'text-[var(--color-accent)]' : 'text-[var(--color-muted)]'
                     }`}
                   />
@@ -964,7 +1166,7 @@ export default function ProductForm({
                     >
                       {label}
                     </p>
-                    <p className="text-[10px] text-[var(--color-muted)] mt-0.5">{desc}</p>
+                    <p className="mt-0.5 text-[10px] text-[var(--color-muted)]">{desc}</p>
                   </div>
                 </button>
               );
@@ -977,7 +1179,7 @@ export default function ProductForm({
           <button
             type="button"
             onClick={() => setFormData({ ...formData, is_featured: !formData.is_featured })}
-            className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer ${
+            className={`flex w-full cursor-pointer items-center justify-between rounded-2xl border p-4 transition-all ${
               formData.is_featured
                 ? 'border-amber-400/60 bg-amber-500/10'
                 : 'border-[var(--color-border)] bg-[var(--color-background)] hover:border-amber-400/40'
@@ -985,16 +1187,16 @@ export default function ProductForm({
           >
             <div className="flex items-center gap-3">
               <div
-                className={`w-9 h-9 rounded-xl flex items-center justify-center ${
+                className={`flex h-9 w-9 items-center justify-center rounded-xl ${
                   formData.is_featured ? 'bg-amber-500/20 text-amber-600' : 'bg-surface text-muted'
                 }`}
               >
-                <Flame className="w-5 h-5" />
+                <Flame className="h-5 w-5" />
               </div>
               <div className="text-left">
-                <p className="text-xs font-medium text-[var(--color-foreground)] flex items-center gap-1.5">
+                <p className="flex items-center gap-1.5 text-xs font-medium text-[var(--color-foreground)]">
                   Hot Sales Homepage Boost
-                  <span className="text-[9px] font-medium px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 uppercase">
+                  <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[9px] font-medium uppercase text-amber-600">
                     GH₵7 / week
                   </span>
                 </p>
@@ -1004,8 +1206,10 @@ export default function ProductForm({
               </div>
             </div>
             <span
-              className={`text-[10px] font-semibold px-3 py-1 rounded-full uppercase tracking-wider ${
-                formData.is_featured ? 'bg-amber-500 text-white' : 'bg-[var(--color-border)] text-[var(--color-muted)]'
+              className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-wider ${
+                formData.is_featured
+                  ? 'bg-amber-500 text-white'
+                  : 'bg-[var(--color-border)] text-[var(--color-muted)]'
               }`}
             >
               {formData.is_featured ? 'Enabled' : 'Disabled'}
@@ -1016,14 +1220,21 @@ export default function ProductForm({
 
       {/* ────────────────── 6. Variants (Edit Mode) ────────────────── */}
       {isEdit && productId && (
-        <Card className="p-6 md:p-8 space-y-6 border border-[var(--color-border)] rounded-3xl" hoverEffect={false}>
-          <div className="flex items-center gap-3 border-b border-[var(--color-border)]/60 pb-4">
-            <div className="w-9 h-9 rounded-2xl bg-[var(--color-accent)]/10 flex items-center justify-center flex-shrink-0">
-              <Layers className="w-4 h-4 text-[var(--color-accent)]" />
+        <Card
+          className="space-y-6 rounded-3xl border border-[var(--color-border)] p-6 md:p-8"
+          hoverEffect={false}
+        >
+          <div className="border-[var(--color-border)]/60 flex items-center gap-3 border-b pb-4">
+            <div className="bg-[var(--color-accent)]/10 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-2xl">
+              <Layers className="h-4 w-4 text-[var(--color-accent)]" />
             </div>
             <div>
-              <h3 className="text-sm font-medium text-[var(--color-foreground)]">Product Variants</h3>
-              <p className="text-[11px] text-[var(--color-muted)]">Manage size, colour, SKU, and price overrides</p>
+              <h3 className="text-sm font-medium text-[var(--color-foreground)]">
+                Product Variants
+              </h3>
+              <p className="text-[11px] text-[var(--color-muted)]">
+                Manage size, colour, SKU, and price overrides
+              </p>
             </div>
           </div>
           <VariantEditor productId={productId} />
@@ -1038,7 +1249,7 @@ export default function ProductForm({
             variant="secondary"
             onClick={onCancel}
             disabled={isLoading}
-            className="flex-1 h-14 rounded-2xl font-medium text-xs cursor-pointer"
+            className="h-14 flex-1 cursor-pointer rounded-2xl text-xs font-medium"
           >
             Cancel
           </Button>
@@ -1046,16 +1257,16 @@ export default function ProductForm({
         <Button
           type="submit"
           disabled={isLoading || isCompressing}
-          className={`${onCancel ? 'flex-[2]' : 'w-full'} h-14 rounded-2xl font-medium text-xs shadow-lg shadow-black/5 cursor-pointer`}
+          className={`${onCancel ? 'flex-[2]' : 'w-full'} h-14 cursor-pointer rounded-2xl text-xs font-medium shadow-lg shadow-black/5`}
         >
           {isLoading ? (
             <span className="flex items-center gap-2">
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
               {isEdit ? 'Saving Changes…' : 'Publishing Product…'}
             </span>
           ) : (
             <span className="flex items-center gap-2">
-              <Package className="w-4 h-4" />
+              <Package className="h-4 w-4" />
               {isEdit ? 'Save Product Changes' : 'Publish Product'}
             </span>
           )}

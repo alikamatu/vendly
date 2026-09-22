@@ -25,7 +25,7 @@ export class OrderService {
     private sms: SmsClient,
     private emailService: EmailService,
     private orderEvents: OrderEventsService,
-  ) { }
+  ) {}
 
   async createOrder(userId: string, dto: CreateOrderDto) {
     // 1. Get seller/store
@@ -89,7 +89,11 @@ export class OrderService {
       let variantId: string | null = null;
 
       // Reject orders for products that have been pulled from the catalogue.
-      if (product.status && product.status !== 'published' && product.status !== 'active') {
+      if (
+        product.status &&
+        product.status !== 'published' &&
+        product.status !== 'active'
+      ) {
         throw new BadRequestException(
           `${product.title} is no longer available.`,
         );
@@ -103,12 +107,12 @@ export class OrderService {
           );
         }
         if (!variant.is_active) {
-          throw new BadRequestException('Selected variant is no longer available');
+          throw new BadRequestException(
+            'Selected variant is no longer available',
+          );
         }
         if (variant.quantity_available <= 0) {
-          throw new BadRequestException(
-            `${product.title} is out of stock.`,
-          );
+          throw new BadRequestException(`${product.title} is out of stock.`);
         }
         if (variant.quantity_available < item.quantity) {
           throw new BadRequestException(
@@ -125,9 +129,7 @@ export class OrderService {
         // 4xx rather than a corrupted inventory count.
         if (typeof product.quantity_available === 'number') {
           if (product.quantity_available <= 0) {
-            throw new BadRequestException(
-              `${product.title} is out of stock.`,
-            );
+            throw new BadRequestException(`${product.title} is out of stock.`);
           }
           if (product.quantity_available < item.quantity) {
             throw new BadRequestException(
@@ -141,7 +143,9 @@ export class OrderService {
         );
         // Fall back to a fresh check only when caller passed none for this product.
         if (!hasActiveVariants && variantIds.length === 0) {
-          const anyVariant = await (this.prisma as any).productVariant.findFirst({
+          const anyVariant = await (
+            this.prisma as any
+          ).productVariant.findFirst({
             where: { product_id: product.id, is_active: true },
             select: { id: true },
           });
@@ -219,9 +223,7 @@ export class OrderService {
               data: { quantity_available: { decrement: item.quantity } },
             });
             if (updated.count === 0) {
-              throw new BadRequestException(
-                'Sorry — that item just sold out.',
-              );
+              throw new BadRequestException('Sorry — that item just sold out.');
             }
           }
         }
@@ -263,10 +265,6 @@ export class OrderService {
         amount: totalAmount.toNumber(),
         reference,
         callbackUrl,
-        subaccount: seller.paystack_subaccount_code || undefined,
-        // Since we are applying a percentage charge (in Subaccount),
-        // the default bearer is 'account' (platform). Let's explicitly set it.
-        bearer: 'account',
       });
 
       if (paystackData && paystackData.data) {
@@ -301,7 +299,10 @@ export class OrderService {
     if (!requiresPaystack) {
       // Send buyer confirmation and vendor order alert emails for Cash on Delivery / Pay on Delivery orders
       this.sendOrderPlacedEmails(order.id).catch((err) =>
-        console.error(`Failed to send order placed emails for ${order.id}:`, err),
+        console.error(
+          `Failed to send order placed emails for ${order.id}:`,
+          err,
+        ),
       );
     }
 
@@ -381,16 +382,16 @@ export class OrderService {
       })),
       payment_info: o.transaction
         ? {
-          status: o.transaction.status,
-          provider: o.transaction.provider,
-          reference: o.transaction.reference,
-          provider_ref: o.transaction.provider_ref,
-          amount: o.transaction.amount?.toString(),
-        }
+            status: o.transaction.status,
+            provider: o.transaction.provider,
+            reference: o.transaction.reference,
+            provider_ref: o.transaction.provider_ref,
+            amount: o.transaction.amount?.toString(),
+          }
         : {
-          status: o.status === 'PAID' ? 'SUCCESS' : 'PENDING',
-          provider: 'CASH_ON_DELIVERY',
-        },
+            status: o.status === 'PAID' ? 'SUCCESS' : 'PENDING',
+            provider: 'CASH_ON_DELIVERY',
+          },
     }));
   }
 
@@ -461,16 +462,16 @@ export class OrderService {
       return_request: (o as any).return_request,
       payment_info: o.transaction
         ? {
-          status: o.transaction.status,
-          provider: o.transaction.provider,
-          reference: o.transaction.reference,
-          provider_ref: o.transaction.provider_ref,
-          amount: o.transaction.amount?.toString(),
-        }
+            status: o.transaction.status,
+            provider: o.transaction.provider,
+            reference: o.transaction.reference,
+            provider_ref: o.transaction.provider_ref,
+            amount: o.transaction.amount?.toString(),
+          }
         : {
-          status: o.status === 'PAID' ? 'SUCCESS' : 'PENDING',
-          provider: 'CASH_ON_DELIVERY',
-        },
+            status: o.status === 'PAID' ? 'SUCCESS' : 'PENDING',
+            provider: 'CASH_ON_DELIVERY',
+          },
     }));
   }
 
@@ -610,6 +611,14 @@ export class OrderService {
     this.sendOrderStatusEmails(orderId, status).catch((err) =>
       console.error(`Failed to send status email for order ${orderId}:`, err),
     );
+
+    if (status === 'DELIVERED') {
+      this.paymentsService
+        .releaseEscrowForOrder(orderId)
+        .catch((err) =>
+          console.error(`Failed to release escrow for order ${orderId}:`, err),
+        );
+    }
 
     return {
       message: 'Order status updated successfully',
@@ -855,15 +864,20 @@ export class OrderService {
    * flow or contact the seller. Restores quantity for COD orders (where stock
    * was already decremented at creation).
    */
-  async cancelOrderByBuyer(
-    userId: string,
-    orderId: string,
-    reason?: string,
-  ) {
+  async cancelOrderByBuyer(userId: string, orderId: string, reason?: string) {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
       include: {
-        items: { include: { product: { select: { id: true, seller: { select: { user_id: true, store_name: true } } } } } },
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                seller: { select: { user_id: true, store_name: true } },
+              },
+            },
+          },
+        },
         transaction: { select: { status: true, provider: true } },
       },
     });
@@ -927,8 +941,13 @@ export class OrderService {
     }
 
     // Trigger rich cancellation email to buyer and seller(s)
-    this.sendOrderStatusEmails(orderId, 'CANCELLED', reason, { cancelledBy: 'buyer' }).catch((err) =>
-      console.error(`Failed to send cancellation emails for order ${orderId}:`, err),
+    this.sendOrderStatusEmails(orderId, 'CANCELLED', reason, {
+      cancelledBy: 'buyer',
+    }).catch((err) =>
+      console.error(
+        `Failed to send cancellation emails for order ${orderId}:`,
+        err,
+      ),
     );
 
     // Real-time event for cancellation
@@ -1000,7 +1019,10 @@ export class OrderService {
     if (transaction?.status === 'SUCCESS' && freshOrder?.status === 'PAID') {
       await this.notifyAllSellersForPaidOrder(orderId);
       this.sendOrderPlacedEmails(orderId).catch((err) =>
-        console.error(`Failed to send paid order confirmation emails for ${orderId}:`, err),
+        console.error(
+          `Failed to send paid order confirmation emails for ${orderId}:`,
+          err,
+        ),
       );
 
       const orderNumber = `ORD-${orderId.slice(-6).toUpperCase()}`;
@@ -1181,7 +1203,8 @@ export class OrderService {
     const callbackUrl = `${webBaseUrl}/orders?order_payment=1&reference=${reference}&order_id=${order.id.toString()}`;
 
     const buyerEmail =
-      order.buyer?.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(order.buyer.email.trim())
+      order.buyer?.email &&
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(order.buyer.email.trim())
         ? order.buyer.email.trim()
         : 'customer@verndly.com';
 
@@ -1191,8 +1214,6 @@ export class OrderService {
       amount: order.total_amount.toNumber(),
       reference,
       callbackUrl,
-      subaccount: seller.paystack_subaccount_code || undefined,
-      bearer: 'account',
     });
 
     if (!paystackData || !paystackData.data) {
@@ -1303,16 +1324,16 @@ export class OrderService {
       })),
       payment_info: order.transaction
         ? {
-          status: order.transaction.status,
-          provider: order.transaction.provider,
-          reference: order.transaction.reference,
-          provider_ref: order.transaction.provider_ref,
-          amount: order.transaction.amount?.toString(),
-        }
+            status: order.transaction.status,
+            provider: order.transaction.provider,
+            reference: order.transaction.reference,
+            provider_ref: order.transaction.provider_ref,
+            amount: order.transaction.amount?.toString(),
+          }
         : {
-          status: order.status === 'PAID' ? 'SUCCESS' : 'PENDING',
-          provider: 'CASH_ON_DELIVERY',
-        },
+            status: order.status === 'PAID' ? 'SUCCESS' : 'PENDING',
+            provider: 'CASH_ON_DELIVERY',
+          },
     };
   }
 
@@ -1338,12 +1359,7 @@ export class OrderService {
       throw new BadRequestException('Unauthorized access to this order');
     }
 
-    const returnableStatuses = [
-      'DELIVERED',
-      'COMPLETED',
-      'PAID',
-      'FULFILLED',
-    ];
+    const returnableStatuses = ['DELIVERED', 'COMPLETED', 'PAID', 'FULFILLED'];
     if (!returnableStatuses.includes(order.status.toUpperCase())) {
       throw new BadRequestException(
         'Returns can only be requested for delivered or completed orders',
@@ -1555,8 +1571,7 @@ export class OrderService {
     return this.paymentsService.refundTransaction({
       orderId,
       reason:
-        note ||
-        'Seller confirmed returned item receipt and authorized refund',
+        note || 'Seller confirmed returned item receipt and authorized refund',
       actor: { id: userId, role: 'SELLER' as any },
     });
   }
@@ -1620,9 +1635,7 @@ export class OrderService {
         quantity: item.quantity,
         price: item.price.toString(),
         image_url:
-          item.variant?.image_url ||
-          item.product?.image_urls?.[0] ||
-          null,
+          item.variant?.image_url || item.product?.image_urls?.[0] || null,
         variantDescription: formatVariantDesc(item.variant),
       }));
 
@@ -1659,7 +1672,10 @@ export class OrderService {
         this.emailService
           .sendOrderConfirmation(order.buyer.email, buyerOrderData)
           .catch((err) =>
-            console.error(`Failed to send order confirmation to ${order.buyer?.email}:`, err),
+            console.error(
+              `Failed to send order confirmation to ${order.buyer?.email}:`,
+              err,
+            ),
           );
       }
 
@@ -1696,9 +1712,7 @@ export class OrderService {
           quantity: item.quantity,
           price: item.price.toString(),
           image_url:
-            item.variant?.image_url ||
-            item.product?.image_urls?.[0] ||
-            null,
+            item.variant?.image_url || item.product?.image_urls?.[0] || null,
           variantDescription: formatVariantDesc(item.variant),
         });
       }
@@ -1719,11 +1733,17 @@ export class OrderService {
             total: sellerTotal.toFixed(2),
           })
           .catch((err) =>
-            console.error(`Failed to send seller order notification to ${group.email}:`, err),
+            console.error(
+              `Failed to send seller order notification to ${group.email}:`,
+              err,
+            ),
           );
       }
     } catch (error) {
-      console.error(`Error in sendOrderPlacedEmails for order ${orderId}:`, error);
+      console.error(
+        `Error in sendOrderPlacedEmails for order ${orderId}:`,
+        error,
+      );
     }
   }
 
@@ -1791,9 +1811,7 @@ export class OrderService {
         quantity: item.quantity,
         price: item.price.toString(),
         image_url:
-          item.variant?.image_url ||
-          item.product?.image_urls?.[0] ||
-          null,
+          item.variant?.image_url || item.product?.image_urls?.[0] || null,
         variantDescription: formatVariantDesc(item.variant),
       }));
 
@@ -1826,7 +1844,10 @@ export class OrderService {
         this.emailService
           .sendOrderStatusUpdate(order.buyer.email, statusData)
           .catch((err) =>
-            console.error(`Failed to send order status email to ${order.buyer?.email}:`, err),
+            console.error(
+              `Failed to send order status email to ${order.buyer?.email}:`,
+              err,
+            ),
           );
       }
 
@@ -1845,12 +1866,18 @@ export class OrderService {
           this.emailService
             .sendSellerOrderStatusNotification(email, statusData)
             .catch((err) =>
-              console.error(`Failed to send cancellation alert to seller ${email}:`, err),
+              console.error(
+                `Failed to send cancellation alert to seller ${email}:`,
+                err,
+              ),
             );
         }
       }
     } catch (error) {
-      console.error(`Error in sendOrderStatusEmails for order ${orderId}:`, error);
+      console.error(
+        `Error in sendOrderStatusEmails for order ${orderId}:`,
+        error,
+      );
     }
   }
 }
