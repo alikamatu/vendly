@@ -69,9 +69,9 @@ async function bootstrap() {
     'http://localhost:3000',
     'http://127.0.0.1:3000',
     'https://verndly.com',
+    'https://admin.verndly.com',
     'https://www.verndly.com',
-    'https://verndly.market',
-    'https://www.verndly.market',
+    'https://www.admin.verndly.com',
   ]);
 
   app.enableCors({
