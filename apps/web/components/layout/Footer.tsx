@@ -20,6 +20,7 @@ import {
   Instagram,
   Linkedin,
   Twitter,
+  Download,
 } from 'lucide-react';
 import { contactApi } from '@/lib/api/contact';
 import Spinner from '@/components/ui/Spinner';
@@ -296,6 +297,19 @@ export default function Footer() {
             <Link href="/contact" className="hover:text-primary transition-colors">
               Contact Support
             </Link>
+            <span className="text-border">•</span>
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('open-pwa-install'));
+                }
+              }}
+              className="hover:text-primary inline-flex cursor-pointer items-center gap-1 font-medium transition-colors"
+            >
+              <Download className="h-3 w-3 text-amber-500" />
+              <span>Install App</span>
+            </button>
           </div>
 
           <div className="flex flex-wrap items-center gap-4">

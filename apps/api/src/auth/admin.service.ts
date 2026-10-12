@@ -197,9 +197,7 @@ export class AdminService {
           user.full_name,
           dto.reason || 'Policy violation. Contact support for details.',
         )
-        .catch((err) =>
-          console.error('Failed to send suspension email:', err),
-        );
+        .catch((err) => console.error('Failed to send suspension email:', err));
     }
 
     this.auditLogs.record({
@@ -533,9 +531,7 @@ export class AdminService {
       actorId: actor?.id ?? adminId,
       actorRole: actor?.role ?? Role.ADMIN,
       action:
-        dto.status === 'APPROVED'
-          ? 'approval.approve'
-          : 'approval.reject',
+        dto.status === 'APPROVED' ? 'approval.approve' : 'approval.reject',
       entityType: 'approval',
       entityId: approvalId,
       reason: dto.reason,
@@ -602,7 +598,7 @@ export class AdminService {
   }
 
   async getUserById(id: string) {
-    const user = await this.prisma.user.findUnique({
+    const user = (await this.prisma.user.findUnique({
       where: { id },
       select: {
         id: true,
@@ -632,7 +628,7 @@ export class AdminService {
           },
         },
       } as any,
-    }) as any;
+    })) as any;
 
     if (!user) throw new NotFoundException('User not found');
 
@@ -825,7 +821,9 @@ export class AdminService {
         phone_verified_at: null,
       },
     });
-    return { message: '2FA disabled. The user should re-enroll on their next sign-in.' };
+    return {
+      message: '2FA disabled. The user should re-enroll on their next sign-in.',
+    };
   }
 
   async setProStatus(
@@ -847,10 +845,13 @@ export class AdminService {
     const days = Math.max(1, Math.floor(args.duration_days ?? 30));
     const now = new Date();
     const baseDate =
-      (u as any).pro_expires_at && (u as any).pro_expires_at.getTime() > now.getTime()
+      (u as any).pro_expires_at &&
+      (u as any).pro_expires_at.getTime() > now.getTime()
         ? (u as any).pro_expires_at
         : now;
-    const nextExpiry = new Date(baseDate.getTime() + days * 24 * 60 * 60 * 1000);
+    const nextExpiry = new Date(
+      baseDate.getTime() + days * 24 * 60 * 60 * 1000,
+    );
     const updated = await (this.prisma.user as any).update({
       where: { id: userId },
       data: { is_pro: true, pro_expires_at: nextExpiry },
@@ -942,7 +943,7 @@ export class AdminService {
       return this.refundReturnRequest(
         id,
         { admin_note: args.admin_note },
-        actor || { id: 'admin', role: 'ADMIN' as any },
+        actor || { id: 'admin', role: 'ADMIN' },
       );
     }
 

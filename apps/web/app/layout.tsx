@@ -1,23 +1,23 @@
-import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import ThemeProvider from "../lib/contexts/theme";
-import { AuthProvider } from "../lib/contexts/auth-context";
-import { CartProvider } from "../lib/contexts/cart-context";
-import { StoreGuard } from "../components/auth/store-guard";
-import { AuthModalProvider } from "../lib/contexts/auth-modal-context";
-import AuthModal from "../components/auth/AuthModal";
-import { SITE_URL, SITE_NAME, SITE_DESCRIPTION, buildMetadata } from "@/lib/seo";
-import OrganizationJsonLd from "@/components/seo/OrganizationJsonLd";
+import type { Metadata, Viewport } from 'next';
+import { Geist, Geist_Mono } from 'next/font/google';
+import './globals.css';
+import ThemeProvider from '../lib/contexts/theme';
+import { AuthProvider } from '../lib/contexts/auth-context';
+import { CartProvider } from '../lib/contexts/cart-context';
+import { StoreGuard } from '../components/auth/store-guard';
+import { AuthModalProvider } from '../lib/contexts/auth-modal-context';
+import AuthModal from '../components/auth/AuthModal';
+import { SITE_URL, SITE_NAME, SITE_DESCRIPTION } from '@/lib/seo';
+import OrganizationJsonLd from '@/components/seo/OrganizationJsonLd';
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+  variable: '--font-geist-sans',
+  subsets: ['latin'],
 });
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  variable: '--font-geist-mono',
+  subsets: ['latin'],
 });
 
 export const metadata: Metadata = {
@@ -29,14 +29,14 @@ export const metadata: Metadata = {
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
   keywords: [
-    "Verndly",
-    "marketplace",
-    "Ghana marketplace",
-    "young entrepreneurs",
-    "small business",
-    "independent sellers",
-    "online shopping Ghana",
-    "buy from local stores",
+    'Verndly',
+    'marketplace',
+    'Ghana marketplace',
+    'young entrepreneurs',
+    'small business',
+    'independent sellers',
+    'online shopping Ghana',
+    'buy from local stores',
   ],
   authors: [{ name: SITE_NAME, url: SITE_URL }],
   creator: SITE_NAME,
@@ -44,8 +44,8 @@ export const metadata: Metadata = {
   formatDetection: { email: false, address: false, telephone: false },
   alternates: { canonical: SITE_URL },
   openGraph: {
-    type: "website",
-    locale: "en_US",
+    type: 'website',
+    locale: 'en_US',
     url: SITE_URL,
     siteName: SITE_NAME,
     title: `${SITE_NAME} — Marketplace for Independent Businesses`,
@@ -60,7 +60,7 @@ export const metadata: Metadata = {
     ],
   },
   twitter: {
-    card: "summary_large_image",
+    card: 'summary_large_image',
     title: `${SITE_NAME} — Marketplace for Independent Businesses`,
     description: SITE_DESCRIPTION,
     images: [`${SITE_URL}/opengraph-image`],
@@ -71,29 +71,36 @@ export const metadata: Metadata = {
     googleBot: {
       index: true,
       follow: true,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-      "max-video-preview": -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+      'max-video-preview': -1,
     },
   },
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: SITE_NAME,
+  },
   icons: {
-    icon: "/favicon.ico",
-    apple: "/apple-touch-icon.png",
+    icon: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
   },
 };
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#0a0a0a' },
   ],
-  width: "device-width",
+  width: 'device-width',
   initialScale: 1,
 };
 
-import { FavoriteProvider } from "../lib/contexts/favorite-context";
-import SiteFooter from "../components/layout/SiteFooter";
-import Toaster from "../components/ui/Toaster";
+import { FavoriteProvider } from '../lib/contexts/favorite-context';
+import SiteFooter from '../components/layout/SiteFooter';
+import Toaster from '../components/ui/Toaster';
+import PwaInstallPrompt from '../components/pwa/PwaInstallPrompt';
 
 export default function RootLayout({
   children,
@@ -103,6 +110,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        {/* PWA & Mobile Web App meta tags */}
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="Vendly" />
+
         {/*
           Eager TCP + TLS handshakes for the two origins every page hits:
           Cloudinary (every product image) and the API. preconnect opens the
@@ -113,26 +128,15 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://res.cloudinary.com" />
         {process.env.NEXT_PUBLIC_API_URL && (
           <>
-            <link
-              rel="preconnect"
-              href={process.env.NEXT_PUBLIC_API_URL}
-              crossOrigin=""
-            />
+            <link rel="preconnect" href={process.env.NEXT_PUBLIC_API_URL} crossOrigin="" />
             <link rel="dns-prefetch" href={process.env.NEXT_PUBLIC_API_URL} />
           </>
         )}
         {/* Hero image — biggest paint on the home page. Preload so it lands
             before React mounts. */}
-        <link
-          rel="preload"
-          as="image"
-          href="/images/423323.jpeg"
-          fetchPriority="high"
-        />
+        <link rel="preload" as="image" href="/images/423323.jpeg" fetchPriority="high" />
       </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
-      >
+      <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
         <OrganizationJsonLd />
         <ThemeProvider>
           <AuthProvider>
@@ -144,6 +148,7 @@ export default function RootLayout({
                     <SiteFooter />
                     <AuthModal />
                     <Toaster />
+                    <PwaInstallPrompt />
                   </StoreGuard>
                 </CartProvider>
               </FavoriteProvider>

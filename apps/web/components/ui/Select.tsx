@@ -52,11 +52,26 @@ export default function Select({
   id,
 }: SelectProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [openUpward, setOpenUpward] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const generatedId = useId();
   const selectId = id || generatedId;
+
+  // Auto-flip upward if viewport space below is tight
+  useEffect(() => {
+    if (isOpen && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      if (spaceBelow < 240 && spaceAbove > spaceBelow) {
+        setOpenUpward(true);
+      } else {
+        setOpenUpward(false);
+      }
+    }
+  }, [isOpen]);
 
   // Selected option details
   const selectedOption = options.find((o) => o.value === value);
@@ -65,13 +80,14 @@ export default function Select({
   const isSearchable = searchable ?? options.length > 7;
 
   // Filter options based on search query
-  const filteredOptions = isSearchable && searchQuery.trim()
-    ? options.filter(
-        (o) =>
-          o.label.toLowerCase().includes(searchQuery.toLowerCase().trim()) ||
-          o.description?.toLowerCase().includes(searchQuery.toLowerCase().trim())
-      )
-    : options;
+  const filteredOptions =
+    isSearchable && searchQuery.trim()
+      ? options.filter(
+          (o) =>
+            o.label.toLowerCase().includes(searchQuery.toLowerCase().trim()) ||
+            o.description?.toLowerCase().includes(searchQuery.toLowerCase().trim()),
+        )
+      : options;
 
   // Close when clicking outside
   useEffect(() => {
@@ -116,7 +132,14 @@ export default function Select({
   };
 
   return (
-    <div className={clsx('w-full text-left relative', className)} ref={containerRef}>
+    <div
+      className={clsx(
+        'relative w-full text-left transition-all',
+        isOpen ? 'z-50' : 'z-auto',
+        className,
+      )}
+      ref={containerRef}
+    >
       {/* Label Row */}
       {(label || labelRight) && (
         <div className="mb-1.5 flex items-center justify-between">
@@ -125,7 +148,11 @@ export default function Select({
               htmlFor={selectId}
               className={clsx(
                 'text-xs font-medium tracking-tight transition-colors',
-                error ? 'text-red-500' : isOpen ? 'text-foreground font-semibold' : 'text-foreground/80'
+                error
+                  ? 'text-red-500'
+                  : isOpen
+                    ? 'text-foreground font-semibold'
+                    : 'text-foreground/80',
               )}
             >
               {label}
@@ -144,20 +171,25 @@ export default function Select({
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         className={clsx(
-          'relative flex items-center justify-between w-full transition-all duration-200 outline-none text-left select-none',
-          size === 'sm' ? 'h-9 px-3 rounded-lg text-xs' : 'h-11 px-3.5 rounded-xl text-sm',
-          'border bg-input-bg shadow-[0_1px_2px_rgba(0,0,0,0.04)]',
+          'relative flex w-full select-none items-center justify-between text-left outline-none transition-all duration-200',
+          size === 'sm' ? 'h-9 rounded-lg px-3 text-xs' : 'h-11 rounded-xl px-3.5 text-sm',
+          'bg-input-bg border shadow-[0_1px_2px_rgba(0,0,0,0.04)]',
           error
             ? 'border-red-500/80 focus:border-red-500'
             : isOpen
-            ? 'border-secondary bg-background'
-            : 'border-input-border hover:border-foreground/30 hover:bg-input-bg/90',
-          disabled && 'opacity-50 cursor-not-allowed'
+              ? 'border-secondary bg-background'
+              : 'border-input-border hover:border-foreground/30 hover:bg-input-bg/90',
+          disabled && 'cursor-not-allowed opacity-50',
         )}
       >
-        <div className="flex items-center gap-2.5 truncate min-w-0 pr-2">
+        <div className="flex min-w-0 items-center gap-2.5 truncate pr-2">
           {icon && (
-            <span className={clsx('shrink-0 transition-colors', isOpen ? 'text-secondary' : 'text-foreground/45')}>
+            <span
+              className={clsx(
+                'shrink-0 transition-colors',
+                isOpen ? 'text-secondary' : 'text-foreground/45',
+              )}
+            >
               {icon}
             </span>
           )}
@@ -165,9 +197,9 @@ export default function Select({
           {selectedOption ? (
             <div className="flex items-center gap-2 truncate">
               {selectedOption.icon && <span className="shrink-0">{selectedOption.icon}</span>}
-              <span className="font-normal text-foreground truncate">{selectedOption.label}</span>
+              <span className="text-foreground truncate font-normal">{selectedOption.label}</span>
               {selectedOption.badge && (
-                <span className="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-md bg-secondary/10 text-secondary shrink-0">
+                <span className="bg-secondary/10 text-secondary shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider">
                   {selectedOption.badge}
                 </span>
               )}
@@ -181,7 +213,7 @@ export default function Select({
         <MotionSpan
           animate={{ rotate: isOpen ? 180 : 0 }}
           transition={{ duration: 0.2, ease: 'easeInOut' }}
-          className="shrink-0 text-foreground/45 ml-1"
+          className="text-foreground/45 ml-1 shrink-0"
         >
           <ChevronDown size={16} />
         </MotionSpan>
@@ -191,16 +223,19 @@ export default function Select({
       <AnimatePresence>
         {isOpen && (
           <MotionDiv
-            initial={{ opacity: 0, y: -6, scale: 0.98 }}
+            initial={{ opacity: 0, y: openUpward ? 6 : -6, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -6, scale: 0.98 }}
+            exit={{ opacity: 0, y: openUpward ? 6 : -6, scale: 0.98 }}
             transition={{ duration: 0.16, ease: 'easeOut' }}
-            className="absolute left-0 right-0 top-full mt-1.5 z-50 rounded-2xl bg-background dark:bg-[#141414] border border-border/80 overflow-hidden shadow-lg"
+            className={clsx(
+              'bg-background border-border/80 absolute left-0 right-0 z-50 overflow-hidden rounded-2xl border shadow-2xl dark:bg-[#141414]',
+              openUpward ? 'bottom-full mb-1.5' : 'top-full mt-1.5',
+            )}
           >
             {/* Search Filter when enabled */}
             {isSearchable && (
               <div className="p-2 pb-1">
-                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-surface/90 text-xs">
+                <div className="bg-surface/90 flex items-center gap-2 rounded-xl px-3 py-2 text-xs">
                   <Search size={14} className="text-foreground/40 shrink-0" />
                   <input
                     ref={searchInputRef}
@@ -208,7 +243,7 @@ export default function Select({
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search options..."
-                    className="w-full bg-transparent outline-none text-foreground placeholder:text-foreground/40 text-xs"
+                    className="text-foreground placeholder:text-foreground/40 w-full bg-transparent text-xs outline-none"
                   />
                   {searchQuery && (
                     <MotionButton
@@ -225,9 +260,9 @@ export default function Select({
             )}
 
             {/* Options List */}
-            <div className="max-h-60 overflow-y-auto p-1.5 space-y-0.5 no-scrollbar">
+            <div className="no-scrollbar max-h-60 space-y-0.5 overflow-y-auto p-1.5">
               {filteredOptions.length === 0 ? (
-                <div className="py-5 text-center text-xs text-foreground/50">
+                <div className="text-foreground/50 py-5 text-center text-xs">
                   No matching options
                 </div>
               ) : (
@@ -242,28 +277,28 @@ export default function Select({
                       disabled={opt.disabled}
                       onClick={() => handleSelect(opt.value)}
                       className={clsx(
-                        'w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs sm:text-sm text-left transition-all duration-150 outline-none select-none',
+                        'flex w-full select-none items-center justify-between rounded-xl px-3 py-2.5 text-left text-xs outline-none transition-all duration-150 sm:text-sm',
                         isSelected
                           ? 'bg-secondary/10 text-secondary font-medium'
                           : 'text-foreground/80 hover:bg-surface hover:text-foreground',
-                        opt.disabled && 'opacity-40 cursor-not-allowed'
+                        opt.disabled && 'cursor-not-allowed opacity-40',
                       )}
                     >
-                      <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="flex min-w-0 items-center gap-2.5">
                         {opt.icon && <span className="shrink-0">{opt.icon}</span>}
                         <div className="min-w-0">
                           <p className="truncate font-medium">{opt.label}</p>
                           {opt.description && (
-                            <p className="text-[11px] text-foreground/50 truncate font-normal">
+                            <p className="text-foreground/50 truncate text-[11px] font-normal">
                               {opt.description}
                             </p>
                           )}
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                      <div className="ml-2 flex shrink-0 items-center gap-1.5">
                         {opt.badge && (
-                          <span className="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-md bg-secondary/10 text-secondary">
+                          <span className="bg-secondary/10 text-secondary rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider">
                             {opt.badge}
                           </span>
                         )}
@@ -282,7 +317,7 @@ export default function Select({
 
       {/* Hint & Error */}
       {hint && !error && (
-        <p className="mt-1.5 text-[11px] text-foreground/50 leading-relaxed">{hint}</p>
+        <p className="text-foreground/50 mt-1.5 text-[11px] leading-relaxed">{hint}</p>
       )}
       {error && <p className="mt-1.5 text-xs font-medium text-red-500">{error}</p>}
     </div>

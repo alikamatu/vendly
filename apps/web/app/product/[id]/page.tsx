@@ -15,6 +15,7 @@ import {
   Heart,
   Play,
   Ruler,
+  Zap,
 } from 'lucide-react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { productApi } from '@/lib/api/product';
@@ -50,9 +51,7 @@ export default function ProductDetailsPage() {
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
   const { record: recordRecentlyViewed } = useRecentlyViewed();
   const [addedFeedback, setAddedFeedback] = useState(false);
-  const [selectedVariantAttrs, setSelectedVariantAttrs] = useState<
-    Record<string, string>
-  >({});
+  const [selectedVariantAttrs, setSelectedVariantAttrs] = useState<Record<string, string>>({});
   const [isQuickCheckoutOpen, setIsQuickCheckoutOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -142,33 +141,26 @@ export default function ProductDetailsPage() {
     if (!entries.length) return null;
     return entries.map(([k, v]) => `${k}: ${v}`).join(' · ');
   }, [selectedVariantAttrs]);
-  const effectivePrice =
-    matchedVariant?.price ?? product?.price ?? '0';
+  const effectivePrice = matchedVariant?.price ?? product?.price ?? '0';
   const effectiveStock = matchedVariant
     ? matchedVariant.quantity_available
     : product?.quantity_available;
   const canPurchase = hasVariants
     ? !!matchedVariant && matchedVariant.quantity_available > 0
-    : typeof product?.quantity_available !== 'number' ||
-      product.quantity_available > 0;
+    : typeof product?.quantity_available !== 'number' || product.quantity_available > 0;
 
   const handleAddToCart = () => {
     if (!product?.seller) return;
     if (hasVariants && !matchedVariant) return;
     const price =
-      typeof effectivePrice === 'number'
-        ? String(effectivePrice)
-        : (effectivePrice ?? '0');
+      typeof effectivePrice === 'number' ? String(effectivePrice) : (effectivePrice ?? '0');
     addItem({
       productId: String(product.id),
       variantId: matchedVariant?.id ?? null,
       variantLabel,
       title: product.title ?? 'Product',
       price,
-      imageUrl:
-        matchedVariant?.image_url ||
-        product.image_urls?.[0] ||
-        '/placeholder-product.png',
+      imageUrl: matchedVariant?.image_url || product.image_urls?.[0] || '/placeholder-product.png',
       storeLink: product.seller.store_link ?? '',
       storeName: product.seller.store_name ?? 'Store',
       logoUrl: product.seller.logo_url ?? null,
@@ -197,9 +189,7 @@ export default function ProductDetailsPage() {
     if (!product?.id) return;
     toggleFavorite(String(product.id));
     toast.success(
-      isFavorited(String(product.id))
-        ? 'Removed from favorites'
-        : 'Saved to favorites'
+      isFavorited(String(product.id)) ? 'Removed from favorites' : 'Saved to favorites',
     );
   };
 
@@ -218,11 +208,9 @@ export default function ProductDetailsPage() {
             const blob = await res.blob();
             const mimeType = blob.type || 'image/jpeg';
             const ext = mimeType.split('/')[1] || 'jpg';
-            const file = new File(
-              [blob],
-              `${title.replace(/[^a-zA-Z0-9]/g, '_')}.${ext}`,
-              { type: mimeType }
-            );
+            const file = new File([blob], `${title.replace(/[^a-zA-Z0-9]/g, '_')}.${ext}`, {
+              type: mimeType,
+            });
             if ((navigator as any).canShare({ files: [file] })) {
               await (navigator as any).share({
                 title,
@@ -286,7 +274,7 @@ export default function ProductDetailsPage() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="bg-background min-h-screen pb-20"
+      className="bg-background min-h-screen pb-28 sm:pb-20"
     >
       {/* Unified Navigation Header */}
       <Header />
@@ -305,20 +293,20 @@ export default function ProductDetailsPage() {
           <button
             onClick={handleShare}
             aria-label="Share product"
-            className="bg-surface hover:bg-border/20 rounded-xl p-2.5 transition-colors border-0 shadow-none"
+            className="bg-surface hover:bg-border/20 rounded-xl border-0 p-2.5 shadow-none transition-colors"
           >
             <Share2 className="h-4 w-4" />
           </button>
           <button
             onClick={handleToggleFavorite}
-            aria-label={isFavorited(String(product?.id)) ? 'Remove from favorites' : 'Add to favorites'}
-            className="bg-surface hover:bg-border/20 rounded-xl p-2.5 transition-colors border-0 shadow-none"
+            aria-label={
+              isFavorited(String(product?.id)) ? 'Remove from favorites' : 'Add to favorites'
+            }
+            className="bg-surface hover:bg-border/20 rounded-xl border-0 p-2.5 shadow-none transition-colors"
           >
             <Heart
               className={`h-4 w-4 transition-colors ${
-                isFavorited(String(product?.id))
-                  ? 'fill-red-500 text-red-500'
-                  : 'text-foreground'
+                isFavorited(String(product?.id)) ? 'fill-red-500 text-red-500' : 'text-foreground'
               }`}
             />
           </button>
@@ -472,9 +460,7 @@ export default function ProductDetailsPage() {
               price={effectivePrice}
               originalPrice={product.original_price}
               currency={product.currency ? `${product.currency} ` : 'GH₵'}
-              quantityAvailable={
-                typeof effectiveStock === 'number' ? effectiveStock : undefined
-              }
+              quantityAvailable={typeof effectiveStock === 'number' ? effectiveStock : undefined}
             />
           </motion.div>
 
@@ -491,7 +477,7 @@ export default function ProductDetailsPage() {
                 onChange={setSelectedVariantAttrs}
               />
               {!matchedVariant && (
-                <p className="text-[11px] text-muted">
+                <p className="text-muted text-[11px]">
                   Select all options to add this product to your cart.
                 </p>
               )}
@@ -572,45 +558,50 @@ export default function ProductDetailsPage() {
             </motion.div>
           )}
 
-          {/* Actions */}
+          {/* Actions (Mobile-first side-by-side, ergonomic sizing, proper contrast) */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
-            className="flex flex-col gap-4 pt-4 sm:flex-row"
+            className="flex flex-row gap-2.5 pt-4 sm:gap-3"
           >
             <Button
+              variant="secondary"
               onClick={handleAddToCart}
               disabled={!canPurchase}
-              className="h-16 flex-1 gap-3 rounded-[2rem] text-xs font-medium uppercase tracking-wider"
+              className="border-border/80 bg-surface/90 text-foreground hover:bg-surface sm:h-13 group h-12 flex-1 gap-2 rounded-xl border text-xs font-semibold tracking-wide shadow-sm transition-all active:scale-[0.98] sm:rounded-2xl sm:text-sm"
             >
               {addedFeedback ? (
                 <motion.span
                   key="added"
                   initial={{ scale: 0.9 }}
                   animate={{ scale: 1 }}
-                  className="flex items-center gap-2"
+                  className="flex items-center justify-center gap-1.5 font-semibold text-emerald-600 dark:text-emerald-400"
                 >
-                  <Check className="h-4 w-4" /> Added to cart
+                  <Check className="h-4 w-4" />
+                  <span className="truncate">Added!</span>
                 </motion.span>
               ) : (
                 <motion.span
                   key="add"
                   initial={{ scale: 0.9 }}
                   animate={{ scale: 1 }}
-                  className="flex items-center gap-2"
+                  className="flex items-center justify-center gap-1.5"
                 >
-                  <ShoppingCart className="h-4 w-4" /> Add to Cart
+                  <ShoppingCart className="text-muted group-hover:text-foreground h-4 w-4 shrink-0 transition-colors" />
+                  <span className="truncate">Add to Cart</span>
                 </motion.span>
               )}
             </Button>
+
             <Button
-              variant="secondary"
+              variant="primary"
               onClick={handleBuyNow}
               disabled={!canPurchase}
-              className="text-primary group h-16 flex-1 rounded-[2rem] border-none bg-black text-xs font-medium uppercase tracking-wider hover:bg-black/90"
+              className="border-foreground/10 bg-foreground text-background hover:bg-foreground/90 sm:h-13 h-12 flex-1 gap-2 rounded-xl border text-xs font-semibold tracking-wide shadow-md transition-all active:scale-[0.98] sm:rounded-2xl sm:text-sm"
             >
-              Buy Now
+              <Zap className="h-4 w-4 shrink-0 fill-current" />
+              <span className="truncate">{canPurchase ? 'Buy Now' : 'Out of Stock'}</span>
             </Button>
           </motion.div>
         </div>
@@ -627,11 +618,7 @@ export default function ProductDetailsPage() {
 
       {/* Recently viewed (excludes the current product) */}
       <div className="mx-auto max-w-7xl px-4 pb-4 md:px-8">
-        <RecentlyViewed
-          limit={12}
-          excludeId={String(product.id)}
-          title="Continue browsing"
-        />
+        <RecentlyViewed limit={12} excludeId={String(product.id)} title="Continue browsing" />
       </div>
 
       {/* Related products */}
@@ -657,6 +644,51 @@ export default function ProductDetailsPage() {
           onClose={() => setIsShareModalOpen(false)}
           product={product}
         />
+      )}
+
+      {/* Sticky Mobile Bottom Action Bar (Fixed, thumb-friendly on mobile) */}
+      {product && (
+        <div className="border-border/60 bg-background/95 fixed bottom-0 left-0 right-0 z-40 border-t p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.06)] backdrop-blur-xl sm:hidden">
+          <div className="mx-auto flex max-w-md items-center gap-3">
+            {/* Price display on the left */}
+            <div className="flex min-w-0 flex-col justify-center">
+              <span className="text-muted text-[10px] font-medium uppercase tracking-wider">
+                Price
+              </span>
+              <span className="truncate text-base font-bold tabular-nums text-red-500">
+                {product.currency ? `${product.currency} ` : 'GH₵ '}
+                {Number(effectivePrice).toLocaleString()}
+              </span>
+            </div>
+
+            {/* Action buttons on the right */}
+            <div className="flex flex-1 items-center gap-2">
+              <Button
+                variant="secondary"
+                onClick={handleAddToCart}
+                disabled={!canPurchase}
+                className="border-border/80 bg-surface/90 text-foreground hover:bg-surface group h-11 flex-1 gap-1.5 rounded-xl border px-2 text-xs font-semibold shadow-sm transition-all active:scale-95"
+              >
+                {addedFeedback ? (
+                  <Check className="h-4 w-4 text-emerald-500" />
+                ) : (
+                  <ShoppingCart className="text-muted group-hover:text-foreground h-4 w-4" />
+                )}
+                <span className="truncate">{addedFeedback ? 'Added' : 'Add to Cart'}</span>
+              </Button>
+
+              <Button
+                variant="primary"
+                onClick={handleBuyNow}
+                disabled={!canPurchase}
+                className="border-foreground/10 bg-foreground text-background hover:bg-foreground/90 h-11 flex-[1.3] gap-1.5 rounded-xl border px-3 text-xs font-semibold shadow-md transition-all active:scale-95"
+              >
+                <Zap className="h-3.5 w-3.5 shrink-0 fill-current" />
+                <span className="truncate">{canPurchase ? 'Buy Now' : 'Out of Stock'}</span>
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </motion.div>
   );

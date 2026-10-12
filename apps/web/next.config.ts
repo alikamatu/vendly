@@ -1,3 +1,4 @@
+import path from 'path';
 import type { NextConfig } from 'next';
 import { withSentryConfig } from '@sentry/nextjs';
 
@@ -88,6 +89,11 @@ const nextConfig: NextConfig = {
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
 
+  // Explicit turbopack root avoids multiple lockfile confusion in monorepos
+  turbopack: {
+    root: path.resolve(__dirname, '../../'),
+  },
+
   // Modular imports: tree-shake huge libs so a single icon doesn't pull
   // in 1500 friends.
   experimental: {
@@ -113,11 +119,8 @@ export default withSentryConfig(nextConfig, {
   project: process.env.SENTRY_PROJECT,
   authToken: process.env.SENTRY_AUTH_TOKEN,
 
-  // Hide source maps from the public bundle (uploaded to Sentry only).
-  sourcemaps: { disable: false, deleteSourcemapsAfterUpload: true },
-
-  // Tree-shake the Sentry SDK aggressively in client bundles.
-  disableLogger: true,
+  // Hide source maps from the public bundle (uploaded to Sentry only in prod).
+  sourcemaps: { disable: !isProd, deleteSourcemapsAfterUpload: true },
 
   // Tunnel route lets us proxy Sentry traffic through our domain so it
   // sidesteps ad-blockers. /monitoring/* is reserved here; if a real

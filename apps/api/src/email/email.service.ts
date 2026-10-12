@@ -63,13 +63,20 @@ export class EmailService {
   ) {
     const from = this.fromAddress;
     try {
-      const response = await this.resend.emails.send({ from, to, subject, html });
+      const response = await this.resend.emails.send({
+        from,
+        to,
+        subject,
+        html,
+      });
       if ((response as any)?.error) {
         this.logger.error(
           `[${context}] Resend error sending to ${to}: ${JSON.stringify((response as any).error)}`,
         );
         if (from !== 'onboarding@resend.dev') {
-          this.logger.warn(`[${context}] Falling back to onboarding@resend.dev`);
+          this.logger.warn(
+            `[${context}] Falling back to onboarding@resend.dev`,
+          );
           return this.resend.emails.send({
             from: 'onboarding@resend.dev',
             to,
@@ -81,7 +88,7 @@ export class EmailService {
       this.logger.log(`[${context}] Sent to ${to}`);
       return response;
     } catch (err) {
-      this.logger.error(`[${context}] Failed to send to ${to}`, err as any);
+      this.logger.error(`[${context}] Failed to send to ${to}`, err);
       // Swallow — transactional emails shouldn't break a request path.
       return null;
     }
@@ -100,6 +107,9 @@ export class EmailService {
 
   sendVerificationEmail(to: string, token: string) {
     const url = `${this.links.baseUrl}/verify-email?token=${encodeURIComponent(token)}`;
+    if (process.env.NODE_ENV !== 'production') {
+      this.logger.log(`[verification] Dev link for ${to}: ${url}`);
+    }
     return this.deliver(
       to,
       'Verify your email address — Verndly Security',
@@ -110,6 +120,9 @@ export class EmailService {
 
   sendPasswordResetEmail(to: string, token: string) {
     const url = `${this.links.baseUrl}/reset-password?token=${encodeURIComponent(token)}`;
+    if (process.env.NODE_ENV !== 'production') {
+      this.logger.log(`[password-reset] Dev link for ${to}: ${url}`);
+    }
     return this.deliver(
       to,
       'Reset your password — Verndly Security',
@@ -241,7 +254,7 @@ export class EmailService {
   // ─── Payouts ─────────────────────────────────────────────────────────────
 
   sendPayoutSentEmail(to: string, data: PayoutEmailData) {
-    const symbol = data.currency === 'GHS' ? 'GH¢' : (data.currency || 'GH¢');
+    const symbol = data.currency === 'GHS' ? 'GH¢' : data.currency || 'GH¢';
     const formattedAmount = `${symbol} ${Number(data.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     return this.deliver(
       to,
@@ -260,7 +273,12 @@ export class EmailService {
   sendLowStockEmail(
     to: string,
     storeName: string,
-    product: { id: string; title: string; quantity: number; image_url?: string | null },
+    product: {
+      id: string;
+      title: string;
+      quantity: number;
+      image_url?: string | null;
+    },
   ) {
     return this.deliver(
       to,
@@ -281,9 +299,15 @@ export class EmailService {
 
   // ─── Contact & Newsletter ────────────────────────────────────────────────
 
-  sendContactFormAdminAlert(data: { name: string; email: string; subject: string; message: string }) {
+  sendContactFormAdminAlert(data: {
+    name: string;
+    email: string;
+    subject: string;
+    message: string;
+  }) {
     // Send to the support email address
-    const adminEmail = this.configService.get<string>('SUPPORT_EMAIL') || 'support@verndly.com';
+    const adminEmail =
+      this.configService.get<string>('SUPPORT_EMAIL') || 'support@verndly.com';
     return this.deliver(
       adminEmail,
       `New Contact Request: ${data.subject}`,
@@ -336,8 +360,7 @@ export class EmailService {
     matches: Array<{ id: string; email: string; created_at: Date }>;
   }) {
     const supportInbox =
-      this.configService.get<string>('SUPPORT_EMAIL') ||
-      'support@verndly.app';
+      this.configService.get<string>('SUPPORT_EMAIL') || 'support@verndly.app';
 
     const matchesHtml = args.matches.length
       ? `<ul>${args.matches

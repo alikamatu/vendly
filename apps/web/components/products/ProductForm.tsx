@@ -672,7 +672,7 @@ export default function ProductForm({
 
       {/* ────────────────── 2. Core Information ────────────────── */}
       <Card
-        className="space-y-6 rounded-3xl border border-[var(--color-border)] p-6 md:p-8"
+        className="relative z-30 space-y-6 overflow-visible rounded-3xl border border-[var(--color-border)] p-6 md:p-8"
         hoverEffect={false}
       >
         <div className="border-[var(--color-border)]/60 flex items-center gap-3 border-b pb-4">
@@ -797,7 +797,7 @@ export default function ProductForm({
 
       {/* ────────────────── 3. Pricing & Inventory ────────────────── */}
       <Card
-        className="space-y-6 rounded-3xl border border-[var(--color-border)] p-6 md:p-8"
+        className="relative z-20 space-y-6 rounded-3xl border border-[var(--color-border)] p-6 md:p-8"
         hoverEffect={false}
       >
         <div className="border-[var(--color-border)]/60 flex items-center gap-3 border-b pb-4">
@@ -1221,7 +1221,7 @@ export default function ProductForm({
       {/* ────────────────── 6. Variants (Edit Mode) ────────────────── */}
       {isEdit && productId && (
         <Card
-          className="space-y-6 rounded-3xl border border-[var(--color-border)] p-6 md:p-8"
+          className="relative z-10 space-y-6 overflow-visible rounded-3xl border border-[var(--color-border)] p-6 md:p-8"
           hoverEffect={false}
         >
           <div className="border-[var(--color-border)]/60 flex items-center gap-3 border-b pb-4">
