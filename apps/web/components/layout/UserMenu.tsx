@@ -30,6 +30,7 @@ const MotionDiv: any = motion.div;
 export default function UserMenu() {
   const { user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const [logoError, setLogoError] = useState(false);
   const [menuCoords, setMenuCoords] = useState<{ top: number; right: number } | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const isMobile = useMediaQuery('(max-width: 768px)');
@@ -210,10 +211,11 @@ export default function UserMenu() {
         aria-label="Toggle user menu"
       >
         <div className="bg-primary/10 border-primary/20 text-primary group-hover:border-primary/40 flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl border shadow-sm transition-colors md:h-10 md:w-10 md:rounded-2xl">
-          {user.seller_profile?.logo_url ? (
+          {user.seller_profile?.logo_url && !logoError ? (
             <img
               src={user.seller_profile.logo_url}
               alt="Profile"
+              onError={() => setLogoError(true)}
               className="h-full w-full object-cover"
             />
           ) : (
@@ -302,10 +304,11 @@ export default function UserMenu() {
                     <div className="mb-3 flex items-start justify-between gap-3">
                       <div className="flex min-w-0 items-center gap-3.5">
                         <div className="h-13 w-13 bg-primary/10 border-primary/20 text-primary relative flex shrink-0 items-center justify-center overflow-hidden rounded-2xl border shadow-sm">
-                          {user.seller_profile?.logo_url ? (
+                          {user.seller_profile?.logo_url && !logoError ? (
                             <img
                               src={user.seller_profile.logo_url}
                               alt={user.full_name}
+                              onError={() => setLogoError(true)}
                               className="h-full w-full object-cover"
                             />
                           ) : (

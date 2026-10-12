@@ -12,6 +12,8 @@ interface VendorCardProps {
 }
 
 function VendorCard({ vendor, rank }: VendorCardProps) {
+  const [logoError, setLogoError] = React.useState(false);
+
   return (
     <Link
       href={`/s/${vendor.store_link}`}
@@ -25,11 +27,12 @@ function VendorCard({ vendor, rank }: VendorCardProps) {
       >
         <div className="relative">
           <div className="h-24 w-24 overflow-hidden rounded-full border-4 border-[var(--color-background)] bg-[var(--color-background)] shadow-sm">
-            {vendor.logo_url ? (
+            {vendor.logo_url && !logoError ? (
               <img
                 src={vendor.logo_url}
                 alt={vendor.store_name}
                 loading="lazy"
+                onError={() => setLogoError(true)}
                 className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
               />
             ) : (

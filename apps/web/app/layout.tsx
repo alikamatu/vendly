@@ -124,7 +124,7 @@ export default function RootLayout({
           socket; dns-prefetch is a cheap fallback for browsers that ignore
           preconnect under hint pressure.
         */}
-        <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="" />
+        <link rel="preconnect" href="https://res.cloudinary.com" />
         <link rel="dns-prefetch" href="https://res.cloudinary.com" />
         {process.env.NEXT_PUBLIC_API_URL && (
           <>

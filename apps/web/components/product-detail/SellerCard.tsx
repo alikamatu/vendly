@@ -1,22 +1,22 @@
-"use client";
+'use client';
 
-import React from "react";
-import Link from "next/link";
-import { Sparkles, BadgeCheck, MapPin, Clock, Truck } from "lucide-react";
-import Card from "@/components/ui/Card";
+import React from 'react';
+import Link from 'next/link';
+import { Sparkles, BadgeCheck, MapPin, Clock, Truck } from 'lucide-react';
+import Card from '@/components/ui/Card';
 
 const SERVICE_AREA_LABEL: Record<string, string> = {
-  SAME_CITY: "Same city only",
-  NEARBY_STATES: "Nearby states",
-  NATIONWIDE: "Nationwide",
+  SAME_CITY: 'Same city only',
+  NEARBY_STATES: 'Nearby states',
+  NATIONWIDE: 'Nationwide',
 };
 
 const DELIVERY_LABEL: Record<string, string> = {
-  SAME_DAY: "Same day",
-  NEXT_DAY: "Next day",
-  TWO_TO_THREE_DAYS: "2–3 days",
-  FOUR_TO_SEVEN_DAYS: "4–7 days",
-  MORE_THAN_ONE_WEEK: "1+ week",
+  SAME_DAY: 'Same day',
+  NEXT_DAY: 'Next day',
+  TWO_TO_THREE_DAYS: '2–3 days',
+  FOUR_TO_SEVEN_DAYS: '4–7 days',
+  MORE_THAN_ONE_WEEK: '1+ week',
 };
 
 interface SellerCardProps {
@@ -34,56 +34,66 @@ interface SellerCardProps {
 }
 
 export default function SellerCard({ seller }: SellerCardProps) {
+  const [logoError, setLogoError] = React.useState(false);
+
   return (
     <Card
-      className={`p-5 border rounded-[2rem] ${
+      className={`rounded-[2rem] border p-5 ${
         seller.is_pro
-          ? "border-[var(--color-accent,#fb923c)]/40 bg-[var(--color-accent,#fb923c)]/5"
-          : "border-border/30 bg-surface/50"
+          ? 'border-[var(--color-accent,#fb923c)]/40 bg-[var(--color-accent,#fb923c)]/5'
+          : 'border-border/30 bg-surface/50'
       }`}
       hoverEffect={false}
     >
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div className="flex items-start gap-4 min-w-0 flex-1">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex min-w-0 flex-1 items-start gap-4">
           <div className="relative shrink-0">
-            <div className="w-14 h-14 rounded-2xl bg-border/20 overflow-hidden border border-border/50">
-              {seller.logo_url ? (
-                <img src={seller.logo_url} alt="" className="w-full h-full object-cover" />
+            <div className="bg-border/20 border-border/50 h-14 w-14 overflow-hidden rounded-2xl border">
+              {seller.logo_url && !logoError ? (
+                <img
+                  src={seller.logo_url}
+                  alt={seller.store_name}
+                  onError={() => setLogoError(true)}
+                  className="h-full w-full object-cover"
+                />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-lg font-medium uppercase bg-primary/5 text-primary">
-                  {(seller.store_name || "?")[0]}
+                <div className="bg-primary/5 text-primary flex h-full w-full items-center justify-center text-lg font-medium uppercase">
+                  {(seller.store_name || '?')[0]}
                 </div>
               )}
             </div>
             {seller.is_pro && (
-              <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[8px] font-medium uppercase tracking-wider bg-[var(--color-accent,#fb923c)] text-white shadow-sm">
-                <Sparkles className="w-2 h-2" />
+              <span className="absolute -bottom-1 left-1/2 inline-flex -translate-x-1/2 items-center gap-0.5 rounded-full bg-[var(--color-accent,#fb923c)] px-1.5 py-0.5 text-[8px] font-medium uppercase tracking-wider text-white shadow-sm">
+                <Sparkles className="h-2 w-2" />
                 Pro
               </span>
             )}
           </div>
 
           <div className="min-w-0 space-y-1.5">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h4 className="text-sm font-medium uppercase tracking-tight text-foreground truncate">
+            <div className="flex flex-wrap items-center gap-2">
+              <h4 className="text-foreground truncate text-sm font-medium uppercase tracking-tight">
                 {seller.store_name}
               </h4>
               {seller.is_verified && (
-                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-normal bg-blue-500/10 text-blue-500">
-                  <BadgeCheck className="w-2.5 h-2.5" /> Verified
+                <span className="inline-flex items-center gap-0.5 rounded-full bg-blue-500/10 px-1.5 py-0.5 text-[9px] font-normal text-blue-500">
+                  <BadgeCheck className="h-2.5 w-2.5" /> Verified
                 </span>
               )}
             </div>
-            <p className="text-[10px] text-muted font-normal">@{seller.store_link}</p>
+            <p className="text-muted text-[10px] font-normal">@{seller.store_link}</p>
             {(seller.location || seller.service_area || seller.avg_delivery_time) && (
               <div className="flex flex-wrap gap-1.5 pt-1">
                 {seller.location && <Chip icon={MapPin}>{seller.location}</Chip>}
                 {seller.service_area && (
-                  <Chip icon={Truck}>{SERVICE_AREA_LABEL[seller.service_area] ?? seller.service_area}</Chip>
+                  <Chip icon={Truck}>
+                    {SERVICE_AREA_LABEL[seller.service_area] ?? seller.service_area}
+                  </Chip>
                 )}
                 {seller.avg_delivery_time && (
                   <Chip icon={Clock}>
-                    Delivers in {DELIVERY_LABEL[seller.avg_delivery_time] ?? seller.avg_delivery_time}
+                    Delivers in{' '}
+                    {DELIVERY_LABEL[seller.avg_delivery_time] ?? seller.avg_delivery_time}
                   </Chip>
                 )}
               </div>
@@ -93,7 +103,7 @@ export default function SellerCard({ seller }: SellerCardProps) {
 
         <Link
           href={`/s/${seller.store_link}`}
-          className="px-4 h-10 inline-flex items-center justify-center rounded-2xl bg-white text-black text-[10px] font-medium uppercase tracking-wider hover:opacity-90 transition-opacity flex-shrink-0"
+          className="inline-flex h-10 flex-shrink-0 items-center justify-center rounded-2xl bg-white px-4 text-[10px] font-medium uppercase tracking-wider text-black transition-opacity hover:opacity-90"
         >
           Visit shop
         </Link>
@@ -104,8 +114,8 @@ export default function SellerCard({ seller }: SellerCardProps) {
 
 function Chip({ icon: Icon, children }: { icon: any; children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-normal uppercase tracking-wider bg-background/60 border border-border/50 text-muted">
-      <Icon className="w-2.5 h-2.5" />
+    <span className="bg-background/60 border-border/50 text-muted inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-normal uppercase tracking-wider">
+      <Icon className="h-2.5 w-2.5" />
       {children}
     </span>
   );

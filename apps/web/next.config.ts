@@ -9,7 +9,7 @@ const isProd = process.env.NODE_ENV === 'production';
 // from these so we don't drift.
 const API_HOST = process.env.NEXT_PUBLIC_API_URL || 'https://api.verndly.market';
 const PAYSTACK = 'https://js.paystack.co https://checkout.paystack.com';
-const CLOUDINARY = 'https://res.cloudinary.com';
+const CLOUDINARY = 'https://res.cloudinary.com https://*.cloudinary.com https://cloudinary.com';
 // Sentry's ingest endpoint is hostname-specific per project (e.g.
 // https://o12345.ingest.sentry.io). We allow the wildcard so the CSP
 // doesn't have to change when the project hash rotates.
@@ -79,6 +79,8 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'res.cloudinary.com' },
+      { protocol: 'https', hostname: '*.cloudinary.com' },
+      { protocol: 'https', hostname: 'cloudinary.com' },
       { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
       { protocol: 'https', hostname: 'verndly.market' },
       { protocol: 'https', hostname: 'verndly.com' },

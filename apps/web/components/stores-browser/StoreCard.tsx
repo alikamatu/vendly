@@ -12,6 +12,8 @@ interface StoreCardProps {
 }
 
 export default function StoreCard({ store, index }: StoreCardProps) {
+  const [logoError, setLogoError] = React.useState(false);
+
   // Generate a random gradient color for the store banner if no banner is defined
   const bannerGradient = React.useMemo(() => {
     const gradients = [
@@ -33,18 +35,19 @@ export default function StoreCard({ store, index }: StoreCardProps) {
     >
       <div>
         {/* Banner area */}
-        <div className="h-16 w-full border-b border-[var(--color-border)]/50 bg-[var(--color-surface)]" />
+        <div className="border-[var(--color-border)]/50 h-16 w-full border-b bg-[var(--color-surface)]" />
 
         {/* Profile Header section */}
         <div className="relative px-5 pb-3">
           {/* Logo container */}
           <div className="absolute -top-8 left-5 z-10">
             <div className="h-16 w-16 overflow-hidden rounded-2xl border-4 border-[var(--color-surface)] bg-[var(--color-background)] shadow-sm">
-              {store.logo_url ? (
+              {store.logo_url && !logoError ? (
                 <img
                   src={store.logo_url}
                   alt={store.store_name}
                   loading="lazy"
+                  onError={() => setLogoError(true)}
                   className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
               ) : (

@@ -78,6 +78,7 @@ interface StorefrontHeaderProps {
 export default function StorefrontHeader({ store, productsCount }: StorefrontHeaderProps) {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [logoError, setLogoError] = useState(false);
 
   const memberSince = memberSinceLabel(store.member_since);
   const locationLabel = [store.area, store.location].filter(Boolean).join(' · ');
@@ -181,18 +182,19 @@ export default function StorefrontHeader({ store, productsCount }: StorefrontHea
         className="relative mb-10 overflow-hidden rounded-[32px] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-none"
       >
         {/* Cover banner backdrop */}
-        <div className="h-28 w-full bg-[var(--color-surface)] border-b border-[var(--color-border)]/50" />
+        <div className="border-[var(--color-border)]/50 h-28 w-full border-b bg-[var(--color-surface)]" />
 
         <div className="relative px-6 pb-6 pt-0 md:px-8 md:pb-8">
           {/* Top Row: Avatar overlapping cover + Action Buttons */}
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-5 -mt-14 mb-5">
+          <div className="-mt-14 mb-5 flex flex-col justify-between gap-5 md:flex-row md:items-end">
             {/* Logo */}
             <div className="relative">
-              <div className="h-24 w-24 md:h-28 md:w-28 overflow-hidden rounded-[24px] border-4 border-[var(--color-surface)] bg-[var(--color-background)] shadow-sm">
-                {store.logo_url ? (
+              <div className="h-24 w-24 overflow-hidden rounded-[24px] border-4 border-[var(--color-surface)] bg-[var(--color-background)] shadow-sm md:h-28 md:w-28">
+                {store.logo_url && !logoError ? (
                   <img
                     src={store.logo_url}
                     alt={store.store_name}
+                    onError={() => setLogoError(true)}
                     className="h-full w-full object-cover"
                   />
                 ) : (
@@ -202,7 +204,7 @@ export default function StorefrontHeader({ store, productsCount }: StorefrontHea
                 )}
               </div>
               {store.is_pro && (
-                <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 rounded-full bg-[var(--color-accent)] px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white shadow-sm">
+                <span className="absolute -bottom-1.5 left-1/2 inline-flex -translate-x-1/2 items-center gap-1 rounded-full bg-[var(--color-accent)] px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white shadow-sm">
                   <Sparkles className="h-2.5 w-2.5" />
                   PRO
                 </span>
@@ -210,10 +212,10 @@ export default function StorefrontHeader({ store, productsCount }: StorefrontHea
             </div>
 
             {/* Action Buttons: Message / WhatsApp DM, Share, Info */}
-            <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+            <div className="flex w-full flex-wrap items-center gap-2.5 md:w-auto">
               <button
                 onClick={handleMessageClick}
-                className="flex-1 md:flex-none flex items-center justify-center gap-2 h-11 px-5 rounded-2xl bg-emerald-600 text-white text-xs font-semibold uppercase tracking-wider hover:bg-emerald-700 active:scale-95 transition-all shadow-none"
+                className="flex h-11 flex-1 items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 text-xs font-semibold uppercase tracking-wider text-white shadow-none transition-all hover:bg-emerald-700 active:scale-95 md:flex-none"
               >
                 <MessageCircle className="h-4 w-4" />
                 <span>Message</span>
@@ -221,7 +223,7 @@ export default function StorefrontHeader({ store, productsCount }: StorefrontHea
 
               <button
                 onClick={() => setIsShareModalOpen(true)}
-                className="flex items-center justify-center gap-2 h-11 px-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] text-xs font-semibold uppercase tracking-wider text-[var(--color-foreground)] hover:bg-[var(--color-surface)] active:scale-95 transition-all"
+                className="flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] px-4 text-xs font-semibold uppercase tracking-wider text-[var(--color-foreground)] transition-all hover:bg-[var(--color-surface)] active:scale-95"
               >
                 <Share2 className="h-3.5 w-3.5" />
                 <span>Share</span>
@@ -229,7 +231,7 @@ export default function StorefrontHeader({ store, productsCount }: StorefrontHea
 
               <button
                 onClick={() => setIsContactModalOpen(true)}
-                className="flex items-center justify-center h-11 w-11 rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-muted)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-surface)] active:scale-95 transition-all"
+                className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-muted)] transition-all hover:bg-[var(--color-surface)] hover:text-[var(--color-foreground)] active:scale-95"
                 title="Store details & contact"
               >
                 <Info className="h-4 w-4" />
@@ -241,13 +243,13 @@ export default function StorefrontHeader({ store, productsCount }: StorefrontHea
           <div className="space-y-4">
             <div className="space-y-1">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-2xl md:text-3xl font-bold uppercase tracking-tight text-[var(--color-foreground)]">
+                <h1 className="text-2xl font-bold uppercase tracking-tight text-[var(--color-foreground)] md:text-3xl">
                   {store.store_name}
                 </h1>
                 {store.is_verified && (
                   <span
                     title="Verified young entrepreneur store"
-                    className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2.5 py-0.5 text-[10px] font-semibold text-blue-500 border border-blue-500/20"
+                    className="inline-flex items-center gap-1 rounded-full border border-blue-500/20 bg-blue-500/10 px-2.5 py-0.5 text-[10px] font-semibold text-blue-500"
                   >
                     <BadgeCheck className="h-3.5 w-3.5" />
                     Verified
@@ -260,7 +262,7 @@ export default function StorefrontHeader({ store, productsCount }: StorefrontHea
             </div>
 
             {store.bio && (
-              <p className="max-w-3xl text-xs md:text-sm text-[var(--color-foreground)]/80 leading-relaxed font-normal">
+              <p className="text-[var(--color-foreground)]/80 max-w-3xl text-xs font-normal leading-relaxed md:text-sm">
                 {store.bio}
               </p>
             )}
@@ -270,7 +272,8 @@ export default function StorefrontHeader({ store, productsCount }: StorefrontHea
               {store.rating_count !== undefined && store.rating_count > 0 && (
                 <span className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-amber-500">
                   <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
-                  {store.rating_avg !== undefined ? store.rating_avg.toFixed(1) : '0.0'} ({store.rating_count})
+                  {store.rating_avg !== undefined ? store.rating_avg.toFixed(1) : '0.0'} (
+                  {store.rating_count})
                 </span>
               )}
               {locationLabel && <Chip icon={MapPin}>{locationLabel}</Chip>}
@@ -288,8 +291,8 @@ export default function StorefrontHeader({ store, productsCount }: StorefrontHea
 
             {/* Social Links Chips */}
             {quickSocials.length > 0 && (
-              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[var(--color-border)]/60">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-muted)] mr-1">
+              <div className="border-[var(--color-border)]/60 flex flex-wrap items-center gap-2 border-t pt-2">
+                <span className="mr-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-muted)]">
                   Connect:
                 </span>
                 {quickSocials.map((s) => (
@@ -298,7 +301,7 @@ export default function StorefrontHeader({ store, productsCount }: StorefrontHea
                     href={s.url!}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-2.5 py-1 text-[10px] font-medium text-[var(--color-foreground)] hover:border-[var(--color-accent)]/50 hover:text-[var(--color-accent)] transition-colors"
+                    className="hover:border-[var(--color-accent)]/50 inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-2.5 py-1 text-[10px] font-medium text-[var(--color-foreground)] transition-colors hover:text-[var(--color-accent)]"
                   >
                     {s.icon}
                     <span>{s.name}</span>

@@ -1,5 +1,5 @@
 // Vendly PWA Service Worker
-const CACHE_NAME = 'vendly-pwa-v1';
+const CACHE_NAME = 'vendly-pwa-v2';
 
 const STATIC_ASSETS = [
   '/',
@@ -50,6 +50,14 @@ self.addEventListener('fetch', (event) => {
 
   // Bypass non-GET requests and chrome-extension / analytics calls
   if (req.method !== 'GET' || url.protocol.startsWith('chrome-extension')) {
+    return;
+  }
+
+  // Only handle same-origin requests in the service worker.
+  // Third-party media (Cloudinary CDN images/videos, Google avatars, Paystack, Sentry)
+  // must bypass the service worker completely so the browser handles them natively with
+  // standard HTTP caching, proper range requests for video streaming, and zero opaque-response bugs.
+  if (url.origin !== self.location.origin) {
     return;
   }
 
