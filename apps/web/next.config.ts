@@ -39,7 +39,7 @@ const csp = [
   // video URLs silently fall back to `default-src 'self'` and the browser
   // blocks them with no visible UI — videos just don't play.
   `media-src 'self' data: blob: ${CLOUDINARY}`,
-  `connect-src 'self' ${API_HOST} https://vendly-lfr6.onrender.com ${PAYSTACK} ${SENTRY_INGEST} ${VERCEL_LIVE} ${VERCEL_LIVE_WS}${isProd ? '' : ' ws: http://localhost:* https://localhost:*'}`,
+  `connect-src 'self' ${API_HOST} https://vendly-lfr6.onrender.com ${CLOUDINARY} ${PAYSTACK} ${SENTRY_INGEST} ${VERCEL_LIVE} ${VERCEL_LIVE_WS}${isProd ? '' : ' ws: http://localhost:* https://localhost:*'}`,
   `frame-src 'self' ${PAYSTACK} ${VERCEL_LIVE}`,
   "object-src 'none'",
   "base-uri 'self'",
