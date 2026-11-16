@@ -24,7 +24,7 @@ interface Props {
  * an invalid variant.
  */
 export default function VariantPicker({ variants, selected, onChange }: Props) {
-  const { axes, valueMap } = useMemo(() => {
+  const axes = useMemo(() => {
     const axisSet = new Map<string, Set<string>>();
     for (const v of variants) {
       for (const [k, val] of Object.entries(v.attributes || {})) {
@@ -32,21 +32,10 @@ export default function VariantPicker({ variants, selected, onChange }: Props) {
         axisSet.get(k)!.add(val);
       }
     }
-    const axes: { key: string; values: string[] }[] = Array.from(
-      axisSet.entries(),
-    ).map(([key, set]) => ({
+    return Array.from(axisSet.entries()).map(([key, set]) => ({
       key,
       values: Array.from(set).sort(),
     }));
-    const valueMap = new Map<string, ProductVariant[]>();
-    for (const v of variants) {
-      for (const [k, val] of Object.entries(v.attributes || {})) {
-        const key = `${k}:${val}`;
-        if (!valueMap.has(key)) valueMap.set(key, []);
-        valueMap.get(key)!.push(v);
-      }
-    }
-    return { axes, valueMap };
   }, [variants]);
 
   if (!variants.length || !axes.length) return null;

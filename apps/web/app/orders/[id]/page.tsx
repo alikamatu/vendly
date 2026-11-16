@@ -667,7 +667,6 @@ export default function BuyerOrderDetailPage() {
           status={paymentModalState}
           errorMessage={paymentErrorMessage}
           orderNumber={order.id.slice(-8).toUpperCase()}
-          orderId={order.id}
           reference={order.payment_info?.reference}
           amount={order.total_amount}
           onViewReceipt={() => {
