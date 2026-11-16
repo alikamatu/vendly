@@ -21,11 +21,10 @@ The project is structured as a monorepo (powered by Turborepo and pnpm workspace
 
 ### Shared Packages
 
-| Package                     | Description                                                |
-| --------------------------- | ---------------------------------------------------------- |
-| `@vendly/types`             | Shared TypeScript interfaces and types across Web and API. |
-| `@vendly/eslint-config`     | Shared ESLint configurations (base, next, nest).           |
-| `@vendly/typescript-config` | Shared TypeScript configurations.                          |
+| Package                     | Description                                                                                       |
+| --------------------------- | ------------------------------------------------------------------------------------------------- |
+| `@vendly/eslint-config`     | Shared ESLint base config, used by the mobile app.                                                |
+| `@vendly/typescript-config` | Shared TypeScript configs (`base`, `nextjs`). The web app extends `nextjs`, which extends `base`. |
 
 ## ✨ Core Features
 
@@ -102,6 +101,7 @@ The project is structured as a monorepo (powered by Turborepo and pnpm workspace
 
 5.  **Running Locally**:
     Start the development servers for all apps using Turborepo:
+
     ```bash
     pnpm dev
     ```
