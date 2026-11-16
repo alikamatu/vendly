@@ -1132,7 +1132,7 @@ export class ProductService {
           },
           { tags: { has: searchLower } },
         ],
-        status: { in: ['published', 'active', 'draft'] }, // Include drafts for testing/flexibility
+        status: { in: ['published', 'active', 'draft'] },
       },
       include: {
         seller: {

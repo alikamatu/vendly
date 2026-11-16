@@ -769,7 +769,6 @@ export class AuthService {
     };
   }
 
-  // In-memory token blacklist (use Redis in production)
   private tokenBlacklist = new Set<string>();
 
   async logout(token: string) {

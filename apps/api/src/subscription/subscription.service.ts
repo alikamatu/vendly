@@ -259,18 +259,4 @@ export class SubscriptionService {
     );
     return { sent, total: users.length };
   }
-
-  async upgradeUserToProByEmail(email: string, reference?: string) {
-    if (!email) return null;
-    const user = await this.prisma.user.findUnique({
-      where: { email },
-      select: { id: true },
-    });
-    if (!user) {
-      this.logger.warn(`Pro webhook: user not found for email=${email}`);
-      return null;
-    }
-    const plan = reference ? this.planFromReference(reference) : 'monthly';
-    return this.upgradeUserToPro(user.id, reference, plan);
-  }
 }

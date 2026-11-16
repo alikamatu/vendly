@@ -43,9 +43,6 @@ export class AuthController {
   }
 
   @Post('login')
-  // Hard ceiling enforced by @nestjs/throttler — 10 login attempts per IP per
-  // minute (it tracks request.ip out of the box). Failed-attempt lockout is a
-  // separate, stricter layer enforced inside AuthService.login.
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   async login(@Body() dto: LoginDto, @Req() req: any) {

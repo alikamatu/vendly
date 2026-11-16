@@ -162,46 +162,6 @@ const statusPill = (
   return `<span class="email-status-pill" style="display: inline-block; padding: 4px 10px; background: ${palette.bg}; color: ${palette.fg}; border: 1px solid ${palette.border}; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; border-radius: 9999px;">${escape(label)}</span>`;
 };
 
-const orderItemsTable = (
-  items: Array<{
-    title: string;
-    quantity: number;
-    price: number | string;
-    image_url?: string | null;
-  }>,
-  currency = 'GHS',
-): string => `
-<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin: 8px 0 24px;">
-  <thead>
-    <tr>
-      <th align="left" class="email-table-header" style="font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.06em; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">Item</th>
-      <th align="center" class="email-table-header" style="font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.06em; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">Qty</th>
-      <th align="right" class="email-table-header" style="font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.06em; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">Price</th>
-    </tr>
-  </thead>
-  <tbody>
-    ${items
-      .map(
-        (it) => `
-    <tr>
-      <td class="email-table-cell" style="padding: 14px 0; border-bottom: 1px solid #e2e8f0; font-size: 13.5px; color: #0f172a;">
-        ${
-          it.image_url
-            ? `<table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr>
-                 <td style="padding-right: 12px;"><img src="${escape(it.image_url)}" width="44" height="44" alt="" style="border-radius: 6px; display: block; object-fit: cover;"></td>
-                 <td class="email-p" style="font-size: 13.5px; color: #0f172a;">${escape(it.title)}</td>
-               </tr></table>`
-            : escape(it.title)
-        }
-      </td>
-      <td align="center" class="email-table-cell" style="padding: 14px 0; border-bottom: 1px solid #e2e8f0; font-size: 13.5px; color: #0f172a;">${it.quantity}</td>
-      <td align="right" class="email-table-cell" style="padding: 14px 0; border-bottom: 1px solid #e2e8f0; font-size: 13.5px; color: #0f172a; font-weight: 500;">${money(Number(it.price) * it.quantity, currency)}</td>
-    </tr>`,
-      )
-      .join('')}
-  </tbody>
-</table>`;
-
 const totalRow = (label: string, value: string, emphasis = false): string => `
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
   <tr>
@@ -1403,8 +1363,6 @@ export const getPayoutSentEmail = (
     footerNote: `This official payout receipt confirms the disbursement of funds from Verndly to your linked account. Retain this record for your business accounting and reconciliation.`,
   });
 };
-
-export const getPayoutReceiptEmail = getPayoutSentEmail;
 
 // 13. Low-stock alert (seller)
 export const getLowStockEmail = (
