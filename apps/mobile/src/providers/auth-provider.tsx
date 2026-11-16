@@ -17,7 +17,6 @@ type LoginResult =
 
 interface AuthContextValue {
   user: User | null;
-  token: string | null;
   /** True until the stored token has been checked on launch. */
   isRestoring: boolean;
   isAuthenticated: boolean;
@@ -111,7 +110,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo(
     () => ({
       user,
-      token,
       isRestoring,
       isAuthenticated: !!token,
       login,

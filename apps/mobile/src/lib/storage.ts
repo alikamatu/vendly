@@ -23,7 +23,6 @@ export const tokenStorage = {
   },
 };
 
-/** Non-sensitive JSON persistence (cart, recent searches, ...). */
 export const jsonStorage = {
   async get<T>(key: string, fallback: T): Promise<T> {
     try {

@@ -116,7 +116,6 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-white dark:bg-neutral-950">
-      {/* Sticky Top Navbar matching apps/web Header */}
       <View className="border-border/70 dark:border-border-dark flex-row items-center justify-between border-b bg-white px-4 py-2.5 dark:bg-neutral-950">
         <View className="flex-row items-center gap-2">
           <Image
@@ -204,7 +203,6 @@ export default function HomeScreen() {
             />
           }
         >
-          {/* 1. ModernHero Banner (mirrors apps/web/components/home/ModernHero.tsx) */}
           <View className="px-4 pt-4">
             <View className="relative overflow-hidden rounded-3xl bg-neutral-900">
               <Image
@@ -249,7 +247,6 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          {/* 2. Shop by Category (mirrors apps/web/components/home/CategoryShowcase.tsx) */}
           {topCategories.length > 0 ? (
             <View className="mt-7 px-4">
               <SectionHeader
@@ -351,7 +348,6 @@ export default function HomeScreen() {
             </View>
           ) : null}
 
-          {/* 3. Top Pro Vendors / Featured Stores (mirrors apps/web/components/home/TopProVendors.tsx) */}
           {featuredStores.length > 0 ? (
             <View className="mt-8">
               <View className="px-4">
@@ -401,7 +397,6 @@ export default function HomeScreen() {
             )}
           </View>
 
-          {/* 5. Top Verndly Brands (mirrors apps/web/components/home/BrandSection.tsx) */}
           {brandSections.length > 0 && !selectedCategory ? (
             <View className="mt-8 px-4">
               <SectionHeader
@@ -486,7 +481,6 @@ export default function HomeScreen() {
             </View>
           ) : null}
 
-          {/* 8. Recently Viewed (mirrors apps/web/components/home/RecentlyViewedSection.tsx) */}
           {recentlyViewed.length > 0 ? (
             <View className="mt-8">
               <View className="px-4">

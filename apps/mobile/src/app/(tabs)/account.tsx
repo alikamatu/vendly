@@ -109,7 +109,6 @@ function AccountContent() {
       className="flex-1 bg-white dark:bg-neutral-950"
       contentContainerClassName="gap-5 p-4 pb-12"
     >
-      {/* Profile Hero Card matching apps/web/app/account/page.tsx */}
       <View className="border-border dark:border-border-dark bg-surface dark:bg-surface-dark flex-row items-center gap-3.5 rounded-3xl border p-4">
         <View className="h-16 w-16 items-center justify-center rounded-2xl bg-black dark:bg-white">
           <Text className="text-xl font-bold text-white dark:text-black">{initials}</Text>

@@ -69,8 +69,6 @@ export const authApi = {
 };
 
 export const productApi = {
-  getAll: () => api.get<Product[]>('/products', { anonymous: true }),
-
   browse: async (params: BrowseProductsParams): Promise<Paginated<Product>> => {
     const query: Record<string, unknown> = {
       ...params,
@@ -136,14 +134,6 @@ export const storeApi = {
   bySlug: (slug: string) =>
     api.get<StoreDetail>(`/stores/link/${encodeURIComponent(slug)}`, { anonymous: true }),
 
-  getByLink: async (slug: string): Promise<StoreDetail> => {
-    const [store, products] = await Promise.all([
-      storeApi.bySlug(slug),
-      productApi.byStoreSlug(slug).catch(() => []),
-    ]);
-    return { ...store, products };
-  },
-
   topPro: (limit = 6) =>
     api.get<TopProVendor[]>('/stores/top-pro', { query: { limit }, anonymous: true }),
 
@@ -189,28 +179,6 @@ export const reviewApi = {
     };
   },
 
-  listForStore: async (
-    storeLink: string,
-    params: { limit?: number; sort?: string } = {},
-  ): Promise<ReviewList> => {
-    const res = await api.get<any>(`/reviews/store/${encodeURIComponent(storeLink)}`, {
-      query: params,
-      anonymous: true,
-    });
-    const items: Review[] = (res?.items ?? res?.reviews ?? []).map((r: any) => ({
-      ...r,
-      comment: r.comment ?? r.body ?? null,
-      reviewer_name: r.reviewer_name ?? r.buyer?.full_name ?? 'Verified Buyer',
-      is_verified_purchase: r.is_verified_purchase ?? r.verified_purchase ?? false,
-    }));
-    return {
-      items,
-      reviews: items,
-      total: Number(res?.total ?? items.length),
-      nextCursor: res?.nextCursor ?? null,
-    };
-  },
-
   summaryForStore: async (storeLink: string): Promise<ReviewSummary> => {
     const res = await api.get<any>(`/reviews/store/${encodeURIComponent(storeLink)}/summary`, {
       anonymous: true,
@@ -225,9 +193,6 @@ export const reviewApi = {
       distribution: res?.distribution ?? { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
     };
   },
-
-  create: (body: { order_item_id: string; rating: number; title?: string; body?: string }) =>
-    api.post<Review>('/reviews', body),
 };
 
 export const notificationApi = {
@@ -269,8 +234,6 @@ export const notificationApi = {
   markRead: (id: string) => api.patch<NotificationItem>(`/notifications/${id}/read`),
 
   markAllRead: () => api.patch<{ updated: number }>('/notifications/read-all'),
-
-  remove: (id: string) => api.delete<{ deleted: boolean }>(`/notifications/${id}`),
 };
 
 export const orderApi = {
@@ -317,7 +280,5 @@ export const favoriteApi = {
 export const addressApi = {
   list: () => api.get<Address[]>('/address'),
   create: (data: Omit<Address, 'id'>) => api.post<Address>('/address', data),
-  update: (id: string, data: Partial<Omit<Address, 'id'>>) =>
-    api.patch<Address>(`/address/${id}`, data),
   remove: (id: string) => api.delete<{ success: boolean }>(`/address/${id}`),
 };

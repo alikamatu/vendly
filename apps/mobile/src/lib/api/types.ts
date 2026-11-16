@@ -1,8 +1,3 @@
-/**
- * Response shapes for the endpoints the mobile app consumes. These mirror
- * what apps/web reads from the same endpoints (see apps/web/lib/api/*).
- */
-
 export interface User {
   id: string;
   full_name: string;
@@ -78,15 +73,13 @@ export interface ProductDetail extends Product {
   attributes?: Record<string, unknown> | null;
 }
 
-export type BrowseSort =
+export type ProductSort =
   | 'newest'
   | 'oldest'
   | 'price_asc'
   | 'price_desc'
   | 'popular'
   | 'discount_desc';
-
-export type ProductSort = BrowseSort;
 export type ProductCondition = 'new' | 'used' | 'refurbished' | string;
 
 export interface BrowseProductsParams {
@@ -104,7 +97,7 @@ export interface BrowseProductsParams {
   hasDiscount?: boolean;
   is_featured?: boolean;
   min_discount?: number;
-  sort?: BrowseSort;
+  sort?: ProductSort;
   page?: number;
   limit?: number;
 }
@@ -174,8 +167,6 @@ export interface BrowseStoresResponse {
   totalPages: number;
 }
 
-export type StoreSort = NonNullable<BrowseStoresParams['sort']>;
-
 export interface TopProVendor {
   id: string;
   store_name: string;
@@ -191,8 +182,6 @@ export interface TopProVendor {
   products?: ShowcaseProduct[];
   previewProducts?: Product[];
 }
-
-export type PublicStore = BrowseStore | TopProVendor;
 
 export interface StoreDetail {
   id: string;
@@ -336,8 +325,6 @@ export interface NotificationItem {
   read_at: string | null;
   created_at: string;
 }
-
-export type AppNotification = NotificationItem;
 
 export interface NotificationPage {
   items: NotificationItem[];

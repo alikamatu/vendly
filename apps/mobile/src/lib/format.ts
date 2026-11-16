@@ -52,10 +52,7 @@ export function normalizeGhanaPhone(input: string): string | null {
 
 export const PASSWORD_RULE = /((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/;
 
-/**
- * Mirrors apps/web/lib/home/category-image.ts so category showcase cards use
- * the same curated Unsplash photos when a category has no custom image_url.
- */
+/** Curated Unsplash photo used when a category has no custom image_url. */
 export function resolveCategoryImage(name: string, customUrl?: string | null): string {
   if (customUrl) return customUrl;
   const n = name.toLowerCase();
@@ -86,10 +83,6 @@ export interface BrandBucket {
   products: Product[];
 }
 
-/**
- * Mirrors apps/web/lib/home/brand-grouping.ts: groups products by brand and ranks
- * them by product count descending.
- */
 export function groupByBrand(
   products: Product[],
   brandRefsOrMinCount: Brand[] | number = [],

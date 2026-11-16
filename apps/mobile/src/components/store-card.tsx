@@ -12,14 +12,6 @@ export type StoreCardItem =
   | BrowseStore
   | (TopProVendor & { is_verified?: boolean; products?: ShowcaseProduct[] });
 
-/**
- * Mirrors `apps/web/components/stores-browser/StoreCard.tsx`:
- * - Store banner header + overlapping rounded-2xl logo
- * - Store name + PRO badge + blue verified checkmark
- * - Location with pin icon + store bio
- * - 3-item Product Showcase grid with price overlays
- * - "Visit Store" button
- */
 export function StoreCard({ store, compact = false }: { store: StoreCardItem; compact?: boolean }) {
   const router = useRouter();
   const colors = useThemeColors();
