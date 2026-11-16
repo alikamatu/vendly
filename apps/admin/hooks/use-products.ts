@@ -2,19 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { VendlyProductService } from '@/services/product.service';
-import type {
-  VendlyProduct,
-  ProductStatus,
-  ProductListParams,
-  Category,
-  Brand,
-} from '@/types/operations';
+import type { VendlyProduct, ProductStatus, ProductListParams } from '@/types/operations';
 
 export function useVendlyProducts(initialParams: ProductListParams = {}) {
   const [products, setProducts] = useState<VendlyProduct[]>([]);
   const [total, setTotal] = useState(0);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [brands, setBrands] = useState<Brand[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,23 +31,9 @@ export function useVendlyProducts(initialParams: ProductListParams = {}) {
     }
   }, []);
 
-  const fetchMeta = useCallback(async () => {
-    try {
-      const [cats, brs] = await Promise.allSettled([
-        VendlyProductService.getCategories(),
-        VendlyProductService.getBrands(),
-      ]);
-      if (cats.status === 'fulfilled') setCategories(cats.value || []);
-      if (brs.status === 'fulfilled') setBrands(brs.value || []);
-    } catch {
-      // Non-blocking
-    }
-  }, []);
-
   useEffect(() => {
     void fetchProducts(initialParams);
-    void fetchMeta();
-  }, [fetchProducts, fetchMeta]);
+  }, [fetchProducts]);
 
   const updateStatus = async (id: string, status: ProductStatus) => {
     const updated = await VendlyProductService.setStatus(id, status);
@@ -72,8 +50,6 @@ export function useVendlyProducts(initialParams: ProductListParams = {}) {
   return {
     products,
     total,
-    categories,
-    brands,
     loading,
     error,
     refresh: fetchProducts,
