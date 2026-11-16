@@ -670,7 +670,6 @@ export default function QuickCheckoutModal({
           status={paymentModalState}
           errorMessage={paymentErrorMessage}
           orderNumber={paymentOrderNumber}
-          orderId={paymentOrderId}
           reference={paymentReference}
           amount={paymentOrderTotal}
           onViewOrder={() => router.push(`/orders/${paymentOrderId}`)}

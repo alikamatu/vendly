@@ -42,16 +42,6 @@ export const paymentApi = {
     return handleResponse<{ items: any[]; total: number }>(response);
   },
 
-  async getHistory(token: string, params?: { page?: number; limit?: number }) {
-    const search = new URLSearchParams();
-    if (params?.page) search.set("page", String(params.page));
-    if (params?.limit) search.set("limit", String(params.limit));
-    const response = await fetch(`${API_URL}/payments/history?${search.toString()}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return handleResponse<any>(response);
-  },
-
   async retryPayout(token: string, payoutId: string) {
     const response = await fetch(`${API_URL}/payments/payouts/${payoutId}/retry`, {
       method: "POST",

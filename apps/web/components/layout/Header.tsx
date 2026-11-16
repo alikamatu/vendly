@@ -52,12 +52,7 @@ function ThemeToggle() {
   );
 }
 
-export interface HeaderProps {
-  title?: string;
-  hidePrimaryNav?: boolean;
-}
-
-export default function Header({ title }: HeaderProps) {
+export default function Header() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();

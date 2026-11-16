@@ -12,7 +12,6 @@ export interface PaymentProcessingModalProps {
   status: 'verifying' | 'success' | 'failed';
   errorMessage?: string;
   orderNumber?: string;
-  orderId?: string;
   reference?: string;
   amount?: string | number;
   onViewOrder?: () => void;

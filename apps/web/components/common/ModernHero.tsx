@@ -69,37 +69,6 @@ export default function ModernHero() {
                   </Button>
                 </Link>
               </div>
-
-              {/* Social proof + trust signals
-              <div className="pt-8 space-y-4">
-                <div className="flex items-center gap-3 justify-center lg:justify-start">
-                  <div className="flex -space-x-2">
-                    {["bg-amber-400", "bg-rose-400", "bg-emerald-400", "bg-sky-400"].map(
-                      (c, i) => (
-                        <div
-                          key={i}
-                          className={`w-7 h-7 rounded-full border-2 border-black ${c}`}
-                        />
-                      ),
-                    )}
-                  </div>
-                  <p className="text-[11px] text-black font-normal">
-                    <span className="text-primary">1,000+</span> entrepreneurs trust Verndly
-                  </p>
-                </div>
-                <div className="flex flex-wrap justify-center lg:justify-start gap-x-5 gap-y-2 text-black/80">
-                  {[
-                    { text: "Live in 60 seconds", icon: Zap },
-                    { text: "Paystack secured", icon: ShieldCheck },
-                    { text: "0% setup fee", icon: ArrowRight },
-                  ].map((item, idx) => (
-                    <div key={idx} className="flex items-center gap-1.5">
-                      <item.icon className="w-3.5 h-3.5 text-primary" />
-                      <span className="text-xs">{item.text}</span>
-                    </div>
-                  ))}
-                </div>
-              </div> */}
             </div>
 
             {/* Right Side: Minimal Visual */}

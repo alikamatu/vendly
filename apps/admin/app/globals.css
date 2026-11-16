@@ -106,7 +106,6 @@
   --color-input-border: var(--input-border);
   --color-input-focus: var(--input-focus);
   --font-sans: var(--font-inter);
-  --font-mono: var(--font-geist-mono);
 }
 
 /* ─── BASE ─────────────────────────────────────────────────────── */
@@ -145,17 +144,6 @@ h6 {
   font-weight: 600;
   letter-spacing: -0.025em;
   line-height: 1.2;
-}
-
-/* ─── SCROLLBAR ────────────────────────────────────────────────── */
-
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
 }
 
 /* ─── FOCUS ────────────────────────────────────────────────────── */

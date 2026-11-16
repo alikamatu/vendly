@@ -4,11 +4,6 @@ import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/contexts/auth-context';
 
-// Paths that don't require onboarding
-const ONBOARDING_EXEMPT_PATHS = ['/create-store', '/onboarding'];
-// Paths that are public (no auth check needed)
-const PUBLIC_PATHS = ['/', '/s/', '/product/', '/(auth)'];
-
 export function StoreGuard({ children }: { children: React.ReactNode }) {
   const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
