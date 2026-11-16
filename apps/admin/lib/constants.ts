@@ -46,7 +46,6 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
         title: 'Orders',
         href: '/orders',
         icon: ShoppingBag,
-        badgeKey: 'pendingOrders',
       },
       {
         title: 'Products',

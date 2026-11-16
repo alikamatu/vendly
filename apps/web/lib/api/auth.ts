@@ -256,14 +256,6 @@ export const authApi = {
     return response.json();
   },
 
-  async getApprovalStatus(token: string) {
-    const res = await fetch(`${API_URL}/auth/approval-status`, {
-      method: 'GET',
-      headers: authHeaders(token),
-    });
-    return handleResponse<{ status: string | null; reviewed_at: string | null }>(res);
-  },
-
   async logout(token: string) {
     const res = await fetch(`${API_URL}/auth/logout`, {
       method: 'POST',

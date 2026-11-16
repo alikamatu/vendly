@@ -11,8 +11,6 @@ type Role = User['role'];
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requireVerification?: boolean;
-  requireApproval?: boolean;
   /**
    * Restricts the route to users whose role is in this list.
    * When provided and the current user's role is not included, an
@@ -25,8 +23,6 @@ interface ProtectedRouteProps {
 
 export default function ProtectedRoute({
   children,
-  requireVerification = false,
-  requireApproval = false,
   allowedRoles,
   loginPath = '/login',
 }: ProtectedRouteProps) {
@@ -41,29 +37,8 @@ export default function ProtectedRoute({
 
     if (!isAuthenticated) {
       router.replace(loginPath);
-      return;
     }
-
-    if (requireVerification && user && !user.is_verified) {
-      router.replace(loginPath);
-      return;
-    }
-
-    if (requireApproval && user) {
-      if (!user.has_verification_doc || user.approval_status !== 'APPROVED') {
-        router.replace('/seller-verification');
-        return;
-      }
-    }
-  }, [
-    isLoading,
-    isAuthenticated,
-    user,
-    requireVerification,
-    requireApproval,
-    loginPath,
-    router,
-  ]);
+  }, [isLoading, isAuthenticated, loginPath, router]);
 
   if (isLoading) {
     return (
@@ -77,8 +52,6 @@ export default function ProtectedRoute({
   }
 
   if (!isAuthenticated) return null;
-  if (requireVerification && user && !user.is_verified) return null;
-  if (requireApproval && user && user.approval_status !== 'APPROVED') return null;
   if (!roleAllowed) return <AccessDenied />;
 
   return <>{children}</>;

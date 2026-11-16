@@ -95,7 +95,7 @@ export default function RecentlyViewed({
                 )}
                 {p.price !== undefined && (
                   <div className="text-xs font-semibold mt-1">
-                    {typeof p.price === "number" ? `GHS ${p.price}` : `GHS ${p.price}`}
+                    {`GHS ${p.price}`}
                   </div>
                 )}
               </div>

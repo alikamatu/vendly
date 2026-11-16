@@ -14,18 +14,6 @@ interface StoreCardProps {
 export default function StoreCard({ store, index }: StoreCardProps) {
   const [logoError, setLogoError] = React.useState(false);
 
-  // Generate a random gradient color for the store banner if no banner is defined
-  const bannerGradient = React.useMemo(() => {
-    const gradients = [
-      'from-rose-500/10 to-orange-500/10 border-rose-500/20',
-      'from-blue-500/10 to-indigo-500/10 border-blue-500/20',
-      'from-emerald-500/10 to-teal-500/10 border-emerald-500/20',
-      'from-amber-500/10 to-yellow-500/10 border-amber-500/20',
-      'from-purple-500/10 to-pink-500/10 border-purple-500/20',
-    ];
-    return gradients[index % gradients.length];
-  }, [index]);
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}

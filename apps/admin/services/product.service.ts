@@ -1,11 +1,5 @@
 import { VENDLY_API_BASE_URL, getVendlyHeaders, qs, unwrap } from './config';
-import type {
-  VendlyProduct,
-  ProductStatus,
-  ProductListParams,
-  Category,
-  Brand,
-} from '@/types/operations';
+import type { VendlyProduct, ProductStatus, ProductListParams } from '@/types/operations';
 
 export interface ProductListResponse {
   data: VendlyProduct[];
@@ -53,21 +47,5 @@ export class VendlyProductService {
       headers: this.headers(),
     });
     return unwrap<VendlyProduct>(res);
-  }
-
-  static async getCategories(): Promise<Category[]> {
-    const res = await fetch(`${VENDLY_API_BASE_URL}/admin/categories`, {
-      headers: this.headers(),
-      cache: 'no-store',
-    });
-    return unwrap<Category[]>(res);
-  }
-
-  static async getBrands(): Promise<Brand[]> {
-    const res = await fetch(`${VENDLY_API_BASE_URL}/admin/brands`, {
-      headers: this.headers(),
-      cache: 'no-store',
-    });
-    return unwrap<Brand[]>(res);
   }
 }

@@ -16,7 +16,6 @@
     "@sentry/nextjs": "^10.53.1",
     "@vendly/types": "workspace:*",
     "browser-image-compression": "^2.0.2",
-    "clsx": "^2.1.1",
     "framer-motion": "^10.18.0",
     "heic2any": "^0.0.4",
     "libphonenumber-js": "^1.13.3",
@@ -28,9 +27,7 @@
     "react-hook-form": "^7.71.1",
     "recharts": "^3.8.1",
     "sonner": "^2.0.7",
-    "tailwind-merge": "^3.5.0",
-    "zod": "^4.5.4",
-    "zustand": "^5.0.11"
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
