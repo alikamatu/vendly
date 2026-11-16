@@ -6,9 +6,7 @@ import {
   IsArray,
   ValidateIf,
   ArrayNotEmpty,
-  ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
 
 export enum CategoryFieldType {
   TEXT = 'text',
@@ -51,12 +49,4 @@ export class CategoryFieldDto {
 
   @IsOptional()
   defaultValue?: any;
-}
-
-export class CategoryFieldsWrapper {
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => CategoryFieldDto)
-  fields?: CategoryFieldDto[];
 }

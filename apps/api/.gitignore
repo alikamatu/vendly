@@ -1,7 +1,11 @@
 # compiled output
 /dist
+/dist_test
 /node_modules
 /build
+
+# npm lockfile (repo uses pnpm)
+/package-lock.json
 
 # Logs
 logs
@@ -18,6 +22,12 @@ lerna-debug.log*
 # Tests
 /coverage
 /.nyc_output
+
+# Compiled test emit
+/test/*.js
+/test/*.js.map
+/test/*.d.ts
+/test-email-sending.ts
 
 # IDEs and editors
 /.idea

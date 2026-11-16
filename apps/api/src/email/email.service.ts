@@ -264,10 +264,6 @@ export class EmailService {
     );
   }
 
-  sendPayoutReceiptEmail(to: string, data: PayoutEmailData) {
-    return this.sendPayoutSentEmail(to, data);
-  }
-
   // ─── Inventory + account ─────────────────────────────────────────────────
 
   sendLowStockEmail(

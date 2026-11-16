@@ -213,12 +213,6 @@ export class PaymentsRepository {
     });
   }
 
-  async findPaymentLogByEventId(eventId: string) {
-    return this.prisma.paymentLog.findUnique({
-      where: { event_id: eventId },
-    });
-  }
-
   async createPaymentLog(event: string, payload: any, eventId?: string) {
     return this.prisma.paymentLog.create({
       data: {

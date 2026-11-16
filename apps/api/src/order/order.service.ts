@@ -1229,41 +1229,6 @@ export class OrderService {
     };
   }
 
-  /**
-   * Deducts inventory for an order. Called when an order is paid.
-   */
-  async finalizeOrderInventory(orderId: string) {
-    const order = await this.prisma.order.findUnique({
-      where: { id: orderId },
-      include: { items: true },
-    });
-
-    if (!order) return;
-
-    // Check if inventory was already deducted (to prevent double deduction)
-    // We can use a flag or check if the order status was AWAITING_PAYMENT
-    if (order.status !== 'AWAITING_PAYMENT') return;
-
-    await this.prisma.$transaction(async (tx) => {
-      for (const item of order.items) {
-        await tx.product.update({
-          where: { id: item.product_id },
-          data: {
-            quantity_available: {
-              decrement: item.quantity,
-            },
-          },
-        });
-      }
-
-      // Update status to PAID or PENDING (if it was AWAITING_PAYMENT)
-      await tx.order.update({
-        where: { id: orderId },
-        data: { status: 'PAID' },
-      });
-    });
-  }
-
   async getBuyerOrderById(buyerId: string, orderId: string) {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },

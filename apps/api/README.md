@@ -25,23 +25,22 @@ The core backend service for the Verndly platform, built with NestJS and Prisma.
     ```
     (Update the variables with your own credentials)
 
-3.  **Database Migration & Seeding**:
+3.  **Database Migration**:
     From the monorepo root:
     ```bash
     pnpm --filter @vendly/api exec prisma generate
     pnpm --filter @vendly/api exec prisma migrate dev
-    pnpm --filter @vendly/api run db:seed
     ```
 
 ## 🛠 Available Scripts
 
 Run these from the monorepo root using Turborepo filters:
 -   `pnpm --filter @vendly/api dev`: Starts the development server with watch mode (port 1000).
--   `pnpm --filter @vendly/api build`: Builds the application for production using SWC.
+-   `pnpm --filter @vendly/api build`: Builds the application for production.
 -   `pnpm --filter @vendly/api test`: Runs unit tests.
 -   `pnpm --filter @vendly/api lint`: Checks for linting errors.
 
-## 🏗 Core Modules (18 Total)
+## 🏗 Core Modules
 
 -   **Auth**: JWT-based authentication, Google OAuth, 2FA (TOTP + SMS via Arkesel), role management, account recovery.
 -   **Admin**: Built-in endpoints for approvals, user management, order/return moderation, and financial reconciliation.
@@ -84,12 +83,6 @@ We use Prisma for type-safe database access. The schema contains 22+ models (Use
 The schema is located at `prisma/schema.prisma`. To update the schema:
 1.  Make changes to the `schema.prisma` file.
 2.  Run `pnpm --filter @vendly/api exec prisma migrate dev --name <migration_name>`.
-
-### Seeding
-Custom seed scripts are available:
-- `pnpm --filter @vendly/api run seed:admin`
-- `pnpm --filter @vendly/api run seed:categories`
-- `pnpm --filter @vendly/api run seed:locations`
 
 ## 🐳 Docker Deployment
 
