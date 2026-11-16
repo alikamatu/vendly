@@ -745,7 +745,6 @@ export default function CheckoutPage() {
           status={paymentModalState}
           errorMessage={paymentErrorMessage}
           orderNumber={paymentOrderNumber}
-          orderId={paymentOrderId}
           reference={paymentReference}
           amount={paymentOrderTotal}
           onViewOrder={() => router.push(`/orders/${paymentOrderId}`)}
