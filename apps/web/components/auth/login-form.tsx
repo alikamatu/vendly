@@ -7,7 +7,8 @@ import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
 import GoogleSignInButton from '@/components/auth/GoogleSignInButton';
-import { Mail, Lock, ShieldCheck, KeyRound } from 'lucide-react';
+import { AuthDivider } from '@/components/auth/AuthPageShell';
+import { ShieldCheck, KeyRound } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/contexts/auth-context';
 import { authApi } from '@/lib/api/auth';
@@ -39,7 +40,10 @@ export default function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormPr
   const searchParams = useSearchParams();
   const next = searchParams.get('next');
   const [code, setCode] = React.useState('');
-  const [resendStatus, setResendStatus] = React.useState<null | { kind: 'ok' | 'err'; msg: string }>(null);
+  const [resendStatus, setResendStatus] = React.useState<null | {
+    kind: 'ok' | 'err';
+    msg: string;
+  }>(null);
   const [resendingVerify, setResendingVerify] = React.useState(false);
   const oauthError = searchParams.get('oauth_error');
   const isUnverified = !!error && /verify your email/i.test(error);
@@ -108,47 +112,39 @@ export default function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormPr
       <div className="w-full">
         <form onSubmit={handleCodeSubmit} className="space-y-5">
           {error && <Alert variant="error" message={error} onDismiss={clearError} />}
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-surface/80 border border-border">
-            <div className="h-10 w-10 rounded-lg bg-accent/10 flex items-center justify-center text-accent shrink-0">
+          <div className="bg-surface/80 border-border flex items-center gap-3 rounded-xl border p-3">
+            <div className="bg-accent/10 text-accent flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
               <ShieldCheck size={20} />
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-foreground">Two-factor authentication</h2>
-              <p className="text-xs text-foreground/60 leading-tight mt-0.5">{prompt}</p>
+              <h2 className="text-foreground text-sm font-semibold">Two-factor authentication</h2>
+              <p className="text-foreground/60 mt-0.5 text-xs leading-tight">{prompt}</p>
             </div>
           </div>
 
           <Input
-            label={
-              useBackupCode
-                ? 'Backup code'
-                : isSms
-                  ? 'SMS code'
-                  : 'Authenticator code'
-            }
+            label={useBackupCode ? 'Backup code' : isSms ? 'SMS code' : 'Authenticator code'}
             type="text"
             autoComplete="one-time-code"
             inputMode={useBackupCode ? 'text' : 'numeric'}
             placeholder={useBackupCode ? 'XXXX-XXXX' : '123456'}
             icon={<KeyRound size={16} />}
             value={code}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              setCode(e.target.value)
-            }
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCode(e.target.value)}
           />
 
           <Button
             type="submit"
             variant="primary"
             size="md"
-            className="w-full h-11"
+            className="h-11 w-full"
             isLoading={isLoading}
             loadingText="Verifying..."
           >
             Verify and continue
           </Button>
 
-          <div className="flex items-center justify-between text-xs text-foreground/60 pt-1">
+          <div className="text-foreground/60 flex items-center justify-between pt-1 text-xs">
             <div className="flex items-center gap-3">
               <button
                 type="button"
@@ -156,7 +152,7 @@ export default function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormPr
                   setCode('');
                   setUseBackupCode(!useBackupCode);
                 }}
-                className="text-accent hover:underline font-medium"
+                className="text-accent font-medium hover:underline"
               >
                 {useBackupCode
                   ? isSms
@@ -169,7 +165,7 @@ export default function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormPr
                   type="button"
                   onClick={resendSms}
                   disabled={resending}
-                  className="hover:underline disabled:opacity-60 text-foreground/80 font-medium"
+                  className="text-foreground/80 font-medium hover:underline disabled:opacity-60"
                 >
                   {resending ? 'Sending…' : 'Resend SMS'}
                 </button>
@@ -209,7 +205,7 @@ export default function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormPr
       {error && <Alert variant="error" message={error} className="mb-4" onDismiss={clearError} />}
 
       {isUnverified && (
-        <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3.5 text-xs space-y-2">
+        <div className="mb-4 space-y-2 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3.5 text-xs">
           <p className="text-foreground/80 font-medium">
             We sent a verification link to your email. Didn&apos;t get it?
           </p>
@@ -217,12 +213,18 @@ export default function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormPr
             type="button"
             onClick={handleResend}
             disabled={resendingVerify}
-            className="text-accent hover:underline font-semibold disabled:opacity-60 inline-flex items-center gap-1.5"
+            className="text-accent inline-flex items-center gap-1.5 font-semibold hover:underline disabled:opacity-60"
           >
             {resendingVerify ? 'Sending verification link…' : 'Resend verification email'}
           </button>
           {resendStatus && (
-            <p className={resendStatus.kind === 'ok' ? 'text-emerald-600 font-medium' : 'text-red-600 font-medium'}>
+            <p
+              className={
+                resendStatus.kind === 'ok'
+                  ? 'font-medium text-emerald-600'
+                  : 'font-medium text-red-600'
+              }
+            >
               {resendStatus.msg}
             </p>
           )}
@@ -231,20 +233,15 @@ export default function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormPr
 
       <GoogleSignInButton next={next || '/'} label="Continue with Google" />
 
-      <div className="my-5 flex items-center gap-3 text-[11px] font-medium uppercase tracking-wider text-foreground/40">
-        <div className="h-px flex-1 bg-border/80" />
-        <span>or sign in with email</span>
-        <div className="h-px flex-1 bg-border/80" />
-      </div>
+      <AuthDivider />
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
-          label="Email address"
+          label="Email"
           type="email"
           autoComplete="username"
           inputMode="email"
           placeholder="name@example.com"
-          icon={<Mail size={16} />}
           error={errors.email?.message}
           registration={register('email')}
         />
@@ -254,15 +251,14 @@ export default function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormPr
           labelRight={
             <Link
               href="/forgot-password"
-              className="text-xs font-medium text-foreground/60 hover:text-foreground transition-colors hover:underline"
+              className="text-foreground/50 hover:text-foreground text-xs transition-colors"
             >
-              Forgot password?
+              Forgot?
             </Link>
           }
           type="password"
           autoComplete="current-password"
           placeholder="••••••••"
-          icon={<Lock size={16} />}
           error={errors.password?.message}
           registration={register('password')}
         />
@@ -272,39 +268,32 @@ export default function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormPr
             type="submit"
             variant="primary"
             size="md"
-            className="w-full h-11"
+            className="h-11 w-full"
             isLoading={isLoading}
             loadingText="Signing in..."
           >
-            Sign in
+            Continue
           </Button>
         </div>
 
-        <div className="pt-2 text-center text-xs text-foreground/60 flex items-center justify-between">
-          <span>Don&apos;t have an account?</span>
+        <p className="text-foreground/50 pt-4 text-center text-sm">
+          New to Verndly?{' '}
           {onSwitchToRegister ? (
             <button
               type="button"
               onClick={onSwitchToRegister}
-              className="font-medium text-accent hover:underline"
+              className="text-foreground font-medium underline-offset-4 hover:underline"
             >
-              Create an account
+              Create account
             </button>
           ) : (
-            <Link href="/register" className="font-medium text-accent hover:underline">
-              Create an account
+            <Link
+              href="/register"
+              className="text-foreground font-medium underline-offset-4 hover:underline"
+            >
+              Create account
             </Link>
           )}
-        </div>
-
-        <p className="pt-2 text-center text-[11px] text-foreground/40">
-          Having trouble?{' '}
-          <a
-            href="mailto:support@verndly.app?subject=Sign-in%20issue"
-            className="text-foreground/60 hover:text-foreground underline transition-colors"
-          >
-            Contact support
-          </a>
         </p>
       </form>
     </div>

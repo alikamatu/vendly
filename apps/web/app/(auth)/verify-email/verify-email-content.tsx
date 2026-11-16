@@ -4,10 +4,9 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { authApi } from '@/lib/api/auth';
 import Spinner from '@/components/ui/Spinner';
-import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
-import AuthShowcase from '@/components/auth/AuthShowcase';
-import { CheckCircle, XCircle, ShoppingBag, Store, ShieldCheck } from 'lucide-react';
+import AuthPageShell from '@/components/auth/AuthPageShell';
+import { Check, X, ShoppingBag, Store } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/lib/contexts/auth-context';
 import Link from 'next/link';
@@ -40,149 +39,81 @@ export default function VerifyEmailContent() {
   }, [token, setAuthData]);
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-screen w-full">
-      {/* Left Column: Form / Verification Section (~30%) */}
-      <div className="w-full lg:w-[32%] xl:w-[30%] min-h-screen lg:h-screen flex flex-col justify-between p-6 sm:p-10 xl:p-12 overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden bg-background z-10">
-        <div>
-          {/* Brand Logo */}
-          <Link href="/" className="inline-flex items-center gap-2.5 mb-8 group">
-            <img
-              src="/logos/verndly.png"
-              alt="Verndly"
-              className="h-8 w-8 object-contain transition-transform group-hover:scale-105"
-            />
-            <span className="font-semibold text-lg tracking-tight text-foreground">
-              Verndly
-            </span>
-          </Link>
-
-          {/* Loading State */}
-          {status === 'loading' && (
-            <div className="flex flex-col items-center gap-4 py-16 text-center">
-              <Spinner size="lg" />
-              <div className="space-y-1">
-                <h2 className="text-lg font-semibold tracking-tight text-foreground">
-                  Verifying your email
-                </h2>
-                <p className="text-xs text-foreground/60 leading-relaxed">
-                  Confirming your account with Verndly secure rails...
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Success State */}
-          {status === 'success' && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="space-y-6"
-            >
-              <div className="space-y-2">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shadow-xs">
-                  <CheckCircle size={24} />
-                </div>
-                <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground">
-                  Email verified!
-                </h1>
-                <p className="text-xs sm:text-sm text-foreground/60 leading-relaxed">
-                  {message || 'Your account is active. Choose your path to begin.'}
-                </p>
-              </div>
-
-              {/* Cardless Next Steps */}
-              <div className="space-y-3 pt-2">
-                <Link
-                  href="/create-store"
-                  className="group flex items-start gap-3.5 p-4 rounded-2xl bg-surface/70 hover:bg-surface border-0 shadow-xs transition-all"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-secondary/10 text-secondary flex items-center justify-center shrink-0">
-                    <Store size={20} />
-                  </div>
-                  <div className="min-w-0">
-                    <h3 className="text-xs sm:text-sm font-semibold text-foreground group-hover:text-secondary transition-colors">
-                      Start selling on Verndly
-                    </h3>
-                    <p className="text-[11px] text-foreground/50 leading-relaxed mt-0.5">
-                      Open your verified store and receive payouts directly to Mobile Money.
-                    </p>
-                  </div>
-                </Link>
-
-                <Link
-                  href="/"
-                  className="group flex items-start gap-3.5 p-4 rounded-2xl bg-surface/70 hover:bg-surface border-0 shadow-xs transition-all"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-foreground/5 text-foreground/80 flex items-center justify-center shrink-0">
-                    <ShoppingBag size={20} />
-                  </div>
-                  <div className="min-w-0">
-                    <h3 className="text-xs sm:text-sm font-semibold text-foreground transition-colors">
-                      Explore the marketplace
-                    </h3>
-                    <p className="text-[11px] text-foreground/50 leading-relaxed mt-0.5">
-                      Shop from top-rated entrepreneurs with delivery right to your doorstep.
-                    </p>
-                  </div>
-                </Link>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Error State */}
-          {status === 'error' && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="space-y-6"
-            >
-              <div className="space-y-2">
-                <div className="w-12 h-12 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center shadow-xs">
-                  <XCircle size={24} />
-                </div>
-                <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground">
-                  Verification failed
-                </h1>
-                <p className="text-xs sm:text-sm text-foreground/60 leading-relaxed">
-                  {message}
-                </p>
-              </div>
-
-              <div className="pt-2">
-                <Link href="/login" className="block w-full">
-                  <Button variant="primary" size="md" className="w-full h-11">
-                    Return to sign in
-                  </Button>
-                </Link>
-              </div>
-            </motion.div>
-          )}
+    <AuthPageShell>
+      {status === 'loading' && (
+        <div className="flex flex-col items-center gap-4 py-12 text-center">
+          <Spinner size="lg" />
+          <p className="text-foreground/60 text-sm">Verifying your email…</p>
         </div>
+      )}
 
-        {/* Minimal Footer */}
-        <div className="pt-8 mt-6 border-t border-border/40 flex items-center justify-between text-[11px] text-foreground/40">
-          <div className="flex items-center gap-1.5">
-            <ShieldCheck size={13} className="text-emerald-500 shrink-0" />
-            <span>256-bit SSL • Verified Platform</span>
+      {status === 'success' && (
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col items-center text-center"
+        >
+          <div className="bg-foreground text-background mb-8 grid h-14 w-14 place-items-center rounded-full">
+            <Check size={26} strokeWidth={2.5} />
           </div>
-          <span className="font-mono text-foreground/30">v1.0</span>
-        </div>
-      </div>
+          <h1 className="text-foreground text-[28px] font-semibold leading-tight tracking-[-0.02em] sm:text-[32px]">
+            Email verified
+          </h1>
+          <p className="text-foreground/55 mt-2 text-sm">{message || 'Your account is ready.'}</p>
 
-      {/* Right Column: Full-Height Showcase Area (70%) */}
-      <AuthShowcase
-        headline="Welcome to the new standard"
-        highlightWords="of entreprenurs commerce."
-        description="Discover verified sellers, checkout instantly with Mobile Money, and experience fraud-free local shopping."
-        testimonial={{
-          quote:
-            "Buying and selling on Verndly feels like Apple-grade software built specifically for Ghana. It is night and day compared to social media DMs.",
-          author: "Selorm Kofi",
-          role: "CEO of Glow_Up Aesthetics",
-          avatarText: "SK",
-          metric: "Instant MoMo checkout",
-        }}
-      />
-    </div>
+          <div className="mt-8 w-full space-y-3 text-left">
+            <Link
+              href="/create-store"
+              className="border-border/70 bg-surface/60 hover:border-foreground/30 hover:bg-surface group flex items-center gap-3.5 rounded-2xl border p-4 transition-colors"
+            >
+              <div className="bg-foreground/5 text-foreground grid h-10 w-10 shrink-0 place-items-center rounded-xl">
+                <Store size={18} />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-foreground text-sm font-medium">Open a storefront</h3>
+                <p className="text-foreground/50 text-xs">Start selling and accept Mobile Money</p>
+              </div>
+            </Link>
+
+            <Link
+              href="/"
+              className="border-border/70 bg-surface/60 hover:border-foreground/30 hover:bg-surface group flex items-center gap-3.5 rounded-2xl border p-4 transition-colors"
+            >
+              <div className="bg-foreground/5 text-foreground grid h-10 w-10 shrink-0 place-items-center rounded-xl">
+                <ShoppingBag size={18} />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-foreground text-sm font-medium">Browse marketplace</h3>
+                <p className="text-foreground/50 text-xs">Shop verified stores across Ghana</p>
+              </div>
+            </Link>
+          </div>
+        </motion.div>
+      )}
+
+      {status === 'error' && (
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col items-center text-center"
+        >
+          <div className="mb-8 grid h-14 w-14 place-items-center rounded-full bg-red-500/10 text-red-500">
+            <X size={26} strokeWidth={2.5} />
+          </div>
+          <h1 className="text-foreground text-[28px] font-semibold leading-tight tracking-[-0.02em] sm:text-[32px]">
+            Verification failed
+          </h1>
+          <p className="text-foreground/55 mt-2 text-sm">{message}</p>
+
+          <div className="mt-10 w-full">
+            <Link href="/login" className="block w-full">
+              <Button variant="primary" size="md" className="h-11 w-full">
+                Back to sign in
+              </Button>
+            </Link>
+          </div>
+        </motion.div>
+      )}
+    </AuthPageShell>
   );
 }

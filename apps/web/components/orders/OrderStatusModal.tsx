@@ -17,7 +17,6 @@ import {
   CreditCard,
   Banknote,
   ShieldCheck,
-  AlertCircle,
 } from 'lucide-react';
 import clsx from '@/utils/clsx';
 
@@ -217,12 +216,12 @@ export default function OrderStatusModal({
     >
       <div className="space-y-4 pt-1">
         {/* Segmented Control */}
-        <div className="flex bg-surface p-1 rounded-xl border border-border">
+        <div className="bg-surface border-border flex rounded-xl border p-1">
           <button
             type="button"
             onClick={() => setTab('fulfillment')}
             className={clsx(
-              'flex-1 py-1.5 px-3 text-xs font-semibold rounded-lg transition-all',
+              'flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all',
               tab === 'fulfillment'
                 ? 'bg-foreground text-background shadow-sm'
                 : 'text-muted-foreground hover:text-foreground',
@@ -234,7 +233,7 @@ export default function OrderStatusModal({
             type="button"
             onClick={() => setTab('payment')}
             className={clsx(
-              'flex-1 py-1.5 px-3 text-xs font-semibold rounded-lg transition-all',
+              'flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all',
               tab === 'payment'
                 ? 'bg-foreground text-background shadow-sm'
                 : 'text-muted-foreground hover:text-foreground',
@@ -246,7 +245,7 @@ export default function OrderStatusModal({
 
         {tab === 'fulfillment' && (
           <>
-            <div className="space-y-2 max-h-[46vh] overflow-y-auto pr-1">
+            <div className="max-h-[46vh] space-y-2 overflow-y-auto pr-1">
               {STATUSES.map((item) => {
                 const Icon = item.icon;
                 const isSelected = selectedStatus === item.value;
@@ -258,33 +257,33 @@ export default function OrderStatusModal({
                     type="button"
                     onClick={() => setSelectedStatus(item.value)}
                     className={clsx(
-                      'w-full flex items-center justify-between p-3 rounded-xl border text-left transition-all',
+                      'flex w-full items-center justify-between rounded-xl border p-3 text-left transition-all',
                       isSelected
                         ? 'border-foreground bg-foreground/[0.04]'
                         : 'border-border hover:border-foreground/30 bg-surface/40',
                     )}
                   >
-                    <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex min-w-0 items-center gap-3">
                       <div
                         className={clsx(
-                          'w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border',
+                          'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border',
                           item.color,
                         )}
                       >
-                        <Icon className="w-4 h-4" />
+                        <Icon className="h-4 w-4" />
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-semibold text-foreground tracking-tight">
+                          <span className="text-foreground text-xs font-semibold tracking-tight">
                             {item.label}
                           </span>
                           {isCurrent && (
-                            <span className="text-[9px] uppercase tracking-wider font-semibold px-1.5 py-0.2 rounded bg-foreground/10 text-foreground">
+                            <span className="py-0.2 bg-foreground/10 text-foreground rounded px-1.5 text-[9px] font-semibold uppercase tracking-wider">
                               Current
                             </span>
                           )}
                         </div>
-                        <p className="text-[11px] text-muted-foreground truncate">
+                        <p className="text-muted-foreground truncate text-[11px]">
                           {item.description}
                         </p>
                       </div>
@@ -292,26 +291,26 @@ export default function OrderStatusModal({
 
                     <div
                       className={clsx(
-                        'w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ml-2 transition-colors',
+                        'ml-2 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors',
                         isSelected
                           ? 'border-foreground bg-foreground text-background'
                           : 'border-border',
                       )}
                     >
-                      {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-background" />}
+                      {isSelected && <div className="bg-background h-1.5 w-1.5 rounded-full" />}
                     </div>
                   </button>
                 );
               })}
             </div>
 
-            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-border">
+            <div className="border-border flex items-center justify-end gap-2.5 border-t pt-3">
               <Button
                 variant="secondary"
                 size="sm"
                 onClick={onClose}
                 disabled={isSubmitting}
-                className="text-xs h-9 px-4"
+                className="h-9 px-4 text-xs"
               >
                 Cancel
               </Button>
@@ -321,7 +320,7 @@ export default function OrderStatusModal({
                 onClick={handleUpdateFulfillment}
                 isLoading={isSubmitting}
                 disabled={isSubmitting || selectedStatus === currentStatus}
-                className="text-xs h-9 px-5"
+                className="h-9 px-5 text-xs"
               >
                 Apply Fulfillment Status
               </Button>
@@ -333,7 +332,7 @@ export default function OrderStatusModal({
           <div className="space-y-4">
             {/* Payment Method / Channel Selection */}
             <div>
-              <label className="text-xs font-semibold text-foreground block mb-2">
+              <label className="text-foreground mb-2 block text-xs font-semibold">
                 Payment Channel
               </label>
               <div className="grid grid-cols-2 gap-2.5">
@@ -341,18 +340,18 @@ export default function OrderStatusModal({
                   type="button"
                   onClick={() => setPaymentMethod('PAYSTACK')}
                   className={clsx(
-                    'p-3 rounded-xl border text-left flex items-start gap-3 transition-all',
+                    'flex items-start gap-3 rounded-xl border p-3 text-left transition-all',
                     paymentMethod === 'PAYSTACK'
                       ? 'border-foreground bg-foreground/[0.04]'
                       : 'border-border hover:border-foreground/30 bg-surface/30',
                   )}
                 >
-                  <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-500 flex items-center justify-center shrink-0">
-                    <CreditCard className="w-4 h-4" />
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-blue-500/20 bg-blue-500/10 text-blue-500">
+                    <CreditCard className="h-4 w-4" />
                   </div>
                   <div>
-                    <div className="text-xs font-semibold text-foreground">Online (Paystack)</div>
-                    <div className="text-[11px] text-muted-foreground mt-0.5">
+                    <div className="text-foreground text-xs font-semibold">Online (Paystack)</div>
+                    <div className="text-muted-foreground mt-0.5 text-[11px]">
                       Card, Momo, Bank transfer
                     </div>
                   </div>
@@ -362,18 +361,18 @@ export default function OrderStatusModal({
                   type="button"
                   onClick={() => setPaymentMethod('CASH')}
                   className={clsx(
-                    'p-3 rounded-xl border text-left flex items-start gap-3 transition-all',
+                    'flex items-start gap-3 rounded-xl border p-3 text-left transition-all',
                     paymentMethod === 'CASH'
                       ? 'border-foreground bg-foreground/[0.04]'
                       : 'border-border hover:border-foreground/30 bg-surface/30',
                   )}
                 >
-                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center shrink-0">
-                    <Banknote className="w-4 h-4" />
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-emerald-500/20 bg-emerald-500/10 text-emerald-500">
+                    <Banknote className="h-4 w-4" />
                   </div>
                   <div>
-                    <div className="text-xs font-semibold text-foreground">Cash on Delivery</div>
-                    <div className="text-[11px] text-muted-foreground mt-0.5">
+                    <div className="text-foreground text-xs font-semibold">Cash on Delivery</div>
+                    <div className="text-muted-foreground mt-0.5 text-[11px]">
                       Physical cash handover
                     </div>
                   </div>
@@ -383,7 +382,7 @@ export default function OrderStatusModal({
 
             {/* Payment Status Selection */}
             <div>
-              <label className="text-xs font-semibold text-foreground block mb-2">
+              <label className="text-foreground mb-2 block text-xs font-semibold">
                 Payment Status
               </label>
               <div className="grid grid-cols-3 gap-2">
@@ -391,9 +390,9 @@ export default function OrderStatusModal({
                   type="button"
                   onClick={() => setPaymentStatus('PAID')}
                   className={clsx(
-                    'py-2 px-3 rounded-xl border text-center text-xs font-semibold transition-all',
+                    'rounded-xl border px-3 py-2 text-center text-xs font-semibold transition-all',
                     paymentStatus === 'PAID'
-                      ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30'
+                      ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600'
                       : 'border-border text-muted-foreground hover:text-foreground bg-surface/30',
                   )}
                 >
@@ -403,9 +402,9 @@ export default function OrderStatusModal({
                   type="button"
                   onClick={() => setPaymentStatus('PENDING')}
                   className={clsx(
-                    'py-2 px-3 rounded-xl border text-center text-xs font-semibold transition-all',
+                    'rounded-xl border px-3 py-2 text-center text-xs font-semibold transition-all',
                     paymentStatus === 'PENDING'
-                      ? 'bg-amber-500/10 text-amber-600 border-amber-500/30'
+                      ? 'border-amber-500/30 bg-amber-500/10 text-amber-600'
                       : 'border-border text-muted-foreground hover:text-foreground bg-surface/30',
                   )}
                 >
@@ -415,9 +414,9 @@ export default function OrderStatusModal({
                   type="button"
                   onClick={() => setPaymentStatus('FAILED')}
                   className={clsx(
-                    'py-2 px-3 rounded-xl border text-center text-xs font-semibold transition-all',
+                    'rounded-xl border px-3 py-2 text-center text-xs font-semibold transition-all',
                     paymentStatus === 'FAILED'
-                      ? 'bg-red-500/10 text-red-600 border-red-500/30'
+                      ? 'border-red-500/30 bg-red-500/10 text-red-600'
                       : 'border-border text-muted-foreground hover:text-foreground bg-surface/30',
                   )}
                 >
@@ -437,8 +436,8 @@ export default function OrderStatusModal({
                   hint="We verify this with Paystack to retrieve and link the official Paystack Transaction ID."
                 />
                 {currentProviderRef && (
-                  <div className="flex items-center gap-1.5 p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs">
-                    <ShieldCheck className="w-4 h-4 shrink-0" />
+                  <div className="flex items-center gap-1.5 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-2 text-xs text-emerald-700 dark:text-emerald-400">
+                    <ShieldCheck className="h-4 w-4 shrink-0" />
                     <span>
                       Verified Paystack Transaction ID:{' '}
                       <strong className="font-mono">{currentProviderRef}</strong>
@@ -456,13 +455,13 @@ export default function OrderStatusModal({
               />
             )}
 
-            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-border">
+            <div className="border-border flex items-center justify-end gap-2.5 border-t pt-3">
               <Button
                 variant="secondary"
                 size="sm"
                 onClick={onClose}
                 disabled={isSubmitting}
-                className="text-xs h-9 px-4"
+                className="h-9 px-4 text-xs"
               >
                 Cancel
               </Button>
@@ -472,7 +471,7 @@ export default function OrderStatusModal({
                 onClick={handleUpdatePayment}
                 isLoading={isSubmitting}
                 disabled={isSubmitting}
-                className="text-xs h-9 px-5"
+                className="h-9 px-5 text-xs"
               >
                 Save Payment Status
               </Button>
