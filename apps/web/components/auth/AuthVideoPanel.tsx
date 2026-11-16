@@ -15,10 +15,6 @@ const POSTER = '/videos/auth-showcase-poster.jpg';
 const SOURCES = [
   { src: '/videos/auth-showcase.webm', type: 'video/webm' },
   { src: '/videos/auth-showcase.mp4', type: 'video/mp4' },
-  {
-    src: '/videos/Product_showcase_video_features_UI_1f3310bd_1080p.mp4',
-    type: 'video/mp4',
-  },
 ];
 
 function useIsDesktop() {
