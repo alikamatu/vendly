@@ -122,26 +122,19 @@ export function AdminSidebar({
         ))}
       </div>
 
-      {/* Footer / Status */}
-      <div className="border-border/80 shrink-0 border-t p-3">
-        <div className="bg-muted/30 border-border/50 text-muted-foreground flex items-center justify-between rounded-xl border px-3 py-2 text-[11px]">
-          <div className="flex items-center gap-2">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
-            {(!collapsed || sidebarOpen) && <span>Postgres Connected</span>}
-          </div>
-          {onToggleCollapse && !sidebarOpen && (
-            <button
-              onClick={onToggleCollapse}
-              className="hover:text-foreground p-1"
-              title="Toggle sidebar"
-            >
-              <ChevronRight
-                className={cn('h-3.5 w-3.5 transition-transform', !collapsed && 'rotate-180')}
-              />
-            </button>
-          )}
+      {onToggleCollapse && !sidebarOpen && (
+        <div className="border-border/80 flex shrink-0 justify-end border-t p-3">
+          <button
+            onClick={onToggleCollapse}
+            className="text-muted-foreground hover:text-foreground p-1"
+            title="Toggle sidebar"
+          >
+            <ChevronRight
+              className={cn('h-3.5 w-3.5 transition-transform', !collapsed && 'rotate-180')}
+            />
+          </button>
         </div>
-      </div>
+      )}
     </div>
   );
 

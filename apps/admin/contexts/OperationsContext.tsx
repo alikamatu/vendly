@@ -14,7 +14,6 @@ import { useAuth } from './AuthContext';
 
 interface BadgeCounts {
   pendingApprovals: number;
-  pendingOrders: number;
   pendingReturns: number;
   flaggedReviews: number;
   unreadNotifications: number;
@@ -35,7 +34,6 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [badges, setBadges] = useState<BadgeCounts>({
     pendingApprovals: 0,
-    pendingOrders: 0,
     pendingReturns: 0,
     flaggedReviews: 0,
     unreadNotifications: 0,
@@ -51,7 +49,6 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
 
       const newBadges: BadgeCounts = {
         pendingApprovals: 0,
-        pendingOrders: 0,
         pendingReturns: 0,
         flaggedReviews: 0,
         unreadNotifications: 0,
