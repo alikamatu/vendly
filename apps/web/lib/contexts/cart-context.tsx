@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 export interface CartItem {
   productId: string;
@@ -28,10 +28,10 @@ function itemKey(i: CartItem) {
 
 type CartState = CartItem[];
 
-const STORAGE_KEY = "vendly_cart";
+const STORAGE_KEY = 'vendly_cart';
 
 function loadCart(): CartState {
-  if (typeof window === "undefined") return [];
+  if (typeof window === 'undefined') return [];
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
@@ -43,7 +43,7 @@ function loadCart(): CartState {
 }
 
 function saveCart(items: CartState) {
-  if (typeof window === "undefined") return;
+  if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
   } catch {
@@ -60,10 +60,13 @@ interface GroupedCart {
   totalPrice: number;
 }
 
-export function groupCartByVendor(items: CartItem[]): GroupedCart[] {
-  const byStore = new Map<string, { storeName: string; logoUrl?: string | null; items: CartItem[] }>();
+function groupCartByVendor(items: CartItem[]): GroupedCart[] {
+  const byStore = new Map<
+    string,
+    { storeName: string; logoUrl?: string | null; items: CartItem[] }
+  >();
   for (const item of items) {
-    const key = item.storeLink || "unknown";
+    const key = item.storeLink || 'unknown';
     if (!byStore.has(key)) {
       byStore.set(key, { storeName: item.storeName, logoUrl: item.logoUrl, items: [] });
     }
@@ -81,7 +84,7 @@ export function groupCartByVendor(items: CartItem[]): GroupedCart[] {
 
 interface CartContextValue {
   items: CartItem[];
-  addItem: (item: Omit<CartItem, "quantity">) => void;
+  addItem: (item: Omit<CartItem, 'quantity'>) => void;
   /** productId or full composite key produced by `cartKey(productId, variantId)`. */
   removeItem: (key: string) => void;
   updateQuantity: (key: string, quantity: number) => void;
@@ -90,8 +93,6 @@ interface CartContextValue {
   totalPrice: number;
   groupedByVendor: GroupedCart[];
 }
-
-export { cartKey };
 
 const CartContext = createContext<CartContextValue | null>(null);
 
@@ -109,38 +110,28 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     saveCart(items);
   }, [items, hydrated]);
 
-  const addItem = useCallback((item: Omit<CartItem, "quantity">) => {
+  const addItem = useCallback((item: Omit<CartItem, 'quantity'>) => {
     const key = cartKey(item.productId, item.variantId ?? null);
     setItems((prev) => {
       const existing = prev.find((i) => itemKey(i) === key);
       if (existing) {
-        return prev.map((i) =>
-          itemKey(i) === key ? { ...i, quantity: i.quantity + 1 } : i,
-        );
+        return prev.map((i) => (itemKey(i) === key ? { ...i, quantity: i.quantity + 1 } : i));
       }
       return [...prev, { ...item, quantity: 1 }];
     });
   }, []);
 
   const removeItem = useCallback((key: string) => {
-    setItems((prev) =>
-      prev.filter((i) => itemKey(i) !== key && i.productId !== key),
-    );
+    setItems((prev) => prev.filter((i) => itemKey(i) !== key && i.productId !== key));
   }, []);
 
   const updateQuantity = useCallback((key: string, quantity: number) => {
     if (quantity < 1) {
-      setItems((prev) =>
-        prev.filter((i) => itemKey(i) !== key && i.productId !== key),
-      );
+      setItems((prev) => prev.filter((i) => itemKey(i) !== key && i.productId !== key));
       return;
     }
     setItems((prev) =>
-      prev.map((i) =>
-        itemKey(i) === key || i.productId === key
-          ? { ...i, quantity }
-          : i,
-      ),
+      prev.map((i) => (itemKey(i) === key || i.productId === key ? { ...i, quantity } : i)),
     );
   }, []);
 
@@ -149,7 +140,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const itemCount = useMemo(() => items.reduce((n, i) => n + i.quantity, 0), [items]);
   const totalPrice = useMemo(
     () => items.reduce((sum, i) => sum + parseFloat(String(i.price)) * i.quantity, 0),
-    [items]
+    [items],
   );
   const groupedByVendor = useMemo(() => groupCartByVendor(items), [items]);
 
@@ -164,7 +155,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       totalPrice,
       groupedByVendor,
     }),
-    [items, addItem, removeItem, updateQuantity, clearCart, itemCount, totalPrice, groupedByVendor]
+    [items, addItem, removeItem, updateQuantity, clearCart, itemCount, totalPrice, groupedByVendor],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
@@ -172,6 +163,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
 export function useCart() {
   const ctx = useContext(CartContext);
-  if (!ctx) throw new Error("useCart must be used within CartProvider");
+  if (!ctx) throw new Error('useCart must be used within CartProvider');
   return ctx;
 }

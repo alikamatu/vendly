@@ -62,11 +62,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   // API calls & dynamic endpoints: Network only
-  if (
-    url.pathname.startsWith('/api/') ||
-    url.hostname.includes('render.com') ||
-    url.port === '1000'
-  ) {
+  if (url.pathname.startsWith('/api/')) {
     return;
   }
 

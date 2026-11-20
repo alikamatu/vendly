@@ -46,12 +46,3 @@ export function validatePhoneNumber(raw: string): string | null {
 
   return null;
 }
-
-/**
- * Quick boolean check whether a phone input is exactly 10 digits.
- */
-export function isValid10DigitPhone(raw: string): boolean {
-  if (!raw || typeof raw !== 'string') return false;
-  const digits = raw.replace(/\D/g, '');
-  return digits.length === 10;
-}
