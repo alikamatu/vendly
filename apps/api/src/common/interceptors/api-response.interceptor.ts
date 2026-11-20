@@ -49,15 +49,10 @@ export class ApiResponseInterceptor<T> implements NestInterceptor<
   }
 
   /**
-   * Recursively serialize objects to handle BigInt and Decimal types
+   * Recursively serialize objects to handle Decimal types
    */
   private serialize(obj: any): any {
     if (obj === null || obj === undefined) return obj;
-
-    // Handle BigInt
-    if (typeof obj === 'string') {
-      return obj.toString();
-    }
 
     // Handle Prisma Decimal
     if (obj instanceof Prisma.Decimal) {

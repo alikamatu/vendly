@@ -65,7 +65,10 @@ export class AuthService {
     return `auth:fail:${kind}:${value.toLowerCase()}`;
   }
 
-  private async getFailCount(kind: 'ip' | 'email', value: string): Promise<number> {
+  private async getFailCount(
+    kind: 'ip' | 'email',
+    value: string,
+  ): Promise<number> {
     if (!value) return 0;
     const v = await this.cache.get<number>(this.failKey(kind, value));
     return typeof v === 'number' ? v : 0;
@@ -133,7 +136,9 @@ export class AuthService {
     // an inline error instead of swallowing a Prisma unique violation.
     const phoneResult = parseGhanaPhone(dto.phone);
     if (!phoneResult.ok || !phoneResult.e164) {
-      throw new BadRequestException(phoneResult.error || 'Invalid phone number.');
+      throw new BadRequestException(
+        phoneResult.error || 'Invalid phone number.',
+      );
     }
 
     const user = await this.prisma.user.create({
@@ -290,7 +295,10 @@ export class AuthService {
    * enumeration) so attackers can't probe which emails are registered.
    */
   async resendVerification(emailRaw: string) {
-    const ok = { message: "If that email is registered and unverified, we've sent a new verification link." };
+    const ok = {
+      message:
+        "If that email is registered and unverified, we've sent a new verification link.",
+    };
     const email = (emailRaw || '').trim().toLowerCase();
     if (!email) return ok;
 
@@ -308,7 +316,9 @@ export class AuthService {
     });
     this.emailService
       .sendVerificationEmail(user.email, verificationToken)
-      .catch((err) => console.error('Failed to resend verification email', err));
+      .catch((err) =>
+        console.error('Failed to resend verification email', err),
+      );
     return ok;
   }
 
@@ -390,11 +400,11 @@ export class AuthService {
 
       let ok = false;
       if (method === 'SMS' && code) {
-        ok = await this.consumeSmsCode(user as any, code);
+        ok = await this.consumeSmsCode(user, code);
       }
       if (!ok) {
         // Fall back to TOTP / backup-code paths (covers both methods).
-        ok = await this.consumeTotpForLogin(user as any, code, backup);
+        ok = await this.consumeTotpForLogin(user, code, backup);
       }
       if (!ok) {
         await this.bumpFail('email', email);
@@ -824,7 +834,8 @@ export class AuthService {
           dto.current_password,
           user.password_hash,
         );
-        if (!isMatch) throw new UnauthorizedException('Invalid current password');
+        if (!isMatch)
+          throw new UnauthorizedException('Invalid current password');
       }
       data.password_hash = await bcrypt.hash(dto.new_password, 10);
     }
@@ -866,7 +877,12 @@ export class AuthService {
     if (!user) throw new NotFoundException('User not found');
 
     // Remove sensitive fields
-    const { password_hash, password_reset_token, email_verification_token, ...safeData } = user;
+    const {
+      password_hash,
+      password_reset_token,
+      email_verification_token,
+      ...safeData
+    } = user;
     return safeData;
   }
 
@@ -881,16 +897,16 @@ export class AuthService {
     if (!user) throw new NotFoundException('User not found');
 
     const hasOrders = user.orders.length > 0;
-    
+
     // Check if seller has orders
     let hasSales = false;
     if (user.role === 'SELLER') {
       const sellerProfile = await this.prisma.sellerProfile.findUnique({
         where: { user_id: userId },
-        include: { products: { include: { order_items: { take: 1 } } } }
+        include: { products: { include: { order_items: { take: 1 } } } },
       });
       if (sellerProfile) {
-         hasSales = sellerProfile.products.some(p => p.order_items.length > 0);
+        hasSales = sellerProfile.products.some((p) => p.order_items.length > 0);
       }
     }
 
@@ -912,7 +928,7 @@ export class AuthService {
 
       // Clear addresses
       await this.prisma.address.deleteMany({
-        where: { user_id: userId }
+        where: { user_id: userId },
       });
     } else {
       // Hard delete
@@ -1037,11 +1053,7 @@ export class AuthService {
     // SMS challenge (issuing one if missing is the caller's job — see the
     // SMS resend endpoint). For TOTP users, fall through to the standard path.
     let ok = false;
-    if (
-      user.totp_method === 'SMS' &&
-      args.totp_code &&
-      user.sms_code_hash
-    ) {
+    if (user.totp_method === 'SMS' && args.totp_code && user.sms_code_hash) {
       ok = await this.consumeSmsCode(user, args.totp_code);
     }
     if (!ok) {
@@ -1103,7 +1115,8 @@ export class AuthService {
       select: { password_hash: true, totp_enabled: true },
     });
     if (!user) throw new NotFoundException('User not found');
-    if (!user.totp_enabled) throw new BadRequestException('2FA is not enabled.');
+    if (!user.totp_enabled)
+      throw new BadRequestException('2FA is not enabled.');
     const ok = await bcrypt.compare(password, user.password_hash);
     if (!ok) throw new UnauthorizedException('Invalid password');
     const codes = generateBackupCodes(10);
@@ -1155,7 +1168,7 @@ export class AuthService {
 
   /**
    * Begin SMS enrolment. Stores the (pending) phone number, generates a
-   * 6-digit verification code, and texts it via Twilio. The number isn't
+   * 6-digit verification code, and texts it via Arkesel. The number isn't
    * trusted (`phone_verified_at` stays null) until `enable2faSms` succeeds.
    */
   async setup2faSms(userId: string, phoneRaw: string) {
@@ -1228,7 +1241,9 @@ export class AuthService {
       !user.sms_code_expires_at ||
       user.sms_code_expires_at.getTime() < Date.now()
     ) {
-      throw new BadRequestException('Verification code expired. Request a new one.');
+      throw new BadRequestException(
+        'Verification code expired. Request a new one.',
+      );
     }
     const ok = await bcrypt.compare(code.trim(), user.sms_code_hash);
     if (!ok) throw new UnauthorizedException('Invalid code');
@@ -1264,10 +1279,7 @@ export class AuthService {
    * a fresh code to the user's verified phone. Re-keys the stored hash so
    * older codes are invalidated.
    */
-  async dispatchSmsLoginCode(user: {
-    id: string;
-    phone_e164: string | null;
-  }) {
+  async dispatchSmsLoginCode(user: { id: string; phone_e164: string | null }) {
     if (!user.phone_e164) {
       throw new BadRequestException('No verified phone on file.');
     }
@@ -1295,7 +1307,8 @@ export class AuthService {
     });
     if (!user) throw new UnauthorizedException('Invalid email or password');
     const passwordOk = await bcrypt.compare(password, user.password_hash);
-    if (!passwordOk) throw new UnauthorizedException('Invalid email or password');
+    if (!passwordOk)
+      throw new UnauthorizedException('Invalid email or password');
     if (!user.totp_enabled || user.totp_method !== 'SMS') {
       throw new BadRequestException('SMS 2FA is not enabled on this account.');
     }
@@ -1303,7 +1316,11 @@ export class AuthService {
   }
 
   private async consumeSmsCode(
-    user: { id: string; sms_code_hash: string | null; sms_code_expires_at: Date | null },
+    user: {
+      id: string;
+      sms_code_hash: string | null;
+      sms_code_expires_at: Date | null;
+    },
     code: string,
   ): Promise<boolean> {
     if (!user.sms_code_hash || !user.sms_code_expires_at) return false;

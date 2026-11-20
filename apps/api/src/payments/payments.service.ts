@@ -685,8 +685,6 @@ export class PaymentsService {
       throw new BadRequestException('Seller bank details incomplete');
     }
 
-    // In a real app we'd store recipient_code on the seller profile to avoid recreating it
-    // But Paystack's /transferrecipient is idempotent for the same account details
     try {
       const payload = {
         type: 'nuban',

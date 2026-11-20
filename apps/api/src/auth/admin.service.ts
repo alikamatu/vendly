@@ -800,11 +800,6 @@ export class AdminService {
 
   // ───────────────── 2FA admin reset / Pro toggle ─────────────────
 
-  /**
-   * Force-disable 2FA for a user. Used when someone lost their phone +
-   * backup codes and contacted support. The audit trail lives in the
-   * platform's notification feed (we also drop them an in-app note).
-   */
   async forceDisable2fa(userId: string) {
     const u = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!u) throw new NotFoundException('User not found');
