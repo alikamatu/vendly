@@ -61,7 +61,6 @@ export default function Header() {
   const { favorites } = useFavorites();
   const favCount = favorites?.length || 0;
 
-  // Global hotkey: ⌘K or Ctrl+K opens global search
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
@@ -73,7 +72,6 @@ export default function Header() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Close mobile menu on route change
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [pathname]);
@@ -90,7 +88,6 @@ export default function Header() {
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background transition-colors">
         <Container className="py-3 md:py-3.5">
           <div className="flex items-center justify-between gap-4">
-            {/* Left: Brand Logo & Title */}
             <div className="flex items-center gap-4 min-w-0">
               <Link
                 href="/"
@@ -104,7 +101,6 @@ export default function Header() {
                 <span>Verndly</span>
               </Link>
 
-              {/* Desktop Nav Links */}
               <nav className="hidden lg:flex items-center gap-1 ml-2">
                 {navLinks.map((item) => {
                   const isActive =
@@ -129,7 +125,6 @@ export default function Header() {
               </nav>
             </div>
 
-            {/* Center: Search pill (⌘K) */}
             <div className="hidden md:flex flex-1 max-w-sm lg:max-w-md mx-2">
               <button
                 type="button"
@@ -148,9 +143,7 @@ export default function Header() {
               </button>
             </div>
 
-            {/* Right: Actions */}
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-              {/* Mobile Search Button */}
               <button
                 type="button"
                 onClick={() => setIsSearchOpen(true)}
@@ -160,7 +153,6 @@ export default function Header() {
                 <Search size={18} />
               </button>
 
-              {/* Favorites */}
               <Link
                 href="/favorites"
                 aria-label="My saved favorites"
@@ -174,7 +166,6 @@ export default function Header() {
                 )}
               </Link>
 
-              {/* Cart */}
               <Link
                 href="/cart"
                 aria-label="Shopping Cart"
@@ -188,12 +179,10 @@ export default function Header() {
                 )}
               </Link>
 
-              {/* Theme Toggle */}
               <div className="hidden sm:block">
                 <ThemeToggle />
               </div>
 
-              {/* User / Auth State */}
               <div className="flex items-center gap-2 pl-1 sm:pl-2 border-l border-border/60">
                 {!isLoading &&
                   (isAuthenticated ? (
@@ -225,7 +214,6 @@ export default function Header() {
                   ))}
               </div>
 
-              {/* Mobile Drawer Menu Button */}
               <button
                 type="button"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -238,7 +226,6 @@ export default function Header() {
           </div>
         </Container>
 
-        {/* Mobile Nav Drawer */}
         <AnimatePresence>
           {isMobileMenuOpen && (
             <motion.div

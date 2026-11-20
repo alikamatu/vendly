@@ -111,7 +111,6 @@ export default function ProductCard({ product, index }: ProductCardProps) {
       >
         <div className="group/media relative">
           <Link href={`/product/${product.id}`} className="block">
-            {/* Product Media */}
             <div className="relative w-full overflow-hidden rounded-[1.5rem]">
               {product.video_url ? (
                 <video
@@ -136,7 +135,6 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                   className="h-auto w-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
               )}
-              {/* Promo Badge */}
               {product.is_featured && (
                 <div className="absolute left-4 top-4 z-20">
                   <motion.div
@@ -149,7 +147,6 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                   </motion.div>
                 </div>
               )}
-              {/* Discount Badge */}
               {(() => {
                 const d = computeDiscount(product.price, product.original_price);
                 if (d == null) return null;
@@ -167,12 +164,10 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                   </div>
                 );
               })()}
-              {/* Overlay Gradient */}
               <div className="absolute inset-0 bg-black/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
             </div>
           </Link>
 
-          {/* Quick Actions (Bottom-Left Corner, animated on hover, borderless & shadowless & no blur) */}
           <div
             className={`pointer-events-auto absolute bottom-3 left-3 z-30 flex items-center gap-1.5 transition-all duration-300 ease-out ${
               isHovered
@@ -180,7 +175,6 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                 : 'opacity-100 group-hover/media:translate-y-0 group-hover:translate-y-0 group-hover/media:opacity-100 group-hover:opacity-100 sm:translate-y-2 sm:opacity-0'
             }`}
           >
-            {/* Add to Cart Button */}
             <MotionButton
               type="button"
               aria-label="Add to cart"
@@ -210,7 +204,6 @@ export default function ProductCard({ product, index }: ProductCardProps) {
               )}
             </MotionButton>
 
-            {/* Favorite Toggle Button */}
             <MotionButton
               type="button"
               aria-label={favorited ? 'Remove from favorites' : 'Save to favorites'}
@@ -240,7 +233,6 @@ export default function ProductCard({ product, index }: ProductCardProps) {
           </div>
         </div>
 
-        {/* Content */}
         <div className="space-y-3 p-5">
           <div className="flex items-start justify-between gap-4">
             <h3 className="text-foreground line-clamp-1 flex-1 text-xs capitalize tracking-tight">

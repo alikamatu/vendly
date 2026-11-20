@@ -79,7 +79,6 @@ export default function SellerReviewsDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [submittingReplyId, setSubmittingReplyId] = useState<string | null>(null);
 
-  // Direct reply editing states
   const [activeReplyId, setActiveReplyId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
 
@@ -143,7 +142,6 @@ export default function SellerReviewsDashboardPage() {
       toast.success('Response posted successfully');
       setActiveReplyId(null);
       setReplyText('');
-      // Reload matching review item in state
       setReviews((prev) =>
         prev.map((r) =>
           r.id === reviewId
@@ -198,7 +196,6 @@ export default function SellerReviewsDashboardPage() {
     );
   }
 
-  // Calculate percentages for distribution bars
   const distributionList = summary
     ? ([
         { stars: 5, count: summary.distribution[5] },
@@ -211,10 +208,8 @@ export default function SellerReviewsDashboardPage() {
 
   return (
     <div className="space-y-8 pb-16">
-      {/* Analytics Summary */}
       {summary && (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          {/* Main Average Rating */}
           <Card
             className="border-border/50 flex flex-col justify-between rounded-3xl border p-6"
             hoverEffect={false}
@@ -244,7 +239,6 @@ export default function SellerReviewsDashboardPage() {
             </div>
           </Card>
 
-          {/* Review Stats */}
           <Card
             className="border-border/50 flex flex-col justify-between rounded-3xl border p-6"
             hoverEffect={false}
@@ -280,7 +274,6 @@ export default function SellerReviewsDashboardPage() {
             </div>
           </Card>
 
-          {/* Star Distribution */}
           <Card className="border-border/50 rounded-3xl border p-6" hoverEffect={false}>
             <p className="text-muted mb-4 text-[10px] font-medium uppercase tracking-wider">
               Rating Distribution
@@ -315,9 +308,7 @@ export default function SellerReviewsDashboardPage() {
         </div>
       )}
 
-      {/* Filters Bar */}
       <div className="border-border/40 flex flex-col items-start justify-between gap-4 border-b pb-4 sm:flex-row sm:items-center">
-        {/* Rating Pills */}
         <div className="flex flex-wrap gap-1.5">
           <button
             onClick={() => setFilterRating(null)}
@@ -344,7 +335,6 @@ export default function SellerReviewsDashboardPage() {
           ))}
         </div>
 
-        {/* Custom Sort Select */}
         <div className="w-full sm:w-44">
           <Select
             value={sort}
@@ -361,7 +351,6 @@ export default function SellerReviewsDashboardPage() {
         </div>
       </div>
 
-      {/* Review Feed */}
       {loading ? (
         <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
           <Spinner size="lg" />
@@ -410,7 +399,6 @@ export default function SellerReviewsDashboardPage() {
                       </div>
                     </div>
 
-                    {/* Action buttons */}
                     <div className="flex items-center gap-2">
                       {!r.seller_reply && !isReplyingActive && (
                         <Button
@@ -452,7 +440,6 @@ export default function SellerReviewsDashboardPage() {
                     </div>
                   </header>
 
-                  {/* Review Content */}
                   <div className="mt-4 space-y-1.5">
                     {r.title && (
                       <h4 className="text-foreground text-[13px] font-semibold">{r.title}</h4>
@@ -464,7 +451,6 @@ export default function SellerReviewsDashboardPage() {
                     )}
                   </div>
 
-                  {/* Purchased product reference */}
                   {r.product && (
                     <div className="text-muted-foreground border-border/30 mt-4 inline-flex w-full items-center gap-1.5 border-t pt-3 text-[10px]">
                       <span>Purchased:</span>
@@ -479,7 +465,6 @@ export default function SellerReviewsDashboardPage() {
                     </div>
                   )}
 
-                  {/* Seller response block */}
                   {(r.seller_reply || isReplyingActive) && (
                     <div className="bg-surface/50 border-border/40 relative mt-4 overflow-hidden rounded-2xl border p-4 transition-all duration-300">
                       <div className="text-muted mb-2 flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-wider">
@@ -541,7 +526,6 @@ export default function SellerReviewsDashboardPage() {
             })}
           </AnimatePresence>
 
-          {/* Load More Button */}
           {hasMore && (
             <div className="pt-6 text-center">
               <Button

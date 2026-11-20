@@ -113,7 +113,6 @@ export default function Footer() {
 
   return (
     <footer className="border-border bg-surface/30 text-foreground border-t">
-      {/* Trust & Guarantees Banner */}
       <div className="border-border/60 bg-surface/20 border-b">
         <div className="mx-auto max-w-7xl px-4 py-6 md:px-8">
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -132,10 +131,8 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* Main Content Area */}
       <div className="mx-auto max-w-7xl px-4 py-12 md:px-8 md:py-16">
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-12">
-          {/* Brand & Direct Admin Support Channels */}
           <div className="space-y-6 lg:col-span-5">
             <div className="space-y-3">
               <Link href="/" className="group inline-flex items-center gap-2.5">
@@ -154,7 +151,6 @@ export default function Footer() {
               </p>
             </div>
 
-            {/* Direct Admin Support Information Card */}
             <div className="border-border/70 bg-surface/50 space-y-4 rounded-2xl border p-5">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground text-[11px] font-semibold uppercase tracking-wider">
@@ -166,7 +162,6 @@ export default function Footer() {
                 </span>
               </div>
 
-              {/* 2-column channel links for WhatsApp and Calls */}
               <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                 <a
                   href="https://wa.me/233534065652?text=Hello%20Verndly%20Support"
@@ -205,7 +200,6 @@ export default function Footer() {
                 </a>
               </div>
 
-              {/* Email and Operation Info */}
               <div className="border-border/40 space-y-2 border-t pt-3 text-xs">
                 <a
                   href="mailto:alikamatu14@gmail.com"
@@ -233,7 +227,6 @@ export default function Footer() {
               </div>
             </div>
 
-            {/* Social Links */}
             <div className="flex items-center gap-2.5 pt-1">
               {SOCIALS.map(({ Icon, href, label }) => (
                 <a
@@ -251,7 +244,6 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Navigation Links Columns */}
           <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 sm:gap-8 lg:col-span-4">
             <LinkColumn title="Marketplace" links={SHOP_LINKS} />
             <LinkColumn title="Sellers" links={SELL_LINKS} />
@@ -261,7 +253,6 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Production-Ready Newsletter Form */}
           <div className="lg:col-span-3">
             <div className="border-border/80 bg-surface/60 space-y-4 rounded-3xl border p-6">
               <div className="space-y-1">
@@ -280,7 +271,6 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* Bottom Legal & Operational Bar */}
       <div className="border-border/60 bg-surface/50 border-t">
         <div className="text-muted-foreground mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 py-5 text-xs sm:flex-row md:px-8">
           <div className="flex flex-wrap items-center gap-2 text-center sm:text-left">

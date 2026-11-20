@@ -63,10 +63,6 @@ export default function NotificationBell() {
     if (open) refreshList();
   }, [open, refreshList]);
 
-  // Track whether we're at a "mobile" viewport. The mobile layout is a
-  // full-screen sheet with a backdrop; the desktop layout is the original
-  // anchored popover. We watch the breakpoint at runtime so toggling
-  // landscape / split-view stays responsive without a reload.
   const [isMobile, setIsMobile] = React.useState(false);
   React.useEffect(() => {
     if (typeof window === "undefined") return;
@@ -77,8 +73,6 @@ export default function NotificationBell() {
     return () => mql.removeEventListener("change", apply);
   }, []);
 
-  // Click-outside only applies on desktop. The mobile sheet uses an
-  // explicit backdrop element with its own onClick.
   React.useEffect(() => {
     if (!open || isMobile) return;
     const onDoc = (e: MouseEvent) => {
@@ -90,10 +84,6 @@ export default function NotificationBell() {
     return () => document.removeEventListener("mousedown", onDoc);
   }, [open, isMobile]);
 
-  // Lock body scroll while the mobile sheet is open so scrolling the
-  // notification list doesn't bleed through to the page underneath.
-  // Restore the previous overflow value on close to play nice with any
-  // other component that might set it.
   React.useEffect(() => {
     if (!open || !isMobile) return;
     const prev = document.body.style.overflow;
@@ -103,8 +93,6 @@ export default function NotificationBell() {
     };
   }, [open, isMobile]);
 
-  // Close on Escape — useful on desktop too, but especially on mobile
-  // where the sheet may otherwise feel sticky.
   React.useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -201,8 +189,6 @@ export default function NotificationBell() {
                 "aria-label": "Notifications",
                 "aria-modal": isMobile,
               } as any)}
-              // Animation differs by viewport — mobile slides up from the
-              // bottom (sheet pattern), desktop fades down from the bell.
               initial={
                 isMobile
                   ? { opacity: 0, y: "100%" }
@@ -226,18 +212,12 @@ export default function NotificationBell() {
               }}
               className={
                 isMobile
-                  ? // Mobile: full-width bottom sheet, ~85vh, rounded top.
-                    // `inset-x-0 bottom-0` pins it to the bottom of the
-                    // viewport. flex column so the body scrolls inside
-                    // while header + footer stay fixed.
+                  ?
                     "fixed inset-x-0 bottom-0 z-[100] flex max-h-[88vh] flex-col rounded-t-3xl border-t border-border/60 bg-background text-foreground shadow-2xl"
-                  : // Desktop: original anchored popover.
+                  :
                     "absolute right-0 mt-2 w-[360px] max-w-[92vw] rounded-2xl border border-border/60 bg-background text-foreground shadow-2xl z-[100] overflow-hidden"
               }
             >
-              {/* Grab handle — purely visual cue that the sheet is
-                  draggable. Tapping it also closes, as a fallback for
-                  users who don't realise the backdrop is tappable. */}
               {isMobile && (
                 <button
                   type="button"
@@ -247,7 +227,6 @@ export default function NotificationBell() {
                 />
               )}
 
-              {/* Header */}
               <div className={`flex items-center justify-between border-b border-border/60 ${isMobile ? "px-5 py-4" : "px-4 py-3"}`}>
                 <div>
                   <div className={isMobile ? "text-base font-semibold" : "text-sm font-semibold"}>
@@ -281,9 +260,6 @@ export default function NotificationBell() {
                 </div>
               </div>
 
-              {/* Body — list. On mobile this flex-grows; on desktop it
-                  caps at a fixed pixel height so the popover stays
-                  predictable. */}
               <div
                 className={
                   isMobile
@@ -334,9 +310,6 @@ export default function NotificationBell() {
                             show: { opacity: 1, x: 0 },
                           }}
                           key={n.id}
-                          // Touch devices don't have hover, so on mobile we
-                          // keep action buttons always visible; on desktop
-                          // we keep the original hover-reveal behaviour.
                           className={`group ${isMobile ? "px-5 py-4" : "px-4 py-3"} border-b border-border/30 last:border-0 hover:bg-surface/60 transition-all ${
                             n.is_read ? "" : "bg-primary/5"
                           }`}
@@ -399,7 +372,6 @@ export default function NotificationBell() {
                 )}
               </div>
 
-              {/* Footer: View all notifications */}
               <div className="border-t border-border/60 bg-surface/30 px-4 py-3 text-center">
                 <Link
                   href="/dashboard/notifications"

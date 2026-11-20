@@ -23,7 +23,6 @@ export default function ModernHero() {
           className="relative overflow-hidden rounded-[2.5rem] bg-zinc-900 md:rounded-[4rem]"
         >
           <div className="relative z-10 grid grid-cols-1 items-center gap-12 bg-[url('/images/423323.jpeg')] bg-cover bg-bottom px-6 py-16 md:px-16 md:py-24 lg:grid-cols-2">
-            {/* Left Side: Content */}
             <div className="space-y-8 text-center lg:text-left">
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -71,7 +70,6 @@ export default function ModernHero() {
               </div>
             </div>
 
-            {/* Right Side: Minimal Visual */}
           </div>
         </motion.div>
       </Container>

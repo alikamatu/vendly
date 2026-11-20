@@ -25,7 +25,6 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/lib/contexts/auth-context';
 
-// ─── Avatar helpers ───────────────────────────────────────────────────────────
 
 const GRADIENTS = [
   'from-violet-500 to-purple-600',
@@ -55,7 +54,6 @@ function initials(name: string) {
   );
 }
 
-// ─── Primitives ───────────────────────────────────────────────────────────────
 
 function Group({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -126,7 +124,6 @@ function Row({
   );
 }
 
-// ─── Seller CTA ───────────────────────────────────────────────────────────────
 
 function SellerCTA({ status }: { status: 'PENDING' | 'APPROVED' | 'REJECTED' | null }) {
   if (status === 'APPROVED') return null;
@@ -206,7 +203,6 @@ function SellerCTA({ status }: { status: 'PENDING' | 'APPROVED' | 'REJECTED' | n
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AccountPage() {
   const { user, logout, isAuthenticated, isLoading } = useAuth();
@@ -231,10 +227,8 @@ export default function AccountPage() {
 
   return (
     <div className="mx-auto max-w-lg space-y-5 pb-16">
-      {/* ── Profile card ── */}
       <div className="border-[var(--color-border)]/80 shadow-xs rounded-3xl border bg-[var(--color-surface)] p-5 transition-all duration-300 hover:border-[var(--color-border)] hover:shadow-sm">
         <div className="flex items-center gap-5">
-          {/* Avatar with beautiful outline ring */}
           <div className="group/avatar relative">
             <div
               className="h-16 w-16 rounded-2xl bg-primary flex flex-shrink-0 items-center justify-center shadow-sm transition-transform duration-300 group-hover/avatar:scale-[1.03]"
@@ -255,7 +249,6 @@ export default function AccountPage() {
               <p className="mt-0.5 truncate text-[10px] text-[var(--color-muted)]">{user.school}</p>
             )}
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
-              {/* Role */}
               <span
                 className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
                   isSeller
@@ -266,7 +259,6 @@ export default function AccountPage() {
                 {isSeller && <BadgeCheck className="h-3 w-3" />}
                 {isSeller ? 'Seller' : 'Buyer'}
               </span>
-              {/* Verified */}
               {user.is_verified ? (
                 <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-600 dark:bg-emerald-500/5 dark:text-emerald-400">
                   <CheckCircle2 className="h-3 w-3" /> Verified
@@ -288,10 +280,8 @@ export default function AccountPage() {
         </div>
       </div>
 
-      {/* ── Become a Seller CTA (buyers only) ── */}
       {user.role === 'USER' && <SellerCTA status={user.approval_status} />}
 
-      {/* ── Seller shortcut ── */}
       {isSeller && (
         <Group label="Store">
           <Row
@@ -305,7 +295,6 @@ export default function AccountPage() {
         </Group>
       )}
 
-      {/* ── Account ── */}
       <Group label="Account">
         <Row
           href="/account/profile"
@@ -333,7 +322,6 @@ export default function AccountPage() {
         />
       </Group>
 
-      {/* ── Activity ── */}
       <Group label="My Activity">
         <Row
           href="/orders"
@@ -353,7 +341,6 @@ export default function AccountPage() {
         />
       </Group>
 
-      {/* ── Preferences ── */}
       <Group label="Preferences">
         <Row
           href="/account/appearance"
@@ -365,7 +352,6 @@ export default function AccountPage() {
         />
       </Group>
 
-      {/* ── Legal ── */}
       <Group label="Legal & Privacy">
         <Row
           href="/account/terms"
@@ -385,7 +371,6 @@ export default function AccountPage() {
         />
       </Group>
 
-      {/* ── Support ── */}
       <Group label="Support">
         <Row
           href="/account/help"
@@ -397,7 +382,6 @@ export default function AccountPage() {
         />
       </Group>
 
-      {/* ── Sign out ── */}
       <div className="overflow-hidden rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)]">
         <button
           onClick={logout}

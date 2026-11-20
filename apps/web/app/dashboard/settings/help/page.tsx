@@ -26,7 +26,6 @@ import Select from "@/components/ui/Select";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { sanitizeText } from "@/lib/utils/sanitize";
 
-// ─── FAQ data ─────────────────────────────────────────────────────────────────
 
 interface FaqItem {
   q: string;
@@ -86,7 +85,6 @@ const FAQS: FaqItem[] = [
   },
 ];
 
-// ─── Contact options ──────────────────────────────────────────────────────────
 
 const CONTACT_OPTIONS = [
   {
@@ -129,7 +127,6 @@ const REPORT_TOPICS = [
   "Other",
 ] as const;
 
-// ─── FAQ Accordion item ───────────────────────────────────────────────────────
 
 function FaqAccordion({ item }: { item: FaqItem }) {
   const [open, setOpen] = useState(false);
@@ -178,7 +175,6 @@ function FaqAccordion({ item }: { item: FaqItem }) {
   );
 }
 
-// ─── Report form ──────────────────────────────────────────────────────────────
 
 function ReportForm() {
   const { user } = useAuth();
@@ -203,7 +199,6 @@ function ReportForm() {
     const subject = encodeURIComponent(`[Verndly Support] ${topic}`);
     window.location.href = `mailto:support@verndly.app?subject=${subject}&body=${body}`;
 
-    // Optimistic success
     setTimeout(() => {
       setStatus("sent");
       setTopic("");
@@ -241,7 +236,6 @@ function ReportForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
-      {/* Topic */}
       <div>
         <Select
           value={topic}
@@ -251,7 +245,6 @@ function ReportForm() {
         />
       </div>
 
-      {/* Message */}
       <textarea
         value={message}
         onChange={(e) => setMessage(e.target.value)}
@@ -290,7 +283,6 @@ function ReportForm() {
   );
 }
 
-// ─── Section wrapper ──────────────────────────────────────────────────────────
 
 function Section({
   title,
@@ -320,12 +312,10 @@ function Section({
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function HelpPage() {
   return (
     <div className="max-w-lg mx-auto space-y-5 pb-10">
-      {/* ── Back ── */}
       <Link
         href="/dashboard/settings"
         className="inline-flex items-center gap-2 text-xs font-normal text-[var(--color-muted)] hover:text-[var(--color-foreground)] transition-colors group"
@@ -341,7 +331,6 @@ export default function HelpPage() {
         </p>
       </div>
 
-      {/* ── Contact methods ── */}
       <Section title="Contact Us" icon={MessageCircle} iconBg="bg-emerald-500/10" iconColor="text-emerald-500">
         <div className="divide-y divide-[var(--color-border)]/50">
           {CONTACT_OPTIONS.map((opt) => (
@@ -365,14 +354,12 @@ export default function HelpPage() {
         </div>
       </Section>
 
-      {/* ── FAQ ── */}
       <Section title="Frequently Asked Questions" icon={HelpCircle} iconBg="bg-blue-500/10" iconColor="text-blue-500">
         {FAQS.map((item, i) => (
           <FaqAccordion key={i} item={item} />
         ))}
       </Section>
 
-      {/* ── Report a problem ── */}
       <Section title="Report a Problem" icon={Bug} iconBg="bg-rose-500/10" iconColor="text-rose-500">
         <div className="p-4 space-y-3">
           <p className="text-[11px] text-[var(--color-muted)] leading-relaxed">
@@ -382,7 +369,6 @@ export default function HelpPage() {
         </div>
       </Section>
 
-      {/* ── App version footer ── */}
       <p className="text-center text-[10px] text-[var(--color-muted)]">
         Verndly v1.0 · support@verndly.app
       </p>

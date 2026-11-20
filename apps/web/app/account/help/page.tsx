@@ -25,7 +25,6 @@ import Select from "@/components/ui/Select";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { sanitizeText } from "@/lib/utils/sanitize";
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
 
 const FAQS = [
   {
@@ -119,7 +118,6 @@ const TOPICS = [
   "Other",
 ] as const;
 
-// ─── FAQ item ─────────────────────────────────────────────────────────────────
 
 function FaqItem({ item }: { item: (typeof FAQS)[number] }) {
   const [open, setOpen] = useState(false);
@@ -165,7 +163,6 @@ function FaqItem({ item }: { item: (typeof FAQS)[number] }) {
   );
 }
 
-// ─── Report form ──────────────────────────────────────────────────────────────
 
 function ReportForm() {
   const { user } = useAuth();
@@ -257,7 +254,6 @@ function ReportForm() {
   );
 }
 
-// ─── Section wrapper ──────────────────────────────────────────────────────────
 
 function Section({
   label,
@@ -287,12 +283,10 @@ function Section({
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function HelpPage() {
   return (
     <div className="max-w-lg mx-auto space-y-5 pb-16">
-      {/* Back */}
       <Link
         href="/account"
         className="inline-flex items-center gap-2 text-[11px] font-medium text-[var(--color-muted)] hover:text-[var(--color-foreground)] uppercase tracking-wider transition-colors group"
@@ -306,7 +300,6 @@ export default function HelpPage() {
         <p className="text-[11px] text-[var(--color-muted)] mt-0.5">Find answers, contact us, or report a problem</p>
       </div>
 
-      {/* Contact */}
       <Section label="Contact Us" icon={MessageCircle} iconBg="bg-emerald-500/10" iconColor="text-emerald-500">
         <div className="divide-y divide-[var(--color-border)]/50">
           {CONTACTS.map((c) => (
@@ -330,12 +323,10 @@ export default function HelpPage() {
         </div>
       </Section>
 
-      {/* FAQ */}
       <Section label="Frequently Asked Questions" icon={HelpCircle} iconBg="bg-blue-500/10" iconColor="text-blue-500">
         {FAQS.map((item, i) => <FaqItem key={i} item={item} />)}
       </Section>
 
-      {/* Report */}
       <Section label="Report a Problem" icon={Bug} iconBg="bg-rose-500/10" iconColor="text-rose-500">
         <div className="p-4 space-y-3">
           <p className="text-[11px] text-[var(--color-muted)] leading-relaxed">

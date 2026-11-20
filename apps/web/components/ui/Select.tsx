@@ -73,13 +73,10 @@ export default function Select({
     }
   }, [isOpen]);
 
-  // Selected option details
   const selectedOption = options.find((o) => o.value === value);
 
-  // Auto-enable search if there are more than 7 options
   const isSearchable = searchable ?? options.length > 7;
 
-  // Filter options based on search query
   const filteredOptions =
     isSearchable && searchQuery.trim()
       ? options.filter(
@@ -89,7 +86,6 @@ export default function Select({
         )
       : options;
 
-  // Close when clicking outside
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -106,14 +102,12 @@ export default function Select({
     };
   }, [isOpen]);
 
-  // Focus search input when popover opens
   useEffect(() => {
     if (isOpen && isSearchable) {
       setTimeout(() => searchInputRef.current?.focus(), 50);
     }
   }, [isOpen, isSearchable]);
 
-  // Handle escape key
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape' && isOpen) {
@@ -140,7 +134,6 @@ export default function Select({
       )}
       ref={containerRef}
     >
-      {/* Label Row */}
       {(label || labelRight) && (
         <div className="mb-1.5 flex items-center justify-between">
           {label && (
@@ -162,7 +155,6 @@ export default function Select({
         </div>
       )}
 
-      {/* Trigger Button */}
       <button
         id={selectId}
         type="button"
@@ -209,7 +201,6 @@ export default function Select({
           )}
         </div>
 
-        {/* Animated Chevron */}
         <MotionSpan
           animate={{ rotate: isOpen ? 180 : 0 }}
           transition={{ duration: 0.2, ease: 'easeInOut' }}
@@ -219,7 +210,6 @@ export default function Select({
         </MotionSpan>
       </button>
 
-      {/* Dropdown Popover */}
       <AnimatePresence>
         {isOpen && (
           <MotionDiv
@@ -232,7 +222,6 @@ export default function Select({
               openUpward ? 'bottom-full mb-1.5' : 'top-full mt-1.5',
             )}
           >
-            {/* Search Filter when enabled */}
             {isSearchable && (
               <div className="p-2 pb-1">
                 <div className="bg-surface/90 flex items-center gap-2 rounded-xl px-3 py-2 text-xs">
@@ -259,7 +248,6 @@ export default function Select({
               </div>
             )}
 
-            {/* Options List */}
             <div className="no-scrollbar max-h-60 space-y-0.5 overflow-y-auto p-1.5">
               {filteredOptions.length === 0 ? (
                 <div className="text-foreground/50 py-5 text-center text-xs">
@@ -315,7 +303,6 @@ export default function Select({
         )}
       </AnimatePresence>
 
-      {/* Hint & Error */}
       {hint && !error && (
         <p className="text-foreground/50 mt-1.5 text-[11px] leading-relaxed">{hint}</p>
       )}

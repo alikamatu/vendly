@@ -1,7 +1,3 @@
-// Sentry init for the browser. Imported automatically by @sentry/nextjs
-// when `instrumentation-client.ts` is present (Next 14+) or directly from
-// the runtime config (older). We keep both for compatibility — the older
-// `sentry.client.config.ts` path is still picked up by webpack.
 import * as Sentry from '@sentry/nextjs';
 
 const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;

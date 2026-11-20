@@ -39,7 +39,6 @@ import { productApi } from '@/lib/api/product';
 import { useAuth } from '@/lib/contexts/auth-context';
 import { toast } from 'sonner';
 
-// ─── Interfaces & Types ────────────────────────────────────────────────────────
 
 export interface CategoryField {
   name?: string;
@@ -75,7 +74,6 @@ export interface ProductNoteItem {
   tags: string[];
   is_featured: boolean;
   status: 'active' | 'draft';
-  // On-demand expanded drawers
   showCategory: boolean;
   showCondition: boolean;
   showStock: boolean;
@@ -147,25 +145,20 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
   const router = useRouter();
   const { token } = useAuth();
 
-  // Categories & Brands lookup
   const [categories, setCategories] = useState<Category[]>([]);
   const [brandsMap, setBrandsMap] = useState<Record<string, { id: string; name: string }[]>>({});
 
-  // Product notes list
   const [notes, setNotes] = useState<ProductNoteItem[]>([createBlankProductNote()]);
   const [activeNoteIndex, setActiveNoteIndex] = useState<number>(0);
   const [tagInput, setTagInput] = useState<string>('');
 
-  // Bulk Media Import Sheet
   const [bulkImportOpen, setBulkImportOpen] = useState(false);
   const bulkFileInputRef = useRef<HTMLInputElement>(null);
 
-  // Hidden file inputs for current active card
   const activeImageInputRef = useRef<HTMLInputElement>(null);
   const activeCameraInputRef = useRef<HTMLInputElement>(null);
   const activeVideoInputRef = useRef<HTMLInputElement>(null);
 
-  // Publishing / Processing State
   const [publishProgress, setPublishProgress] = useState<BatchPublishProgress>({
     total: 0,
     currentStep: 'idle',
@@ -176,7 +169,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
 
   const activeNote = notes[activeNoteIndex] || notes[0];
 
-  // ─── Load Categories ─────────────────────────────────────────────────────────
   useEffect(() => {
     productApi
       .getCategories()
@@ -195,7 +187,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
       });
   }, []);
 
-  // Load brands for active note category on demand
   useEffect(() => {
     const currentCatName = activeNote?.category;
     if (!currentCatName || brandsMap[currentCatName]) return;
@@ -212,7 +203,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
       .catch(() => {});
   }, [activeNote?.category, categories, brandsMap]);
 
-  // ─── Note Mutation Helpers ──────────────────────────────────────────────────
 
   const updateActiveNote = useCallback(
     (updater: Partial<ProductNoteItem> | ((prev: ProductNoteItem) => ProductNoteItem)) => {
@@ -271,7 +261,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
     [activeNoteIndex, notes.length],
   );
 
-  // ─── Image & Video Handling ─────────────────────────────────────────────────
 
   const processAndCompressImages = async (files: File[]): Promise<File[]> => {
     const compressedList: File[] = [];
@@ -374,7 +363,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
     });
   };
 
-  // ─── Bulk Photo Import Workflow ─────────────────────────────────────────────
 
   const handleBulkPhotosSelected = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -385,7 +373,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
     try {
       const compressed = await processAndCompressImages(list);
 
-      // Create product cards automatically: 2 photos per card (or 1 card if <= 3)
       const PHOTOS_PER_CARD = 2;
       const chunks: File[][] = [];
       for (let i = 0; i < compressed.length; i += PHOTOS_PER_CARD) {
@@ -403,7 +390,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
         };
       });
 
-      // Replace or merge into notes list
       setNotes((prevNotes) => {
         // If current note is blank, replace it; otherwise append
         const firstNoteIsBlank =
@@ -430,7 +416,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
     }
   };
 
-  // ─── Validation Helpers ─────────────────────────────────────────────────────
 
   const checkNoteValidation = (note: ProductNoteItem) => {
     const hasTitle = Boolean(note.title && note.title.trim().length > 0);
@@ -471,7 +456,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
     }, 0);
   }, [notes]);
 
-  // ─── Publishing Process ─────────────────────────────────────────────────────
 
   const handleStartPublishing = async () => {
     if (!token) {
@@ -479,7 +463,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
       return;
     }
 
-    // Pre-flight check
     const firstInvalid = validationSummary.items.find((item) => !item.isValid);
     if (firstInvalid) {
       setActiveNoteIndex(firstInvalid.index);
@@ -489,7 +472,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
       return;
     }
 
-    // Initialize progress tracking
     const initialItemStatuses = notes.map((n) => ({
       id: n.id,
       title: n.title.trim() || 'Untitled Item',
@@ -506,12 +488,10 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
 
     const createdProductIds: string[] = [];
 
-    // Publish each note sequentially with live progress indication
     for (let i = 0; i < notes.length; i++) {
       const note = notes[i];
       const progressBase = Math.round((i / notes.length) * 90);
 
-      // Update item to compressing/uploading state
       setPublishProgress((prev) => ({
         ...prev,
         currentStep: 'uploading',
@@ -548,7 +528,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
           createdProductIds.push(prodId);
         }
 
-        // Mark as success
         setPublishProgress((prev) => ({
           ...prev,
           itemStatuses: prev.itemStatuses.map((st, idx) =>
@@ -568,7 +547,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
       }
     }
 
-    // Complete state
     setPublishProgress((prev) => ({
       ...prev,
       currentStep: 'completed',
@@ -660,7 +638,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
     }));
   };
 
-  // ─── Render ──────────────────────────────────────────────────────────────────
 
   return (
     <div
@@ -670,7 +647,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
           '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "SF Pro", "San Francisco", system-ui, sans-serif',
       }}
     >
-      {/* ─── Top Header (Mobile & Desktop) ─────────────────────────────────── */}
       <header className="sticky top-0 z-30 border-b border-zinc-200/80 bg-white/80 backdrop-blur-xl dark:border-zinc-800/80 dark:bg-[#121214]/80">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3 sm:px-6">
           <div className="flex items-center gap-3">
@@ -726,7 +702,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
           </div>
         </div>
 
-        {/* ─── Apple Notes Item Selector Strip ───────────────────────────── */}
         <div className="border-t border-zinc-100 bg-zinc-50/60 px-4 py-2 dark:border-zinc-800/60 dark:bg-zinc-900/40">
           <div className="no-scrollbar mx-auto flex max-w-4xl items-center gap-2 overflow-x-auto py-0.5">
             {notes.map((note, idx) => {
@@ -746,7 +721,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
                       : 'bg-transparent text-zinc-600 hover:bg-zinc-200/50 dark:text-zinc-400 dark:hover:bg-zinc-800/50'
                   }`}
                 >
-                  {/* Thumbnail indicator */}
                   <div className="relative flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-zinc-100 dark:bg-zinc-800">
                     {note.imagePreviews[0] ? (
                       <img
@@ -760,7 +734,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
                       <span className="text-xs font-semibold text-zinc-400">{idx + 1}</span>
                     )}
 
-                    {/* Status Dot */}
                     <span
                       className={`absolute bottom-0 right-0 h-2 w-2 rounded-full border border-white dark:border-zinc-900 ${
                         check.isValid ? 'bg-emerald-500' : 'bg-amber-400'
@@ -810,10 +783,8 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
         </div>
       </header>
 
-      {/* ─── Main Content Canvas (Apple Notes Layout) ────────────────────── */}
       <main className="mx-auto max-w-4xl px-4 pt-6 sm:px-6">
         <div className="relative rounded-3xl border border-zinc-200/80 bg-white p-5 shadow-sm transition-all sm:p-8 dark:border-zinc-800 dark:bg-[#1c1c1e]">
-          {/* Note Card Header / Card Index Tool */}
           <div className="mb-4 flex items-center justify-between border-b border-zinc-100 pb-3 text-xs text-zinc-400 dark:border-zinc-800/80">
             <div className="flex items-center gap-2">
               <span className="font-semibold text-amber-600 dark:text-amber-400">
@@ -856,7 +827,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
             </div>
           </div>
 
-          {/* ─── REQUIRED FIELD 1: Product Name (Big & Bold Text) ──────────── */}
           <div className="mb-3">
             <input
               type="text"
@@ -868,7 +838,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
             />
           </div>
 
-          {/* ─── REQUIRED FIELD 2: Price (Inline with Currency & Discount) ─── */}
           <div className="mb-4 flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2 rounded-2xl bg-zinc-100/80 px-3 py-1.5 dark:bg-zinc-800/70">
               <span className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
@@ -886,7 +855,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
               />
             </div>
 
-            {/* Optional Original / Slashed price */}
             {activeNote.showDiscount ? (
               <div className="flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 py-1.5 dark:border-zinc-700 dark:bg-zinc-800">
                 <span className="text-xs text-zinc-400 line-through">GH₵</span>
@@ -919,7 +887,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
               </button>
             )}
 
-            {/* Live Discount pill if original price is valid */}
             {activeNote.original_price &&
               Number(activeNote.original_price) > Number(activeNote.price) && (
                 <span className="rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-bold text-rose-600 dark:bg-rose-950/40 dark:text-rose-400">
@@ -933,7 +900,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
               )}
           </div>
 
-          {/* ─── Description Section (Flows seamless like Apple Notes body) ── */}
           <div className="mb-6">
             <textarea
               rows={3}
@@ -944,7 +910,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
             />
           </div>
 
-          {/* ─── REQUIRED FIELD 3: Images & Video (Attachment Gallery) ─────── */}
           <div className="mb-6 rounded-2xl bg-zinc-50/70 p-4 dark:bg-zinc-900/50">
             <div className="mb-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -958,7 +923,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
               </span>
             </div>
 
-            {/* Attached Thumbnails Ribbon */}
             <div className="flex flex-wrap items-center gap-3">
               {activeNote.imagePreviews.map((preview, imgIdx) => (
                 <div
@@ -985,7 +949,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
                 </div>
               ))}
 
-              {/* Video Thumbnail if present */}
               {activeNote.videoPreview && (
                 <div className="group relative h-24 w-24 overflow-hidden rounded-2xl border border-purple-200 bg-purple-50 dark:border-purple-900 dark:bg-purple-950/40">
                   <video
@@ -1007,10 +970,8 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
                 </div>
               )}
 
-              {/* Add Media Buttons */}
               {activeNote.images.length < 3 && (
                 <>
-                  {/* Photo picker */}
                   <button
                     type="button"
                     onClick={() => activeImageInputRef.current?.click()}
@@ -1020,7 +981,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
                     <span className="mt-1 text-[11px] font-semibold">Add Photo</span>
                   </button>
 
-                  {/* Camera on mobile */}
                   <button
                     type="button"
                     onClick={() => activeCameraInputRef.current?.click()}
@@ -1032,7 +992,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
                 </>
               )}
 
-              {/* Video button if none uploaded */}
               {!activeNote.video && (
                 <button
                   type="button"
@@ -1045,7 +1004,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
               )}
             </div>
 
-            {/* Hidden native inputs */}
             <input
               ref={activeImageInputRef}
               type="file"
@@ -1071,7 +1029,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
             />
           </div>
 
-          {/* ─── ON-DEMAND OPTIONAL FIELDS TOOLBAR ──────────────────────────── */}
           <div className="border-t border-zinc-100 pt-4 dark:border-zinc-800/80">
             <div className="mb-3 flex items-center justify-between">
               <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
@@ -1079,9 +1036,7 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
               </span>
             </div>
 
-            {/* Pill chips toolbar */}
             <div className="flex flex-wrap items-center gap-2">
-              {/* Category Pill */}
               <button
                 type="button"
                 onClick={() =>
@@ -1097,7 +1052,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
                 <span>Category: {activeNote.category || 'General'}</span>
               </button>
 
-              {/* Condition Pill */}
               <button
                 type="button"
                 onClick={() =>
@@ -1113,7 +1067,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
                 <span className="capitalize">{activeNote.condition}</span>
               </button>
 
-              {/* Stock Quantity Pill */}
               <button
                 type="button"
                 onClick={() =>
@@ -1128,7 +1081,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
                 <span>Stock: {activeNote.quantity_available || '1'}</span>
               </button>
 
-              {/* Brand Pill */}
               <button
                 type="button"
                 onClick={() =>
@@ -1143,7 +1095,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
                 <span>Brand {activeNote.brand ? `: ${activeNote.brand}` : ''}</span>
               </button>
 
-              {/* Tags Pill */}
               <button
                 type="button"
                 onClick={() => updateActiveNote((prev) => ({ ...prev, showTags: !prev.showTags }))}
@@ -1157,7 +1108,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
                 <span>Tags {activeNote.tags.length > 0 ? `(${activeNote.tags.length})` : ''}</span>
               </button>
 
-              {/* Hot Sales Boost Pill */}
               <button
                 type="button"
                 onClick={() =>
@@ -1176,9 +1126,7 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
               </button>
             </div>
 
-            {/* ─── ON-DEMAND EXPANDABLE SECTIONS ───────────────────────────── */}
             <div className="mt-4 space-y-3">
-              {/* Category Selector */}
               {activeNote.showCategory && (
                 <div className="rounded-2xl border border-zinc-200/80 bg-zinc-50/80 p-4 dark:border-zinc-800 dark:bg-zinc-900/40">
                   <div className="mb-2 flex items-center justify-between">
@@ -1217,7 +1165,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
                 </div>
               )}
 
-              {/* Condition Selector */}
               {activeNote.showCondition && (
                 <div className="rounded-2xl border border-zinc-200/80 bg-zinc-50/80 p-4 dark:border-zinc-800 dark:bg-zinc-900/40">
                   <div className="mb-2 flex items-center justify-between">
@@ -1254,7 +1201,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
                 </div>
               )}
 
-              {/* Stock Selector */}
               {activeNote.showStock && (
                 <div className="flex items-center gap-4 rounded-2xl border border-zinc-200/80 bg-zinc-50/80 p-4 dark:border-zinc-800 dark:bg-zinc-900/40">
                   <div>
@@ -1299,7 +1245,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
                 </div>
               )}
 
-              {/* Brand Selector */}
               {activeNote.showBrand && (
                 <div className="rounded-2xl border border-zinc-200/80 bg-zinc-50/80 p-4 dark:border-zinc-800 dark:bg-zinc-900/40">
                   <div className="mb-2 flex items-center justify-between">
@@ -1344,7 +1289,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
                 </div>
               )}
 
-              {/* Tags Input */}
               {activeNote.showTags && (
                 <div className="rounded-2xl border border-zinc-200/80 bg-zinc-50/80 p-4 dark:border-zinc-800 dark:bg-zinc-900/40">
                   <div className="mb-2 flex items-center justify-between">
@@ -1418,7 +1362,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
           </div>
         </div>
 
-        {/* ─── Navigation Buttons below card (Next / Previous item) ─────── */}
         <div className="mt-4 flex items-center justify-between px-1">
           <button
             type="button"
@@ -1456,10 +1399,8 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
         </div>
       </main>
 
-      {/* ─── Mobile-First Fixed Bottom Action Bar ──────────────────────────── */}
       <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-zinc-200/80 bg-white/90 p-3 backdrop-blur-xl sm:p-4 dark:border-zinc-800 dark:bg-[#121214]/90">
         <div className="mx-auto flex max-w-4xl items-center justify-between gap-3">
-          {/* Summary info */}
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold text-zinc-900 sm:text-sm dark:text-zinc-100">
@@ -1477,7 +1418,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
             </p>
           </div>
 
-          {/* Action CTAs */}
           <div className="flex shrink-0 items-center gap-2">
             <button
               type="button"
@@ -1506,7 +1446,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
         </div>
       </div>
 
-      {/* ─── Bulk Photo Import Dialog ──────────────────────────────────────── */}
       <AnimatePresence>
         {bulkImportOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -1564,7 +1503,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
         )}
       </AnimatePresence>
 
-      {/* ─── Publishing Process Modal (No Toy UI, Indicate Process) ────────── */}
       <AnimatePresence>
         {publishProgress.currentStep !== 'idle' && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -1580,7 +1518,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
               exit={{ opacity: 0, scale: 0.94, y: 12 }}
               className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-[#1a1a1c]"
             >
-              {/* Header */}
               <div className="flex items-center justify-between pb-4">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500">
@@ -1624,7 +1561,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
                 )}
               </div>
 
-              {/* Overall Progress Bar */}
               <div className="my-3">
                 <div className="mb-1.5 flex items-center justify-between text-xs font-semibold text-zinc-500">
                   <span>Batch Process</span>
@@ -1638,7 +1574,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
                 </div>
               </div>
 
-              {/* Items checklist */}
               <div className="no-scrollbar my-4 max-h-60 space-y-2 overflow-y-auto pr-1">
                 {publishProgress.itemStatuses.map((item, idx) => (
                   <div
@@ -1693,7 +1628,6 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
                 ))}
               </div>
 
-              {/* Completion CTA */}
               {publishProgress.currentStep === 'completed' && (
                 <div className="mt-5 flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-end">
                   {publishProgress.itemStatuses.some((st) => st.status === 'error') && (

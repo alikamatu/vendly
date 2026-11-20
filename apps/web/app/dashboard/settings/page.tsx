@@ -25,7 +25,6 @@ import {
 import { useAuth } from "@/lib/contexts/auth-context";
 import ProMembershipCard from "@/components/dashboard/ProMembershipCard";
 
-// ─── Avatar ──────────────────────────────────────────────────────────────────
 
 function getAvatarColor(name: string): string {
   const colors = [
@@ -59,7 +58,6 @@ function Avatar({ name, size = "md" }: { name: string; size?: "sm" | "md" | "lg"
   );
 }
 
-// ─── Settings row ─────────────────────────────────────────────────────────────
 
 interface SettingItem {
   id: string;
@@ -107,7 +105,6 @@ function SettingsGroup({ title, items }: { title: string; items: SettingItem[] }
   );
 }
 
-// ─── Role badge ───────────────────────────────────────────────────────────────
 
 function RoleBadge({ role }: { role: "USER" | "SELLER" | "ADMIN" }) {
   const map = {
@@ -136,7 +133,6 @@ function VerifiedBadge({ verified }: { verified: boolean }) {
   );
 }
 
-// ─── Approval status card (for USER role) ────────────────────────────────────
 
 function SellerCTA({ status }: { status: "PENDING" | "APPROVED" | "REJECTED" | null }) {
   if (status === "APPROVED") return null;
@@ -207,7 +203,6 @@ function SellerCTA({ status }: { status: "PENDING" | "APPROVED" | "REJECTED" | n
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
   const { user, logout } = useAuth();
@@ -216,7 +211,6 @@ export default function SettingsPage() {
 
   const isSeller = user.role === "SELLER";
 
-  // ── Settings groups ──────────────────────────────────────────────────────────
 
   const storeGroup: SettingItem[] = [
     { id: "store", name: "Store Information", desc: "Branding, location, hours", icon: Store, href: "/dashboard/settings/store", color: "text-blue-500", bg: "bg-blue-500/10" },
@@ -247,7 +241,6 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-lg mx-auto space-y-5 pb-10">
-      {/* ── Page header ── */}
       <div>
         <h1 className="text-lg font-medium tracking-tight text-[var(--color-foreground)]">Settings</h1>
         <p className="text-[11px] text-[var(--color-muted)] font-medium mt-0.5">
@@ -255,7 +248,6 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      {/* ── Profile card ── */}
       <div className="bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)] p-4 flex items-center gap-4">
         <Avatar name={user.full_name} size="md" />
         <div className="flex-1 min-w-0 space-y-1">
@@ -274,35 +266,26 @@ export default function SettingsPage() {
         </Link>
       </div>
 
-      {/* ── Become a Seller CTA (USER only) ── */}
       {user.role === "USER" && (
         <SellerCTA status={user.approval_status} />
       )}
 
-      {/* ── Pro membership ── */}
       {(isSeller || user.role === "ADMIN") && <ProMembershipCard />}
 
-      {/* ── Seller store group ── */}
       {isSeller && (
         <SettingsGroup title="Store" items={storeGroup} />
       )}
 
-      {/* ── Account ── */}
       <SettingsGroup title="Account" items={accountGroup} />
 
-      {/* ── Shopping ── */}
       <SettingsGroup title="Shopping" items={shoppingGroup} />
 
-      {/* ── Preferences ── */}
       <SettingsGroup title="Preferences" items={preferencesGroup} />
 
-      {/* ── Legal & Privacy ── */}
       <SettingsGroup title="Legal & Privacy" items={legalGroup} />
 
-      {/* ── Support ── */}
       <SettingsGroup title="Support" items={supportGroup} />
 
-      {/* ── Sign out ── */}
       <div className="bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)] overflow-hidden">
         <button
           onClick={logout}

@@ -33,7 +33,6 @@ export default function OrderReceiptModal({
   };
 
   const handleDownloadPdf = () => {
-    // Standard trigger for print-to-PDF
     if (typeof window !== 'undefined') {
       window.print();
     }
@@ -52,13 +51,11 @@ export default function OrderReceiptModal({
       className="max-w-xl"
     >
       <div className="space-y-4 pt-1">
-        {/* Printable Receipt Container */}
         <div
           ref={receiptRef}
           id="official-order-receipt"
           className="p-6 bg-surface/80 rounded-2xl space-y-6 text-foreground border-0 shadow-none print:p-8 print:border-none print:bg-white print:text-black"
         >
-          {/* Header */}
           <div className="flex items-start justify-between border-b border-border/30 pb-4">
             <div>
               <div className="flex items-center gap-2">
@@ -87,7 +84,6 @@ export default function OrderReceiptModal({
             </div>
           </div>
 
-          {/* Details 2-Column Grid */}
           <div className="grid grid-cols-2 gap-4 text-xs">
             <div>
               <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold block mb-1">
@@ -118,7 +114,6 @@ export default function OrderReceiptModal({
             </div>
           </div>
 
-          {/* Payment metadata */}
           <div className="bg-surface/50 rounded-xl p-3 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs border-0 shadow-none">
             <div>
               <span className="text-[10px] text-muted-foreground block uppercase tracking-wider font-semibold">
@@ -178,7 +173,6 @@ export default function OrderReceiptModal({
             </div>
           </div>
 
-          {/* Items Table */}
           <div>
             <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold block mb-2">
               Purchased Items
@@ -210,7 +204,6 @@ export default function OrderReceiptModal({
             </div>
           </div>
 
-          {/* Financial Breakdown */}
           <div className="border-t border-border/30 pt-3 space-y-1.5 text-xs">
             <div className="flex justify-between text-muted-foreground">
               <span>Items Subtotal</span>
@@ -230,7 +223,6 @@ export default function OrderReceiptModal({
             </div>
           </div>
 
-          {/* Footer Security Badge */}
           <div className="flex items-center gap-2 pt-2 text-[10px] text-muted-foreground border-t border-border/30">
             <ShieldCheck className="w-4 h-4 text-emerald-600" />
             <span>
@@ -239,7 +231,6 @@ export default function OrderReceiptModal({
           </div>
         </div>
 
-        {/* Action Controls */}
         <div className="flex items-center justify-between gap-3 pt-2">
           <Button
             variant="secondary"
