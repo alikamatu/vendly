@@ -1,6 +1,6 @@
-import React from "react";
-import JsonLd from "./JsonLd";
-import { SITE_NAME, SITE_URL, SITE_DESCRIPTION } from "@/lib/seo";
+import React from 'react';
+import JsonLd from './JsonLd';
+import { SITE_NAME, SITE_URL, SITE_DESCRIPTION } from '@/lib/seo';
 
 /**
  * Site-wide Organization + WebSite schemas. WebSite includes a
@@ -11,8 +11,8 @@ export default function OrganizationJsonLd() {
     <JsonLd
       data={[
         {
-          "@context": "https://schema.org",
-          "@type": "Organization",
+          '@context': 'https://schema.org',
+          '@type': 'Organization',
           name: SITE_NAME,
           url: SITE_URL,
           logo: `${SITE_URL}/logos/verndly.png`,
@@ -20,17 +20,17 @@ export default function OrganizationJsonLd() {
           sameAs: [],
         },
         {
-          "@context": "https://schema.org",
-          "@type": "WebSite",
+          '@context': 'https://schema.org',
+          '@type': 'WebSite',
           name: SITE_NAME,
           url: SITE_URL,
           potentialAction: {
-            "@type": "SearchAction",
+            '@type': 'SearchAction',
             target: {
-              "@type": "EntryPoint",
-              urlTemplate: `${SITE_URL}/products?search={search_term_string}`,
+              '@type': 'EntryPoint',
+              urlTemplate: `${SITE_URL}/products?q={search_term_string}`,
             },
-            "query-input": "required name=search_term_string",
+            'query-input': 'required name=search_term_string',
           },
         },
       ]}
