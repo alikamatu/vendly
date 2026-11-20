@@ -37,10 +37,8 @@ export default function UserMenu() {
   const pathname = usePathname();
 
   const isDashboard = pathname?.startsWith('/dashboard');
-  // Public user profile on desktop becomes a curved animated sidebar menu
   const isSidebarMode = !isMobile && !isDashboard;
 
-  // Measure dropdown anchor coordinates when opening on desktop dashboard
   useEffect(() => {
     if (isOpen && !isMobile && !isSidebarMode && triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
@@ -51,7 +49,6 @@ export default function UserMenu() {
     }
   }, [isOpen, isMobile, isSidebarMode]);
 
-  // Lock body scroll when mobile drawer or desktop sidebar is open
   useEffect(() => {
     if (isOpen && (isMobile || isSidebarMode)) {
       const originalOverflow = document.body.style.overflow;
@@ -62,7 +59,6 @@ export default function UserMenu() {
     }
   }, [isOpen, isMobile, isSidebarMode]);
 
-  // Close on Escape key
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -72,7 +68,6 @@ export default function UserMenu() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen]);
 
-  // Close menu when clicking outside (for in-dashboard dropdown)
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (triggerRef.current && !triggerRef.current.contains(event.target as Node)) {
@@ -94,19 +89,16 @@ export default function UserMenu() {
   const isSeller = user.role === 'SELLER';
   const isAdmin = user.role === 'ADMIN';
 
-  // Desktop Sidebar Drawer Variants (for public site)
   const sidebarVariants = {
     hidden: { x: '100%', opacity: 0.5 },
     visible: { x: 0, opacity: 1 },
   };
 
-  // Mobile Bottom Sheet Variants (preserved: bottom up)
   const mobileVariants = {
     hidden: { y: '100%', opacity: 0 },
     visible: { y: 0, opacity: 1 },
   };
 
-  // Desktop In-Dashboard Dropdown Variants
   const dropdownVariants = {
     hidden: { opacity: 0, y: 10, scale: 0.95 },
     visible: { opacity: 1, y: 0, scale: 1 },
@@ -201,7 +193,6 @@ export default function UserMenu() {
 
   return (
     <div className="relative">
-      {/* Trigger Button in Header */}
       <button
         ref={triggerRef}
         onClick={() => setIsOpen(!isOpen)}
@@ -247,11 +238,9 @@ export default function UserMenu() {
         />
       </button>
 
-      {/* Menu Overlay & Container */}
       <AnimatePresence>
         {isOpen && (
           <Portal>
-            {/* Backdrop */}
             <MotionDiv
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -260,7 +249,6 @@ export default function UserMenu() {
               className="fixed inset-0 z-[100] bg-black/60"
             />
 
-            {/* Menu Container */}
             <MotionDiv
               initial="hidden"
               animate="visible"
@@ -278,28 +266,22 @@ export default function UserMenu() {
               aria-label="User navigation menu"
               className={clsx(
                 'fixed z-[101] flex flex-col overflow-hidden',
-                // Mobile: Bottom-up sheet (preserved)
                 isMobile &&
                   'bg-background border-border shadow-2xl-up inset-x-0 bottom-0 max-h-[90vh] rounded-t-[2.5rem] border-t',
-                // Desktop Public: Curved animated sidebar menu from right
                 isSidebarMode &&
                   'bg-background/98 border-border/80 inset-y-0 right-0 w-full max-w-[360px] rounded-l-[2.5rem] border-l shadow-[-20px_0_60px_rgba(0,0,0,0.2)] backdrop-blur-2xl sm:max-w-[400px] sm:rounded-l-[3rem] dark:shadow-[-20px_0_60px_rgba(0,0,0,0.6)]',
-                // Desktop Dashboard: Compact dropdown anchored under avatar
                 !isMobile &&
                   !isSidebarMode &&
                   'bg-background border-border/60 mt-2 w-72 rounded-3xl border shadow-2xl',
               )}
               style={!isMobile && !isSidebarMode && menuCoords ? menuCoords : undefined}
             >
-              {/* Mobile grab handle */}
               {isMobile && (
                 <div className="bg-muted/30 mx-auto mb-1 mt-3 h-1.5 w-12 shrink-0 rounded-full" />
               )}
 
-              {/* DESKTOP SIDEBAR VIEW */}
               {isSidebarMode ? (
                 <div className="flex h-full flex-col overflow-hidden">
-                  {/* Sidebar Header */}
                   <div className="border-border/50 bg-surface/40 border-b p-6 pb-4">
                     <div className="mb-3 flex items-start justify-between gap-3">
                       <div className="flex min-w-0 items-center gap-3.5">
@@ -342,7 +324,6 @@ export default function UserMenu() {
                       </button>
                     </div>
 
-                    {/* Seller Store Link Banner */}
                     {isSeller && user.seller_profile?.store_link && (
                       <div className="bg-primary/5 border-primary/15 text-primary mt-3 flex items-center justify-between rounded-2xl border px-3.5 py-2.5 text-xs">
                         <span className="text-[11px] font-medium uppercase tracking-wider">
@@ -359,7 +340,6 @@ export default function UserMenu() {
                     )}
                   </div>
 
-                  {/* Sidebar Nav Links */}
                   <div className="flex-1 space-y-1.5 overflow-y-auto px-4 py-4">
                     {navLinks
                       .filter((link) => link.show)
@@ -404,7 +384,6 @@ export default function UserMenu() {
                       })}
                   </div>
 
-                  {/* Sidebar Footer */}
                   <div className="border-border/50 bg-surface/30 mt-auto border-t p-4">
                     <button
                       onClick={() => {
@@ -422,9 +401,7 @@ export default function UserMenu() {
                   </div>
                 </div>
               ) : (
-                /* MOBILE VIEW & IN-DASHBOARD DESKTOP VIEW */
                 <div className={clsx('p-2', isMobile ? 'px-4 pb-10' : 'p-2')}>
-                  {/* Header Section */}
                   <div
                     className={clsx(
                       'mb-2 flex items-center justify-between',
@@ -454,7 +431,6 @@ export default function UserMenu() {
                     )}
                   </div>
 
-                  {/* Seller Stats / Quick Info */}
                   {isSeller && !isMobile && (
                     <div className="text-primary bg-primary/5 border-primary/10 mb-4 flex items-center justify-between rounded-xl border px-4 py-2 text-[9px] font-medium uppercase tracking-wider">
                       <span>Seller Profile Active</span>
@@ -468,7 +444,6 @@ export default function UserMenu() {
                     </div>
                   )}
 
-                  {/* Nav Links */}
                   <div className={clsx('space-y-1', isMobile ? 'mt-4 space-y-2' : '')}>
                     {navLinks
                       .filter((link) => link.show)
@@ -496,7 +471,6 @@ export default function UserMenu() {
                       ))}
                   </div>
 
-                  {/* Footer Section */}
                   <div
                     className={clsx(
                       'mt-2 pt-2',

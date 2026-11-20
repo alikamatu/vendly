@@ -37,7 +37,6 @@ import ConfirmModal from '@/components/ui/ConfirmModal';
 import DropdownMenu from '@/components/ui/DropdownMenu';
 import Select from '@/components/ui/Select';
 
-// ─── Status groups + sorts ───────────────────────────────────────────
 const STATUS_GROUPS = [
   { key: 'all', label: 'All', match: () => true },
   { key: 'active', label: 'Active', match: (s: string) => s === 'active' },
@@ -77,11 +76,9 @@ export default function SellerProductsPage() {
     Record<string, 'idle' | 'verifying' | 'payment_required' | 'failed'>
   >({});
 
-  // Delete modal state
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [statusGroup, setStatusGroup] = useState<StatusGroup>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -89,7 +86,6 @@ export default function SellerProductsPage() {
   const [lowOnly, setLowOnly] = useState(false);
   const [sortBy, setSortBy] = useState<SortBy>('newest');
 
-  // ─── Fetch + auto-refresh ──────────────────────────────────────────
   async function fetchProducts(silent = false) {
     if (!token) return;
     try {
@@ -111,7 +107,6 @@ export default function SellerProductsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  // Hot Sales payment-return handler
   useEffect(() => {
     const processCallback = async () => {
       const hotSalePayment = searchParams.get('hot_sale_payment');
@@ -148,12 +143,10 @@ export default function SellerProductsPage() {
     processCallback();
   }, [searchParams, token, pathname, router]);
 
-  // ─── Quick Actions ────────────────────────────────────────────────
   const handleQuickStatusToggle = async (id: string, currentStatus: string) => {
     if (!token) return;
     const nextStatus = currentStatus === 'active' ? 'draft' : 'active';
 
-    // Optimistic update
     setProducts((prev) =>
       prev.map((p) => (p.id === id ? { ...p, status: nextStatus } : p))
     );
@@ -162,7 +155,6 @@ export default function SellerProductsPage() {
       await productApi.updateStatus(token, id, nextStatus);
       toast.success(`Listing status updated to ${nextStatus.toUpperCase()}`);
     } catch (err: any) {
-      // Revert
       setProducts((prev) =>
         prev.map((p) => (p.id === id ? { ...p, status: currentStatus } : p))
       );
@@ -176,7 +168,6 @@ export default function SellerProductsPage() {
     const previousProduct = products.find((p) => p.id === id);
     const oldQty = previousProduct?.quantity_available ?? 0;
 
-    // Optimistic update
     setProducts((prev) =>
       prev.map((p) => (p.id === id ? { ...p, quantity_available: newStock } : p))
     );
@@ -207,7 +198,6 @@ export default function SellerProductsPage() {
     }
   };
 
-  // ─── Stats (computed client-side) ──────────────────────────────────
   const stats = useMemo(() => {
     let active = 0;
     let drafts = 0;
@@ -225,7 +215,6 @@ export default function SellerProductsPage() {
     return { active, drafts, lowStock, outOfStock, totalViews };
   }, [products]);
 
-  // ─── Category options (derived) ────────────────────────────────────
   const categories = useMemo(() => {
     const set = new Set<string>();
     for (const p of products) {
@@ -234,7 +223,6 @@ export default function SellerProductsPage() {
     return Array.from(set).sort();
   }, [products]);
 
-  // ─── Filtered + sorted ─────────────────────────────────────────────
   const filtered = useMemo(() => {
     const group = STATUS_GROUPS.find((g) => g.key === statusGroup)!;
     const q = searchQuery.trim().toLowerCase();
@@ -269,7 +257,6 @@ export default function SellerProductsPage() {
       });
   }, [products, statusGroup, categoryFilter, hotOnly, lowOnly, searchQuery, sortBy]);
 
-  // ─── Render ────────────────────────────────────────────────────────
   if (isLoading) {
     return (
       <div className="flex flex-col h-[60vh] items-center justify-center gap-3">
@@ -290,7 +277,6 @@ export default function SellerProductsPage() {
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-24 px-3 sm:px-6">
-      {/* HEADER */}
       <div className="space-y-3 pt-2">
         <Link
           href="/dashboard"
@@ -310,7 +296,6 @@ export default function SellerProductsPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {/* View Mode Toggle */}
             <div className="flex items-center bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-1">
               <button
                 type="button"
@@ -364,7 +349,6 @@ export default function SellerProductsPage() {
         </div>
       </div>
 
-      {/* STATS STRIP */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4">
         <StatTile
           icon={<Boxes className="w-4 h-4" />}
@@ -397,9 +381,7 @@ export default function SellerProductsPage() {
         />
       </div>
 
-      {/* SEARCH + FILTERS */}
       <div className="space-y-3 bg-[var(--color-surface)] border border-[var(--color-border)] p-4 rounded-2xl">
-        {/* Search Input */}
         <div className="relative">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-muted)] pointer-events-none" />
           <input
@@ -419,7 +401,6 @@ export default function SellerProductsPage() {
           )}
         </div>
 
-        {/* Status Filter Chips */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
           <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-muted)] shrink-0 mr-1.5">
             Status:
@@ -456,7 +437,6 @@ export default function SellerProductsPage() {
           })}
         </div>
 
-        {/* Category Chips */}
         {categories.length > 0 && (
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 border-t border-[var(--color-border)]/50 pt-2.5">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-muted)] shrink-0 mr-1.5">
@@ -490,7 +470,6 @@ export default function SellerProductsPage() {
           </div>
         )}
 
-        {/* Quick Toggles + Sort Controls */}
         <div className="flex items-center gap-2 overflow-x-auto pt-2 border-t border-[var(--color-border)]/50">
           <label className="inline-flex items-center gap-1.5 text-xs font-medium cursor-pointer select-none shrink-0 px-3 h-8 border border-[var(--color-border)] rounded-full hover:bg-[var(--color-border)]/20 transition">
             <input
@@ -529,7 +508,6 @@ export default function SellerProductsPage() {
             </button>
           )}
 
-          {/* Custom Select for Sorting */}
           <div className="ml-auto shrink-0 flex items-center gap-2">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-muted)]">
               Sort:
@@ -545,7 +523,6 @@ export default function SellerProductsPage() {
         </div>
       </div>
 
-      {/* Alert Error Display */}
       {error && (
         <Alert
           variant="error"
@@ -555,7 +532,6 @@ export default function SellerProductsPage() {
         />
       )}
 
-      {/* VIEW: CARD GRID */}
       {viewMode === 'cards' && (
         <div className="space-y-3">
           <AnimatePresence mode="popLayout">
@@ -588,7 +564,6 @@ export default function SellerProductsPage() {
         </div>
       )}
 
-      {/* VIEW: COMPACT TABLE */}
       {viewMode === 'table' && (
         <div className="overflow-x-auto bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl">
           {filtered.length > 0 ? (
@@ -615,7 +590,6 @@ export default function SellerProductsPage() {
                       key={product.id}
                       className="hover:bg-[var(--color-border)]/10 transition-colors group"
                     >
-                      {/* Thumbnail & Title */}
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
                           <Link
@@ -648,18 +622,15 @@ export default function SellerProductsPage() {
                         </div>
                       </td>
 
-                      {/* Category */}
                       <td className="py-3 px-4 text-[var(--color-muted)] font-medium">
                         {product.category}
                       </td>
 
-                      {/* Price */}
                       <td className="py-3 px-4 font-bold text-[var(--color-foreground)] tabular-nums">
                         {product.currency || 'GH₵'}
                         {parseFloat(product.price).toLocaleString()}
                       </td>
 
-                      {/* Stock Stepper */}
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-1.5">
                           <button
@@ -692,7 +663,6 @@ export default function SellerProductsPage() {
                         </div>
                       </td>
 
-                      {/* Status Toggle */}
                       <td className="py-3 px-4">
                         <button
                           type="button"
@@ -708,7 +678,6 @@ export default function SellerProductsPage() {
                         </button>
                       </td>
 
-                      {/* Actions Dropdown */}
                       <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end gap-1">
                           <Link
@@ -783,7 +752,6 @@ export default function SellerProductsPage() {
         </div>
       )}
 
-      {/* Confirmation Modal for Deletion */}
       <ConfirmModal
         isOpen={!!deletingProductId}
         onClose={() => setDeletingProductId(null)}
@@ -798,7 +766,6 @@ export default function SellerProductsPage() {
   );
 }
 
-// ─── Sub-components ──────────────────────────────────────────────────
 
 function StatTile({
   icon,

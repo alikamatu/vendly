@@ -71,7 +71,6 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
 
     return (
       <div className="w-full text-left">
-        {/* Top Label Row */}
         {(label || labelRight) && (
           <div className="mb-1.5 flex items-center justify-between">
             {label && (
@@ -89,7 +88,6 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           </div>
         )}
 
-        {/* Apple & Linear Inspired Bordered Box */}
         <div
           className={clsx(
             'group relative flex items-center w-full h-11 rounded-xl transition-all duration-200',
@@ -99,7 +97,6 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
               : 'border-input-border hover:border-foreground/30 hover:bg-input-bg/90 focus-within:border-secondary focus-within:bg-background'
           )}
         >
-          {/* Left Inset Icon */}
           {icon && (
             <div
               className={clsx(
@@ -111,7 +108,6 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             </div>
           )}
 
-          {/* Actual Input */}
           <input
             {...props}
             {...regRest}
@@ -138,7 +134,6 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             )}
           />
 
-          {/* Password Show/Hide Toggle */}
           {showToggle && (
             <button
               type="button"
@@ -153,12 +148,10 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           )}
         </div>
 
-        {/* Hint text */}
         {hint && !error && (
           <p className="mt-1.5 text-[11px] text-foreground/50 leading-relaxed">{hint}</p>
         )}
 
-        {/* Caps Lock Alert */}
         <AnimatePresence>
           {isPassword && isFocused && capsLock && !error && (
             <motion.p
@@ -173,7 +166,6 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           )}
         </AnimatePresence>
 
-        {/* Animated Error */}
         <AnimatePresence>
           {error && (
             <motion.p

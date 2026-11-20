@@ -40,9 +40,9 @@ import { Sparkles, Zap, BarChart3 } from "lucide-react";
 /**
  * Seller analytics dashboard.
  *
- * Replaces the "Analytics coming soon" placeholder. Pulls four datasets in
- * parallel: KPI overview, revenue time-series, top products, and a simple
- * funnel. All queries are scoped server-side to the caller's seller_id.
+ * Pulls four datasets in parallel: KPI overview, revenue time-series, top
+ * products, and a simple funnel. All queries are scoped server-side to the
+ * caller's seller_id.
  */
 
 const RANGES: { value: Range; label: string }[] = [
@@ -108,7 +108,6 @@ export default function SellerAnalyticsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <Link
           href="/dashboard"
@@ -171,7 +170,6 @@ export default function SellerAnalyticsPage() {
             </div>
           )}
 
-      {/* KPI grid */}
       {isLoading && !overview ? (
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
@@ -232,7 +230,6 @@ export default function SellerAnalyticsPage() {
         </div>
       ) : null}
 
-      {/* Revenue chart */}
       <div className="border-border/40 bg-surface/40 rounded-3xl border p-6">
         <div className="mb-6 flex items-center justify-between">
           <div>
@@ -251,9 +248,7 @@ export default function SellerAnalyticsPage() {
         )}
       </div>
 
-      {/* Two column: Top products + Funnel */}
       <div className="grid gap-4 lg:grid-cols-3">
-        {/* Top products */}
         <div className="border-border/40 bg-surface/40 lg:col-span-2 rounded-3xl border p-6">
           <div className="mb-4 flex items-center justify-between gap-2">
             <div>
@@ -337,7 +332,6 @@ export default function SellerAnalyticsPage() {
           )}
         </div>
 
-        {/* Funnel */}
         <div className="border-border/40 bg-surface/40 rounded-3xl border p-6">
           <div className="mb-4">
             <h2 className="text-foreground text-sm font-medium uppercase tracking-wider">
@@ -452,7 +446,6 @@ function ProUpsell() {
   );
 }
 
-// ─── components ────────────────────────────────────────────────────────────
 
 function Kpi({
   label,

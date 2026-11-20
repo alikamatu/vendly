@@ -132,7 +132,6 @@ export default function SellerProductCard({
     >
       <div className="hover:border-[var(--color-foreground)]/25 relative rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3.5 transition-colors sm:p-4">
         <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-          {/* Media Thumbnail */}
           <Link
             href={`/dashboard/products/${product.id}`}
             className="group/media relative block h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] focus:outline-none sm:h-24 sm:w-24"
@@ -173,7 +172,6 @@ export default function SellerProductCard({
             )}
           </Link>
 
-          {/* Product Details */}
           <div className="w-full min-w-0 flex-1 space-y-2">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
@@ -196,7 +194,6 @@ export default function SellerProductCard({
                 </p>
               </div>
 
-              {/* Status Pill */}
               <button
                 type="button"
                 onClick={(e) => {
@@ -214,7 +211,6 @@ export default function SellerProductCard({
               </button>
             </div>
 
-            {/* Price & Stock Chips */}
             <div className="flex flex-wrap items-center gap-2.5">
               <div className="flex items-baseline gap-1.5">
                 <span className="text-base font-bold tabular-nums text-[var(--color-foreground)] sm:text-lg">
@@ -229,7 +225,6 @@ export default function SellerProductCard({
                 )}
               </div>
 
-              {/* Stock Indicator */}
               <span
                 className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
                   isOutOfStock
@@ -243,7 +238,6 @@ export default function SellerProductCard({
                 {isOutOfStock ? 'Sold Out' : `${qty} in stock`}
               </span>
 
-              {/* Promotion Alerts */}
               {promotionState === 'verifying' && (
                 <span className="inline-flex items-center gap-1 rounded-md border border-blue-500/20 bg-blue-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-blue-500">
                   <Sparkles className="h-3 w-3 animate-spin" />
@@ -257,7 +251,6 @@ export default function SellerProductCard({
                 </span>
               )}
 
-              {/* Views Count */}
               {product.views_count !== undefined && product.views_count > 0 && (
                 <span className="ml-auto inline-flex items-center gap-1 text-xs text-[var(--color-muted)]">
                   <Eye className="h-3.5 w-3.5" />
@@ -266,7 +259,6 @@ export default function SellerProductCard({
               )}
             </div>
 
-            {/* Quick Actions Row */}
             <div className="border-[var(--color-border)]/50 flex items-center gap-2 border-t pt-1">
               <Link
                 href={`/dashboard/products/${product.id}`}
@@ -293,7 +285,6 @@ export default function SellerProductCard({
                 <ExternalLink className="h-3 w-3 opacity-60" />
               </Link>
 
-              {/* Dropdown Menu for Secondary Actions */}
               <div className="ml-auto">
                 <DropdownMenu
                   trigger={

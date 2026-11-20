@@ -95,7 +95,6 @@ export default function QuickCheckoutModal({
   const [paymentReference, setPaymentReference] = useState<string>('');
   const [paymentErrorMessage, setPaymentErrorMessage] = useState<string>('');
 
-  // Unit price determination
   const unitPrice = useMemo(() => {
     if (selectedVariant?.price != null && Number(selectedVariant.price) > 0) {
       return Number(selectedVariant.price);
@@ -107,7 +106,6 @@ export default function QuickCheckoutModal({
   const totalAmount = subtotal;
 
   /* eslint-disable react-hooks/set-state-in-effect */
-  // Initialize or update customer details when auth changes
   useEffect(() => {
     if (user) {
       if (!customerName && user.full_name) setCustomerName(user.full_name);
@@ -115,7 +113,6 @@ export default function QuickCheckoutModal({
     }
   }, [user, customerName, customerPhone]);
 
-  // Load user saved addresses
   useEffect(() => {
     if (!token) return;
     addressApi
@@ -149,7 +146,6 @@ export default function QuickCheckoutModal({
     }
   };
 
-  // Reset states on modal close
   useEffect(() => {
     if (!isOpen) {
       setError(null);
@@ -159,7 +155,6 @@ export default function QuickCheckoutModal({
   }, [isOpen]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
-  // Handle ESC key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen && !isSubmitting) {
@@ -175,7 +170,6 @@ export default function QuickCheckoutModal({
     setError(null);
 
     if (!isAuthenticated || !token) {
-      // Redirect to login preserving context
       toast.error('Please sign in to complete fast purchase.');
       router.push(`/login?redirect=${encodeURIComponent(`/product/${product.id}?buyNow=1`)}`);
       return;
@@ -226,7 +220,6 @@ export default function QuickCheckoutModal({
       const orderTotal = Number(result.total ?? result.total_amount ?? totalAmount);
       const reference = result.reference;
 
-      // If online payment (Paystack)
       if (paymentMethod === 'PAYSTACK' && (result.authorization_url || result.access_code)) {
         setPaymentOrderId(orderId);
         setPaymentOrderNumber(orderId ? orderId.slice(-8).toUpperCase() : '');
@@ -259,7 +252,6 @@ export default function QuickCheckoutModal({
         return;
       }
 
-      // Cash / Instant Confirmation
       toast.success('Order placed successfully!');
       setOrderSuccess({ id: orderId, reference });
       setTimeout(() => {
@@ -285,7 +277,6 @@ export default function QuickCheckoutModal({
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-[100] flex items-end justify-center p-0 sm:items-center sm:p-4">
-          {/* Strictly solid backdrop overlay (borderless, shadowless, NO blur) */}
           <MotionDiv
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -296,8 +287,6 @@ export default function QuickCheckoutModal({
             aria-hidden="true"
           />
 
-          {/* Modal Container: Mobile-first bottom sheet, centered on desktop */}
-          {/* Strictly borderless, shadowless, NO blur style */}
           <MotionDiv
             role="dialog"
             aria-modal="true"
@@ -307,12 +296,10 @@ export default function QuickCheckoutModal({
             transition={{ type: 'spring', damping: 28, stiffness: 320 }}
             className="bg-background text-foreground relative z-10 flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-[2.5rem] border-0 shadow-none sm:max-w-lg sm:rounded-[2.5rem]"
           >
-            {/* Mobile drag handle */}
             <div className="flex justify-center pb-1 pt-3 sm:hidden">
               <div className="bg-muted/40 h-1 w-10 rounded-full" />
             </div>
 
-            {/* Header */}
             <div className="flex items-center justify-between border-0 px-6 pb-3 pt-3 sm:pt-6">
               <div className="flex items-center gap-2">
                 <div className="bg-foreground/5 text-foreground flex h-7 w-7 items-center justify-center rounded-full">
@@ -336,9 +323,7 @@ export default function QuickCheckoutModal({
               </button>
             </div>
 
-            {/* Scrollable Content */}
             <div className="space-y-5 overflow-y-auto px-6 py-2">
-              {/* Product Snippet */}
               <div className="bg-surface flex items-center gap-3.5 rounded-2xl border-0 p-4 shadow-none">
                 <img
                   src={imageThumbnail}
@@ -363,7 +348,6 @@ export default function QuickCheckoutModal({
                 </div>
               </div>
 
-              {/* Quantity Selector */}
               <div className="bg-surface flex items-center justify-between rounded-2xl border-0 p-3.5 shadow-none">
                 <span className="text-foreground text-xs font-medium">Quantity</span>
                 <div className="flex items-center gap-3">
@@ -387,7 +371,6 @@ export default function QuickCheckoutModal({
                 </div>
               </div>
 
-              {/* Error Message */}
               {error && (
                 <div className="flex items-center gap-2 rounded-2xl border-0 bg-red-500/10 p-3 text-xs text-red-600 shadow-none dark:text-red-400">
                   <AlertCircle className="h-4 w-4 shrink-0" />
@@ -395,7 +378,6 @@ export default function QuickCheckoutModal({
                 </div>
               )}
 
-              {/* Unauthenticated Prompt */}
               {!isAuthenticated && (
                 <div className="bg-surface space-y-3 rounded-2xl border-0 p-4 shadow-none">
                   <div className="text-foreground flex items-center gap-2 text-xs font-medium">
@@ -420,7 +402,6 @@ export default function QuickCheckoutModal({
                 </div>
               )}
 
-              {/* Customer Contact Details */}
               <div className="bg-surface space-y-3 rounded-2xl border-0 p-4 shadow-none">
                 <h4 className="text-muted text-[11px] font-semibold uppercase tracking-wider">
                   Recipient Information
@@ -471,7 +452,6 @@ export default function QuickCheckoutModal({
                 </div>
               </div>
 
-              {/* Delivery Method */}
               <div className="bg-surface space-y-3 rounded-2xl border-0 p-4 shadow-none">
                 <h4 className="text-muted text-[11px] font-semibold uppercase tracking-wider">
                   Delivery Method
@@ -561,7 +541,6 @@ export default function QuickCheckoutModal({
                 )}
               </div>
 
-              {/* Payment Method */}
               <div className="bg-surface space-y-3 rounded-2xl border-0 p-4 shadow-none">
                 <h4 className="text-muted text-[11px] font-semibold uppercase tracking-wider">
                   Payment Method
@@ -603,7 +582,6 @@ export default function QuickCheckoutModal({
                 </div>
               </div>
 
-              {/* Breakdown */}
               <div className="bg-surface space-y-2.5 rounded-2xl border-0 p-4 text-xs shadow-none">
                 <div className="text-muted flex justify-between">
                   <span>Items Subtotal</span>
@@ -624,7 +602,6 @@ export default function QuickCheckoutModal({
               </div>
             </div>
 
-            {/* Footer Action */}
             <div className="bg-background border-0 p-4 shadow-none sm:p-6">
               <button
                 type="button"

@@ -103,7 +103,6 @@ export default function ManageProductPage() {
   const lowStock = currentStock > 0 && currentStock <= 5;
   const outOfStock = currentStock === 0;
 
-  // ─── Actions ────────────────────────────────────────────────────────
 
   async function handleStatusChange(next: string) {
     if (!token || !product || next === product.status) return;
@@ -203,7 +202,6 @@ export default function ManageProductPage() {
     }
   }
 
-  // ─── Render ────────────────────────────────────────────────────────
 
   if (loading) {
     return (
@@ -288,7 +286,6 @@ export default function ManageProductPage() {
 
   return (
     <div className="max-w-5xl mx-auto pb-24 px-3 sm:px-6 space-y-4">
-      {/* Back link */}
       <Link
         href="/dashboard/products"
         className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)] hover:text-[var(--color-foreground)] transition-colors mt-2 group"
@@ -297,7 +294,6 @@ export default function ManageProductPage() {
         All products
       </Link>
 
-      {/* Stock Alerts (if applicable) */}
       {outOfStock ? (
         <Alert
           variant="error"
@@ -312,13 +308,11 @@ export default function ManageProductPage() {
         />
       ) : null}
 
-      {/* HERO SECTION */}
       <Card
         className="overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface)] p-5 sm:p-6 rounded-2xl"
         hoverEffect={false}
       >
         <div className="flex flex-col md:flex-row gap-6 items-start">
-          {/* Media Showcase */}
           <div className="w-full md:w-56 shrink-0 space-y-3">
             <div className="relative aspect-square w-full rounded-xl overflow-hidden border border-[var(--color-border)] bg-black/5">
               {activeMediaIndex === 99 && product.video_url ? (
@@ -348,7 +342,6 @@ export default function ManageProductPage() {
               )}
             </div>
 
-            {/* Thumbnail Selectors */}
             {(images.length > 1 || hasVideo) && (
               <div className="flex items-center gap-2 overflow-x-auto pb-1">
                 {images.map((url: string, idx: number) => (
@@ -384,7 +377,6 @@ export default function ManageProductPage() {
             )}
           </div>
 
-          {/* Details & Actions */}
           <div className="flex-1 min-w-0 space-y-4 w-full">
             <div>
               <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -413,7 +405,6 @@ export default function ManageProductPage() {
               </h1>
             </div>
 
-            {/* Pricing & Stock Status */}
             <div className="flex items-baseline gap-3 flex-wrap">
               <span className="text-2xl sm:text-3xl font-bold text-[var(--color-foreground)] tabular-nums">
                 {product.currency || 'GH₵'}
@@ -448,7 +439,6 @@ export default function ManageProductPage() {
               </span>
             </div>
 
-            {/* Primary Actions Bar */}
             <div className="flex flex-wrap items-center gap-2 pt-1">
               <Link
                 href={`/dashboard/products/edit/${product.id}`}
@@ -468,7 +458,6 @@ export default function ManageProductPage() {
                 <ExternalLink className="w-3 h-3 opacity-50" />
               </a>
 
-              {/* More Actions Dropdown */}
               <DropdownMenu
                 trigger={
                   <button
@@ -487,9 +476,7 @@ export default function ManageProductPage() {
         </div>
       </Card>
 
-      {/* CONTROLS GRID */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Listing Status Toggle */}
         <Card className="p-5 rounded-2xl space-y-3 bg-[var(--color-surface)] border border-[var(--color-border)]" hoverEffect={false}>
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-[var(--color-foreground)]">Listing Status</h2>
@@ -528,7 +515,6 @@ export default function ManageProductPage() {
           </p>
         </Card>
 
-        {/* Inventory Stock Stepper */}
         <Card className="p-5 rounded-2xl space-y-3 bg-[var(--color-surface)] border border-[var(--color-border)]" hoverEffect={false}>
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-[var(--color-foreground)]">Inventory Quantity</h2>
@@ -591,7 +577,6 @@ export default function ManageProductPage() {
           )}
         </Card>
 
-        {/* Hot Sales Boost Promotion */}
         <Card className="p-5 rounded-2xl space-y-3 bg-[var(--color-surface)] border border-[var(--color-border)]" hoverEffect={false}>
           <div className="flex items-start justify-between gap-2">
             <div>
@@ -631,7 +616,6 @@ export default function ManageProductPage() {
           </Button>
         </Card>
 
-        {/* Share Social Card */}
         <Card className="p-5 rounded-2xl space-y-3 bg-[var(--color-surface)] border border-[var(--color-border)]" hoverEffect={false}>
           <div className="flex items-start justify-between gap-2">
             <div>
@@ -667,7 +651,6 @@ export default function ManageProductPage() {
           )}
         </Card>
 
-        {/* Variants Overview */}
         <Card className="p-5 rounded-2xl space-y-3 bg-[var(--color-surface)] border border-[var(--color-border)]" hoverEffect={false}>
           <div className="flex items-start justify-between gap-2">
             <div>
@@ -694,7 +677,6 @@ export default function ManageProductPage() {
           </Button>
         </Card>
 
-        {/* Analytics Preview */}
         <Card className="p-5 rounded-2xl space-y-3 bg-[var(--color-surface)] border border-[var(--color-border)]" hoverEffect={false}>
           <div className="flex items-start justify-between gap-2">
             <div>
@@ -738,7 +720,6 @@ export default function ManageProductPage() {
         </Card>
       </div>
 
-      {/* Specifications & Tags Summary */}
       {(product.tags?.length > 0 ||
         Object.keys(product.attributes || {}).length > 0 ||
         product.description) && (
@@ -801,7 +782,6 @@ export default function ManageProductPage() {
         </Card>
       )}
 
-      {/* Danger Zone */}
       <Card
         className="p-5 rounded-2xl space-y-3 border border-[var(--color-danger)]/20 bg-[var(--color-danger)]/[0.02]"
         hoverEffect={false}
@@ -826,7 +806,6 @@ export default function ManageProductPage() {
         </div>
       </Card>
 
-      {/* Custom ConfirmModal for Permanent Deletion */}
       <ConfirmModal
         isOpen={confirmDelete}
         onClose={() => setConfirmDelete(false)}
@@ -846,7 +825,6 @@ export default function ManageProductPage() {
         storeLink={product.seller?.store_link ?? null}
       />
 
-      {/* Manage Variants & Attributes Custom Modal */}
       <Modal
         isOpen={showVariantModal}
         onClose={() => setShowVariantModal(false)}

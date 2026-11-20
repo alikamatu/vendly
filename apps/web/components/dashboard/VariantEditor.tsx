@@ -233,7 +233,6 @@ export default function VariantEditor({
 
   return (
     <div className="space-y-4">
-      {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border/50">
         <div>
           <div className="text-sm font-semibold flex items-center gap-2 text-foreground">
@@ -275,7 +274,6 @@ export default function VariantEditor({
         </div>
       </div>
 
-      {/* Active Attributes Badges */}
       {axes.length > 0 ? (
         <div className="flex items-center flex-wrap gap-2 pt-1">
           <span className="text-[11px] font-medium text-muted mr-1">
@@ -305,7 +303,6 @@ export default function VariantEditor({
         </div>
       )}
 
-      {/* Rows Table / List */}
       {rows.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border/80 bg-surface/30 p-8 text-center space-y-2">
           <div className="w-10 h-10 rounded-2xl bg-surface border border-border flex items-center justify-center mx-auto text-muted">
@@ -367,7 +364,6 @@ export default function VariantEditor({
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 items-end">
-                {/* Attribute inputs */}
                 {axes.map((a) => (
                   <div key={a} className="space-y-1">
                     <label className="text-[10px] font-semibold uppercase tracking-wider text-muted block truncate">
@@ -382,7 +378,6 @@ export default function VariantEditor({
                   </div>
                 ))}
 
-                {/* Stock available */}
                 <div className="space-y-1">
                   <label className="text-[10px] font-semibold uppercase tracking-wider text-muted block truncate">
                     Stock
@@ -400,7 +395,6 @@ export default function VariantEditor({
                   />
                 </div>
 
-                {/* Price override (optional) */}
                 <div className="space-y-1">
                   <label className="text-[10px] font-semibold uppercase tracking-wider text-muted block truncate">
                     Price GH₵ (opt)
@@ -416,7 +410,6 @@ export default function VariantEditor({
                   />
                 </div>
 
-                {/* SKU (optional) */}
                 <div className="space-y-1">
                   <label className="text-[10px] font-semibold uppercase tracking-wider text-muted block truncate">
                     SKU (opt)
@@ -434,7 +427,6 @@ export default function VariantEditor({
         </div>
       )}
 
-      {/* Error display */}
       {error && (
         <Alert
           variant="error"
@@ -444,7 +436,6 @@ export default function VariantEditor({
         />
       )}
 
-      {/* Save Action */}
       <div className="flex items-center justify-between pt-2">
         <span className="text-xs text-muted">
           {rows.length > 0
@@ -463,7 +454,6 @@ export default function VariantEditor({
         </Button>
       </div>
 
-      {/* ────────────────── Custom Modal: Add Attribute ────────────────── */}
       <Modal
         isOpen={isAddAttrModalOpen}
         onClose={() => setIsAddAttrModalOpen(false)}
@@ -539,7 +529,6 @@ export default function VariantEditor({
         </div>
       </Modal>
 
-      {/* ────────────────── Custom ConfirmModal: Remove Attribute ────────────────── */}
       <ConfirmModal
         isOpen={Boolean(axisToDelete)}
         onClose={() => setAxisToDelete(null)}
@@ -550,7 +539,6 @@ export default function VariantEditor({
         variant="danger"
       />
 
-      {/* ────────────────── Custom ConfirmModal: Delete Variant Row ────────────────── */}
       <ConfirmModal
         isOpen={Boolean(rowToDelete)}
         onClose={() => setRowToDelete(null)}

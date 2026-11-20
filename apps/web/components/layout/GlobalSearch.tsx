@@ -34,7 +34,6 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  // Handle body scroll lock
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -49,7 +48,6 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
     };
   }, [isOpen]);
 
-  // Focus effect
   useEffect(() => {
     if (isOpen) {
       const timer = setTimeout(() => {
@@ -59,7 +57,6 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
     }
   }, [isOpen]);
 
-  // Search effect
   useEffect(() => {
     const delayDebounceFn = setTimeout(async () => {
       if (query.trim().length > 1) {
@@ -110,9 +107,6 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
       <AnimatePresence>
         {isOpen && (
           <div className="fixed inset-0 z-[10000] flex items-end">
-            {/* Backdrop */}
-            {/* backdrop; cast to any to sidestep motion typing limits */}
-            {/* Note: we create a local alias at top of file */}
             <MotionDiv
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -121,7 +115,6 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
               className="absolute inset-0 bg-black/60"
             />
 
-            {/* Search Drawer */}
             <MotionDiv
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
@@ -136,10 +129,8 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
               className="relative w-full bg-background rounded-t-[3rem] shadow-2xl flex flex-col h-[90vh] md:h-[85vh] overflow-hidden border-t border-border"
               onClick={(e: React.MouseEvent) => e.stopPropagation()}
             >
-              {/* Drag Handle */}
               <div className="w-16 h-1.5 bg-border/40 rounded-full mx-auto mt-4 shrink-0" />
 
-              {/* Header */}
               <header className="px-6 pt-6 pb-6 md:px-12 md:pt-10 border-b border-border/50 shrink-0">
                 <div className="max-w-4xl mx-auto flex items-center gap-4">
                   <div className="relative flex-1 group">
@@ -168,7 +159,6 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                 </div>
               </header>
 
-              {/* Body */}
               <div className="flex-1 overflow-y-auto px-6 py-8 md:px-12 md:py-10">
                 <div className="max-w-4xl mx-auto space-y-10">
                   {query.length > 0 ? (
@@ -274,7 +264,6 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                 </div>
               </div>
 
-              {/* Footer */}
               <footer className="px-10 py-6 border-t border-border/50 bg-background shrink-0 flex items-center justify-between">
                 <p className="text-[9px] font-medium text-muted uppercase tracking-wider opacity-40">
                   Drag down to close

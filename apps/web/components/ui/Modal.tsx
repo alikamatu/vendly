@@ -29,7 +29,6 @@ export default function Modal({
   className,
   showClose = true,
 }: ModalProps) {
-  // Prevent body scrolling while modal is open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -41,7 +40,6 @@ export default function Modal({
     };
   }, [isOpen]);
 
-  // Close on Escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
@@ -67,7 +65,6 @@ export default function Modal({
             className="fixed inset-0 bg-black/60"
           />
 
-          {/* Modal Pop-up Card */}
           <MotionDiv
             role="dialog"
             aria-modal="true"
@@ -81,7 +78,6 @@ export default function Modal({
               className
             )}
           >
-            {/* Header */}
             {(title || showClose) && (
               <div className="flex items-start justify-between gap-4 mb-5">
                 <div>
@@ -112,10 +108,8 @@ export default function Modal({
               </div>
             )}
 
-            {/* Content Body */}
             <div className="relative">{children}</div>
 
-            {/* Responsive Actions Footer */}
             {actions && (
               <div className="mt-6 pt-2 flex items-center justify-end gap-2.5">
                 {actions}

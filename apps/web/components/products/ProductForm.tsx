@@ -149,7 +149,6 @@ export default function ProductForm({
   const [categoryBrands, setCategoryBrands] = useState<{ id: string; name: string }[]>([]);
   const [isCompressing, setIsCompressing] = useState(false);
 
-  // Sync existing images/video/formData if initial data changes
   useEffect(() => {
     if (initialData) {
       const pricing = getInitialPricing(initialData);
@@ -188,7 +187,6 @@ export default function ProductForm({
     }
   }, [initialData, initialExistingImages, initialExistingVideo]);
 
-  // Load categories
   useEffect(() => {
     productApi
       .getCategories()
@@ -209,7 +207,6 @@ export default function ProductForm({
       .catch(() => toast.error('Failed to load categories'));
   }, [isEdit]);
 
-  // Load brands whenever category changes
   useEffect(() => {
     if (!formData.category) {
       setCategoryBrands([]);
@@ -232,7 +229,6 @@ export default function ProductForm({
     [categoryBrands],
   );
 
-  // Handle category change
   const handleCategoryChange = useCallback(
     (catName: string) => {
       const cat = categories.find((c) => c.name === catName);
@@ -253,7 +249,6 @@ export default function ProductForm({
     [categories],
   );
 
-  // Dynamic attribute update
   const handleAttributeChange = useCallback((name: string, value: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -261,7 +256,6 @@ export default function ProductForm({
     }));
   }, []);
 
-  // Image processing & compression
   const totalImagesCount = existingImages.length + images.length;
 
   const handleImageFiles = useCallback(
@@ -343,7 +337,6 @@ export default function ProductForm({
     setPreviews((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  // Video processing
   const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -372,7 +365,6 @@ export default function ProductForm({
     if (videoInputRef.current) videoInputRef.current.value = '';
   };
 
-  // Tags management
   const addTag = () => {
     const raw = tagInput.trim().replace(/\s+/g, ' ');
     if (!raw) return;
@@ -392,7 +384,6 @@ export default function ProductForm({
     setFormData((prev) => ({ ...prev, tags: prev.tags.filter((t) => t !== tag) }));
   };
 
-  // Auto-calculate selling price and discount savings
   const { calculatedSellingPrice, savingsAmount, hasValidDiscount } = useMemo(() => {
     const base = parseFloat(basePrice);
     const discount = parseFloat(discountPercent);
@@ -418,37 +409,31 @@ export default function ProductForm({
     };
   }, [basePrice, discountPercent]);
 
-  // Selected category schema
   const selectedCategory = useMemo(
     () => categories.find((c) => c.name === formData.category),
     [categories, formData.category],
   );
 
-  // Form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isLoading || isCompressing) return;
 
-    // 1. Required: Product Images
     if (existingImages.length === 0 && images.length === 0) {
       toast.error('Please upload at least one product photo.');
       return;
     }
 
-    // 2. Required: Product Name
     if (!formData.title.trim()) {
       toast.error('Please enter a product name.');
       return;
     }
 
-    // 3. Required: Price
     const baseNum = parseFloat(basePrice);
     if (!Number.isFinite(baseNum) || baseNum <= 0) {
       toast.error('Please enter a valid price greater than 0.');
       return;
     }
 
-    // Validate discount percentage if entered
     if (discountPercent.trim()) {
       const disc = parseFloat(discountPercent);
       if (isNaN(disc) || disc < 0 || disc >= 100) {
@@ -457,7 +442,6 @@ export default function ProductForm({
       }
     }
 
-    // Quantity (optional, default 1)
     let qtyNum = 1;
     if (formData.quantity_available && formData.quantity_available.trim()) {
       const parsedQty = parseInt(formData.quantity_available, 10);
@@ -500,7 +484,6 @@ export default function ProductForm({
         />
       )}
 
-      {/* ────────────────── 1. Product Media ────────────────── */}
       <Card
         className="space-y-6 rounded-2xl border border-[var(--color-border)] p-6 md:p-8"
         hoverEffect={false}
@@ -517,7 +500,6 @@ export default function ProductForm({
           </div>
         </div>
 
-        {/* Photos grid */}
         <div>
           <div className="mb-3 flex items-center justify-between">
             <label className="text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
@@ -535,7 +517,6 @@ export default function ProductForm({
             className="grid grid-cols-3 gap-3"
           >
             <AnimatePresence mode="popLayout">
-              {/* Existing Images */}
               {existingImages.map((src, idx) => (
                 <motion.div
                   key={`exist-${src}`}
@@ -562,7 +543,6 @@ export default function ProductForm({
                 </motion.div>
               ))}
 
-              {/* Newly Uploaded Images */}
               {previews.map((src, idx) => {
                 const isCover = existingImages.length === 0 && idx === 0;
                 return (
@@ -596,7 +576,6 @@ export default function ProductForm({
               })}
             </AnimatePresence>
 
-            {/* Upload Button */}
             {totalImagesCount < 3 && (
               <button
                 type="button"
@@ -628,7 +607,6 @@ export default function ProductForm({
           />
         </div>
 
-        {/* Video Upload */}
         <div className="pt-2">
           <label className="mb-2 block text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
             Product Video (Optional)
@@ -670,7 +648,6 @@ export default function ProductForm({
         </div>
       </Card>
 
-      {/* ────────────────── 2. Core Information ────────────────── */}
       <Card
         className="relative z-30 space-y-6 overflow-visible rounded-3xl border border-[var(--color-border)] p-6 md:p-8"
         hoverEffect={false}
@@ -687,7 +664,6 @@ export default function ProductForm({
           </div>
         </div>
 
-        {/* Product Name */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <label className="text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
@@ -707,7 +683,6 @@ export default function ProductForm({
           />
         </div>
 
-        {/* Category & Brand Grid */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Select
             label="Category"
@@ -744,7 +719,6 @@ export default function ProductForm({
           )}
         </div>
 
-        {/* Dynamic Category Attributes */}
         {selectedCategory?.fields && selectedCategory.fields.length > 0 && (
           <div className="border-[var(--color-border)]/50 space-y-4 border-t pt-2">
             <p className="text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
@@ -795,7 +769,6 @@ export default function ProductForm({
         )}
       </Card>
 
-      {/* ────────────────── 3. Pricing & Inventory ────────────────── */}
       <Card
         className="relative z-20 space-y-6 rounded-3xl border border-[var(--color-border)] p-6 md:p-8"
         hoverEffect={false}
@@ -814,9 +787,7 @@ export default function ProductForm({
           </div>
         </div>
 
-        {/* Pricing inputs: Base Price & Percentage Discount */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {/* Price (GH₵) */}
           <div className="space-y-1.5">
             <label className="text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
               Price (GH₵) <span className="text-[var(--color-accent)]">*</span>
@@ -841,7 +812,6 @@ export default function ProductForm({
             </p>
           </div>
 
-          {/* Discount (%) */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <label className="text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
@@ -869,7 +839,6 @@ export default function ProductForm({
                 className="h-12 rounded-2xl pr-8 text-xs font-normal"
               />
             </div>
-            {/* Quick preset pills */}
             <div className="flex flex-wrap items-center gap-1.5 pt-1">
               <span className="mr-0.5 text-[10px] text-[var(--color-muted)]">Quick:</span>
               {DISCOUNT_PRESETS.map((pct) => {
@@ -902,7 +871,6 @@ export default function ProductForm({
           </div>
         </div>
 
-        {/* Auto-Calculated Selling Price Banner */}
         <div
           className={`rounded-2xl border p-4 transition-all md:p-5 ${
             hasValidDiscount
@@ -957,9 +925,7 @@ export default function ProductForm({
           </div>
         </div>
 
-        {/* Stock & Condition */}
         <div className="grid grid-cols-1 gap-4 pt-1 md:grid-cols-2">
-          {/* Quantity in stock */}
           <div className="space-y-1.5">
             <label className="text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
               Quantity Available{' '}
@@ -977,7 +943,6 @@ export default function ProductForm({
             <p className="text-[10px] text-[var(--color-muted)]">Defaults to 1 unit in stock</p>
           </div>
 
-          {/* Condition */}
           <div className="space-y-1.5">
             <label className="text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
               Item Condition
@@ -1011,7 +976,6 @@ export default function ProductForm({
         </div>
       </Card>
 
-      {/* ────────────────── 4. Narrative & Tags ────────────────── */}
       <Card
         className="space-y-6 rounded-3xl border border-[var(--color-border)] p-6 md:p-8"
         hoverEffect={false}
@@ -1030,7 +994,6 @@ export default function ProductForm({
           </div>
         </div>
 
-        {/* Description */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <label className="text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
@@ -1050,7 +1013,6 @@ export default function ProductForm({
           />
         </div>
 
-        {/* Tags input */}
         <div className="space-y-3">
           <label className="text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
             Search Tags (Max 20)
@@ -1078,7 +1040,6 @@ export default function ProductForm({
             </button>
           </div>
 
-          {/* Added tags pills */}
           {formData.tags.length > 0 && (
             <div className="flex flex-wrap gap-2 pt-1">
               {formData.tags.map((tag) => (
@@ -1102,7 +1063,6 @@ export default function ProductForm({
         </div>
       </Card>
 
-      {/* ────────────────── 5. Visibility & Promotion ────────────────── */}
       <Card
         className="space-y-6 rounded-3xl border border-[var(--color-border)] p-6 md:p-8"
         hoverEffect={false}
@@ -1121,7 +1081,6 @@ export default function ProductForm({
           </div>
         </div>
 
-        {/* Status */}
         <div className="space-y-2">
           <label className="text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
             Listing Visibility
@@ -1174,7 +1133,6 @@ export default function ProductForm({
           </div>
         </div>
 
-        {/* Hot Sales Booster */}
         <div className="pt-2">
           <button
             type="button"
@@ -1218,7 +1176,6 @@ export default function ProductForm({
         </div>
       </Card>
 
-      {/* ────────────────── 6. Variants (Edit Mode) ────────────────── */}
       {isEdit && productId && (
         <Card
           className="relative z-10 space-y-6 overflow-visible rounded-3xl border border-[var(--color-border)] p-6 md:p-8"
@@ -1241,7 +1198,6 @@ export default function ProductForm({
         </Card>
       )}
 
-      {/* ────────────────── Form Action Buttons ────────────────── */}
       <div className="flex items-center gap-3 pt-2">
         {onCancel && (
           <Button

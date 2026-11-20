@@ -28,7 +28,6 @@ import { orderApi } from "@/lib/api/order";
 import { useRealtimeOrders } from "@/hooks/useRealtimeOrders";
 import OrderStatusModal from "@/components/orders/OrderStatusModal";
 
-// ─── Status groups ────────────────────────────────────────────────────
 // Sellers don't care about every server-side status — group them into the
 // four buckets they actually act on.
 const STATUS_GROUPS = [
@@ -137,12 +136,10 @@ export default function StoreOrdersPage() {
   const [error, setError] = useState<string | null>(null);
   const [statusModalOrder, setStatusModalOrder] = useState<any | null>(null);
 
-  // Real-time synchronization across buyer, seller, and admin
   useRealtimeOrders({
     onOrderEvent: () => fetchOrders(true),
   });
 
-  // Filters
   const [searchTerm, setSearchTerm] = useState("");
   const [statusGroup, setStatusGroup] = useState<StatusGroup>("all");
   const [timeRange, setTimeRange] = useState<TimeRange>("all");
@@ -177,7 +174,6 @@ export default function StoreOrdersPage() {
     return () => clearInterval(id);
   }, [token]);
 
-  // ─── Stats (computed from the full order list — instant) ───────────
   const stats = useMemo(() => {
     const today = startOfToday();
     const sevenDays = daysAgo(7);
@@ -203,7 +199,6 @@ export default function StoreOrdersPage() {
     return { salesToday, salesWeek, newOrders, pendingFulfillment };
   }, [orders]);
 
-  // ─── Filtered + sorted list ────────────────────────────────────────
   const filtered = useMemo(() => {
     const group = STATUS_GROUPS.find((g) => g.key === statusGroup)!;
     const rangeStart =
@@ -246,7 +241,6 @@ export default function StoreOrdersPage() {
 
   return (
     <div className="space-y-5 max-w-6xl mx-auto pb-24 px-3 sm:px-4">
-      {/* HEADER */}
       <div className="space-y-3 pt-2">
         <Link
           href="/dashboard"
@@ -276,7 +270,6 @@ export default function StoreOrdersPage() {
         </div>
       </div>
 
-      {/* STATS STRIP */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
         <StatTile
           accent
@@ -305,9 +298,7 @@ export default function StoreOrdersPage() {
         />
       </div>
 
-      {/* SEARCH + FILTERS */}
       <div className="space-y-2.5">
-        {/* Search */}
         <div className="relative">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none" />
           <input
@@ -319,7 +310,6 @@ export default function StoreOrdersPage() {
           />
         </div>
 
-        {/* Time range chips */}
         <ChipRow label="When">
           {TIME_RANGES.map((r) => (
             <Chip
@@ -332,7 +322,6 @@ export default function StoreOrdersPage() {
           ))}
         </ChipRow>
 
-        {/* Status group chips */}
         <ChipRow label="Status">
           {STATUS_GROUPS.map((g) => {
             const count =
@@ -352,7 +341,6 @@ export default function StoreOrdersPage() {
           })}
         </ChipRow>
 
-        {/* Sort + unpaid toggle */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-3 px-3 sm:mx-0 sm:px-0">
           <label className="inline-flex items-center gap-1.5 text-[11px] cursor-pointer select-none shrink-0 px-3 h-8 border border-border rounded-full">
             <input
@@ -387,7 +375,6 @@ export default function StoreOrdersPage() {
         </div>
       )}
 
-      {/* ORDER LIST */}
       <div className="space-y-2">
         <AnimatePresence mode="popLayout">
           {filtered.length > 0 ? (
@@ -452,7 +439,6 @@ export default function StoreOrdersPage() {
   );
 }
 
-// ─── Pieces ───────────────────────────────────────────────────────────
 
 function StatTile({
   icon,
@@ -601,7 +587,6 @@ function OrderRow({
         hoverEffect={false}
       >
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-          {/* Thumbnails */}
           <Link
             href={`/dashboard/orders/${order.id}`}
             className="flex items-center gap-1.5 shrink-0"
@@ -633,7 +618,6 @@ function OrderRow({
             )}
           </Link>
 
-          {/* Middle */}
           <Link
             href={`/dashboard/orders/${order.id}`}
             className="flex-1 min-w-0 space-y-1"
@@ -680,7 +664,6 @@ function OrderRow({
             </p>
           </Link>
 
-          {/* Right: total + actions */}
           <div className="flex items-center justify-between sm:flex-col sm:items-end gap-2 sm:gap-1.5 shrink-0">
             <div className="text-right">
               <p className="text-[10px] uppercase tracking-wider text-muted leading-none">
