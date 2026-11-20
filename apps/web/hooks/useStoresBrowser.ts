@@ -36,7 +36,12 @@ export interface ActiveChip {
   onClear: () => void;
 }
 
-export function useStoresBrowser(): StoresBrowserState {
+export interface InitialStoresBrowserData {
+  stores?: BrowseStore[];
+  meta?: { total: number; page: number; limit: number; totalPages: number };
+}
+
+export function useStoresBrowser(initialServer?: InitialStoresBrowserData): StoresBrowserState {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -88,18 +93,21 @@ export function useStoresBrowser(): StoresBrowserState {
   }, [committedSearch, location, isProOnly, sort, page, pathname, router]);
 
   // Data fetching
-  const [data, setData] = useState<BrowseStore[]>([]);
-  const [meta, setMeta] = useState({
-    total: 0,
-    page: 1,
-    limit: DEFAULT_LIMIT,
-    totalPages: 1,
-  });
-  const [isLoading, setIsLoading] = useState(true);
+  const hasServerInitial = Boolean(initialServer?.stores && initialServer.stores.length > 0);
+  const [data, setData] = useState<BrowseStore[]>(initialServer?.stores ?? []);
+  const [meta, setMeta] = useState(
+    initialServer?.meta ?? {
+      total: 0,
+      page: 1,
+      limit: DEFAULT_LIMIT,
+      totalPages: 1,
+    },
+  );
+  const [isLoading, setIsLoading] = useState(!hasServerInitial);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reloadTick, setReloadTick] = useState(0);
-  const firstFetch = useRef(true);
+  const firstFetch = useRef(!hasServerInitial);
 
   useEffect(() => {
     let cancelled = false;

@@ -1,0 +1,707 @@
+'use client';
+
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  ArrowLeft,
+  ShoppingCart,
+  ChevronLeft,
+  ChevronRight,
+  Tag,
+  Info,
+  Check,
+  Sparkles,
+  Share2,
+  Heart,
+  Play,
+  Ruler,
+  Zap,
+} from 'lucide-react';
+import { useRouter, useParams } from 'next/navigation';
+import { productApi } from '@/lib/api/product';
+import Button from '@/components/ui/Button';
+import { useCart } from '@/lib/contexts/cart-context';
+import { useFavorites } from '@/lib/contexts/favorite-context';
+import PriceBlock from '@/components/product-detail/PriceBlock';
+import SellerCard from '@/components/product-detail/SellerCard';
+import RelatedProducts from '@/components/product-detail/RelatedProducts';
+import RecentlyViewed from '@/components/home/RecentlyViewed';
+import Header from '@/components/layout/Header';
+import { RatingStars } from '@/components/reviews/rating-stars';
+import { ProductReviewsSection } from '@/components/reviews/product-reviews-section';
+import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
+import VariantPicker, {
+  matchVariant,
+  type ProductVariant as Variant,
+} from '@/components/product-detail/VariantPicker';
+import QuickCheckoutModal from '@/components/product-detail/QuickCheckoutModal';
+import ShareProductModal from '@/components/product-detail/ShareProductModal';
+import { toast } from 'sonner';
+
+type MediaItem = { type: 'image'; url: string } | { type: 'video'; url: string };
+
+export default function ProductDetailClient({
+  initialProduct = null,
+  productId,
+}: {
+  initialProduct?: any;
+  productId?: string;
+}) {
+  const router = useRouter();
+  const params = useParams();
+  const id = productId || (params?.id as string);
+  const { addItem } = useCart();
+  const { toggleFavorite, isFavorited } = useFavorites();
+  const [product, setProduct] = useState<any>(initialProduct);
+  const [isLoading, setIsLoading] = useState(!initialProduct);
+  const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
+  const { record: recordRecentlyViewed } = useRecentlyViewed();
+  const [addedFeedback, setAddedFeedback] = useState(false);
+  const [selectedVariantAttrs, setSelectedVariantAttrs] = useState<Record<string, string>>({});
+  const [isQuickCheckoutOpen, setIsQuickCheckoutOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (initialProduct && String(initialProduct.id) === String(id)) {
+      setProduct(initialProduct);
+      setIsLoading(false);
+    }
+    const fetchProduct = async () => {
+      try {
+        const data = await productApi.getProductById(id as string);
+        if (data) setProduct(data);
+      } catch (err) {
+        console.error('Failed to fetch product', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    if (id) fetchProduct();
+  }, [id, initialProduct]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCurrentMediaIndex(0);
+  }, [id]);
+
+  useEffect(() => {
+    if (!product?.id) return;
+    recordRecentlyViewed({
+      id: product.id,
+      title: product.title,
+      price: product.price,
+      image: product.image_urls?.[0] ?? null,
+      storeName: product.seller?.store_name ?? null,
+      storeLink: product.seller?.store_link ?? null,
+    });
+  }, [product?.id, product?.title, product?.price, recordRecentlyViewed]);
+
+  const mediaItems: MediaItem[] = useMemo(() => {
+    if (!product) return [];
+    const items: MediaItem[] = [];
+    if (product.video_url) {
+      items.push({ type: 'video', url: product.video_url });
+    }
+    const imageUrls = Array.isArray(product.image_urls) ? product.image_urls : [];
+    imageUrls.forEach((url: string) => items.push({ type: 'image', url }));
+    if (items.length === 0) {
+      items.push({ type: 'image', url: '/placeholder-product.png' });
+    }
+    return items;
+  }, [product]);
+
+  const currentMedia = mediaItems[currentMediaIndex];
+
+  const attributeEntries: [string, string][] = useMemo(() => {
+    if (!product?.attributes) return [];
+    const raw = product.attributes;
+    const obj =
+      typeof raw === 'string'
+        ? (() => {
+            try {
+              return JSON.parse(raw);
+            } catch {
+              return {};
+            }
+          })()
+        : raw && typeof raw === 'object'
+          ? raw
+          : {};
+    return Object.entries(obj)
+      .filter(([, value]) => value != null && String(value).trim() !== '')
+      .map(([key, value]) => [key, String(value).trim()]);
+  }, [product]);
+
+  const formatAttributeLabel = (key: string) => {
+    return key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  };
+
+  const variants: Variant[] = useMemo(
+    () => (Array.isArray(product?.variants) ? product.variants : []),
+    [product],
+  );
+  const hasVariants = variants.length > 0;
+  const matchedVariant = useMemo(
+    () => (hasVariants ? matchVariant(variants, selectedVariantAttrs) : null),
+    [hasVariants, variants, selectedVariantAttrs],
+  );
+  const variantLabel = useMemo(() => {
+    const entries = Object.entries(selectedVariantAttrs);
+    if (!entries.length) return null;
+    return entries.map(([k, v]) => `${k}: ${v}`).join(' · ');
+  }, [selectedVariantAttrs]);
+  const effectivePrice = matchedVariant?.price ?? product?.price ?? '0';
+  const effectiveStock = matchedVariant
+    ? matchedVariant.quantity_available
+    : product?.quantity_available;
+  const canPurchase = hasVariants
+    ? !!matchedVariant && matchedVariant.quantity_available > 0
+    : typeof product?.quantity_available !== 'number' || product.quantity_available > 0;
+
+  const handleAddToCart = () => {
+    if (!product?.seller) return;
+    if (hasVariants && !matchedVariant) return;
+    const price =
+      typeof effectivePrice === 'number' ? String(effectivePrice) : (effectivePrice ?? '0');
+    addItem({
+      productId: String(product.id),
+      variantId: matchedVariant?.id ?? null,
+      variantLabel,
+      title: product.title ?? 'Product',
+      price,
+      imageUrl: matchedVariant?.image_url || product.image_urls?.[0] || '/placeholder-product.png',
+      storeLink: product.seller.store_link ?? '',
+      storeName: product.seller.store_name ?? 'Store',
+      logoUrl: product.seller.logo_url ?? null,
+    });
+    setAddedFeedback(true);
+    setTimeout(() => setAddedFeedback(false), 2000);
+  };
+
+  // Auto-open Quick Checkout if returning from auth redirect (?buyNow=1)
+  useEffect(() => {
+    if (typeof window === 'undefined' || !product) return;
+    const sp = new URLSearchParams(window.location.search);
+    if (sp.get('buyNow') === '1') {
+      setIsQuickCheckoutOpen(true);
+    }
+  }, [product]);
+
+  const handleBuyNow = () => {
+    if (!product?.seller) return;
+    if (hasVariants && !matchedVariant) {
+      toast.error('Please select all product options first.');
+      return;
+    }
+    setIsQuickCheckoutOpen(true);
+  };
+
+  const handleToggleFavorite = () => {
+    if (!product?.id) return;
+    toggleFavorite(String(product.id));
+    toast.success(
+      isFavorited(String(product.id)) ? 'Removed from favorites' : 'Saved to favorites',
+    );
+  };
+
+  const handleShare = async () => {
+    if (typeof window === 'undefined') return;
+    const url = window.location.href;
+    const imageUrl = product?.image_urls?.[0];
+    const title = product?.title ?? 'Verndly product';
+    const text = `Check out ${title} on Verndly! GH₵${product?.price}`;
+
+    if (typeof navigator !== 'undefined' && (navigator as any).share) {
+      if (imageUrl && (navigator as any).canShare) {
+        try {
+          const res = await fetch(imageUrl);
+          if (res.ok) {
+            const blob = await res.blob();
+            const mimeType = blob.type || 'image/jpeg';
+            const ext = mimeType.split('/')[1] || 'jpg';
+            const file = new File([blob], `${title.replace(/[^a-zA-Z0-9]/g, '_')}.${ext}`, {
+              type: mimeType,
+            });
+            if ((navigator as any).canShare({ files: [file] })) {
+              await (navigator as any).share({
+                title,
+                text,
+                url,
+                files: [file],
+              });
+              toast.success('Shared successfully!');
+              return;
+            }
+          }
+        } catch {
+          // Fall through to standard share
+        }
+      }
+
+      try {
+        await (navigator as any).share({ title, text, url });
+        toast.success('Shared successfully!');
+        return;
+      } catch (err: any) {
+        if (err.name === 'AbortError') return;
+      }
+    }
+
+    setIsShareModalOpen(true);
+  };
+
+  const togglePlay = () => {
+    if (videoRef.current) {
+      if (videoRef.current.paused) {
+        videoRef.current.play();
+      } else {
+        videoRef.current.pause();
+      }
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="bg-background flex min-h-screen items-center justify-center">
+        <motion.div
+          animate={{ scale: [1, 1.1, 1] }}
+          transition={{ repeat: Infinity, duration: 1.5 }}
+          className="border-primary h-12 w-12 rounded-full border-4 border-t-transparent"
+        />
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="bg-background flex min-h-screen flex-col items-center justify-center gap-4 p-8 text-center">
+        <h2 className="text-xl font-medium uppercase">Product not found</h2>
+        <Button onClick={() => router.push('/')}>Back to browse</Button>
+      </div>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="bg-background min-h-screen pb-28 sm:pb-20"
+    >
+      {/* Unified Navigation Header */}
+      <Header />
+
+      {/* Mobile back + share + favorite strip — subtle, sits under the header */}
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-4 pt-4 md:px-8">
+        <button
+          onClick={() => router.back()}
+          aria-label="Go back"
+          className="bg-surface hover:bg-border/20 inline-flex h-9 items-center gap-1.5 rounded-xl px-3 text-xs font-normal transition-colors"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Back
+        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleShare}
+            aria-label="Share product"
+            className="bg-surface hover:bg-border/20 rounded-xl border-0 p-2.5 shadow-none transition-colors"
+          >
+            <Share2 className="h-4 w-4" />
+          </button>
+          <button
+            onClick={handleToggleFavorite}
+            aria-label={
+              isFavorited(String(product?.id)) ? 'Remove from favorites' : 'Add to favorites'
+            }
+            className="bg-surface hover:bg-border/20 rounded-xl border-0 p-2.5 shadow-none transition-colors"
+          >
+            <Heart
+              className={`h-4 w-4 transition-colors ${
+                isFavorited(String(product?.id)) ? 'fill-red-500 text-red-500' : 'text-foreground'
+              }`}
+            />
+          </button>
+        </div>
+      </div>
+
+      <main className="mx-auto grid max-w-7xl gap-8 px-4 pt-6 md:grid-cols-2 md:px-8 md:pt-10 lg:gap-16">
+        {/* Left: Media Carousel (images + video) */}
+        <div className="space-y-6">
+          <div className="bg-surface group relative aspect-[4/5] overflow-hidden rounded-[2.5rem] md:aspect-square">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`${currentMedia?.type}-${currentMediaIndex}`}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="h-full w-full"
+              >
+                {currentMedia?.type === 'video' ? (
+                  <div className="relative h-full w-full cursor-pointer" onClick={togglePlay}>
+                    <video
+                      ref={videoRef}
+                      src={currentMedia.url}
+                      className="h-full w-full object-cover"
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                    />
+                  </div>
+                ) : (
+                  <img
+                    src={
+                      currentMedia?.type === 'image' ? currentMedia.url : '/placeholder-product.png'
+                    }
+                    alt={product.title}
+                    /* LCP: main product image — load eagerly + flag high
+                       fetch priority so the browser dispatches it before
+                       any below-the-fold work. */
+                    loading={currentMediaIndex === 0 ? 'eager' : 'lazy'}
+                    fetchPriority={currentMediaIndex === 0 ? 'high' : undefined}
+                    decoding="async"
+                    className="h-full w-full object-cover"
+                  />
+                )}
+              </motion.div>
+            </AnimatePresence>
+
+            {mediaItems.length > 1 && (
+              <>
+                <button
+                  onClick={() =>
+                    setCurrentMediaIndex((prev) => (prev > 0 ? prev - 1 : mediaItems.length - 1))
+                  }
+                  className="absolute left-4 top-1/2 -translate-y-1/2 rounded-2xl bg-white/90 p-3 text-black opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() =>
+                    setCurrentMediaIndex((prev) => (prev < mediaItems.length - 1 ? prev + 1 : 0))
+                  }
+                  className="absolute right-4 top-1/2 -translate-y-1/2 rounded-2xl bg-white/90 p-3 text-black opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+              </>
+            )}
+
+            {/* Media indicators */}
+            <div className="absolute inset-x-0 bottom-6 flex justify-center gap-2">
+              {mediaItems.map((_, idx) => (
+                <div
+                  key={idx}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    idx === currentMediaIndex ? 'w-8 bg-white' : 'w-1.5 bg-white/50'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Thumbnails (images + video) */}
+          <div className="scrollbar-hide flex gap-4 overflow-x-auto pb-2">
+            {mediaItems.map((item, idx) => (
+              <button
+                key={idx}
+                onClick={() => setCurrentMediaIndex(idx)}
+                className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl border-2 transition-all ${
+                  idx === currentMediaIndex
+                    ? 'border-primary scale-105'
+                    : 'border-transparent opacity-50'
+                }`}
+              >
+                {item.type === 'video' ? (
+                  <>
+                    <video
+                      src={item.url}
+                      className="h-full w-full object-cover"
+                      muted
+                      preload="metadata"
+                      playsInline
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                      <Play className="h-8 w-8 fill-white text-white" />
+                    </div>
+                  </>
+                ) : (
+                  <img src={item.url} alt="" className="h-full w-full object-cover" />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Right: Product Info */}
+        <div className="space-y-10">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="space-y-4"
+          >
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-primary text-[10px] font-medium uppercase tracking-wider">
+                <Sparkles className="mr-1 inline h-3 w-3" /> Trending Now
+              </span>
+              {product.category && (
+                <span className="bg-surface border-border/50 text-muted rounded-full border px-3 py-1 text-[10px] font-normal uppercase tracking-wider">
+                  {product.category}
+                </span>
+              )}
+            </div>
+            <h1 className="text-xl font-medium uppercase leading-tight tracking-tighter">
+              {product.title ?? 'Product'}
+            </h1>
+            <a
+              href="#reviews"
+              aria-label="Jump to reviews"
+              className="hover:bg-foreground/5 -mt-1 inline-flex w-fit items-center gap-1.5 rounded-md px-1 py-0.5"
+            >
+              <RatingStars
+                value={typeof product.rating_avg === 'number' ? product.rating_avg : 0}
+                count={typeof product.rating_count === 'number' ? product.rating_count : 0}
+                size={14}
+                showValue
+                showCount
+              />
+            </a>
+            <PriceBlock
+              price={effectivePrice}
+              originalPrice={product.original_price}
+              currency={product.currency ? `${product.currency} ` : 'GH₵'}
+              quantityAvailable={typeof effectiveStock === 'number' ? effectiveStock : undefined}
+            />
+          </motion.div>
+
+          {hasVariants && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.32 }}
+              className="space-y-2"
+            >
+              <VariantPicker
+                variants={variants}
+                selected={selectedVariantAttrs}
+                onChange={setSelectedVariantAttrs}
+              />
+              {!matchedVariant && (
+                <p className="text-muted text-[11px]">
+                  Select all options to add this product to your cart.
+                </p>
+              )}
+            </motion.div>
+          )}
+
+          {/* Tabs / Description */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="space-y-4"
+          >
+            <div className="text-muted flex items-center gap-2 text-[10px] font-normal uppercase tracking-wider">
+              <Info className="h-4 w-4" /> Description
+            </div>
+            <p className="text-muted text-sm font-medium leading-relaxed">
+              {product.description || 'No description provided for this item.'}
+            </p>
+          </motion.div>
+
+          {/* Specifications / Attributes (size, model, etc.) */}
+          {attributeEntries.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35 }}
+              className="space-y-4"
+            >
+              <div className="text-muted flex items-center gap-2 text-[10px] font-normal uppercase tracking-wider">
+                <Ruler className="h-4 w-4" /> Details
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {attributeEntries.map(([key, value]) => (
+                  <div
+                    key={key}
+                    className="bg-surface/50 border-border/50 flex flex-wrap items-baseline justify-between gap-2 rounded-xl border px-4 py-2"
+                  >
+                    <span className="text-muted text-[10px] font-normal uppercase tracking-wider">
+                      {formatAttributeLabel(key)}
+                    </span>
+                    <span className="text-foreground max-w-[60%] truncate text-sm font-normal">
+                      {value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Tags */}
+          {Array.isArray(product.tags) && product.tags.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="flex flex-wrap gap-2"
+            >
+              {product.tags.map((tag: string) => (
+                <span
+                  key={tag}
+                  className="bg-surface border-border/50 text-muted hover:text-foreground hover:border-primary/30 flex cursor-default items-center gap-1.5 rounded-xl border px-4 py-2 text-[10px] font-normal uppercase transition-all"
+                >
+                  <Tag className="h-3 w-3" /> {tag}
+                </span>
+              ))}
+            </motion.div>
+          )}
+
+          {/* Seller Info Card */}
+          {product.seller && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+            >
+              <SellerCard seller={product.seller} />
+            </motion.div>
+          )}
+
+          {/* Actions (Mobile-first side-by-side, ergonomic sizing, proper contrast) */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+            className="flex flex-row gap-2.5 pt-4 sm:gap-3"
+          >
+            <Button
+              variant="secondary"
+              onClick={handleAddToCart}
+              disabled={!canPurchase}
+              className="border-border/80 bg-surface/90 text-foreground hover:bg-surface sm:h-13 group h-12 flex-1 gap-2 rounded-xl border text-xs font-semibold tracking-wide shadow-sm transition-all active:scale-[0.98] sm:rounded-2xl sm:text-sm"
+            >
+              {addedFeedback ? (
+                <motion.span
+                  key="added"
+                  initial={{ scale: 0.9 }}
+                  animate={{ scale: 1 }}
+                  className="flex items-center justify-center gap-1.5 font-semibold text-emerald-600 dark:text-emerald-400"
+                >
+                  <Check className="h-4 w-4" />
+                  <span className="truncate">Added!</span>
+                </motion.span>
+              ) : (
+                <motion.span
+                  key="add"
+                  initial={{ scale: 0.9 }}
+                  animate={{ scale: 1 }}
+                  className="flex items-center justify-center gap-1.5"
+                >
+                  <ShoppingCart className="text-muted group-hover:text-foreground h-4 w-4 shrink-0 transition-colors" />
+                  <span className="truncate">Add to Cart</span>
+                </motion.span>
+              )}
+            </Button>
+
+            <Button
+              variant="primary"
+              onClick={handleBuyNow}
+              disabled={!canPurchase}
+              className="border-foreground/10 bg-foreground text-background hover:bg-foreground/90 sm:h-13 h-12 flex-1 gap-2 rounded-xl border text-xs font-semibold tracking-wide shadow-md transition-all active:scale-[0.98] sm:rounded-2xl sm:text-sm"
+            >
+              <Zap className="h-4 w-4 shrink-0 fill-current" />
+              <span className="truncate">{canPurchase ? 'Buy Now' : 'Out of Stock'}</span>
+            </Button>
+          </motion.div>
+        </div>
+      </main>
+
+      {/* Reviews Section */}
+      <div className="border-border/40 mx-auto max-w-7xl border-t px-4 py-16 md:px-8">
+        <ProductReviewsSection
+          productId={String(product.id)}
+          productTitle={product.title ?? 'Product'}
+          sellerUserId={product.seller?.user_id}
+        />
+      </div>
+
+      {/* Recently viewed (excludes the current product) */}
+      <div className="mx-auto max-w-7xl px-4 pb-4 md:px-8">
+        <RecentlyViewed limit={12} excludeId={String(product.id)} title="Continue browsing" />
+      </div>
+
+      {/* Related products */}
+      <div className="mx-auto max-w-7xl px-4 pb-24 md:px-8">
+        <RelatedProducts category={product.category} excludeId={String(product.id)} />
+      </div>
+
+      {/* Quick Checkout Modal (Mobile-first, Borderless, Shadowless, No blur) */}
+      {product && (
+        <QuickCheckoutModal
+          isOpen={isQuickCheckoutOpen}
+          onClose={() => setIsQuickCheckoutOpen(false)}
+          product={product}
+          selectedVariant={matchedVariant}
+          selectedVariantAttrs={selectedVariantAttrs}
+        />
+      )}
+
+      {/* Share Product Modal (With Product Image, Mobile-first, Borderless, Shadowless, No blur) */}
+      {product && (
+        <ShareProductModal
+          isOpen={isShareModalOpen}
+          onClose={() => setIsShareModalOpen(false)}
+          product={product}
+        />
+      )}
+
+      {/* Sticky Mobile Bottom Action Bar (Fixed, thumb-friendly on mobile) */}
+      {product && (
+        <div className="border-border/60 bg-background/95 fixed bottom-0 left-0 right-0 z-40 border-t p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.06)] backdrop-blur-xl sm:hidden">
+          <div className="mx-auto flex max-w-md items-center gap-3">
+            {/* Price display on the left */}
+            <div className="flex min-w-0 flex-col justify-center">
+              <span className="text-muted text-[10px] font-medium uppercase tracking-wider">
+                Price
+              </span>
+              <span className="truncate text-base font-bold tabular-nums text-red-500">
+                {product.currency ? `${product.currency} ` : 'GH₵ '}
+                {Number(effectivePrice).toLocaleString()}
+              </span>
+            </div>
+
+            {/* Action buttons on the right */}
+            <div className="flex flex-1 items-center gap-2">
+              <Button
+                variant="secondary"
+                onClick={handleAddToCart}
+                disabled={!canPurchase}
+                className="border-border/80 bg-surface/90 text-foreground hover:bg-surface group h-11 flex-1 gap-1.5 rounded-xl border px-2 text-xs font-semibold shadow-sm transition-all active:scale-95"
+              >
+                {addedFeedback ? (
+                  <Check className="h-4 w-4 text-emerald-500" />
+                ) : (
+                  <ShoppingCart className="text-muted group-hover:text-foreground h-4 w-4" />
+                )}
+                <span className="truncate">{addedFeedback ? 'Added' : 'Add to Cart'}</span>
+              </Button>
+
+              <Button
+                variant="primary"
+                onClick={handleBuyNow}
+                disabled={!canPurchase}
+                className="border-foreground/10 bg-foreground text-background hover:bg-foreground/90 h-11 flex-[1.3] gap-1.5 rounded-xl border px-3 text-xs font-semibold shadow-md transition-all active:scale-95"
+              >
+                <Zap className="h-3.5 w-3.5 shrink-0 fill-current" />
+                <span className="truncate">{canPurchase ? 'Buy Now' : 'Out of Stock'}</span>
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </motion.div>
+  );
+}

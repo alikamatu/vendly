@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
-import Link from "next/link";
+import type { Metadata } from 'next';
+import Link from 'next/link';
 import {
   ShoppingBag,
   Store,
@@ -10,112 +10,122 @@ import {
   Mail,
   HelpCircle,
   ArrowRight,
-} from "lucide-react";
-import Header from "@/components/layout/Header";
+} from 'lucide-react';
+import Header from '@/components/layout/Header';
+import { buildMetadata } from '@/lib/seo';
+import BreadcrumbJsonLd from '@/components/seo/BreadcrumbJsonLd';
 
-export const metadata: Metadata = {
-  title: "Help Center · Verndly",
-  description: "Guides, policies, and support for everything Verndly.",
-};
+export const metadata: Metadata = buildMetadata({
+  title: 'Help Center',
+  description:
+    'Guides, policies, escrow answers, and direct support for buying and selling on Verndly Ghana.',
+  path: '/help',
+  keywords: ['verndly help center', 'verndly support', 'ghana marketplace help'],
+});
 
 const SECTIONS = [
   {
-    title: "Buying",
+    title: 'Buying',
     Icon: ShoppingBag,
-    description: "Find items, place orders, and track delivery.",
+    description: 'Find items, place orders, and track delivery.',
     links: [
-      { label: "Browsing & search", href: "/products" },
-      { label: "Placing an order", href: "/faq" },
-      { label: "Tracking your order", href: "/orders" },
-      { label: "Shipping & delivery", href: "/shipping" },
+      { label: 'Browsing & search', href: '/products' },
+      { label: 'Placing an order', href: '/faq' },
+      { label: 'Tracking your order', href: '/orders' },
+      { label: 'Shipping & delivery', href: '/shipping' },
     ],
   },
   {
-    title: "Selling",
+    title: 'Selling',
     Icon: Store,
-    description: "Open your store, list products, manage orders.",
+    description: 'Open your store, list products, manage orders.',
     links: [
-      { label: "Become a seller", href: "/seller-verification" },
-      { label: "Seller dashboard", href: "/dashboard" },
-      { label: "Listing best practices", href: "/faq" },
-      { label: "Pro membership", href: "/dashboard/settings" },
+      { label: 'Sell on Verndly (4% fee)', href: '/sell' },
+      { label: 'Apply for verification', href: '/seller-verification' },
+      {
+        label: 'Jumia vs Verndly fee calculator',
+        href: '/blog/jumia-seller-fees-ghana-2026-vs-verndly',
+      },
+      { label: 'Seller dashboard', href: '/dashboard' },
     ],
   },
   {
-    title: "Payments & payouts",
+    title: 'Payments & payouts',
     Icon: CreditCard,
-    description: "How money moves on Verndly.",
+    description: 'How money moves on Verndly.',
     links: [
-      { label: "Payment methods", href: "/faq" },
-      { label: "Seller payouts", href: "/dashboard/payouts" },
-      { label: "Refunds", href: "/returns" },
+      { label: 'Payment methods', href: '/faq' },
+      { label: 'Seller payouts', href: '/dashboard/payouts' },
+      { label: 'Refunds', href: '/returns' },
     ],
   },
   {
-    title: "Delivery",
+    title: 'Delivery',
     Icon: Truck,
-    description: "Pickup, delivery, and service areas.",
+    description: 'Pickup, delivery, and service areas.',
     links: [
-      { label: "Service areas", href: "/shipping" },
-      { label: "Delivery times", href: "/shipping" },
-      { label: "Pickup option", href: "/shipping" },
+      { label: 'Service areas', href: '/shipping' },
+      { label: 'Delivery times', href: '/shipping' },
+      { label: 'Pickup option', href: '/shipping' },
     ],
   },
   {
-    title: "Trust & safety",
+    title: 'Trust & safety',
     Icon: ShieldCheck,
-    description: "Buyer protection and how we keep Verndly safe.",
+    description: 'Buyer protection and how we keep Verndly safe.',
     links: [
-      { label: "Buyer protection", href: "/returns" },
-      { label: "Reporting an issue", href: "/contact" },
-      { label: "Privacy", href: "/privacy" },
-      { label: "Terms of service", href: "/terms" },
+      { label: '7-Day Buyer Protection', href: '/buyer-protection' },
+      { label: 'Shop safely & avoid MoMo scams', href: '/blog/how-to-shop-online-safely-in-ghana' },
+      { label: 'Reporting an issue', href: '/contact' },
+      { label: 'Terms & Privacy', href: '/terms' },
     ],
   },
   {
-    title: "Pro features",
+    title: 'Pro features',
     Icon: Sparkles,
-    description: "Get the most out of Verndly Pro.",
+    description: 'Get the most out of Verndly Pro.',
     links: [
-      { label: "What's included", href: "/dashboard/settings" },
-      { label: "Storefront QR code", href: "/dashboard" },
-      { label: "Featured placement", href: "/dashboard" },
+      { label: "What's included", href: '/dashboard/settings' },
+      { label: 'Storefront QR code', href: '/dashboard' },
+      { label: 'Featured placement', href: '/dashboard' },
     ],
   },
 ];
 
 export default function HelpCenterPage() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background min-h-screen">
+      <BreadcrumbJsonLd
+        items={[
+          { name: 'Home', path: '/' },
+          { name: 'Help Center', path: '/help' },
+        ]}
+      />
       <Header />
 
-      <main className="max-w-6xl mx-auto px-4 md:px-8 pt-10 md:pt-16 pb-24 md:pb-32 space-y-10">
+      <main className="mx-auto max-w-6xl space-y-10 px-4 pb-24 pt-10 md:px-8 md:pb-32 md:pt-16">
         <header className="space-y-3 text-center">
-          <p className="text-[10px] font-medium uppercase tracking-wider text-primary">
-            Support
-          </p>
-          <h1 className="text-3xl md:text-5xl font-medium tracking-tight">
-            How can we help?
-          </h1>
-          <p className="text-sm md:text-base text-muted leading-relaxed max-w-2xl mx-auto">
-            Browse guides by topic, find quick answers in the FAQ, or reach out to a
-            human — we usually reply within 24 hours.
+          <p className="text-primary text-[10px] font-medium uppercase tracking-wider">Support</p>
+          <h1 className="text-3xl font-medium tracking-tight md:text-5xl">How can we help?</h1>
+          <p className="text-muted mx-auto max-w-2xl text-sm leading-relaxed md:text-base">
+            Browse guides by topic, find quick answers in the FAQ, or reach out to a human — we
+            usually reply within 24 hours.
           </p>
         </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {SECTIONS.map(({ title, Icon, description, links }) => (
             <article
               key={title}
-              className="rounded-3xl border border-border bg-surface/40 p-5 md:p-6 space-y-4"
+              className="border-border bg-surface/40 space-y-4 rounded-3xl border p-5 md:p-6"
             >
               <div className="flex items-center gap-3">
-                <span className="inline-flex w-11 h-11 rounded-2xl items-center justify-center bg-primary/10 text-primary">
-                  <Icon className="w-5 h-5" />
+                <span className="bg-primary/10 text-primary inline-flex h-11 w-11 items-center justify-center rounded-2xl">
+                  <Icon className="h-5 w-5" />
                 </span>
                 <div>
                   <h2 className="text-sm font-medium tracking-tight">{title}</h2>
-                  <p className="text-[11px] text-muted leading-snug">{description}</p>
+                  <p className="text-muted text-[11px] leading-snug">{description}</p>
                 </div>
               </div>
               <ul className="space-y-1.5 pt-1">
@@ -123,10 +133,10 @@ export default function HelpCenterPage() {
                   <li key={l.label + l.href}>
                     <Link
                       href={l.href}
-                      className="inline-flex items-center gap-1.5 text-[12px] font-normal text-foreground/80 hover:text-primary transition-colors"
+                      className="text-foreground/80 hover:text-primary inline-flex items-center gap-1.5 text-[12px] font-normal transition-colors"
                     >
                       {l.label}
-                      <ArrowRight className="w-3 h-3 opacity-60" />
+                      <ArrowRight className="h-3 w-3 opacity-60" />
                     </Link>
                   </li>
                 ))}
@@ -135,28 +145,26 @@ export default function HelpCenterPage() {
           ))}
         </div>
 
-        <div className="rounded-3xl border border-border bg-surface p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center gap-4 justify-between">
+        <div className="border-border bg-surface flex flex-col items-start justify-between gap-4 rounded-3xl border p-6 md:flex-row md:items-center md:p-8">
           <div className="space-y-1.5">
-            <h3 className="text-lg font-medium tracking-tight">
-              Still need a hand?
-            </h3>
-            <p className="text-[12px] text-muted">
+            <h3 className="text-lg font-medium tracking-tight">Still need a hand?</h3>
+            <p className="text-muted text-[12px]">
               We usually reply within 24 hours. For urgent order issues, WhatsApp us.
             </p>
           </div>
           <div className="flex gap-2">
             <Link
               href="/faq"
-              className="inline-flex items-center gap-1.5 h-11 px-5 rounded-2xl border border-border bg-surface text-[11px] font-medium uppercase tracking-wider hover:bg-background transition-colors"
+              className="border-border bg-surface hover:bg-background inline-flex h-11 items-center gap-1.5 rounded-2xl border px-5 text-[11px] font-medium uppercase tracking-wider transition-colors"
             >
-              <HelpCircle className="w-3.5 h-3.5" />
+              <HelpCircle className="h-3.5 w-3.5" />
               Browse FAQ
             </Link>
             <Link
               href="/contact"
-              className="inline-flex items-center gap-1.5 h-11 px-5 rounded-2xl bg-primary text-background text-[11px] font-medium uppercase tracking-wider hover:opacity-90 transition-opacity"
+              className="bg-primary text-background inline-flex h-11 items-center gap-1.5 rounded-2xl px-5 text-[11px] font-medium uppercase tracking-wider transition-opacity hover:opacity-90"
             >
-              <Mail className="w-3.5 h-3.5" />
+              <Mail className="h-3.5 w-3.5" />
               Contact support
             </Link>
           </div>

@@ -34,24 +34,26 @@ interface FooterLink {
 const SHOP_LINKS: FooterLink[] = [
   { label: 'All Products', href: '/products' },
   { label: 'Categories', href: '/categories' },
-  { label: 'Top Deals', href: '/products?has_discount=1' },
-  { label: 'New Arrivals', href: '/products?sort=newest' },
   { label: 'Verified Stores', href: '/stores' },
+  { label: 'Top Deals', href: '/products?has_discount=1' },
+  { label: 'Safe Shopping Guide', href: '/blog/how-to-shop-online-safely-in-ghana' },
 ];
 
 const SELL_LINKS: FooterLink[] = [
-  { label: 'Start Selling', href: '/seller-verification' },
+  { label: 'Sell on Verndly', href: '/sell' },
+  { label: 'Jumia vs Verndly Fees', href: '/blog/jumia-seller-fees-ghana-2026-vs-verndly' },
+  { label: 'Seller Verification', href: '/seller-verification' },
   { label: 'Seller Dashboard', href: '/dashboard' },
   { label: 'Pro Membership', href: '/dashboard/settings' },
-  { label: 'Seller Guidelines', href: '/dashboard/settings/terms' },
 ];
 
 const SUPPORT_LINKS: FooterLink[] = [
+  { label: 'Buyer Protection', href: '/buyer-protection' },
+  { label: 'Blog & Guides', href: '/blog' },
   { label: 'Help Center', href: '/help' },
-  { label: 'Contact Us', href: '/contact' },
   { label: 'FAQ', href: '/faq' },
-  { label: 'Buyer Protection', href: '/returns' },
   { label: 'Shipping & Rates', href: '/shipping' },
+  { label: 'Contact Us', href: '/contact' },
 ];
 
 const LEGAL_LINKS: FooterLink[] = [

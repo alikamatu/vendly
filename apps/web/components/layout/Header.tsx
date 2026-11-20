@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search,
   ShoppingBag,
@@ -17,34 +17,36 @@ import {
   Store,
   Tag,
   ArrowRight,
-} from "lucide-react";
-import Container from "../common/Container";
-import Button from "../ui/Button";
-import GlobalSearch from "./GlobalSearch";
-import UserMenu from "./UserMenu";
-import NotificationBell from "./NotificationBell";
-import { useTheme } from "../../lib/contexts/theme";
-import { useAuth } from "../../lib/contexts/auth-context";
-import { useCart } from "@/lib/contexts/cart-context";
-import { useFavorites } from "@/lib/contexts/favorite-context";
-import clsx from "@/utils/clsx";
+  BookOpen,
+  BadgePercent,
+} from 'lucide-react';
+import Container from '../common/Container';
+import Button from '../ui/Button';
+import GlobalSearch from './GlobalSearch';
+import UserMenu from './UserMenu';
+import NotificationBell from './NotificationBell';
+import { useTheme } from '../../lib/contexts/theme';
+import { useAuth } from '../../lib/contexts/auth-context';
+import { useCart } from '@/lib/contexts/cart-context';
+import { useFavorites } from '@/lib/contexts/favorite-context';
+import clsx from '@/utils/clsx';
 
 function ThemeToggle() {
   const { theme, setTheme } = useTheme();
-  const isDark = theme === "dark";
+  const isDark = theme === 'dark';
 
   return (
     <button
       aria-label="Toggle theme"
-      onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="p-2 rounded-xl text-muted hover:text-foreground hover:bg-surface border border-transparent hover:border-border/60 transition-all active:scale-95"
+      onClick={() => setTheme(isDark ? 'light' : 'dark')}
+      className="text-muted hover:text-foreground hover:bg-surface hover:border-border/60 rounded-xl border border-transparent p-2 transition-all active:scale-95"
     >
       <motion.div
-        key={isDark ? "moon" : "sun"}
+        key={isDark ? 'moon' : 'sun'}
         initial={{ rotate: -20, opacity: 0 }}
         animate={{ rotate: 0, opacity: 1 }}
         exit={{ rotate: 20, opacity: 0 }}
-        transition={{ type: "spring", stiffness: 300, damping: 20 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
       >
         {isDark ? <Moon size={18} /> : <Sun size={18} />}
       </motion.div>
@@ -63,13 +65,13 @@ export default function Header() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setIsSearchOpen((prev) => !prev);
       }
     };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   useEffect(() => {
@@ -77,45 +79,46 @@ export default function Header() {
   }, [pathname]);
 
   const navLinks = [
-    { label: "Products", href: "/products", icon: LayoutGrid },
-    { label: "Stores", href: "/stores", icon: Store },
-    { label: "Collections", href: "/categories", icon: Sparkles },
-    { label: "Deals", href: "/products?has_discount=1", icon: Tag },
+    { label: 'Products', href: '/products', icon: LayoutGrid },
+    { label: 'Stores', href: '/stores', icon: Store },
+    { label: 'Categories', href: '/categories', icon: Sparkles },
+    { label: 'Sell', href: '/sell', icon: BadgePercent },
+    { label: 'Guides', href: '/blog', icon: BookOpen },
   ];
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-border/60 bg-background transition-colors">
+      <header className="border-border/60 bg-background sticky top-0 z-40 border-b transition-colors">
         <Container className="py-3 md:py-3.5">
           <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4 min-w-0">
+            <div className="flex min-w-0 items-center gap-4">
               <Link
                 href="/"
-                className="flex items-center gap-2.5 text-lg sm:text-xl font-bold tracking-tight text-foreground hover:opacity-90 transition-opacity shrink-0"
+                className="text-foreground flex shrink-0 items-center gap-2.5 text-lg font-bold tracking-tight transition-opacity hover:opacity-90 sm:text-xl"
               >
                 <img
                   src="/logos/verndly.png"
                   alt="Verndly"
-                  className="w-7 h-7 object-contain transition-transform group-hover:scale-105"
+                  className="h-7 w-7 object-contain transition-transform group-hover:scale-105"
                 />
                 <span>Verndly</span>
               </Link>
 
-              <nav className="hidden lg:flex items-center gap-1 ml-2">
+              <nav className="ml-2 hidden items-center gap-1 lg:flex">
                 {navLinks.map((item) => {
                   const isActive =
-                    item.href === "/products"
-                      ? pathname === "/products"
+                    item.href === '/products'
+                      ? pathname === '/products'
                       : pathname?.startsWith(item.href);
                   return (
                     <Link
                       key={item.href}
                       href={item.href}
                       className={clsx(
-                        "px-3 py-1.5 rounded-xl text-xs font-semibold tracking-tight transition-colors",
+                        'rounded-xl px-3 py-1.5 text-xs font-semibold tracking-tight transition-colors',
                         isActive
-                          ? "text-foreground bg-surface"
-                          : "text-muted hover:text-foreground hover:bg-surface/50",
+                          ? 'text-foreground bg-surface'
+                          : 'text-muted hover:text-foreground hover:bg-surface/50',
                       )}
                     >
                       {item.label}
@@ -125,30 +128,28 @@ export default function Header() {
               </nav>
             </div>
 
-            <div className="hidden md:flex flex-1 max-w-sm lg:max-w-md mx-2">
+            <div className="mx-2 hidden max-w-sm flex-1 md:flex lg:max-w-md">
               <button
                 type="button"
                 onClick={() => setIsSearchOpen(true)}
-                className="group flex w-full items-center justify-between gap-2 rounded-2xl border border-border/70 bg-surface/50 px-3.5 py-2 text-xs text-muted hover:border-border hover:bg-surface hover:text-foreground transition-all"
+                className="border-border/70 bg-surface/50 text-muted hover:border-border hover:bg-surface hover:text-foreground group flex w-full items-center justify-between gap-2 rounded-2xl border px-3.5 py-2 text-xs transition-all"
               >
-                <div className="flex items-center gap-2 min-w-0">
-                  <Search className="h-4 w-4 shrink-0 text-muted group-hover:text-foreground transition-colors" />
-                  <span className="truncate text-xs">
-                    Search products, stores, brands…
-                  </span>
+                <div className="flex min-w-0 items-center gap-2">
+                  <Search className="text-muted group-hover:text-foreground h-4 w-4 shrink-0 transition-colors" />
+                  <span className="truncate text-xs">Search products, stores, brands…</span>
                 </div>
-                <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded-md border border-border bg-background/80 px-1.5 py-0.5 text-[10px] font-mono text-muted">
+                <kbd className="border-border bg-background/80 text-muted hidden items-center gap-0.5 rounded-md border px-1.5 py-0.5 font-mono text-[10px] sm:inline-flex">
                   ⌘K
                 </kbd>
               </button>
             </div>
 
-            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
               <button
                 type="button"
                 onClick={() => setIsSearchOpen(true)}
                 aria-label="Search marketplace"
-                className="md:hidden p-2 rounded-xl text-muted hover:text-foreground hover:bg-surface transition-colors"
+                className="text-muted hover:text-foreground hover:bg-surface rounded-xl p-2 transition-colors md:hidden"
               >
                 <Search size={18} />
               </button>
@@ -156,12 +157,12 @@ export default function Header() {
               <Link
                 href="/favorites"
                 aria-label="My saved favorites"
-                className="relative p-2 rounded-xl text-muted hover:text-foreground hover:bg-surface transition-colors"
+                className="text-muted hover:text-foreground hover:bg-surface relative rounded-xl p-2 transition-colors"
               >
                 <Heart size={18} />
                 {favCount > 0 && (
-                  <span className="absolute top-1 right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white shadow-sm">
-                    {favCount > 99 ? "99+" : favCount}
+                  <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white shadow-sm">
+                    {favCount > 99 ? '99+' : favCount}
                   </span>
                 )}
               </Link>
@@ -169,12 +170,12 @@ export default function Header() {
               <Link
                 href="/cart"
                 aria-label="Shopping Cart"
-                className="relative p-2 rounded-xl text-muted hover:text-foreground hover:bg-surface transition-colors"
+                className="text-muted hover:text-foreground hover:bg-surface relative rounded-xl p-2 transition-colors"
               >
                 <ShoppingBag size={18} />
                 {itemCount > 0 && (
-                  <span className="absolute top-1 right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-foreground text-background px-1 text-[9px] font-bold shadow-sm">
-                    {itemCount > 99 ? "99+" : itemCount}
+                  <span className="bg-foreground text-background absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold shadow-sm">
+                    {itemCount > 99 ? '99+' : itemCount}
                   </span>
                 )}
               </Link>
@@ -183,7 +184,7 @@ export default function Header() {
                 <ThemeToggle />
               </div>
 
-              <div className="flex items-center gap-2 pl-1 sm:pl-2 border-l border-border/60">
+              <div className="border-border/60 flex items-center gap-2 border-l pl-1 sm:pl-2">
                 {!isLoading &&
                   (isAuthenticated ? (
                     <>
@@ -196,7 +197,7 @@ export default function Header() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-xs h-9 px-3 font-semibold"
+                          className="h-9 px-3 text-xs font-semibold"
                         >
                           Sign in
                         </Button>
@@ -205,7 +206,7 @@ export default function Header() {
                         <Button
                           variant="primary"
                           size="sm"
-                          className="rounded-xl px-3.5 sm:px-4 text-xs h-9 font-semibold shadow-sm"
+                          className="h-9 rounded-xl px-3.5 text-xs font-semibold shadow-sm sm:px-4"
                         >
                           Get started
                         </Button>
@@ -218,7 +219,7 @@ export default function Header() {
                 type="button"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 aria-label="Toggle navigation menu"
-                className="lg:hidden p-2 rounded-xl text-muted hover:text-foreground hover:bg-surface transition-colors ml-1"
+                className="text-muted hover:text-foreground hover:bg-surface ml-1 rounded-xl p-2 transition-colors lg:hidden"
               >
                 {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
               </button>
@@ -230,9 +231,9 @@ export default function Header() {
           {isMobileMenuOpen && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
+              animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              className="lg:hidden border-t border-border bg-background px-4 py-4 space-y-3"
+              className="border-border bg-background space-y-3 border-t px-4 py-4 lg:hidden"
             >
               <nav className="grid grid-cols-2 gap-2">
                 {navLinks.map((item) => {
@@ -243,20 +244,20 @@ export default function Header() {
                       key={item.href}
                       href={item.href}
                       className={clsx(
-                        "flex items-center gap-2 p-2.5 rounded-xl border text-xs font-semibold transition-colors",
+                        'flex items-center gap-2 rounded-xl border p-2.5 text-xs font-semibold transition-colors',
                         isActive
-                          ? "border-foreground bg-foreground/5 text-foreground"
-                          : "border-border/60 bg-surface/40 text-muted hover:text-foreground",
+                          ? 'border-foreground bg-foreground/5 text-foreground'
+                          : 'border-border/60 bg-surface/40 text-muted hover:text-foreground',
                       )}
                     >
-                      <Icon className="w-4 h-4 text-muted shrink-0" />
+                      <Icon className="text-muted h-4 w-4 shrink-0" />
                       <span>{item.label}</span>
                     </Link>
                   );
                 })}
               </nav>
 
-              <div className="flex items-center justify-between pt-2 border-t border-border/50 text-xs text-muted">
+              <div className="border-border/50 text-muted flex items-center justify-between border-t pt-2 text-xs">
                 <span>Dark / Light Mode</span>
                 <ThemeToggle />
               </div>
@@ -264,10 +265,7 @@ export default function Header() {
           )}
         </AnimatePresence>
 
-        <GlobalSearch
-          isOpen={isSearchOpen}
-          onClose={() => setIsSearchOpen(false)}
-        />
+        <GlobalSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
       </header>
     </>
   );

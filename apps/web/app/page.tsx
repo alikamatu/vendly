@@ -1,13 +1,17 @@
 import HomeView from '@/components/home/HomeView';
 import { buildMetadata } from '@/lib/seo';
 import ItemListJsonLd from '@/components/seo/ItemListJsonLd';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1000';
+import {
+  fetchBrandsServer,
+  fetchCategoriesServer,
+  fetchHomeProductsServer,
+  fetchTopProVendorsServer,
+} from '@/lib/server-api';
 
 export const metadata = buildMetadata({
   title: 'Verndly — Discover & Shop Verified Independent Stores in Ghana',
   description:
-    'Browse thousands of verified products from independent stores and top young entrepreneurs across Ghana. Protected by 7-day escrow returns and fast courier delivery.',
+    'Browse verified products from independent stores and young entrepreneurs across Ghana. Protected by 7-day Paystack escrow, flat 4% seller fees, and nationwide courier delivery.',
   path: '/',
   keywords: [
     'Ghana marketplace',
@@ -21,22 +25,15 @@ export const metadata = buildMetadata({
   ],
 });
 
-async function fetchFeaturedProducts() {
-  try {
-    const res = await fetch(`${API_URL}/products?limit=16`, {
-      next: { revalidate: 300 },
-    });
-    if (!res.ok) return [];
-    const json = await res.json();
-    const data = json && typeof json === 'object' && 'data' in json ? json.data : json;
-    return Array.isArray(data) ? data : [];
-  } catch {
-    return [];
-  }
-}
-
 export default async function HomePage() {
-  const topProducts = await fetchFeaturedProducts();
+  const [products, categories, brands, topProVendors] = await Promise.all([
+    fetchHomeProductsServer(48),
+    fetchCategoriesServer(),
+    fetchBrandsServer(),
+    fetchTopProVendorsServer(6),
+  ]);
+
+  const topProducts = products.slice(0, 16);
 
   return (
     <>
@@ -55,7 +52,14 @@ export default async function HomePage() {
           }))}
         />
       )}
-      <HomeView />
+      <HomeView
+        initialData={{
+          products,
+          categories,
+          brands,
+          topProVendors,
+        }}
+      />
     </>
   );
 }

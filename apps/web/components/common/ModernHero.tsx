@@ -28,7 +28,7 @@ export default function ModernHero() {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.2 }}
-                className="inline-flex items-center gap-2 rounded-full bg-white/90 px-3.5 py-1.5 text-[10px] font-normal uppercase tracking-wider text-black shadow-xs"
+                className="shadow-xs inline-flex items-center gap-2 rounded-full bg-white/90 px-3.5 py-1.5 text-[10px] font-normal uppercase tracking-wider text-black"
               >
                 <span className="inline-flex h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
                 Verified marketplace for modern businesses
@@ -48,13 +48,13 @@ export default function ModernHero() {
               </div>
 
               <div className="flex flex-col justify-center gap-3 pt-1 sm:flex-row lg:justify-start">
-                <Link href="/seller-verification">
+                <Link href="/sell">
                   <Button
                     variant="primary"
                     size="lg"
-                    className="shadow-primary/20 group w-full rounded-xl border-none px-8 shadow-xl sm:w-auto"
+                    className="group w-full rounded-xl border-none px-8 shadow-none sm:w-auto"
                   >
-                    Get started free
+                    Start selling — 4% fee
                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                   </Button>
                 </Link>
@@ -62,14 +62,13 @@ export default function ModernHero() {
                   <Button
                     variant="ghost"
                     size="lg"
-                    className="w-full rounded-xl border border-white/15 bg-black text-white hover:bg-white/10 sm:w-auto"
+                    className="w-full rounded-xl border-none bg-black text-white hover:bg-black/85 sm:w-auto"
                   >
                     Browse market
                   </Button>
                 </Link>
               </div>
             </div>
-
           </div>
         </motion.div>
       </Container>

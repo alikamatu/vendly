@@ -2,17 +2,26 @@
 
 > Verndly (https://verndly.com) is Ghana's marketplace connecting buyers with verified independent businesses, brands, and young entrepreneurs.
 
-All purchases on Verndly are protected by Paystack escrow settlement, offering a 7-Day Buyer Protection guarantee and fast local courier delivery.
+All purchases on Verndly are protected by Paystack escrow settlement, offering a 7-Day Buyer Protection guarantee and fast local courier delivery. Sellers pay a single flat 4% fee (Paystack Mobile Money and card processing included) and keep 96% of every sale, with zero buyer surcharges.
 
 ## Core Features
-- **Verified Independent Merchants**: Curated stores across Ghana (Accra, Kumasi, Takoradi, Tamale) offering authentic products.
-- **7-Day Escrow Buyer Protection**: Online payments are held in escrow and only released to the seller after the buyer receives and inspects the item.
-- **Paystack Payment Rails**: Full support for MTN Mobile Money, Telecel Cash, AirtelTigo Money, Visa, Mastercard, and bank transfer.
+- **Flat 4% Seller Fee (Paystack Included)**: No 5–20% category commissions, no per-order seller shipping contribution, and GH₵ 0 setup or monthly fee on standard verified stores.
+- **Verified Independent Merchants**: Curated stores across Ghana (Accra, Kumasi, Takoradi, Tamale, and all 16 regions) verified via Ghana Card + sales proof, existing store link, or direct review within 24–48 hours.
+- **7-Day Escrow Buyer Protection**: Online payments via Paystack (MTN Mobile Money, Telecel Cash, AirtelTigo Money, Visa, Mastercard) are held in escrow and only released to the seller after delivery and inspection.
 - **Direct Storefronts**: Each verified seller operates an independent storefront accessible at `https://verndly.com/s/[store_link]`.
-- **Courier Logistics**: Sellers dispatch with verified couriers providing same-day or 1-3 business day tracked delivery.
+- **Nationwide Courier Logistics**: Same-day express in Accra/Kumasi, 24–48 hour inter-regional transit, and free Store Pickup.
 
 ## Key URLs
 - Homepage & Featured Marketplace: https://verndly.com/
+- Sell on Verndly (4% Flat Fee & Calculator): https://verndly.com/sell
+- 7-Day Buyer Protection & Escrow Guarantee: https://verndly.com/buyer-protection
+- Verndly Journal & Commerce Guides: https://verndly.com/blog
+- Jumia Seller Fees in Ghana vs Verndly 4% (+ Calculator): https://verndly.com/blog/jumia-seller-fees-ghana-2026-vs-verndly
+- How to Shop Online Safely in Ghana & Avoid MoMo Scams: https://verndly.com/blog/how-to-shop-online-safely-in-ghana
+- What Is Escrow & How It Protects Ghanaian Shoppers: https://verndly.com/blog/what-is-escrow-online-shopping-ghana
+- Pay on Delivery vs Escrow in Ghana: https://verndly.com/blog/pay-on-delivery-vs-escrow-ghana
+- How to Check If an Online Seller in Ghana Is Legit: https://verndly.com/blog/how-to-check-if-online-seller-is-legit-ghana
+- Is Verndly Legit?: https://verndly.com/blog/is-verndly-legit
 - All Products Catalog: https://verndly.com/products
 - Categories & Brands Directory: https://verndly.com/categories
 - Verified Stores Directory: https://verndly.com/stores
@@ -21,16 +30,18 @@ All purchases on Verndly are protected by Paystack escrow settlement, offering a
 - Frequently Asked Questions: https://verndly.com/faq
 - Help & Support Center: https://verndly.com/help
 
-## Product Categories
-- Electronics & Gadgets (Smartphones, Laptops, Accessories)
-- Fashion, Clothing & Footwear
-- Health, Beauty & Cosmetics
-- Home, Furniture & Appliances
-- Books & Stationery
-- Groceries, Food & Snacks
+## Dedicated Category Pages
+- Fashion & Apparel: https://verndly.com/categories/fashion
+- Electronics & Gadgets: https://verndly.com/categories/electronics
+- Beauty & Personal Care: https://verndly.com/categories/beauty-personal-care
+- Home & Kitchen: https://verndly.com/categories/home-kitchen
+- Food & Beverages: https://verndly.com/categories/food-beverages
+- Books & Stationery: https://verndly.com/categories/books-stationery
+- Jewelry & Watches: https://verndly.com/categories/jewelry-watches
+- Art & Crafts: https://verndly.com/categories/art-crafts
 
 ## Buyer Protection & Refunds
 - **Inspection Period**: 7 calendar days from delivery confirmation.
 - **Eligible Reasons**: Damaged in transit, defective, materially different model/color, or non-delivery.
-- **Refund Execution**: Automated Paystack gateway reversal directly to original Mobile Money or card account.
+- **Refund Execution**: Automated Paystack gateway reversal directly to original Mobile Money or card account within 24–48 hours.
 - **Dispute Escalation**: Independent administrative arbitration if buyer and merchant do not reach agreement within 48 hours.

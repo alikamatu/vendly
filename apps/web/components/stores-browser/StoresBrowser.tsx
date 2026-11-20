@@ -3,7 +3,7 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import { AlertCircle, ArrowUpDown, SlidersHorizontal, Store } from 'lucide-react';
 import Header from '@/components/layout/Header';
-import { useStoresBrowser } from '@/hooks/useStoresBrowser';
+import { useStoresBrowser, type InitialStoresBrowserData } from '@/hooks/useStoresBrowser';
 import StoreCard from './StoreCard';
 import StoresSearchBar from './StoresSearchBar';
 import StoresFiltersPanel from './StoresFiltersPanel';
@@ -12,8 +12,8 @@ import StoresPagination from './StoresPagination';
 import Spinner from '@/components/ui/Spinner';
 import Select from '@/components/ui/Select';
 
-function StoresBrowserInner() {
-  const state = useStoresBrowser();
+function StoresBrowserInner({ initialData }: { initialData?: InitialStoresBrowserData }) {
+  const state = useStoresBrowser(initialData);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   useEffect(() => {
@@ -52,7 +52,7 @@ function StoresBrowserInner() {
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[260px_1fr]">
           <aside className="hidden lg:block">
-            <div className="sticky top-24 max-h-[calc(100vh-8rem)] space-y-5 overflow-y-auto pr-2 no-scrollbar">
+            <div className="no-scrollbar sticky top-24 max-h-[calc(100vh-8rem)] space-y-5 overflow-y-auto pr-2">
               <StoresFiltersPanel state={state} />
             </div>
           </aside>
@@ -65,9 +65,7 @@ function StoresBrowserInner() {
                     ? 'Loading vendors...'
                     : `${state.meta.total} ${state.meta.total === 1 ? 'Store profile' : 'Store profiles'} found`}
                 </p>
-                {state.isRefreshing && (
-                  <Spinner size="xs" />
-                )}
+                {state.isRefreshing && <Spinner size="xs" />}
               </div>
 
               <div className="flex w-full items-center justify-between gap-3 sm:w-auto sm:justify-end">
@@ -100,7 +98,7 @@ function StoresBrowserInner() {
             </div>
 
             {mobileFiltersOpen && (
-              <div className="bg-[var(--color-surface)] animate-slide-down space-y-4 rounded-2xl border border-[var(--color-border)] p-5 lg:hidden">
+              <div className="animate-slide-down space-y-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 lg:hidden">
                 <StoresFiltersPanel state={state} />
               </div>
             )}
@@ -202,16 +200,27 @@ function EmptyState({ onReset }: { onReset: () => void }) {
   );
 }
 
-export default function StoresBrowser() {
+export default function StoresBrowser({ initialData }: { initialData?: InitialStoresBrowserData }) {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-[var(--color-accent)] border-t-transparent" />
+        <div className="min-h-screen bg-[var(--color-background)]">
+          <Header />
+          <div className="bg-[var(--color-surface)] py-12 md:py-16">
+            <div className="mx-auto max-w-7xl space-y-4 px-4 text-center md:px-8">
+              <h1 className="text-3xl font-semibold leading-none tracking-tight text-[var(--color-foreground)] md:text-5xl">
+                Discover Verified <span className="text-[var(--color-accent)]">Entrepreneurs</span>
+              </h1>
+              <p className="mx-auto max-w-2xl text-sm leading-relaxed text-[var(--color-muted)]">
+                Support verified Ghanaian businesses and independent creators backed by 7-day
+                Paystack escrow.
+              </p>
+            </div>
+          </div>
         </div>
       }
     >
-      <StoresBrowserInner />
+      <StoresBrowserInner initialData={initialData} />
     </Suspense>
   );
 }

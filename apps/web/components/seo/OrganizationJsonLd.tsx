@@ -17,7 +17,11 @@ export default function OrganizationJsonLd() {
           url: SITE_URL,
           logo: `${SITE_URL}/logos/verndly.png`,
           description: SITE_DESCRIPTION,
-          sameAs: [],
+          sameAs: [
+            'https://instagram.com/verndly',
+            'https://x.com/verndly',
+            'https://linkedin.com/company/verndly',
+          ],
         },
         {
           '@context': 'https://schema.org',

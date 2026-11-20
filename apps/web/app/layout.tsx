@@ -42,7 +42,6 @@ export const metadata: Metadata = {
   creator: SITE_NAME,
   publisher: SITE_NAME,
   formatDetection: { email: false, address: false, telephone: false },
-  alternates: { canonical: SITE_URL },
   openGraph: {
     type: 'website',
     locale: 'en_US',

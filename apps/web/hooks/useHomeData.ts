@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { productApi } from "@/lib/api/product";
-import { storeApi, TopProVendor } from "@/lib/api/store";
+import { useEffect, useState } from 'react';
+import { productApi } from '@/lib/api/product';
+import { storeApi, TopProVendor } from '@/lib/api/store';
 
 export interface HomeCategory {
   id?: string;
@@ -38,6 +38,13 @@ export interface HomeProduct {
   [key: string]: any;
 }
 
+export interface InitialHomeData {
+  products?: HomeProduct[];
+  categories?: HomeCategory[];
+  brands?: HomeBrand[];
+  topProVendors?: TopProVendor[];
+}
+
 interface HomeData {
   products: HomeProduct[];
   categories: HomeCategory[];
@@ -48,23 +55,26 @@ interface HomeData {
   reload: () => void;
 }
 
-export function useHomeData(): HomeData {
-  const [products, setProducts] = useState<HomeProduct[]>([]);
-  const [categories, setCategories] = useState<HomeCategory[]>([]);
-  const [brands, setBrands] = useState<HomeBrand[]>([]);
-  const [topProVendors, setTopProVendors] = useState<TopProVendor[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+export function useHomeData(initial?: InitialHomeData): HomeData {
+  const hasInitial = Boolean(initial);
+  const [products, setProducts] = useState<HomeProduct[]>(initial?.products ?? []);
+  const [categories, setCategories] = useState<HomeCategory[]>(initial?.categories ?? []);
+  const [brands, setBrands] = useState<HomeBrand[]>(initial?.brands ?? []);
+  const [topProVendors, setTopProVendors] = useState<TopProVendor[]>(initial?.topProVendors ?? []);
+  // Never block SSR with a full-screen loading spinner when server data was handed down.
+  const [isLoading, setIsLoading] = useState(!hasInitial);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
-    setIsLoading(true);
+    if (!hasInitial || tick > 0) {
+      setIsLoading(true);
+    }
     setError(null);
 
     (async () => {
       try {
-        // Top-pro vendors are non-critical: failing here shouldn't kill the page.
         const [p, c, b, v] = await Promise.all([
           productApi.getProducts(),
           productApi.getCategories(),
@@ -72,13 +82,13 @@ export function useHomeData(): HomeData {
           storeApi.getTopProVendors(6).catch(() => [] as TopProVendor[]),
         ]);
         if (cancelled) return;
-        setProducts(p as HomeProduct[]);
-        setCategories(c as HomeCategory[]);
-        setBrands(b as HomeBrand[]);
-        setTopProVendors(v);
+        if (Array.isArray(p) && p.length > 0) setProducts(p as HomeProduct[]);
+        if (Array.isArray(c) && c.length > 0) setCategories(c as HomeCategory[]);
+        if (Array.isArray(b) && b.length > 0) setBrands(b as HomeBrand[]);
+        if (Array.isArray(v) && v.length > 0) setTopProVendors(v);
       } catch (err: any) {
         if (cancelled) return;
-        setError(err?.message || "Failed to load");
+        setError(err?.message || 'Failed to load');
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -87,7 +97,7 @@ export function useHomeData(): HomeData {
     return () => {
       cancelled = true;
     };
-  }, [tick]);
+  }, [tick, hasInitial]);
 
   return {
     products,
