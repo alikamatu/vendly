@@ -3,13 +3,8 @@ import {
   IsString,
   IsBoolean,
   IsEnum,
-  IsArray,
   IsInt,
   Min,
-  IsNumberString,
-  IsObject,
-  ArrayNotEmpty,
-  ValidateIf,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 
@@ -64,69 +59,6 @@ export class AdminProductListQueryDto {
   limit?: number = 20;
 }
 
-export class AdminUpdateProductDto {
-  @IsOptional()
-  @IsString()
-  title?: string;
-
-  @IsOptional()
-  @IsString()
-  description?: string;
-
-  @IsOptional()
-  @IsNumberString()
-  price?: string;
-
-  @IsOptional()
-  @ValidateIf((_, value) => value !== null)
-  @IsNumberString()
-  original_price?: string | null;
-
-  @IsOptional()
-  @IsString()
-  currency?: string;
-
-  @IsOptional()
-  @IsString()
-  condition?: string;
-
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(0)
-  quantity_available?: number;
-
-  @IsOptional()
-  @IsString()
-  status?: string;
-
-  @IsOptional()
-  @IsBoolean()
-  is_featured?: boolean;
-
-  @IsOptional()
-  @IsString()
-  category?: string;
-
-  @IsOptional()
-  @IsObject()
-  attributes?: Record<string, unknown>;
-
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  image_urls?: string[];
-
-  @IsOptional()
-  @IsString()
-  video_url?: string;
-
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  tags?: string[];
-}
-
 export class AdminUpdateStatusDto {
   @IsEnum(AdminProductStatus)
   status!: AdminProductStatus;
@@ -139,23 +71,4 @@ export class AdminUpdateStatusDto {
 export class AdminFeatureDto {
   @IsBoolean()
   is_featured!: boolean;
-}
-
-export enum AdminBulkAction {
-  DELETE = 'delete',
-  STATUS = 'status',
-  FEATURE = 'feature',
-}
-
-export class AdminBulkActionDto {
-  @IsArray()
-  @ArrayNotEmpty()
-  @IsString({ each: true })
-  ids!: string[];
-
-  @IsEnum(AdminBulkAction)
-  action!: AdminBulkAction;
-
-  @IsOptional()
-  value?: unknown;
 }

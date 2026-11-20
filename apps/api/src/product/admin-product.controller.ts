@@ -1,10 +1,7 @@
 import {
   Controller,
   Get,
-  Put,
   Patch,
-  Post,
-  Delete,
   Param,
   Body,
   Query,
@@ -14,10 +11,8 @@ import {
 import { AdminProductService } from './admin-product.service';
 import { actorFromReq } from '../audit/audit-log.service';
 import {
-  AdminBulkActionDto,
   AdminFeatureDto,
   AdminProductListQueryDto,
-  AdminUpdateProductDto,
   AdminUpdateStatusDto,
 } from './dto/admin-product.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -35,22 +30,9 @@ export class AdminProductController {
     return this.adminProductService.list(query);
   }
 
-  @Post('bulk')
-  async bulk(@Body() dto: AdminBulkActionDto, @Req() req) {
-    return this.adminProductService.bulk(dto, actorFromReq(req));
-  }
-
   @Get(':id')
   async getById(@Param('id') id: string) {
     return this.adminProductService.getById(id);
-  }
-
-  @Put(':id')
-  async update(
-    @Param('id') id: string,
-    @Body() dto: AdminUpdateProductDto,
-  ) {
-    return this.adminProductService.update(id, dto);
   }
 
   @Patch(':id/status')
@@ -69,10 +51,5 @@ export class AdminProductController {
     @Req() req,
   ) {
     return this.adminProductService.setFeatured(id, dto, actorFromReq(req));
-  }
-
-  @Delete(':id')
-  async remove(@Param('id') id: string, @Req() req) {
-    return this.adminProductService.remove(id, actorFromReq(req));
   }
 }
