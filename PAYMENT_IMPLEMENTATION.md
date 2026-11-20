@@ -56,7 +56,7 @@ Since Vendly initiates transfers from the platform balance to seller bank accoun
 
 ## 3. Manual Payouts & Administration
 
-If a seller's payout fails (e.g., invalid bank details) or if you prefer to manually control payouts, they will appear in the Admin Dashboard (`/dashboard/payments`) under the **Payouts** tab.
+If a seller's payout fails (e.g., invalid bank details) or if you prefer to manually control payouts, they will appear in the Admin Dashboard (`/payments`) under the **Payouts** tab.
 
 - Click **Process Transfer** on a payout to trigger the Paystack Transfers API.
 - If the transfer is successful, Paystack will instantly credit the seller's bank account, and the system will update the record.

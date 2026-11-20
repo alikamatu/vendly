@@ -11,7 +11,7 @@ Verndly is a comprehensive marketplace platform designed specifically for verifi
 
 ## 🚀 Project Overview
 
-The project is structured as a monorepo (powered by Turborepo and pnpm workspaces) containing two core applications and several shared packages:
+The project is structured as a monorepo (powered by Turborepo and pnpm workspaces) containing three core applications and several shared packages:
 
 ### Applications
 
@@ -21,10 +21,10 @@ The project is structured as a monorepo (powered by Turborepo and pnpm workspace
 
 ### Shared Packages
 
-| Package                     | Description                                                                                       |
-| --------------------------- | ------------------------------------------------------------------------------------------------- |
-| `@vendly/eslint-config`     | Shared ESLint base config, used by the mobile app.                                                |
-| `@vendly/typescript-config` | Shared TypeScript configs (`base`, `nextjs`). The web app extends `nextjs`, which extends `base`. |
+| Package                     | Description                                                                                                 |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `@vendly/eslint-config`     | Shared ESLint base config, used by the mobile app.                                                          |
+| `@vendly/typescript-config` | Shared TypeScript configs (`base`, `nextjs`). The web and admin apps extend `nextjs`, which extends `base`. |
 
 ## ✨ Core Features
 
@@ -106,8 +106,10 @@ The project is structured as a monorepo (powered by Turborepo and pnpm workspace
     pnpm dev
     ```
 
-    - API: runs on port 1000
-    - Web: runs on port 3000
+    - API: runs on port 1000 (`nest start --watch`)
+    - Web: runs on port 3000 (`next dev`)
+    - Admin: runs on port 3002 (`next dev --port 3002`)
+    - Mobile: Expo dev server (`expo start`)
 
 ## 📖 Documentation
 
