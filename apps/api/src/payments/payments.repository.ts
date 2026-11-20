@@ -71,7 +71,6 @@ export class PaymentsRepository {
     });
   }
 
-
   async finalizeOrderInventory(orderId: string) {
     return this.prisma.$transaction(async (tx) => {
       // 1. Fetch order with items
@@ -128,13 +127,6 @@ export class PaymentsRepository {
     });
   }
 
-  async findSellerByProfileId(sellerProfileId: string) {
-    return this.prisma.sellerProfile.findUnique({
-      where: { id: sellerProfileId },
-      include: { user: true },
-    });
-  }
-
   async findUserById(id: string) {
     return this.prisma.user.findUnique({
       where: { id },
@@ -171,12 +163,15 @@ export class PaymentsRepository {
     return items
       .map((it) => it.product)
       .filter((p) => p != null && p.quantity_available <= threshold) as Array<{
-        id: string;
-        title: string;
-        quantity_available: number;
-        image_urls: string[];
-        seller: { store_name: string; user: { email: string | null } | null } | null;
-      }>;
+      id: string;
+      title: string;
+      quantity_available: number;
+      image_urls: string[];
+      seller: {
+        store_name: string;
+        user: { email: string | null } | null;
+      } | null;
+    }>;
   }
 
   async findUserByEmail(email: string) {
@@ -336,7 +331,13 @@ export class PaymentsRepository {
     payout_id?: string;
     reference: string;
     type: 'CREDIT' | 'DEBIT';
-    source_type: 'ORDER' | 'PROMOTION' | 'ADJUSTMENT' | 'FEE' | 'PAYOUT' | 'REFUND';
+    source_type:
+      | 'ORDER'
+      | 'PROMOTION'
+      | 'ADJUSTMENT'
+      | 'FEE'
+      | 'PAYOUT'
+      | 'REFUND';
     amount: Prisma.Decimal | number;
     description?: string;
     metadata?: Prisma.InputJsonValue;
@@ -602,7 +603,12 @@ export class PaymentsRepository {
             order: {
               include: {
                 buyer: {
-                  select: { id: true, full_name: true, email: true, phone_e164: true },
+                  select: {
+                    id: true,
+                    full_name: true,
+                    email: true,
+                    phone_e164: true,
+                  },
                 },
                 items: {
                   include: {
@@ -690,33 +696,6 @@ export class PaymentsRepository {
     return { items, total };
   }
 
-  async getTransactionById(id: string) {
-    try {
-      return await this.prisma.transaction.findUnique({
-        where: { id },
-        include: { order: true, payout: true, ledger_entries: true },
-      });
-    } catch (error) {
-      if (!this.isMissingColumnError(error)) throw error;
-      return this.prisma.transaction.findUnique({
-        where: { id },
-        select: {
-          id: true,
-          order_id: true,
-          reference: true,
-          amount: true,
-          status: true,
-          provider: true,
-          provider_ref: true,
-          metadata: true,
-          created_at: true,
-          updated_at: true,
-          order: true,
-        },
-      });
-    }
-  }
-
   async reconcileTransaction(id: string, status: string) {
     try {
       return await this.prisma.transaction.update({
@@ -742,70 +721,6 @@ export class PaymentsRepository {
         },
       });
     }
-  }
-
-  async listHistory(params: {
-    sellerId?: string;
-    page: number;
-    limit: number;
-  }) {
-    const skip = (params.page - 1) * params.limit;
-    const whereLedger = params.sellerId ? { seller_id: params.sellerId } : {};
-    const wherePayout = params.sellerId ? { seller_id: params.sellerId } : {};
-    const whereTx: any = {};
-    if (params.sellerId) {
-      whereTx.order = {
-        items: { some: { product: { seller_id: params.sellerId } } },
-      };
-    }
-
-    let ledger: any[] = [];
-    let payouts: any[] = [];
-    let transactions: any[] = [];
-    try {
-      [ledger, payouts, transactions] = await Promise.all([
-        this.prisma.paymentLedgerEntry.findMany({
-          where: whereLedger,
-          orderBy: { created_at: 'desc' },
-          skip,
-          take: params.limit,
-        }),
-        this.prisma.payout.findMany({
-          where: wherePayout,
-          orderBy: { created_at: 'desc' },
-          skip,
-          take: params.limit,
-        }),
-        this.prisma.transaction.findMany({
-          where: whereTx,
-          orderBy: { created_at: 'desc' },
-          skip,
-          take: params.limit,
-        }),
-      ]);
-    } catch (error) {
-      if (!this.isMissingColumnError(error)) throw error;
-      transactions = await this.prisma.transaction.findMany({
-        where: whereTx,
-        select: {
-          id: true,
-          order_id: true,
-          reference: true,
-          amount: true,
-          status: true,
-          provider: true,
-          provider_ref: true,
-          metadata: true,
-          created_at: true,
-          updated_at: true,
-        },
-        orderBy: { created_at: 'desc' },
-        skip,
-        take: params.limit,
-      });
-    }
-
-    return { ledger, payouts, transactions };
   }
 
   async listPromotionPayments(params: {
@@ -877,13 +792,6 @@ export class PaymentsRepository {
     });
   }
 
-  async findRefundsByOrderId(orderId: string) {
-    return this.prisma.refund.findMany({
-      where: { order_id: orderId },
-      orderBy: { created_at: 'desc' },
-    });
-  }
-
   async cancelPendingPayoutsForTransaction(
     transactionId: string,
     reason = 'Order refunded',
@@ -942,4 +850,3 @@ export class PaymentsRepository {
     });
   }
 }
-

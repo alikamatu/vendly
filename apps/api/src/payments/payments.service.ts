@@ -363,7 +363,7 @@ export class PaymentsService {
     for (const sellerUserId of sellerUserIds) {
       await this.notifications.create({
         userId: sellerUserId,
-        type: 'ORDER_STATUS_CHANGED' as any,
+        type: 'ORDER_STATUS_CHANGED',
         title: `Order ${orderNumber} paid`,
         body: `Order ${orderNumber} has been paid and is ready for fulfillment.`,
         link: '/dashboard/orders',
@@ -375,7 +375,7 @@ export class PaymentsService {
     if (order.buyer_id) {
       await this.notifications.create({
         userId: order.buyer_id,
-        type: 'ORDER_STATUS_CHANGED' as any,
+        type: 'ORDER_STATUS_CHANGED',
         title: `Payment received for ${orderNumber}`,
         body: `Your payment for order ${orderNumber} was successfully processed.`,
         link: `/orders/${orderId}`,
@@ -434,13 +434,15 @@ export class PaymentsService {
             : variant.attributes;
         if (attrs && typeof attrs === 'object') {
           const entries = Object.entries(attrs).filter(
-            ([, v]) => v != null && String(v).trim() !== '',
+            ([, v]) => v != null && String(v as string).trim() !== '',
           );
           if (entries.length > 0) {
-            return entries.map(([k, v]) => `${k}: ${v}`).join(' • ');
+            return entries.map(([k, v]) => `${k}: ${v as string}`).join(' • ');
           }
         }
-      } catch {}
+      } catch {
+        return null;
+      }
       return null;
     };
 
@@ -948,12 +950,6 @@ export class PaymentsService {
     });
   }
 
-  async getTransactionDetails(id: string) {
-    const transaction = await this.paymentsRepository.getTransactionById(id);
-    if (!transaction) throw new NotFoundException('Transaction not found');
-    return transaction;
-  }
-
   async reconcileTransaction(id: string, status: string) {
     return this.paymentsRepository.reconcileTransaction(id, status);
   }
@@ -1215,7 +1211,7 @@ export class PaymentsService {
         const formattedAmount = `${symbol} ${netAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         await this.notifications.create({
           userId: seller.user_id,
-          type: 'PAYMENT_RECEIVED' as any,
+          type: 'PAYMENT_RECEIVED',
           title: `Payout of ${formattedAmount} sent`,
           body: `Your payout of ${formattedAmount} for ${seller.store_name} has been disbursed to your account.`,
           link: '/dashboard/transactions',
@@ -1226,30 +1222,6 @@ export class PaymentsService {
         `Failed to send payout receipt email for ${payoutId}: ${err}`,
       );
     }
-  }
-
-  async getUnifiedHistory(params: {
-    userRole: string;
-    userId: string;
-    page?: number;
-    limit?: number;
-  }) {
-    const page = params.page || 1;
-    const limit = params.limit || 20;
-    let sellerId: string | undefined = undefined;
-
-    if (params.userRole === 'SELLER') {
-      const seller = await this.paymentsRepository.getSellerProfileByUserId(
-        params.userId,
-      );
-      if (!seller) throw new NotFoundException('Seller profile not found');
-      sellerId = seller.id;
-    }
-    return this.paymentsRepository.listHistory({
-      sellerId,
-      page,
-      limit,
-    });
   }
 
   async listPromotionPayments(params: {
@@ -1277,14 +1249,6 @@ export class PaymentsService {
       page,
       limit,
     });
-  }
-
-  getStatus() {
-    return {
-      status: 'active',
-      provider: 'paystack',
-      baseUrl: this.paystackCfg.baseUrl,
-    };
   }
 
   private async processRefundProcessed(data: any) {
