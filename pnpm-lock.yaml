@@ -174,9 +174,6 @@ importers:
       '@types/supertest':
         specifier: ^6.0.2
         version: 6.0.3
-      '@vendly/typescript-config':
-        specifier: workspace:*
-        version: link:../../packages/typescript-config
       axios:
         specifier: ^1.13.6
         version: 1.16.1
