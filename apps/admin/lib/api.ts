@@ -50,11 +50,6 @@ export function getHeaders(isMultipart = false): Record<string, string> {
   return headers;
 }
 
-export interface ApiError {
-  message: string;
-  statusCode: number;
-}
-
 export class ApiRequestError extends Error {
   statusCode: number;
 

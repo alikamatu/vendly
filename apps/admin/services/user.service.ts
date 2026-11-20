@@ -21,14 +21,6 @@ export class VendlyUserService {
     return unwrap<{ data: VendlyUser[]; total?: number }>(res);
   }
 
-  static async getUserById(userId: string): Promise<VendlyUser> {
-    const res = await fetch(`${VENDLY_API_BASE_URL}/admin/users/${userId}`, {
-      headers: this.headers(),
-      cache: 'no-store',
-    });
-    return unwrap<VendlyUser>(res);
-  }
-
   static async getApprovals(
     params: Record<string, unknown> = {},
   ): Promise<{ data: VerificationRequest[]; total?: number }> {
@@ -37,14 +29,6 @@ export class VendlyUserService {
       cache: 'no-store',
     });
     return unwrap<{ data: VerificationRequest[]; total?: number }>(res);
-  }
-
-  static async getApprovalById(id: string): Promise<VerificationRequest> {
-    const res = await fetch(`${VENDLY_API_BASE_URL}/admin/approvals/${id}`, {
-      headers: this.headers(),
-      cache: 'no-store',
-    });
-    return unwrap<VerificationRequest>(res);
   }
 
   static async approveOrReject(

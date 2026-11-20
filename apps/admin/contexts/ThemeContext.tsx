@@ -2,12 +2,11 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 
-type Theme = 'light' | 'dark' | 'system';
+type Theme = 'light' | 'dark';
 
 interface ThemeContextType {
   theme: Theme;
   resolvedTheme: 'light' | 'dark';
-  setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
 }
 
@@ -15,56 +14,32 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>('dark');
-  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('dark');
+  const resolvedTheme = theme;
 
   useEffect(() => {
-    const saved = localStorage.getItem('vendly_theme') as Theme | null;
-    if (saved && ['light', 'dark', 'system'].includes(saved)) {
+    const saved = localStorage.getItem('vendly_theme');
+    if (saved === 'light' || saved === 'dark') {
       setThemeState(saved);
     }
   }, []);
 
   useEffect(() => {
     const root = document.documentElement;
-    const media = window.matchMedia('(prefers-color-scheme: dark)');
-
-    const applyTheme = () => {
-      let isDark = false;
-      if (theme === 'system') {
-        isDark = media.matches;
-      } else {
-        isDark = theme === 'dark';
-      }
-
-      setResolvedTheme(isDark ? 'dark' : 'light');
-
-      if (isDark) {
-        root.classList.add('dark');
-      } else {
-        root.classList.remove('dark');
-      }
-    };
-
-    applyTheme();
-
-    const listener = () => {
-      if (theme === 'system') applyTheme();
-    };
-    media.addEventListener('change', listener);
-    return () => media.removeEventListener('change', listener);
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
   }, [theme]);
 
-  const setTheme = (newTheme: Theme) => {
-    setThemeState(newTheme);
-    localStorage.setItem('vendly_theme', newTheme);
-  };
-
   const toggleTheme = () => {
-    setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setThemeState(next);
+    localStorage.setItem('vendly_theme', next);
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, resolvedTheme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );

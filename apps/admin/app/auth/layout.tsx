@@ -6,7 +6,6 @@ import { type ReactNode } from 'react';
 
 /**
  * Animated dot-grid background pattern — subtle, Google AI-inspired.
- * Uses CSS animation instead of Framer Motion for better performance.
  */
 function DotGridBackground() {
   return (

@@ -17,14 +17,6 @@ export class VendlyBrandService {
     return unwrap<Brand[]>(res);
   }
 
-  static async get(id: string): Promise<Brand> {
-    const res = await fetch(`${VENDLY_API_BASE_URL}/admin/brands/${id}`, {
-      headers: this.headers(),
-      cache: 'no-store',
-    });
-    return unwrap<Brand>(res);
-  }
-
   static async create(dto: CreateBrandInput): Promise<Brand> {
     const res = await fetch(`${VENDLY_API_BASE_URL}/admin/brands`, {
       method: 'POST',

@@ -18,21 +18,9 @@ import {
   CheckCircle2,
   Clock,
 } from 'lucide-react';
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from 'recharts';
+import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { AdminShell } from '@/components/layout/AdminShell';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
 import { formatCurrency, compact, dateShort } from '@/lib/format';
 import { ORDER_STATUS_COLORS } from '@/lib/constants';
@@ -90,14 +78,6 @@ export default function OperationsDashboardPage() {
   const pendingReturns = stats?.pendingReturnsCount || 0;
   const flaggedReviews = stats?.flaggedReviewsCount || 0;
   const totalUrgent = pendingApprovals + pendingReturns + flaggedReviews;
-
-  // Chart data
-  const revenueChartData = [
-    { period: 'Week 1', revenue: platformRevenue * 0.55, gmv: gmv * 0.55 },
-    { period: 'Week 2', revenue: platformRevenue * 0.72, gmv: gmv * 0.72 },
-    { period: 'Week 3', revenue: platformRevenue * 0.88, gmv: gmv * 0.88 },
-    { period: 'Week 4', revenue: platformRevenue, gmv: gmv },
-  ];
 
   const userDistribution = [
     {
@@ -288,108 +268,51 @@ export default function OperationsDashboardPage() {
               </div>
             </div>
 
-            {/* Charts Section */}
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-              {/* Financial Volume Chart */}
-              <div className="bg-card border-border flex flex-col justify-between rounded-2xl border p-5 lg:col-span-2">
-                <div className="mb-4 flex items-center justify-between">
-                  <div>
-                    <h3 className="text-foreground text-sm font-semibold">
-                      Transaction Volume & Revenue Trajectory
-                    </h3>
-                    <p className="text-muted-foreground text-xs">
-                      Estimated 4-week performance curve
-                    </p>
-                  </div>
-                  <Badge variant="brand">Live</Badge>
-                </div>
-                <div className="h-64 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={revenueChartData}>
-                      <defs>
-                        <linearGradient id="colorGmv" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#ff6b00" stopOpacity={0.25} />
-                          <stop offset="95%" stopColor="#ff6b00" stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
-                      <XAxis dataKey="period" stroke="#71717a" fontSize={11} tickLine={false} />
-                      <YAxis
-                        stroke="#71717a"
-                        fontSize={11}
-                        tickLine={false}
-                        tickFormatter={(v) => `₵${compact(Number(v))}`}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: '#18181b',
-                          borderColor: '#27272a',
-                          borderRadius: '8px',
-                          fontSize: '12px',
-                        }}
-                        formatter={(val: unknown) => [formatCurrency(Number(val)), 'Volume']}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="gmv"
-                        stroke="#ff6b00"
-                        strokeWidth={2}
-                        fillOpacity={1}
-                        fill="url(#colorGmv)"
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
+            {/* User Breakdown Pie */}
+            <div className="bg-card border-border flex flex-col justify-between rounded-2xl border p-5">
+              <div>
+                <h3 className="text-foreground text-sm font-semibold">User Distribution</h3>
+                <p className="text-muted-foreground text-xs">Platform members by permission role</p>
               </div>
-
-              {/* User Breakdown Pie */}
-              <div className="bg-card border-border flex flex-col justify-between rounded-2xl border p-5">
-                <div>
-                  <h3 className="text-foreground text-sm font-semibold">User Distribution</h3>
-                  <p className="text-muted-foreground text-xs">
-                    Platform members by permission role
-                  </p>
-                </div>
-                <div className="my-2 flex h-52 w-full items-center justify-center">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={userDistribution}
-                        dataKey="value"
-                        nameKey="name"
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={50}
-                        outerRadius={75}
-                        paddingAngle={4}
-                      >
-                        {userDistribution.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: '#18181b',
-                          borderColor: '#27272a',
-                          borderRadius: '8px',
-                          fontSize: '12px',
-                        }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="border-border flex items-center justify-around border-t pt-3 text-[11px]">
-                  {userDistribution.map((item) => (
-                    <div key={item.name} className="flex items-center gap-1.5">
-                      <span
-                        className="h-2.5 w-2.5 rounded-full"
-                        style={{ backgroundColor: item.color }}
-                      />
-                      <span className="text-muted-foreground">{item.name}:</span>
-                      <span className="text-foreground font-semibold">{item.value}</span>
-                    </div>
-                  ))}
-                </div>
+              <div className="my-2 flex h-52 w-full items-center justify-center">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={userDistribution}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={75}
+                      paddingAngle={4}
+                    >
+                      {userDistribution.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#18181b',
+                        borderColor: '#27272a',
+                        borderRadius: '8px',
+                        fontSize: '12px',
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="border-border flex items-center justify-around border-t pt-3 text-[11px]">
+                {userDistribution.map((item) => (
+                  <div key={item.name} className="flex items-center gap-1.5">
+                    <span
+                      className="h-2.5 w-2.5 rounded-full"
+                      style={{ backgroundColor: item.color }}
+                    />
+                    <span className="text-muted-foreground">{item.name}:</span>
+                    <span className="text-foreground font-semibold">{item.value}</span>
+                  </div>
+                ))}
               </div>
             </div>
 

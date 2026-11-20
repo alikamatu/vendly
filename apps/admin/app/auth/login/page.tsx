@@ -13,7 +13,6 @@ import { Alert } from '@/components/ui/alert';
 import { Logo } from '@/components/ui/logo';
 import { Spinner } from '@/components/ui/spinner';
 
-// ─── Simple Zod-like validation ──────────────────────────────────
 function validateEmail(email: string): string | null {
   if (!email.trim()) return 'Email is required';
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return 'Enter a valid email address';
@@ -26,7 +25,6 @@ function validatePassword(password: string): string | null {
   return null;
 }
 
-// ─── Google Icon SVG ──────────────────────────────────────────────
 function GoogleIcon() {
   return (
     <svg className="h-4.5 w-4.5 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
@@ -50,7 +48,6 @@ function GoogleIcon() {
   );
 }
 
-// ─── 2FA 6-Digit Box Input ─────────────────────────────────────────
 function TwoFactorInput({
   onComplete,
   isLoading,
@@ -124,7 +121,6 @@ function TwoFactorInput({
   );
 }
 
-// ─── Login Form Content ───────────────────────────────────────────
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -279,7 +275,6 @@ function LoginForm() {
       {/* Content views */}
       <AnimatePresence mode="wait">
         {show2fa ? (
-          /* ─── 2FA Verification View ─── */
           <motion.div
             key="2fa-view"
             initial={{ opacity: 0, x: 20 }}
@@ -370,7 +365,6 @@ function LoginForm() {
             </button>
           </motion.div>
         ) : (
-          /* ─── Standard Login Form ─── */
           <motion.div
             key="login-view"
             initial={{ opacity: 0, x: -20 }}

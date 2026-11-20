@@ -68,10 +68,10 @@ export default function CategoriesPage() {
     setUploadingImage(true);
     try {
       const optimized = await resizeImageToWebpDataUrl(file, 1000, 0.82);
-      const res = await fetch('/api/upload/category-image', {
+      const res = await fetch('/api/upload/image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: optimized }),
+        body: JSON.stringify({ image: optimized, folder: 'durabel/vendly/categories' }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || 'Upload failed');

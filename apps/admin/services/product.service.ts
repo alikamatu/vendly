@@ -24,14 +24,6 @@ export class VendlyProductService {
     return unwrap<ProductListResponse>(res);
   }
 
-  static async get(id: string): Promise<VendlyProduct> {
-    const res = await fetch(`${VENDLY_API_BASE_URL}/admin/products/${id}`, {
-      headers: this.headers(),
-      cache: 'no-store',
-    });
-    return unwrap<VendlyProduct>(res);
-  }
-
   static async setStatus(id: string, status: ProductStatus): Promise<VendlyProduct> {
     const res = await fetch(`${VENDLY_API_BASE_URL}/admin/products/${id}/status`, {
       method: 'PATCH',
