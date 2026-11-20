@@ -26,7 +26,6 @@ export interface ConfirmModalProps {
     | 'info'
     | 'check'
     | React.ComponentType<{ className?: string }>;
-  isAlert?: boolean;
   isLoading?: boolean;
   maxWidth?: 'sm' | 'md' | 'lg';
 }
@@ -94,7 +93,6 @@ export function ConfirmModal({
   cancelText = 'Cancel',
   variant = 'danger',
   icon,
-  isAlert = false,
   isLoading = false,
   maxWidth = 'sm',
 }: ConfirmModalProps) {
@@ -110,9 +108,7 @@ export function ConfirmModal({
           return;
         }
         e.preventDefault();
-        if (isAlert) {
-          onClose();
-        } else if (onConfirm) {
+        if (onConfirm) {
           void onConfirm();
         }
       }
@@ -126,7 +122,7 @@ export function ConfirmModal({
       document.body.style.overflow = 'unset';
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, isLoading, onClose, onConfirm, isAlert]);
+  }, [isOpen, isLoading, onClose, onConfirm]);
 
   const currentVariant = variantStyles[variant] || variantStyles.danger;
 
@@ -152,8 +148,7 @@ export function ConfirmModal({
     lg: 'max-w-xl',
   };
 
-  const defaultConfirmText = isAlert ? 'Understood' : 'Confirm';
-  const effectiveConfirmText = confirmText || defaultConfirmText;
+  const effectiveConfirmText = confirmText || 'Confirm';
 
   return (
     <AnimatePresence>
@@ -239,26 +234,22 @@ export function ConfirmModal({
 
               {/* Action Buttons */}
               <div className="border-border mt-6 flex items-center justify-end gap-2.5 border-t pt-4">
-                {!isAlert && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={onClose}
-                    disabled={isLoading}
-                    className="h-9 rounded-xl px-4 text-xs"
-                  >
-                    {cancelText}
-                  </Button>
-                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={onClose}
+                  disabled={isLoading}
+                  className="h-9 rounded-xl px-4 text-xs"
+                >
+                  {cancelText}
+                </Button>
 
                 <button
                   type="button"
                   disabled={isLoading}
                   onClick={() => {
-                    if (isAlert) {
-                      onClose();
-                    } else if (onConfirm) {
+                    if (onConfirm) {
                       void onConfirm();
                     }
                   }}

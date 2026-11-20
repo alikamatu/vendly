@@ -20,25 +20,8 @@ export interface ConfirmOptions {
   maxWidth?: 'sm' | 'md' | 'lg';
 }
 
-export interface AlertOptions {
-  title?: string;
-  description?: React.ReactNode;
-  details?: React.ReactNode;
-  buttonText?: string;
-  variant?: ConfirmVariant;
-  icon?:
-    | 'trash'
-    | 'alert'
-    | 'warning'
-    | 'info'
-    | 'check'
-    | React.ComponentType<{ className?: string }>;
-  maxWidth?: 'sm' | 'md' | 'lg';
-}
-
 interface DialogState {
   isOpen: boolean;
-  isAlert: boolean;
   title: string;
   description?: React.ReactNode;
   details?: React.ReactNode;
@@ -57,7 +40,6 @@ interface DialogState {
 
 interface ConfirmContextType {
   confirm: (options: string | ConfirmOptions) => Promise<boolean>;
-  alert: (options: string | AlertOptions) => Promise<void>;
 }
 
 const ConfirmContext = createContext<ConfirmContextType | undefined>(undefined);
@@ -65,7 +47,6 @@ const ConfirmContext = createContext<ConfirmContextType | undefined>(undefined);
 export function ConfirmProvider({ children }: { children: React.ReactNode }) {
   const [dialogState, setDialogState] = useState<DialogState>({
     isOpen: false,
-    isAlert: false,
     title: '',
     variant: 'danger',
   });
@@ -84,7 +65,6 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
       if (typeof options === 'string') {
         setDialogState({
           isOpen: true,
-          isAlert: false,
           title: 'Confirm Action',
           description: options,
           confirmText: 'Confirm',
@@ -94,46 +74,12 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
       } else {
         setDialogState({
           isOpen: true,
-          isAlert: false,
           title: options.title || 'Confirm Action',
           description: options.description,
           details: options.details,
           confirmText: options.confirmText || 'Confirm',
           cancelText: options.cancelText || 'Cancel',
           variant: options.variant || 'danger',
-          icon: options.icon,
-          maxWidth: options.maxWidth,
-        });
-      }
-    });
-  }, []);
-
-  const alert = useCallback((options: string | AlertOptions): Promise<void> => {
-    return new Promise<void>((resolve) => {
-      if (resolverRef.current) {
-        resolverRef.current(false);
-      }
-
-      resolverRef.current = () => resolve();
-
-      if (typeof options === 'string') {
-        setDialogState({
-          isOpen: true,
-          isAlert: true,
-          title: 'Notice',
-          description: options,
-          confirmText: 'Understood',
-          variant: 'info',
-        });
-      } else {
-        setDialogState({
-          isOpen: true,
-          isAlert: true,
-          title: options.title || 'Notice',
-          description: options.description,
-          details: options.details,
-          confirmText: options.buttonText || 'Understood',
-          variant: options.variant || 'info',
           icon: options.icon,
           maxWidth: options.maxWidth,
         });
@@ -158,7 +104,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <ConfirmContext.Provider value={{ confirm, alert }}>
+    <ConfirmContext.Provider value={{ confirm }}>
       {children}
       <ConfirmModal
         isOpen={dialogState.isOpen}
@@ -171,7 +117,6 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
         cancelText={dialogState.cancelText}
         variant={dialogState.variant}
         icon={dialogState.icon}
-        isAlert={dialogState.isAlert}
         maxWidth={dialogState.maxWidth}
       />
     </ConfirmContext.Provider>
