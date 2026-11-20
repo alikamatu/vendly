@@ -366,13 +366,6 @@ export interface BroadcastInput {
   role?: 'USER' | 'SELLER' | 'ADMIN';
 }
 
-export interface DirectNotificationInput {
-  userId: string;
-  title: string;
-  body: string;
-  link?: string;
-}
-
 // ─── Payout Types ───────────────────────────────────────────────────────
 
 export type PayoutStatus = 'SUCCESS' | 'PENDING' | 'PROCESSING' | 'FAILED';
