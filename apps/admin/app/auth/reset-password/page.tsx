@@ -12,7 +12,6 @@ import { Alert } from '@/components/ui/alert';
 import { Logo } from '@/components/ui/logo';
 import { Spinner } from '@/components/ui/spinner';
 
-// ─── Password strength indicator ─────────────────────────────────
 function PasswordStrength({ password }: { password: string }) {
   if (!password) return null;
 
@@ -57,7 +56,6 @@ function PasswordStrength({ password }: { password: string }) {
   );
 }
 
-// ─── Reset Password Form (needs searchParams) ────────────────────
 function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -144,7 +142,6 @@ function ResetPasswordForm() {
     }
   };
 
-  // ─── Invalid or Missing Token State ─────────────────────────
   if (isInvalidToken) {
     return (
       <div className="space-y-8">
@@ -199,7 +196,6 @@ function ResetPasswordForm() {
     );
   }
 
-  // ─── Success State ──────────────────────────────────────────
   if (isSuccess) {
     return (
       <div className="space-y-8">
@@ -247,7 +243,6 @@ function ResetPasswordForm() {
     );
   }
 
-  // ─── Reset Password Form ────────────────────────────────────
   return (
     <div className="space-y-8">
       <div className="space-y-3 text-center">
@@ -331,7 +326,6 @@ function ResetPasswordForm() {
   );
 }
 
-// ─── Page with Suspense boundary ─────────────────────────────────
 export default function ResetPasswordPage() {
   return (
     <Suspense

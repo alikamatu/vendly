@@ -1,10 +1,3 @@
-/**
- * Auth Service
- *
- * Centralized auth API calls against the Vendly NestJS backend.
- * All endpoints from API_REFERENCE.md /auth/* section.
- */
-
 import { apiFetch, getApiUrl } from '@/lib/api';
 
 export interface AuthUser {
@@ -38,10 +31,6 @@ export interface MeResponse {
 }
 
 export const authService = {
-  /**
-   * Login with email + password, optionally passing 2FA TOTP code or backup code.
-   * Returns totp_required: true if 2FA is enabled on the account.
-   */
   async login(
     email: string,
     password: string,
@@ -63,10 +52,6 @@ export const authService = {
     return res as LoginResponse;
   },
 
-  /**
-   * Complete 2FA verification during login.
-   * NestJS LoginDto requires email & password with totp_code or totp_backup_code.
-   */
   async verify2fa(
     email: string,
     password: string,
@@ -91,9 +76,6 @@ export const authService = {
     return res as LoginResponse;
   },
 
-  /**
-   * Get current authenticated user profile.
-   */
   async getMe(): Promise<AuthUser> {
     const res = await apiFetch<MeResponse | AuthUser>('/auth/me');
     // Handle both { data: user } and direct user response
@@ -103,16 +85,10 @@ export const authService = {
     return res as AuthUser;
   },
 
-  /**
-   * Logout — blacklists the current token server-side.
-   */
   async logout(): Promise<void> {
     await apiFetch('/auth/logout', { method: 'POST' });
   },
 
-  /**
-   * Request a password reset email.
-   */
   async forgotPassword(email: string): Promise<{ message: string }> {
     return apiFetch('/auth/forgot-password', {
       method: 'POST',
@@ -120,10 +96,7 @@ export const authService = {
     });
   },
 
-  /**
-   * Reset password using the token from the email link.
-   * Note: NestJS ResetPasswordDto requires `newPassword`.
-   */
+  /** NestJS ResetPasswordDto requires `newPassword`. */
   async resetPassword(token: string, password: string): Promise<{ message: string }> {
     return apiFetch('/auth/reset-password', {
       method: 'POST',
@@ -131,9 +104,6 @@ export const authService = {
     });
   },
 
-  /**
-   * Get the Google OAuth start URL for redirect.
-   */
   getGoogleOAuthUrl(next?: string): string {
     const base = `${getApiUrl()}/auth/oauth/google/start`;
     if (next) {

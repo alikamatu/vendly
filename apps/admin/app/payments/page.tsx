@@ -32,11 +32,7 @@ import { useConfirm } from '@/contexts/ConfirmContext';
 import { VendlyPaymentService } from '@/services/payment.service';
 import type { EnhancedTransaction, VendlyPayout, PromotionPayment } from '@/types/operations';
 
-// ─── Tab type ────────────────────────────────────────────────────────────
-
 type PaymentsTab = 'transactions' | 'payouts' | 'promotions';
-
-// ─── Page component ──────────────────────────────────────────────────────
 
 export default function PaymentsPage() {
   const [activeTab, setActiveTab] = useState<PaymentsTab>('transactions');
@@ -99,10 +95,6 @@ export default function PaymentsPage() {
     </AdminShell>
   );
 }
-
-// ═════════════════════════════════════════════════════════════════════════
-// ── TRANSACTIONS TAB ─────────────────────────────────────────────────────
-// ═════════════════════════════════════════════════════════════════════════
 
 function TransactionsTab() {
   const { confirm } = useConfirm();
@@ -478,10 +470,6 @@ function TransactionsTab() {
     </div>
   );
 }
-
-// ═════════════════════════════════════════════════════════════════════════
-// ── PAYOUTS TAB ──────────────────────────────────────────────────────────
-// ═════════════════════════════════════════════════════════════════════════
 
 function PayoutsTab() {
   const { confirm } = useConfirm();
@@ -892,10 +880,6 @@ function PayoutsTab() {
     </div>
   );
 }
-
-// ═════════════════════════════════════════════════════════════════════════
-// ── PROMOTIONS TAB ───────────────────────────────────────────────────────
-// ═════════════════════════════════════════════════════════════════════════
 
 function PromotionsTab() {
   const [promotions, setPromotions] = useState<PromotionPayment[]>([]);

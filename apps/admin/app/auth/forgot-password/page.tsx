@@ -105,7 +105,6 @@ export default function ForgotPasswordPage() {
 
       {/* Content */}
       {isSent ? (
-        /* ─── Success State ────────────────────────────────── */
         <motion.div
           initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -170,7 +169,6 @@ export default function ForgotPasswordPage() {
           </Link>
         </motion.div>
       ) : (
-        /* ─── Request Form ──────────────────────────────────── */
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
