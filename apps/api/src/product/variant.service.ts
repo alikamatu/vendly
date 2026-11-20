@@ -2,7 +2,6 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
-  BadRequestException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -54,59 +53,6 @@ export class VariantService {
       where: { product_id: productId, is_active: true },
       orderBy: { created_at: 'asc' },
     });
-  }
-
-  async create(userId: string, productId: string, input: UpsertInput) {
-    await this.assertSellerOwns(userId, productId);
-    const attrs = this.normAttrs(input.attributes);
-    if (!Object.keys(attrs).length) {
-      throw new BadRequestException(
-        'Variant must have at least one attribute (e.g. size or color).',
-      );
-    }
-    return (this.prisma as any).productVariant.create({
-      data: {
-        product_id: productId,
-        sku: input.sku || null,
-        attributes: attrs,
-        price: this.toPrice(input.price),
-        quantity_available: Math.max(0, input.quantity_available | 0),
-        image_url: input.image_url || null,
-        is_active: input.is_active ?? true,
-      },
-    });
-  }
-
-  async update(
-    userId: string,
-    productId: string,
-    variantId: string,
-    input: UpsertInput,
-  ) {
-    await this.assertSellerOwns(userId, productId);
-    const existing = await (this.prisma as any).productVariant.findUnique({
-      where: { id: variantId },
-    });
-    if (!existing || existing.product_id !== productId) {
-      throw new NotFoundException('Variant not found');
-    }
-    return (this.prisma as any).productVariant.update({
-      where: { id: variantId },
-      data: {
-        sku: input.sku ?? existing.sku,
-        attributes: this.normAttrs(input.attributes),
-        price: this.toPrice(input.price),
-        quantity_available: Math.max(0, input.quantity_available | 0),
-        image_url: input.image_url ?? existing.image_url,
-        is_active: input.is_active ?? existing.is_active,
-      },
-    });
-  }
-
-  async remove(userId: string, productId: string, variantId: string) {
-    await this.assertSellerOwns(userId, productId);
-    await (this.prisma as any).productVariant.delete({ where: { id: variantId } });
-    return { deleted: true };
   }
 
   /**

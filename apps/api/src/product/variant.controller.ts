@@ -1,10 +1,8 @@
 import {
   Body,
   Controller,
-  Delete,
   Get,
   Param,
-  Patch,
   Post,
   Request,
   UseGuards,
@@ -34,17 +32,6 @@ export class VariantController {
     return this.variants.list(productId);
   }
 
-  @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('SELLER')
-  create(
-    @Request() req: any,
-    @Param('productId') productId: string,
-    @Body() body: UpsertVariantBody,
-  ) {
-    return this.variants.create(req.user.id, productId, body);
-  }
-
   @Post('bulk')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SELLER')
@@ -58,28 +45,5 @@ export class VariantController {
       productId,
       body.variants || [],
     );
-  }
-
-  @Patch(':variantId')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('SELLER')
-  update(
-    @Request() req: any,
-    @Param('productId') productId: string,
-    @Param('variantId') variantId: string,
-    @Body() body: UpsertVariantBody,
-  ) {
-    return this.variants.update(req.user.id, productId, variantId, body);
-  }
-
-  @Delete(':variantId')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('SELLER')
-  remove(
-    @Request() req: any,
-    @Param('productId') productId: string,
-    @Param('variantId') variantId: string,
-  ) {
-    return this.variants.remove(req.user.id, productId, variantId);
   }
 }
