@@ -218,7 +218,7 @@ export class ProductService {
       page?: number;
       limit?: number;
       category?: string;
-      sellerId?: string | string;
+      sellerId?: string;
       status?: string;
       minDiscount?: number;
       search?: string;
@@ -292,10 +292,10 @@ export class ProductService {
       sellerFilter.structured_location = { region };
     }
     if (serviceArea) {
-      sellerFilter.service_area = serviceArea as any;
+      sellerFilter.service_area = serviceArea;
     }
     if (avgDeliveryTime) {
-      sellerFilter.avg_delivery_time = avgDeliveryTime as any;
+      sellerFilter.avg_delivery_time = avgDeliveryTime;
     }
     if (Object.keys(sellerFilter).length > 0) {
       where.seller = sellerFilter;
@@ -304,10 +304,10 @@ export class ProductService {
     if (typeof minPrice === 'number' || typeof maxPrice === 'number') {
       const priceFilter: Prisma.DecimalFilter = {};
       if (typeof minPrice === 'number' && !Number.isNaN(minPrice)) {
-        priceFilter.gte = new Decimal(minPrice) as any;
+        priceFilter.gte = new Decimal(minPrice);
       }
       if (typeof maxPrice === 'number' && !Number.isNaN(maxPrice)) {
-        priceFilter.lte = new Decimal(maxPrice) as any;
+        priceFilter.lte = new Decimal(maxPrice);
       }
       if (Object.keys(priceFilter).length > 0) {
         where.price = priceFilter;
@@ -356,7 +356,9 @@ export class ProductService {
             },
           },
         },
-        orderBy: this.resolveOrderBy(sort === 'discount_desc' ? 'newest' : sort),
+        orderBy: this.resolveOrderBy(
+          sort === 'discount_desc' ? 'newest' : sort,
+        ),
       });
 
       const withPct = allMatching
@@ -369,7 +371,9 @@ export class ProductService {
           return { product: p, pct };
         })
         .filter(
-          (entry): entry is { product: (typeof allMatching)[number]; pct: number } =>
+          (
+            entry,
+          ): entry is { product: (typeof allMatching)[number]; pct: number } =>
             entry !== null && entry.pct >= (minDiscount as number),
         );
 
@@ -928,14 +932,10 @@ export class ProductService {
   }
 
   async initializeHotSalesPayment(userId: string, productId: string) {
-    return this.initializePromotionPayment(userId, productId, 'BOOST');
+    return this.initializePromotionPayment(userId, productId);
   }
 
-  async initializePromotionPayment(
-    userId: string,
-    productId: string,
-    category: 'BOOST' | 'PLAN' | string = 'BOOST',
-  ) {
+  async initializePromotionPayment(userId: string, productId: string) {
     const product = await this.prisma.product.findUnique({
       where: { id: productId },
       include: {
@@ -979,11 +979,7 @@ export class ProductService {
       );
     }
 
-    const normalizedCategory = category === 'PLAN' ? 'PLAN' : 'BOOST';
-    const fee =
-      normalizedCategory === 'PLAN'
-        ? Number(process.env.PROMOTION_PLAN_FEE_GHS || 25)
-        : Number(process.env.HOT_SALES_FEE_GHS || 7);
+    const fee = Number(process.env.HOT_SALES_FEE_GHS || 7);
     if (!Number.isFinite(fee) || fee <= 0) {
       throw new BadRequestException('Promotion fee configuration is invalid');
     }
@@ -1004,7 +1000,7 @@ export class ProductService {
         seller_id: product.seller_id,
         product_id: product.id,
         reference,
-        category: normalizedCategory,
+        category: 'BOOST',
         amount: new Decimal(fee) as any,
         currency: 'GHS',
         status: 'PENDING',
@@ -1019,10 +1015,10 @@ export class ProductService {
     });
 
     return {
-      message: `${normalizedCategory} payment initialized`,
+      message: 'BOOST payment initialized',
       reference,
       amount: fee,
-      category: normalizedCategory,
+      category: 'BOOST',
       checkout_url: initRes?.data?.authorization_url || null,
       access_code: initRes?.data?.access_code || null,
     };
@@ -1087,30 +1083,6 @@ export class ProductService {
     };
   }
 
-  async getPromotionPaymentsHistory(userId: string) {
-    const seller = await this.prisma.sellerProfile.findUnique({
-      where: { user_id: userId },
-      select: { id: true },
-    });
-    if (!seller) {
-      throw new NotFoundException('Seller profile not found');
-    }
-
-    return this.prisma.productPromotionPayment.findMany({
-      where: { seller_id: seller.id },
-      include: {
-        product: {
-          select: {
-            id: true,
-            title: true,
-            is_featured: true,
-          },
-        },
-      },
-      orderBy: { created_at: 'desc' },
-    });
-  }
-
   async searchProducts(query: string) {
     if (!query || query.trim().length === 0) {
       return [];
@@ -1164,7 +1136,7 @@ export class ProductService {
       throw new NotFoundException('Seller profile not found.');
     }
 
-    const text = csvBuffer.toString('utf8').replace(/^﻿/, '');
+    const text = csvBuffer.toString('utf8').replace(/^\uFEFF/, '');
     const rows = parseCsv(text);
     if (rows.length < 2) {
       throw new BadRequestException(
@@ -1236,8 +1208,7 @@ export class ProductService {
           originalPrice = op;
         }
 
-        const tagsRaw =
-          idx('tags') >= 0 ? (row[idx('tags')] || '').trim() : '';
+        const tagsRaw = idx('tags') >= 0 ? (row[idx('tags')] || '').trim() : '';
         const tags = normalizeTags(
           tagsRaw ? tagsRaw.split(/[|;]/).map((s) => s) : [],
         );
@@ -1269,7 +1240,9 @@ export class ProductService {
               'draft',
             category,
             brand:
-              idx('brand') >= 0 ? (row[idx('brand')] || '').trim() || null : null,
+              idx('brand') >= 0
+                ? (row[idx('brand')] || '').trim() || null
+                : null,
             image_urls: [],
             tags,
             is_featured: false,

@@ -119,14 +119,11 @@ All successful responses are wrapped in a standard format:
 
 #### Promotions & Hot Sales
 
-| Method | Path                                          | Auth Required | Description                           |
-| ------ | --------------------------------------------- | ------------- | ------------------------------------- |
-| PATCH  | `/products/:id/hot-sales`                     | SELLER        | Toggle hot sales status               |
-| POST   | `/products/:id/hot-sales/initialize-payment`  | SELLER        | Initialize payment to feature product |
-| GET    | `/products/hot-sales/verify`                  | SELLER        | Verify hot sales payment              |
-| POST   | `/products/:id/promotions/initialize-payment` | SELLER        | Initialize general promotion payment  |
-| GET    | `/products/promotions/verify`                 | SELLER        | Verify promotion payment              |
-| GET    | `/products/promotions/history`                | SELLER        | View promotion payment history        |
+| Method | Path                                         | Auth Required | Description                           |
+| ------ | -------------------------------------------- | ------------- | ------------------------------------- |
+| PATCH  | `/products/:id/hot-sales`                    | SELLER        | Toggle hot sales status               |
+| POST   | `/products/:id/hot-sales/initialize-payment` | SELLER        | Initialize payment to feature product |
+| GET    | `/products/hot-sales/verify`                 | SELLER        | Verify hot sales payment              |
 
 ### Order (`/orders`)
 

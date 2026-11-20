@@ -14,7 +14,10 @@ import {
   Query,
 } from '@nestjs/common';
 import { CacheInterceptor, CacheKey, CacheTTL } from '@nestjs/cache-manager';
-import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express';
+import {
+  FileFieldsInterceptor,
+  FileInterceptor,
+} from '@nestjs/platform-express';
 import { UploadedFile } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -55,12 +58,13 @@ export class ProductController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SELLER')
   @UseInterceptors(FileInterceptor('file'))
-  async bulkImport(
-    @Request() req,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
+  async bulkImport(@Request() req, @UploadedFile() file: Express.Multer.File) {
     if (!file) {
-      return { message: 'No file uploaded', summary: { created: 0, failed: 0, total: 0 }, results: [] };
+      return {
+        message: 'No file uploaded',
+        summary: { created: 0, failed: 0, total: 0 },
+        results: [],
+      };
     }
     return this.productService.bulkImportFromCsv(req.user.id, file.buffer);
   }
@@ -117,13 +121,17 @@ export class ProductController {
     @Query('service_area') serviceArea?: string,
     @Query('avg_delivery_time') avgDeliveryTime?: string,
   ) {
-    const parseOptionalNumber = (value: string | undefined): number | undefined => {
+    const parseOptionalNumber = (
+      value: string | undefined,
+    ): number | undefined => {
       if (value === undefined || value === '') return undefined;
       const n = Number(value);
       return Number.isFinite(n) ? n : undefined;
     };
 
-    const parseOptionalBool = (value: string | undefined): boolean | undefined => {
+    const parseOptionalBool = (
+      value: string | undefined,
+    ): boolean | undefined => {
       if (value === undefined || value === '') return undefined;
       if (value === 'true') return true;
       if (value === 'false') return false;
@@ -152,7 +160,11 @@ export class ProductController {
         ? (sort as SortKey)
         : undefined;
 
-    const allowedServiceAreas = ['SAME_CITY', 'NEARBY_STATES', 'NATIONWIDE'] as const;
+    const allowedServiceAreas = [
+      'SAME_CITY',
+      'NEARBY_STATES',
+      'NATIONWIDE',
+    ] as const;
     const allowedDeliveryTimes = [
       'SAME_DAY',
       'NEXT_DAY',
@@ -253,58 +265,14 @@ export class ProductController {
     @Param('id') id: string,
     @Body() dto: ToggleHotSalesDto,
   ) {
-    return this.productService.toggleHotSales(
-      req.user.id,
-      id,
-      dto.is_featured,
-    );
+    return this.productService.toggleHotSales(req.user.id, id, dto.is_featured);
   }
 
   @Post(':id/hot-sales/initialize-payment')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SELLER')
   async initializeHotSalesPayment(@Request() req, @Param('id') id: string) {
-    return this.productService.initializeHotSalesPayment(
-      req.user.id,
-      id,
-    );
-  }
-
-  @Post(':id/promotions/initialize-payment')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('SELLER')
-  async initializePromotionPayment(
-    @Request() req,
-    @Param('id') id: string,
-    @Body('category') category?: string,
-  ) {
-    return this.productService.initializePromotionPayment(
-      req.user.id,
-      id,
-      category || 'BOOST',
-    );
-  }
-
-  @Get('promotions/verify')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('SELLER')
-  async verifyPromotionPayment(
-    @Request() req,
-    @Query('reference') reference: string,
-    @Query('product_id') productId: string,
-  ) {
-    return this.productService.verifyPromotionPayment(
-      req.user.id,
-      reference,
-      productId,
-    );
-  }
-
-  @Get('promotions/history')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('SELLER')
-  async getPromotionPaymentsHistory(@Request() req) {
-    return this.productService.getPromotionPaymentsHistory(req.user.id);
+    return this.productService.initializeHotSalesPayment(req.user.id, id);
   }
 
   @Post(':id/duplicate')
