@@ -14,7 +14,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>('dark');
-  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('dark');
+  const resolvedTheme = theme;
 
   useEffect(() => {
     const saved = localStorage.getItem('vendly_theme');
@@ -25,7 +25,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const root = document.documentElement;
-    setResolvedTheme(theme);
     if (theme === 'dark') {
       root.classList.add('dark');
     } else {
