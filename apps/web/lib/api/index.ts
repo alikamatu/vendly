@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1000';
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1000';
 
 /**
  * Translates HTTP / network failures into messages a non-technical user can
@@ -15,19 +15,15 @@ async function handleResponse<T>(response: Response): Promise<T> {
     } catch {
       // Body wasn't JSON — keep going with empty.
     }
-    const raw = Array.isArray(errorData.message)
-      ? errorData.message.join(' ')
-      : errorData.message;
+    const raw = Array.isArray(errorData.message) ? errorData.message.join(' ') : errorData.message;
 
-    const msg = raw && typeof raw === 'string'
-      ? raw
-      : friendlyStatusMessage(response.status);
+    const msg = raw && typeof raw === 'string' ? raw : friendlyStatusMessage(response.status);
     const err = new Error(msg);
     (err as any).status = response.status;
     throw err;
   }
   const json = await response.json();
-  return (json && typeof json === 'object' && 'data' in json) ? json.data : json;
+  return json && typeof json === 'object' && 'data' in json ? json.data : json;
 }
 
 function friendlyStatusMessage(status: number): string {
@@ -35,7 +31,7 @@ function friendlyStatusMessage(status: number): string {
   if (status === 401) return 'Your session has expired. Please sign in again.';
   if (status === 403) return "You don't have permission to do that.";
   if (status === 404) return "We couldn't find what you were looking for.";
-  if (status === 408 || status === 504) return "The request took too long. Try again.";
+  if (status === 408 || status === 504) return 'The request took too long. Try again.';
   if (status === 409) return 'That action conflicts with something already on file.';
   if (status === 413) return 'That file is too large to upload.';
   if (status === 429) return "You're going a bit fast — try again in a minute.";
@@ -43,53 +39,56 @@ function friendlyStatusMessage(status: number): string {
   return 'Something went wrong. Please try again.';
 }
 
-function getAuthHeader(): Record<string, string> {
-  if (typeof window === 'undefined') return {};
-  const token = localStorage.getItem('vendly_token');
-  return token ? { 'Authorization': `Bearer ${token}` } : {};
+type RequestOpts = {
+  token?: string;
+  cache?: RequestCache;
+  raw?: boolean;
+};
+
+function getAuthHeader(token?: string): Record<string, string> {
+  const value =
+    token ?? (typeof window === 'undefined' ? null : localStorage.getItem('vendly_token'));
+  return value ? { Authorization: `Bearer ${value}` } : {};
+}
+
+function isFormData(body: unknown): body is FormData {
+  return typeof FormData !== 'undefined' && body instanceof FormData;
+}
+
+async function request<T>(
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
+  url: string,
+  body?: unknown,
+  opts?: RequestOpts,
+): Promise<{ data: T }> {
+  const form = isFormData(body);
+  const jsonMethod = method === 'POST' || method === 'PUT' || method === 'PATCH';
+  const response = await fetch(`${API_URL}${url}`, {
+    ...(method === 'GET' ? {} : { method }),
+    headers: {
+      ...(jsonMethod && !form ? { 'Content-Type': 'application/json' } : {}),
+      ...getAuthHeader(opts?.token),
+    },
+    ...(jsonMethod ? { body: form ? body : body ? JSON.stringify(body) : undefined } : {}),
+    ...(opts?.cache ? { cache: opts.cache } : {}),
+  });
+
+  if (opts?.raw && response.ok) {
+    return { data: (await response.json()) as T };
+  }
+  return { data: await handleResponse<T>(response) };
 }
 
 export const api = {
-  get: async <T>(url: string) => {
-    const response = await fetch(`${API_URL}${url}`, {
-      headers: {
-        ...getAuthHeader(),
-      },
-    });
-    return { data: await handleResponse<T>(response) };
-  },
+  get: async <T>(url: string, opts?: RequestOpts) => request<T>('GET', url, undefined, opts),
 
-  post: async <T>(url: string, body?: any) => {
-    const response = await fetch(`${API_URL}${url}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader(),
-      },
-      body: body ? JSON.stringify(body) : undefined,
-    });
-    return { data: await handleResponse<T>(response) };
-  },
+  post: async <T>(url: string, body?: any, opts?: RequestOpts) =>
+    request<T>('POST', url, body, opts),
 
-  patch: async <T>(url: string, body?: any) => {
-    const response = await fetch(`${API_URL}${url}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader(),
-      },
-      body: body ? JSON.stringify(body) : undefined,
-    });
-    return { data: await handleResponse<T>(response) };
-  },
+  put: async <T>(url: string, body?: any, opts?: RequestOpts) => request<T>('PUT', url, body, opts),
 
-  delete: async <T>(url: string) => {
-    const response = await fetch(`${API_URL}${url}`, {
-      method: 'DELETE',
-      headers: {
-        ...getAuthHeader(),
-      },
-    });
-    return { data: await handleResponse<T>(response) };
-  },
+  patch: async <T>(url: string, body?: any, opts?: RequestOpts) =>
+    request<T>('PATCH', url, body, opts),
+
+  delete: async <T>(url: string, opts?: RequestOpts) => request<T>('DELETE', url, undefined, opts),
 };
