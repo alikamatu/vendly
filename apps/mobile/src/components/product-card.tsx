@@ -12,9 +12,8 @@ import { ratioFor, rememberRatio } from '@/lib/image-ratio';
 import { useCart } from '@/providers/cart-provider';
 
 /**
- * Mirrors `apps/web/components/products/ProductCard.tsx` in a Pinterest-style
- * layout: the image keeps its natural shape (no fixed square), with
- * badges on top, quick actions bottom-left, and a light text footer.
+ * Pinterest-style layout: the image keeps its natural shape (no fixed square),
+ * with badges on top, quick actions bottom-left, and a light text footer.
  */
 export function ProductCard({ product }: { product: Product }) {
   const router = useRouter();

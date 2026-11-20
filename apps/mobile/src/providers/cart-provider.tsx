@@ -56,15 +56,11 @@ function groupByVendor(items: CartItem[]): CartGroup[] {
 const STORAGE_KEY = 'vendly_cart';
 
 interface CartContextValue {
-  items: CartItem[];
   groups: CartGroup[];
   itemCount: number;
-  totalPrice: number;
   addItem: (item: Omit<CartItem, 'quantity'>, quantity?: number) => void;
   updateQuantity: (key: string, quantity: number) => void;
-  removeItem: (key: string) => void;
   removeStore: (storeLink: string) => void;
-  clear: () => void;
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -97,10 +93,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const removeItem = useCallback((key: string) => {
-    setItems((prev) => prev.filter((i) => itemKey(i) !== key));
-  }, []);
-
   const updateQuantity = useCallback((key: string, quantity: number) => {
     setItems((prev) =>
       quantity < 1
@@ -113,22 +105,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setItems((prev) => prev.filter((i) => i.storeLink !== storeLink));
   }, []);
 
-  const clear = useCallback(() => setItems([]), []);
-
   const value = useMemo<CartContextValue>(() => {
     const groups = groupByVendor(items);
     return {
-      items,
       groups,
       itemCount: items.reduce((n, i) => n + i.quantity, 0),
-      totalPrice: groups.reduce((sum, g) => sum + g.totalPrice, 0),
       addItem,
       updateQuantity,
-      removeItem,
       removeStore,
-      clear,
     };
-  }, [items, addItem, updateQuantity, removeItem, removeStore, clear]);
+  }, [items, addItem, updateQuantity, removeStore]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

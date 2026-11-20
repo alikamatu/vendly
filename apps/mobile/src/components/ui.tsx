@@ -29,12 +29,10 @@ export function useThemeColors() {
     surface: dark ? '#141414' : '#f7f8fa',
     border: dark ? '#262626' : '#e2e4e9',
     accent: '#ef4444',
-    emerald: '#059669',
-    rose: '#f43f5e',
   };
 }
 
-type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'danger';
 
 const buttonStyles: Record<ButtonVariant, { container: string; text: string }> = {
   primary: { container: 'bg-black dark:bg-white', text: 'text-white dark:text-black' },
@@ -43,7 +41,6 @@ const buttonStyles: Record<ButtonVariant, { container: string; text: string }> =
     container: 'border border-border dark:border-border-dark bg-transparent',
     text: 'text-neutral-900 dark:text-neutral-100',
   },
-  ghost: { container: 'bg-transparent', text: 'text-neutral-900 dark:text-neutral-100' },
   danger: { container: 'bg-red-50 dark:bg-red-950', text: 'text-red-600 dark:text-red-400' },
 };
 
@@ -98,22 +95,16 @@ export function Button({
 
 interface TextFieldProps extends TextInputProps {
   label?: string;
-  error?: string | null;
   hint?: string;
   leftIcon?: React.ComponentProps<typeof Ionicons>['name'];
-  rightIcon?: React.ComponentProps<typeof Ionicons>['name'];
-  onRightIconPress?: () => void;
   isPassword?: boolean;
   prefix?: string;
 }
 
 export function TextField({
   label,
-  error,
   hint,
   leftIcon,
-  rightIcon,
-  onRightIconPress,
   isPassword = false,
   prefix,
   className = '',
@@ -131,9 +122,9 @@ export function TextField({
     ? showPassword
       ? 'eye-off-outline'
       : 'eye-outline'
-    : rightIcon;
+    : undefined;
 
-  const handleRightPress = isPassword ? () => setShowPassword((prev) => !prev) : onRightIconPress;
+  const handleRightPress = isPassword ? () => setShowPassword((prev) => !prev) : undefined;
 
   return (
     <View className="gap-1.5">
@@ -144,11 +135,9 @@ export function TextField({
       ) : null}
       <View
         className={`h-12 flex-row items-center rounded-xl border bg-white px-3.5 transition-colors dark:bg-neutral-900 ${
-          error
-            ? 'border-red-500'
-            : isFocused
-              ? 'border-neutral-900 dark:border-neutral-100'
-              : 'border-border dark:border-border-dark'
+          isFocused
+            ? 'border-neutral-900 dark:border-neutral-100'
+            : 'border-border dark:border-border-dark'
         } ${className}`}
       >
         {leftIcon ? (
@@ -191,24 +180,7 @@ export function TextField({
           </Pressable>
         ) : null}
       </View>
-      {error ? (
-        <View className="flex-row items-center gap-1 pt-0.5">
-          <Ionicons name="alert-circle" size={13} color="#ef4444" />
-          <Text className="text-xs text-red-500">{error}</Text>
-        </View>
-      ) : hint ? (
-        <Text className="text-muted dark:text-muted-dark text-[11px]">{hint}</Text>
-      ) : null}
-    </View>
-  );
-}
-
-export function Loading({ label }: { label?: string }) {
-  const colors = useThemeColors();
-  return (
-    <View className="flex-1 items-center justify-center gap-3 bg-white p-6 dark:bg-neutral-950">
-      <ActivityIndicator color={colors.accent} size="large" />
-      {label ? <Text className="text-muted dark:text-muted-dark text-sm">{label}</Text> : null}
+      {hint ? <Text className="text-muted dark:text-muted-dark text-[11px]">{hint}</Text> : null}
     </View>
   );
 }
@@ -277,11 +249,6 @@ export function Divider() {
   return <View className="bg-border dark:bg-border-dark h-px" />;
 }
 
-/**
- * Mirrors `apps/web/components/home/SectionHeader.tsx`:
- * Red uppercase eyebrow with icon/dot, clean title, muted subtitle,
- * and optional pill action button.
- */
 export function SectionHeader({
   eyebrow,
   eyebrowIcon,

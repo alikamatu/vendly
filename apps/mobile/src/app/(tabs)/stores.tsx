@@ -62,7 +62,6 @@ export default function StoresScreen() {
 
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-white dark:bg-neutral-950">
-      {/* Header matching apps/web/components/stores-browser/StoresBrowser.tsx */}
       <View className="border-border/70 dark:border-border-dark gap-2.5 border-b px-4 pb-3 pt-2">
         <View className="flex-row items-center justify-between">
           <View className="flex-1 pr-3">

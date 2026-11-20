@@ -38,7 +38,7 @@ export function configureApiClient(opts: {
   unauthorizedHandler = opts.onUnauthorized;
 }
 
-type Method = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
+type Method = 'GET' | 'POST' | 'PATCH' | 'DELETE';
 
 interface RequestOptions {
   body?: unknown;
@@ -66,9 +66,7 @@ async function request<T>(method: Method, path: string, opts: RequestOptions = {
   if (token) headers.Authorization = `Bearer ${token}`;
 
   let body: BodyInit | undefined;
-  if (opts.body instanceof FormData) {
-    body = opts.body;
-  } else if (opts.body !== undefined) {
+  if (opts.body !== undefined) {
     headers['Content-Type'] = 'application/json';
     body = JSON.stringify(opts.body);
   }
@@ -106,7 +104,5 @@ export const api = {
     request<T>('POST', path, { ...opts, body }),
   patch: <T>(path: string, body?: unknown, opts?: RequestOptions) =>
     request<T>('PATCH', path, { ...opts, body }),
-  put: <T>(path: string, body?: unknown, opts?: RequestOptions) =>
-    request<T>('PUT', path, { ...opts, body }),
   delete: <T>(path: string, opts?: RequestOptions) => request<T>('DELETE', path, opts),
 };
