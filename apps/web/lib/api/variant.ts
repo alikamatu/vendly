@@ -1,16 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:1000";
-
-async function handle<T>(res: Response): Promise<T> {
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    const msg = Array.isArray(err?.message)
-      ? err.message[0]
-      : err?.message || "Request failed";
-    throw new Error(msg);
-  }
-  const json = await res.json();
-  return json && typeof json === "object" && "data" in json ? (json as any).data : json;
-}
+import { api } from './index';
 
 export interface Variant {
   id: string;
@@ -33,16 +21,17 @@ export interface VariantInput {
 }
 
 export const variantApi = {
-  list: (productId: string) =>
-    fetch(`${API_URL}/products/${productId}/variants`).then((r) => handle<Variant[]>(r)),
+  list: async (productId: string) => {
+    const res = await api.get<Variant[]>(`/products/${productId}/variants`);
+    return res.data;
+  },
 
-  replaceAll: (token: string, productId: string, variants: VariantInput[]) =>
-    fetch(`${API_URL}/products/${productId}/variants/bulk`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ variants }),
-    }).then((r) => handle<Variant[]>(r)),
+  replaceAll: async (token: string, productId: string, variants: VariantInput[]) => {
+    const res = await api.post<Variant[]>(
+      `/products/${productId}/variants/bulk`,
+      { variants },
+      { token },
+    );
+    return res.data;
+  },
 };

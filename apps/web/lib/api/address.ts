@@ -1,23 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1000';
-
-async function handleResponse<T>(response: Response): Promise<T> {
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    const msg = Array.isArray(errorData.message)
-      ? errorData.message[0]
-      : errorData.message || 'Something went wrong';
-    throw new Error(msg);
-  }
-  const json = await response.json();
-  return json && typeof json === 'object' && 'data' in json ? json.data : json;
-}
-
-function authHeaders(token: string) {
-  return {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${token}`,
-  };
-}
+import { api } from './index';
 
 export interface Address {
   id: string;
@@ -32,36 +13,22 @@ export interface Address {
 
 export const addressApi = {
   async getAddresses(token: string) {
-    const res = await fetch(`${API_URL}/address`, {
-      method: 'GET',
-      headers: authHeaders(token),
-    });
-    return handleResponse<Address[]>(res);
+    const res = await api.get<Address[]>('/address', { token });
+    return res.data;
   },
 
   async createAddress(token: string, data: Omit<Address, 'id'>) {
-    const res = await fetch(`${API_URL}/address`, {
-      method: 'POST',
-      headers: authHeaders(token),
-      body: JSON.stringify(data),
-    });
-    return handleResponse<Address>(res);
+    const res = await api.post<Address>('/address', data, { token });
+    return res.data;
   },
 
   async updateAddress(token: string, id: string, data: Partial<Omit<Address, 'id'>>) {
-    const res = await fetch(`${API_URL}/address/${id}`, {
-      method: 'PATCH',
-      headers: authHeaders(token),
-      body: JSON.stringify(data),
-    });
-    return handleResponse<Address>(res);
+    const res = await api.patch<Address>(`/address/${id}`, data, { token });
+    return res.data;
   },
 
   async deleteAddress(token: string, id: string) {
-    const res = await fetch(`${API_URL}/address/${id}`, {
-      method: 'DELETE',
-      headers: authHeaders(token),
-    });
-    return handleResponse<{ success: boolean }>(res);
+    const res = await api.delete<{ success: boolean }>(`/address/${id}`, { token });
+    return res.data;
   },
 };

@@ -1,17 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1000';
-
-async function handle<T>(res: Response): Promise<T> {
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    const msg = Array.isArray(json?.message) ? json.message[0] : json?.message || 'Request failed';
-    throw new Error(msg);
-  }
-  return (json && typeof json === 'object' && 'data' in json ? json.data : json) as T;
-}
-
-function bearer(token: string) {
-  return { Authorization: `Bearer ${token}` };
-}
+import { api } from './index';
 
 export const PRO_PRICE_GHS = 57;
 
@@ -63,11 +50,8 @@ export interface ProVerifyResponse {
 
 export const subscriptionApi = {
   async getMe(token: string): Promise<ProStatus> {
-    const res = await fetch(`${API_URL}/subscriptions/me`, {
-      headers: bearer(token),
-      cache: 'no-store',
-    });
-    return handle<ProStatus>(res);
+    const res = await api.get<ProStatus>('/subscriptions/me', { token, cache: 'no-store' });
+    return res.data;
   },
 
   async initializePro(
@@ -77,22 +61,15 @@ export const subscriptionApi = {
   ): Promise<ProInitResponse> {
     const body: Record<string, unknown> = { plan };
     if (callbackUrl) body.callback_url = callbackUrl;
-    const res = await fetch(`${API_URL}/subscriptions/pro/initialize`, {
-      method: 'POST',
-      headers: {
-        ...bearer(token),
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    });
-    return handle<ProInitResponse>(res);
+    const res = await api.post<ProInitResponse>('/subscriptions/pro/initialize', body, { token });
+    return res.data;
   },
 
   async verifyPro(token: string, reference: string): Promise<ProVerifyResponse> {
-    const res = await fetch(
-      `${API_URL}/subscriptions/pro/verify?reference=${encodeURIComponent(reference)}`,
-      { headers: bearer(token) },
+    const res = await api.get<ProVerifyResponse>(
+      `/subscriptions/pro/verify?reference=${encodeURIComponent(reference)}`,
+      { token },
     );
-    return handle<ProVerifyResponse>(res);
+    return res.data;
   },
 };
