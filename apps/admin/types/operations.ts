@@ -3,8 +3,6 @@
  * Unified TypeScript definitions for managing the entire Vendly platform.
  */
 
-// ─── User & Verification Types ──────────────────────────────────────────
-
 export type UserRole = 'USER' | 'SELLER' | 'ADMIN';
 
 export interface VendlyUser {
@@ -51,8 +49,6 @@ export interface VerificationRequest {
   reviewed_at?: string;
   created_at: string;
 }
-
-// ─── Order & Transaction Types ──────────────────────────────────────────
 
 export const ORDER_STATUSES = [
   'PENDING',
@@ -127,8 +123,6 @@ export interface OrderStatsSummary {
   pending: number;
   byStatus: Record<string, number>;
 }
-
-// ─── Product & Catalog Types ─────────────────────────────────────────────
 
 export type ProductStatus = 'draft' | 'active' | 'archived' | 'rejected';
 
@@ -236,8 +230,6 @@ export interface NewsletterStats {
   unsubscribed: number;
 }
 
-// ─── Return & Dispute Types ─────────────────────────────────────────────
-
 export type ReturnStatus =
   | 'PENDING'
   | 'APPROVED'
@@ -266,8 +258,6 @@ export interface ReturnRequest {
   } | null;
 }
 
-// ─── Review Types ───────────────────────────────────────────────────────
-
 export interface Review {
   id: string;
   user_id: string;
@@ -289,8 +279,6 @@ export interface Review {
     title: string;
   };
 }
-
-// ─── Audit Log Types ────────────────────────────────────────────────────
 
 export interface AuditLogEntry {
   id: string;
@@ -318,8 +306,6 @@ export interface AuditLogListParams {
   page?: number;
   limit?: number;
 }
-
-// ─── Notification Types ─────────────────────────────────────────────────
 
 export type NotificationType =
   | 'ORDER_PLACED'
@@ -366,8 +352,6 @@ export interface BroadcastInput {
   role?: 'USER' | 'SELLER' | 'ADMIN';
 }
 
-// ─── Payout Types ───────────────────────────────────────────────────────
-
 export type PayoutStatus = 'SUCCESS' | 'PENDING' | 'PROCESSING' | 'FAILED';
 export type PayoutMode = 'AUTO' | 'MANUAL';
 
@@ -391,8 +375,6 @@ export interface VendlyPayout {
   transaction?: { reference: string };
 }
 
-// ─── Promotion Payment Types ────────────────────────────────────────────
-
 export type PromotionCategory = 'BOOST' | 'PLAN';
 
 export interface PromotionPayment {
@@ -409,8 +391,6 @@ export interface PromotionPayment {
     title: string;
   };
 }
-
-// ─── Enhanced Transaction Types ─────────────────────────────────────────
 
 export interface EnhancedTransaction {
   id: string;
@@ -436,8 +416,6 @@ export interface EnhancedTransaction {
     status: string;
   };
 }
-
-// ─── Overview & Platform Settings ───────────────────────────────────────
 
 export interface GlobalOverviewStats {
   revenue?: number | string;
