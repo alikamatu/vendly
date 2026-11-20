@@ -6,6 +6,7 @@ import {
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
+import { buildOrderEmailPayloads } from '../email/order-email-payload';
 import { NotificationService } from '../notification/notification.service';
 import { Actor, AuditLogService } from '../audit/audit-log.service';
 import { OrderEventsService } from '../events/order-events.service';
@@ -244,78 +245,25 @@ export class AdminOrderService {
       }
 
       const orderNumber = `ORD-${id.slice(-6).toUpperCase()}`;
-      const storeName =
-        existing.items[0]?.product?.seller?.store_name || 'Verndly seller';
-      const storeLink =
-        existing.items[0]?.product?.seller?.store_link || undefined;
-
-      const formatVariantDesc = (variant: any): string | null => {
-        if (!variant || !variant.attributes) return null;
-        try {
-          const attrs =
-            typeof variant.attributes === 'string'
-              ? JSON.parse(variant.attributes)
-              : variant.attributes;
-          if (attrs && typeof attrs === 'object') {
-            const entries = Object.entries(attrs).filter(
-              ([, v]) => v != null && String(v).trim() !== '',
-            );
-            if (entries.length > 0) {
-              return entries.map(([k, v]) => `${k}: ${v}`).join(' • ');
-            }
-          }
-        } catch {}
-        return null;
-      };
-
-      const items = existing.items.map((item: any) => ({
-        title: item.product?.title || 'Product',
-        quantity: item.quantity,
-        price: item.price.toString(),
-        image_url:
-          item.variant?.image_url || item.product?.image_urls?.[0] || null,
-        variantDescription: formatVariantDesc(item.variant),
-      }));
-
-      const statusData = {
-        orderNumber,
-        date: existing.created_at,
-        customerName:
-          existing.customer_name || existing.buyer?.full_name || 'Customer',
-        customerPhone: existing.customer_phone || undefined,
-        storeName,
-        storeLink,
+      const { statusOrder, sellerEmails } = buildOrderEmailPayloads(existing, {
         status: dto.status,
-        items,
-        subtotal: existing.total_amount.toString(),
-        total: existing.total_amount.toString(),
-        currency: 'GHS',
-        deliveryMethod: existing.delivery_method || undefined,
-        deliveryLocation: existing.delivery_location || undefined,
-        deliveryNotes: existing.delivery_notes || undefined,
         reason: dto.reason ?? null,
-        cancelledBy: 'admin' as const,
-      };
+        cancelledBy: 'admin',
+        buyerStoreFallback: 'Verndly seller',
+      });
 
       if (existing.buyer?.email) {
         this.emailService
-          .sendOrderStatusUpdate(existing.buyer.email, statusData)
+          .sendOrderStatusUpdate(existing.buyer.email, statusOrder)
           .catch((err) =>
             console.error('Failed to send order status email to buyer:', err),
           );
       }
 
       if (dto.status === 'CANCELLED') {
-        const sellerEmails = Array.from(
-          new Set(
-            existing.items
-              .map((i: any) => i.product?.seller?.user?.email)
-              .filter((e): e is string => Boolean(e)),
-          ),
-        );
         for (const email of sellerEmails) {
           this.emailService
-            .sendSellerOrderStatusNotification(email, statusData)
+            .sendSellerOrderStatusNotification(email, statusOrder)
             .catch((err) =>
               console.error(
                 'Failed to send order cancellation alert to seller:',
@@ -338,7 +286,7 @@ export class AdminOrderService {
               : 'ORDER_STATUS_CHANGED';
         await this.notifications.create({
           userId: buyerId,
-          type: type as any,
+          type: type,
           title: `Order ${orderNumber} ${dto.status.toLowerCase()}`,
           body: dto.reason
             ? `Status updated to ${dto.status}. ${dto.reason}`

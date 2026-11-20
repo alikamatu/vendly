@@ -1,4 +1,5 @@
 import {
+  BRAND,
   emailShell,
   renderOrderItemsComponent,
   renderOrderSummaryCard,
@@ -11,24 +12,6 @@ import {
 } from './components';
 
 export * from './components';
-
-// ─── Brand tokens ────────────────────────────────────────────────────────────
-
-const BRAND = {
-  name: 'Verndly',
-  tagline: 'Commerce engineered for independent businesses',
-  logo: 'https://res.cloudinary.com/du30sqscy/image/upload/w_112,h_112,c_limit,q_auto,f_png/logos/verndly-logo.png',
-  supportEmail: 'support@verndly.com',
-  securityEmail: 'security@verndly.com',
-  whatsapp: '+233 24 000 0000',
-  primary: '#0f172a',
-  accent: '#ef4444',
-  text: '#0f172a',
-  muted: '#64748b',
-  border: '#e2e8f0',
-  surface: '#f8fafc',
-  background: '#f1f5f9',
-};
 
 export interface EmailLinks {
   /** e.g. https://verndly.com — no trailing slash */
@@ -170,216 +153,6 @@ const totalRow = (label: string, value: string, emphasis = false): string => `
   </tr>
 </table>`;
 
-// ─── Shell ───────────────────────────────────────────────────────────────────
-
-interface ShellOptions {
-  title: string;
-  preheader?: string;
-  category?: string;
-  content: string;
-  footerNote?: string;
-}
-
-const shell = ({
-  title,
-  preheader,
-  category,
-  content,
-  footerNote,
-}: ShellOptions): string => `
-<!DOCTYPE html>
-<html lang="en" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="color-scheme" content="light dark">
-  <meta name="supported-color-schemes" content="light dark">
-  <meta name="x-apple-disable-message-reformatting">
-  <title>${escape(title)}</title>
-  <!--[if mso]>
-  <style type="text/css">
-    body, table, td, p, a, span { font-family: 'Segoe UI', Arial, sans-serif !important; }
-  </style>
-  <![endif]-->
-  <style>
-    :root {
-      color-scheme: light dark;
-      supported-color-schemes: light dark;
-    }
-    @media (prefers-color-scheme: dark) {
-      body, .email-body {
-        background-color: #090a0f !important;
-        color: #f1f5f9 !important;
-      }
-      .email-container {
-        background-color: #12141a !important;
-        border-color: #232732 !important;
-        box-shadow: 0 4px 28px rgba(0, 0, 0, 0.55) !important;
-      }
-      .email-header {
-        background-color: #12141a !important;
-        border-bottom-color: #232732 !important;
-      }
-      .email-brand-text {
-        color: #ffffff !important;
-      }
-      .email-category-pill {
-        background-color: #1c202a !important;
-        color: #94a3b8 !important;
-        border-color: #2d3342 !important;
-      }
-      .email-card {
-        background-color: #181b23 !important;
-        border-color: #272c38 !important;
-        color: #f1f5f9 !important;
-      }
-      .email-card-row {
-        border-bottom-color: #232732 !important;
-      }
-      .email-code-box {
-        background-color: #0d0f14 !important;
-        border-color: #272c38 !important;
-        color: #e2e8f0 !important;
-      }
-      .email-h1, .email-title {
-        color: #ffffff !important;
-      }
-      .email-p {
-        color: #cbd5e1 !important;
-      }
-      .email-p strong {
-        color: #f8fafc !important;
-      }
-      .email-muted {
-        color: #94a3b8 !important;
-      }
-      .email-border {
-        border-color: #232732 !important;
-      }
-      .email-divider {
-        background-color: #232732 !important;
-      }
-      .email-footer {
-        background-color: #0d0f14 !important;
-        border-top-color: #232732 !important;
-      }
-      .email-footer-link {
-        color: #cbd5e1 !important;
-      }
-      .email-btn-primary {
-        background-color: #ffffff !important;
-        color: #090a0f !important;
-      }
-      .email-btn-secondary {
-        background-color: #181b23 !important;
-        border-color: #2d3342 !important;
-        color: #f1f5f9 !important;
-      }
-      .email-table-header {
-        color: #94a3b8 !important;
-        border-bottom-color: #232732 !important;
-      }
-      .email-table-cell {
-        border-bottom-color: #232732 !important;
-        color: #f1f5f9 !important;
-      }
-    }
-    /* Outlook.com / Webmail targeting */
-    [data-ogsc] body, [data-ogsc] .email-body { background-color: #090a0f !important; color: #f1f5f9 !important; }
-    [data-ogsc] .email-container { background-color: #12141a !important; border-color: #232732 !important; }
-    [data-ogsc] .email-header { background-color: #12141a !important; border-bottom-color: #232732 !important; }
-    [data-ogsc] .email-card { background-color: #181b23 !important; border-color: #272c38 !important; }
-    [data-ogsc] .email-h1 { color: #ffffff !important; }
-    [data-ogsc] .email-p { color: #cbd5e1 !important; }
-    [data-ogsc] .email-muted { color: #94a3b8 !important; }
-    [data-ogsc] .email-footer { background-color: #0d0f14 !important; border-top-color: #232732 !important; }
-    [data-ogsc] .email-code-box { background-color: #0d0f14 !important; border-color: #272c38 !important; }
-  </style>
-</head>
-<body class="email-body" style="margin: 0; padding: 0; background: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0f172a; -webkit-font-smoothing: antialiased;">
-  ${preheader ? `<div style="display: none; max-height: 0; overflow: hidden; mso-hide: all;">${escape(preheader)}</div>` : ''}
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="email-body" style="background: #f1f5f9; table-layout: fixed;">
-    <tr>
-      <td align="center" style="padding: 36px 16px;">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" class="email-container" style="max-width: 600px; width: 100%; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);">
-
-          <!-- Header -->
-          <tr>
-            <td class="email-header" style="padding: 22px 32px; border-bottom: 1px solid #e2e8f0; background: #ffffff;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-                <tr>
-                  <td align="left" style="vertical-align: middle;">
-                    <a href="https://verndly.com" style="text-decoration: none; display: inline-block;">
-                      <table role="presentation" cellspacing="0" cellpadding="0" border="0">
-                        <tr>
-                          <td width="28" height="28" style="vertical-align: middle; padding-right: 10px; width: 28px; height: 28px; max-width: 28px; max-height: 28px;">
-                            <img src="${BRAND.logo}" alt="Verndly" width="28" height="28" border="0" style="display: block; width: 28px !important; max-width: 28px !important; height: 28px !important; max-height: 28px !important; border: 0; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic;">
-                          </td>
-                          <td style="vertical-align: middle;">
-                            <span class="email-brand-text" style="font-size: 17px; font-weight: 600; color: #0f172a; letter-spacing: -0.02em;">Verndly</span>
-                          </td>
-                        </tr>
-                      </table>
-                    </a>
-                  </td>
-                  <td align="right" style="vertical-align: middle;">
-                    <span class="email-category-pill" style="display: inline-block; padding: 4px 10px; font-size: 11px; font-weight: 500; color: #64748b; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 9999px; letter-spacing: 0.02em;">
-                      ${escape(category || BRAND.tagline)}
-                    </span>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-
-          <!-- Main Content -->
-          <tr>
-            <td style="padding: 36px 32px 28px;">
-              ${content}
-            </td>
-          </tr>
-
-          <!-- Footer -->
-          <tr>
-            <td class="email-footer" style="padding: 26px 32px 32px; background: #f8fafc; border-top: 1px solid #e2e8f0;">
-              ${
-                footerNote
-                  ? `<p class="email-muted" style="font-size: 12px; line-height: 1.6; color: #64748b; margin: 0 0 14px;">${footerNote}</p>`
-                  : ''
-              }
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-                <tr>
-                  <td class="email-muted" style="font-size: 11px; line-height: 1.65; color: #64748b; padding-bottom: 12px;">
-                    This is a mandatory security and service communication regarding your Verndly account. Verndly will never ask for your password, PIN, or multi-factor authentication code via email.
-                  </td>
-                </tr>
-                <tr>
-                  <td style="font-size: 11.5px; color: #64748b; padding-bottom: 14px;">
-                    <a href="https://verndly.com/privacy" class="email-footer-link" style="color: #64748b; text-decoration: underline;">Privacy Statement</a>
-                    &nbsp;·&nbsp;
-                    <a href="https://verndly.com/terms" class="email-footer-link" style="color: #64748b; text-decoration: underline;">Terms of Service</a>
-                    &nbsp;·&nbsp;
-                    <a href="mailto:${BRAND.supportEmail}" class="email-footer-link" style="color: #64748b; text-decoration: underline;">Support</a>
-                    &nbsp;·&nbsp;
-                    <a href="mailto:${BRAND.securityEmail}" class="email-footer-link" style="color: #64748b; text-decoration: underline;">Security</a>
-                  </td>
-                </tr>
-                <tr>
-                  <td class="email-muted" style="font-size: 11px; color: #94a3b8; line-height: 1.5;">
-                    © ${new Date().getFullYear()} Verndly Technologies Inc. Accra, Ghana. All rights reserved.
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
-
 // ─── Heading + paragraph helpers used inside content blocks ──────────────────
 
 const H1 = (text: string) =>
@@ -400,7 +173,7 @@ export const getWelcomeEmail = (
   name: string,
   links: EmailLinks = { baseUrl: 'https://verndly.com' },
 ) =>
-  shell({
+  emailShell({
     title: `Welcome to Verndly, ${name}`,
     preheader:
       'Your Verndly account is active. Explore verified independent businesses and merchant tools.',
@@ -473,7 +246,7 @@ export const getWelcomeEmail = (
 
 // 2. Email verification
 export const getVerificationEmail = (url: string) =>
-  shell({
+  emailShell({
     title: 'Verify your email address — Verndly Security',
     preheader:
       'Please confirm your email address to complete your Verndly account registration.',
@@ -512,7 +285,7 @@ export const getVerificationEmail = (url: string) =>
 
 // 3. Password reset request
 export const getPasswordResetEmail = (url: string) =>
-  shell({
+  emailShell({
     title: 'Reset your password — Verndly Security',
     preheader:
       'A password reset was requested for your Verndly account credentials.',
@@ -552,7 +325,7 @@ export const getPasswordResetEmail = (url: string) =>
 // 4. Password changed confirmation
 export const getPasswordChangedEmail = (name: string) => {
   const formattedDate = formatDateTime(new Date());
-  return shell({
+  return emailShell({
     title: 'Security Alert: Password updated — Verndly Security',
     preheader: 'The password for your Verndly account was recently updated.',
     category: 'Security Notification',
@@ -1058,9 +831,10 @@ export const getSellerApprovedEmail = (
   storeLink: string,
   links: EmailLinks = { baseUrl: 'https://verndly.com' },
 ) =>
-  shell({
+  emailShell({
     title: "You're approved to sell on Verndly",
     preheader: 'Your store is live. Time to add your first product.',
+    category: BRAND.tagline,
     content: `
       <div style="margin-bottom:16px;">${statusPill('Approved', 'success')}</div>
       ${eyebrow('Verification approved')}
@@ -1085,9 +859,10 @@ export const getSellerRejectedEmail = (
   reason?: string,
   links: EmailLinks = { baseUrl: 'https://verndly.com' },
 ) =>
-  shell({
+  emailShell({
     title: 'Your seller application needs another look',
     preheader: "We couldn't approve your application this time.",
+    category: BRAND.tagline,
     content: `
       <div style="margin-bottom:16px;">${statusPill('Not approved', 'error')}</div>
       ${eyebrow('Verification update')}
@@ -1113,9 +888,10 @@ export const getProActivatedEmail = (
   d: ProActivatedData,
   links: EmailLinks = { baseUrl: 'https://verndly.com' },
 ) =>
-  shell({
+  emailShell({
     title: d.isExtension ? 'Verndly Pro extended' : 'Welcome to Verndly Pro',
     preheader: `Pro perks unlock right now. Your membership runs through ${formatDate(d.proExpiresAt)}.`,
+    category: BRAND.tagline,
     content: `
       <div style="margin-bottom:16px;">${statusPill('Pro active', 'success')}</div>
       ${eyebrow(d.isExtension ? 'Membership extended' : 'Welcome to Pro')}
@@ -1148,9 +924,10 @@ export const getProExpiringEmail = (
   expiresAt: string | Date,
   links: EmailLinks = { baseUrl: 'https://verndly.com' },
 ) =>
-  shell({
+  emailShell({
     title: 'Your Verndly Pro membership expires soon',
     preheader: `Renew before ${formatDate(expiresAt)} to keep your Pro perks active.`,
+    category: BRAND.tagline,
     content: `
       <div style="margin-bottom:16px;">${statusPill('Expiring soon', 'warning')}</div>
       ${eyebrow('Renew Pro')}
@@ -1375,9 +1152,10 @@ export const getLowStockEmail = (
   },
   links: EmailLinks = { baseUrl: 'https://verndly.com' },
 ) =>
-  shell({
+  emailShell({
     title: `Low stock — ${product.title}`,
     preheader: `Only ${product.quantity} left of ${product.title}. Restock to keep selling.`,
+    category: BRAND.tagline,
     content: `
       <div style="margin-bottom:16px;">${statusPill('Low stock', 'warning')}</div>
       ${eyebrow('Inventory alert')}
@@ -1396,7 +1174,7 @@ export const getLowStockEmail = (
 
 // 14. Account suspended / warning
 export const getAccountSuspendedEmail = (name: string, reason: string) =>
-  shell({
+  emailShell({
     title: 'Notice of account restriction — Verndly Trust & Safety',
     preheader:
       'Your Verndly account has been temporarily restricted pending compliance review.',
@@ -1447,9 +1225,10 @@ export const getContactFormAdminAlertEmail = (d: {
   subject: string;
   message: string;
 }) =>
-  shell({
+  emailShell({
     title: `New Contact Request: ${d.subject}`,
     preheader: `Message from ${d.name} (${d.email})`,
+    category: BRAND.tagline,
     content: `
       <div style="margin-bottom:16px;">${statusPill('New message', 'info')}</div>
       ${eyebrow('Contact Form')}
@@ -1479,9 +1258,10 @@ export const getSellerVerificationAdminAlertEmail = (
   },
   links: EmailLinks = { baseUrl: 'https://verndly.com' },
 ) =>
-  shell({
+  emailShell({
     title: `New seller verification: ${d.userName}`,
     preheader: `${d.userName} submitted a ${d.type} verification request`,
+    category: BRAND.tagline,
     content: `
       <div style="margin-bottom:16px;">${statusPill('Pending review', 'warning')}</div>
       ${eyebrow('Seller Verification')}
@@ -1506,9 +1286,10 @@ export const getNewsletterWelcomeEmail = (
   email: string,
   links: EmailLinks = { baseUrl: 'https://verndly.com' },
 ) =>
-  shell({
+  emailShell({
     title: 'Welcome to the Verndly Newsletter',
     preheader: 'You are on the list for updates, deals, and seller tips.',
+    category: BRAND.tagline,
     content: `
       <div style="margin-bottom:16px;">${statusPill('Subscribed', 'success')}</div>
       ${eyebrow('Newsletter')}
