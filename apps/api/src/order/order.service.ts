@@ -12,6 +12,7 @@ import { PaymentsService } from '../payments/payments.service';
 import { NotificationService } from '../notification/notification.service';
 import { SmsClient } from '../auth/arkesel.client';
 import { EmailService } from '../email/email.service';
+import { buildOrderEmailPayloads } from '../email/order-email-payload';
 import { OrderEventsService } from '../events/order-events.service';
 
 @Injectable()
@@ -277,7 +278,7 @@ export class OrderService {
     const orderNumber = `ORD-${order.id.slice(-6).toUpperCase()}`;
     await this.notifications.create({
       userId,
-      type: 'ORDER_PLACED' as any,
+      type: 'ORDER_PLACED',
       title: `Order ${orderNumber} ${requiresPaystack ? 'initiated' : 'placed'}`,
       body: requiresPaystack
         ? `Complete payment to confirm your order with ${seller.store_name}.`
@@ -587,7 +588,7 @@ export class OrderService {
     // In-app notification for buyer
     await this.notifications.create({
       userId: order.buyer_id,
-      type: 'ORDER_STATUS_CHANGED' as any,
+      type: 'ORDER_STATUS_CHANGED',
       title: `Order ${orderNumber} is now ${status.replace(/_/g, ' ')}`,
       body: `Your order status has been updated to ${status.replace(/_/g, ' ')}.`,
       link: `/orders/${orderId}`,
@@ -774,7 +775,7 @@ export class OrderService {
       // In-app notification for buyer
       await this.notifications.create({
         userId: order.buyer_id,
-        type: 'ORDER_STATUS_CHANGED' as any,
+        type: 'ORDER_STATUS_CHANGED',
         title: `Payment recorded for ${orderNumber}`,
         body: `Payment for order ${orderNumber} was marked as received (${dto.payment_method === 'PAYSTACK' ? 'Online' : 'Cash'}).`,
         link: `/orders/${orderId}`,
@@ -930,7 +931,7 @@ export class OrderService {
     for (const sellerUserId of sellerUserIds) {
       await this.notifications.create({
         userId: sellerUserId,
-        type: 'ORDER_CANCELLED' as any,
+        type: 'ORDER_CANCELLED',
         title: `Order ${orderNumber} cancelled by buyer`,
         body: reason
           ? `Buyer cancelled the order. Reason: ${reason}`
@@ -1084,7 +1085,7 @@ export class OrderService {
     }
     await this.notifications.create({
       userId: args.sellerUserId,
-      type: 'ORDER_PLACED' as any,
+      type: 'ORDER_PLACED',
       title: `New order ${args.orderNumber}`,
       body: `${args.buyerName || 'A customer'} placed an order with your store.`,
       link: `/dashboard/orders`,
@@ -1415,7 +1416,7 @@ export class OrderService {
       await this.paymentsService.refundTransaction({
         orderId,
         reason: sellerResponse || 'Seller approved return and refund',
-        actor: { id: userId, role: 'SELLER' as any },
+        actor: { id: userId, role: 'SELLER' },
       });
     } else {
       const orderNumber = `ORD-${orderId.slice(-6).toUpperCase()}`;
@@ -1537,7 +1538,7 @@ export class OrderService {
       orderId,
       reason:
         note || 'Seller confirmed returned item receipt and authorized refund',
-      actor: { id: userId, role: 'SELLER' as any },
+      actor: { id: userId, role: 'SELLER' },
     });
   }
 
@@ -1572,70 +1573,12 @@ export class OrderService {
 
       if (!order) return;
 
-      const orderNumber = `ORD-${order.id.slice(-6).toUpperCase()}`;
-      const customerName =
-        order.customer_name || order.buyer?.full_name || 'Customer';
-
-      const formatVariantDesc = (variant: any): string | null => {
-        if (!variant || !variant.attributes) return null;
-        try {
-          const attrs =
-            typeof variant.attributes === 'string'
-              ? JSON.parse(variant.attributes)
-              : variant.attributes;
-          if (attrs && typeof attrs === 'object') {
-            const entries = Object.entries(attrs).filter(
-              ([, v]) => v != null && String(v).trim() !== '',
-            );
-            if (entries.length > 0) {
-              return entries.map(([k, v]) => `${k}: ${v}`).join(' • ');
-            }
-          }
-        } catch {}
-        return null;
-      };
-
-      const buyerItems = order.items.map((item: any) => ({
-        title: item.product?.title || 'Product',
-        quantity: item.quantity,
-        price: item.price.toString(),
-        image_url:
-          item.variant?.image_url || item.product?.image_urls?.[0] || null,
-        variantDescription: formatVariantDesc(item.variant),
-      }));
-
-      const isPaid =
-        order.transaction?.status === 'SUCCESS' || order.status === 'PAID';
-      const paymentMethod =
-        order.transaction?.provider === 'PAYSTACK'
-          ? 'Paystack (Paid Online)'
-          : 'Cash on Delivery (Pay on Delivery)';
-
-      const buyerOrderData = {
-        orderNumber,
-        date: order.created_at,
-        customerName,
-        customerEmail: order.buyer?.email,
-        customerPhone: order.customer_phone || undefined,
-        deliveryMethod: order.delivery_method || undefined,
-        deliveryLocation: order.delivery_location || undefined,
-        deliveryNotes: order.delivery_notes || undefined,
-        storeName:
-          order.items[0]?.product?.seller?.store_name || 'Verndly Store',
-        storeLink: order.items[0]?.product?.seller?.store_link || undefined,
-        items: buyerItems,
-        subtotal: order.total_amount.toString(),
-        total: order.total_amount.toString(),
-        currency: 'GHS',
-        paymentMethod,
-        paymentReference: order.transaction?.reference || undefined,
-        isPaid,
-      };
+      const { buyerOrder, sellerOrders } = buildOrderEmailPayloads(order);
 
       // 1. Send confirmation to buyer
       if (order.buyer?.email) {
         this.emailService
-          .sendOrderConfirmation(order.buyer.email, buyerOrderData)
+          .sendOrderConfirmation(order.buyer.email, buyerOrder)
           .catch((err) =>
             console.error(
               `Failed to send order confirmation to ${order.buyer?.email}:`,
@@ -1645,61 +1588,12 @@ export class OrderService {
       }
 
       // 2. Group items per seller & send new sale alert to each vendor
-      const sellerGroups = new Map<
-        string,
-        {
-          email: string;
-          storeName: string;
-          storeLink?: string;
-          items: typeof buyerItems;
-        }
-      >();
-
-      for (const item of order.items as any[]) {
-        const seller = item.product?.seller;
-        const sellerUser = seller?.user;
-        if (!sellerUser?.email) continue;
-
-        const email = sellerUser.email;
-        let group = sellerGroups.get(email);
-        if (!group) {
-          group = {
-            email,
-            storeName: seller?.store_name || 'Your Store',
-            storeLink: seller?.store_link,
-            items: [],
-          };
-          sellerGroups.set(email, group);
-        }
-
-        group.items.push({
-          title: item.product?.title || 'Product',
-          quantity: item.quantity,
-          price: item.price.toString(),
-          image_url:
-            item.variant?.image_url || item.product?.image_urls?.[0] || null,
-          variantDescription: formatVariantDesc(item.variant),
-        });
-      }
-
-      for (const group of sellerGroups.values()) {
-        const sellerTotal = group.items.reduce(
-          (sum, it) => sum + Number(it.price) * it.quantity,
-          0,
-        );
-
+      for (const sellerOrder of sellerOrders) {
         this.emailService
-          .sendSellerOrderNotification(group.email, {
-            ...buyerOrderData,
-            storeName: group.storeName,
-            storeLink: group.storeLink,
-            items: group.items,
-            subtotal: sellerTotal.toFixed(2),
-            total: sellerTotal.toFixed(2),
-          })
+          .sendSellerOrderNotification(sellerOrder.email, sellerOrder.order)
           .catch((err) =>
             console.error(
-              `Failed to send seller order notification to ${group.email}:`,
+              `Failed to send seller order notification to ${sellerOrder.email}:`,
               err,
             ),
           );
@@ -1748,66 +1642,16 @@ export class OrderService {
 
       if (!order) return;
 
-      const orderNumber = `ORD-${order.id.slice(-6).toUpperCase()}`;
-      const customerName =
-        order.customer_name || order.buyer?.full_name || 'Customer';
-
-      const formatVariantDesc = (variant: any): string | null => {
-        if (!variant || !variant.attributes) return null;
-        try {
-          const attrs =
-            typeof variant.attributes === 'string'
-              ? JSON.parse(variant.attributes)
-              : variant.attributes;
-          if (attrs && typeof attrs === 'object') {
-            const entries = Object.entries(attrs).filter(
-              ([, v]) => v != null && String(v).trim() !== '',
-            );
-            if (entries.length > 0) {
-              return entries.map(([k, v]) => `${k}: ${v}`).join(' • ');
-            }
-          }
-        } catch {}
-        return null;
-      };
-
-      const items = order.items.map((item: any) => ({
-        title: item.product?.title || 'Product',
-        quantity: item.quantity,
-        price: item.price.toString(),
-        image_url:
-          item.variant?.image_url || item.product?.image_urls?.[0] || null,
-        variantDescription: formatVariantDesc(item.variant),
-      }));
-
-      const storeName =
-        order.items[0]?.product?.seller?.store_name || 'Verndly Store';
-      const storeLink =
-        order.items[0]?.product?.seller?.store_link || undefined;
-
-      const statusData = {
-        orderNumber,
-        date: order.created_at,
-        customerName,
-        customerPhone: order.customer_phone || undefined,
-        storeName,
-        storeLink,
+      const { statusOrder, sellerEmails } = buildOrderEmailPayloads(order, {
         status,
-        items,
-        subtotal: order.total_amount.toString(),
-        total: order.total_amount.toString(),
-        currency: 'GHS',
-        deliveryMethod: order.delivery_method || undefined,
-        deliveryLocation: order.delivery_location || undefined,
-        deliveryNotes: order.delivery_notes || undefined,
         reason: reason ?? null,
         cancelledBy: opts?.cancelledBy,
-      };
+      });
 
       // 1. Notify buyer
       if (order.buyer?.email) {
         this.emailService
-          .sendOrderStatusUpdate(order.buyer.email, statusData)
+          .sendOrderStatusUpdate(order.buyer.email, statusOrder)
           .catch((err) =>
             console.error(
               `Failed to send order status email to ${order.buyer?.email}:`,
@@ -1819,17 +1663,9 @@ export class OrderService {
       // 2. If cancelled (by buyer or admin), notify vendor(s)
       const normStatus = status.trim().toUpperCase();
       if (normStatus === 'CANCELLED') {
-        const sellerEmails = Array.from(
-          new Set(
-            order.items
-              .map((i: any) => i.product?.seller?.user?.email)
-              .filter((e): e is string => Boolean(e)),
-          ),
-        );
-
         for (const email of sellerEmails) {
           this.emailService
-            .sendSellerOrderStatusNotification(email, statusData)
+            .sendSellerOrderStatusNotification(email, statusOrder)
             .catch((err) =>
               console.error(
                 `Failed to send cancellation alert to seller ${email}:`,

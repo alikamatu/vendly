@@ -14,6 +14,7 @@ import paystackConfig from './config/paystack.config';
 import { PaymentsRepository } from './payments.repository';
 import { InitializePaymentDto } from './dto/initialize-payment.dto';
 import { EmailService } from '../email/email.service';
+import { buildOrderEmailPayloads } from '../email/order-email-payload';
 import { Actor, AuditLogService } from '../audit/audit-log.service';
 import { OrderEventsService } from '../events/order-events.service';
 import { NotificationService } from '../notification/notification.service';
@@ -363,7 +364,7 @@ export class PaymentsService {
     for (const sellerUserId of sellerUserIds) {
       await this.notifications.create({
         userId: sellerUserId,
-        type: 'ORDER_STATUS_CHANGED' as any,
+        type: 'ORDER_STATUS_CHANGED',
         title: `Order ${orderNumber} paid`,
         body: `Order ${orderNumber} has been paid and is ready for fulfillment.`,
         link: '/dashboard/orders',
@@ -375,7 +376,7 @@ export class PaymentsService {
     if (order.buyer_id) {
       await this.notifications.create({
         userId: order.buyer_id,
-        type: 'ORDER_STATUS_CHANGED' as any,
+        type: 'ORDER_STATUS_CHANGED',
         title: `Payment received for ${orderNumber}`,
         body: `Your payment for order ${orderNumber} was successfully processed.`,
         link: `/orders/${orderId}`,
@@ -421,64 +422,19 @@ export class PaymentsService {
     const order = await this.paymentsRepository.findOrderWithDetails(orderId);
     if (!order) return;
 
-    const orderNumber = `ORD-${order.id.toString().slice(-6).toUpperCase()}`;
-    const customerName =
-      order.customer_name || order.buyer?.full_name || 'Customer';
-
-    const formatVariantDesc = (variant: any): string | null => {
-      if (!variant || !variant.attributes) return null;
-      try {
-        const attrs =
-          typeof variant.attributes === 'string'
-            ? JSON.parse(variant.attributes)
-            : variant.attributes;
-        if (attrs && typeof attrs === 'object') {
-          const entries = Object.entries(attrs).filter(
-            ([, v]) => v != null && String(v).trim() !== '',
-          );
-          if (entries.length > 0) {
-            return entries.map(([k, v]) => `${k}: ${v}`).join(' • ');
-          }
-        }
-      } catch {}
-      return null;
-    };
-
-    // Buyer-facing items: all line items
-    const buyerItems = order.items.map((item: any) => ({
-      title: item.product?.title || 'Unknown Product',
-      quantity: item.quantity,
-      price: item.price.toString(),
-      image_url:
-        item.variant?.image_url || item.product?.image_urls?.[0] || null,
-      variantDescription: formatVariantDesc(item.variant),
-    }));
-
-    const buyerOrderData = {
-      orderNumber,
-      date: order.created_at,
-      customerName,
-      customerEmail: order.buyer?.email,
-      customerPhone: order.customer_phone || undefined,
-      deliveryMethod: order.delivery_method || undefined,
-      deliveryLocation: order.delivery_location || undefined,
-      deliveryNotes: order.delivery_notes || undefined,
-      storeName:
-        // Buyer may have items from multiple stores; surface the first seller name
-        order.items[0]?.product?.seller?.store_name || 'Verndly seller',
-      storeLink: order.items[0]?.product?.seller?.store_link || undefined,
-      items: buyerItems,
-      subtotal: order.total_amount.toString(),
-      total: order.total_amount.toString(),
+    const { buyerOrder, sellerOrders } = buildOrderEmailPayloads(order, {
+      itemTitleFallback: 'Unknown Product',
+      buyerStoreFallback: 'Verndly seller',
+      sellerStoreFallback: 'Your store',
       paymentMethod: order.transaction?.provider || 'Paystack',
-      paymentReference: order.transaction?.reference || undefined,
       isPaid: true,
-    };
+      currency: null,
+    });
 
     // 1. Buyer order confirmation & payment receipt
     if (order.buyer?.email) {
       this.emailService
-        .sendOrderConfirmation(order.buyer.email, buyerOrderData)
+        .sendOrderConfirmation(order.buyer.email, buyerOrder)
         .catch((err) =>
           this.logger.error(
             `Failed to send order confirmation to ${order.buyer?.email}`,
@@ -488,7 +444,7 @@ export class PaymentsService {
 
       this.emailService
         .sendPaymentReceiptEmail(order.buyer.email, {
-          ...buyerOrderData,
+          ...buyerOrder,
           orderId: order.id,
           transactionId: order.transaction?.id,
         })
@@ -502,59 +458,12 @@ export class PaymentsService {
 
     // 2. Per-seller alerts — each seller sees only their items + a per-store
     //    total, so the email reads as a real order to that store.
-    const sellerGroups = new Map<
-      string,
-      {
-        email: string;
-        storeName: string;
-        storeLink?: string;
-        items: typeof buyerItems;
-      }
-    >();
-
-    for (const item of order.items as any[]) {
-      const seller = item.product?.seller;
-      const sellerUser = seller?.user;
-      if (!sellerUser?.email) continue;
-
-      const key = sellerUser.email;
-      let group = sellerGroups.get(key);
-      if (!group) {
-        group = {
-          email: sellerUser.email,
-          storeName: seller?.store_name || 'Your store',
-          storeLink: seller?.store_link,
-          items: [],
-        };
-        sellerGroups.set(key, group);
-      }
-      group.items.push({
-        title: item.product?.title || 'Unknown Product',
-        quantity: item.quantity,
-        price: item.price.toString(),
-        image_url:
-          item.variant?.image_url || item.product?.image_urls?.[0] || null,
-        variantDescription: formatVariantDesc(item.variant),
-      });
-    }
-
-    for (const group of sellerGroups.values()) {
-      const sellerTotal = group.items.reduce(
-        (sum, it) => sum + Number(it.price) * it.quantity,
-        0,
-      );
+    for (const sellerOrder of sellerOrders) {
       this.emailService
-        .sendSellerOrderNotification(group.email, {
-          ...buyerOrderData,
-          storeName: group.storeName,
-          storeLink: group.storeLink,
-          items: group.items,
-          subtotal: sellerTotal.toFixed(2),
-          total: sellerTotal.toFixed(2),
-        })
+        .sendSellerOrderNotification(sellerOrder.email, sellerOrder.order)
         .catch((err) =>
           this.logger.error(
-            `Failed to send seller notification to ${group.email}`,
+            `Failed to send seller notification to ${sellerOrder.email}`,
             err,
           ),
         );
@@ -1215,7 +1124,7 @@ export class PaymentsService {
         const formattedAmount = `${symbol} ${netAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         await this.notifications.create({
           userId: seller.user_id,
-          type: 'PAYMENT_RECEIVED' as any,
+          type: 'PAYMENT_RECEIVED',
           title: `Payout of ${formattedAmount} sent`,
           body: `Your payout of ${formattedAmount} for ${seller.store_name} has been disbursed to your account.`,
           link: '/dashboard/transactions',
