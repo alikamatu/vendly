@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1000';
+import { api } from './index';
 
 export type BrowseSort =
   | 'newest'
@@ -8,13 +8,13 @@ export type BrowseSort =
   | 'popular'
   | 'discount_desc';
 
-export type ServiceAreaFilter = "SAME_CITY" | "NEARBY_STATES" | "NATIONWIDE";
+export type ServiceAreaFilter = 'SAME_CITY' | 'NEARBY_STATES' | 'NATIONWIDE';
 export type DeliveryTimeFilter =
-  | "SAME_DAY"
-  | "NEXT_DAY"
-  | "TWO_TO_THREE_DAYS"
-  | "FOUR_TO_SEVEN_DAYS"
-  | "MORE_THAN_ONE_WEEK";
+  | 'SAME_DAY'
+  | 'NEXT_DAY'
+  | 'TWO_TO_THREE_DAYS'
+  | 'FOUR_TO_SEVEN_DAYS'
+  | 'MORE_THAN_ONE_WEEK';
 
 export interface BrowseProductsParams {
   search?: string;
@@ -66,23 +66,6 @@ export interface BrowseProductsResponse {
   meta: { total: number; page: number; limit: number; totalPages: number };
 }
 
-async function handleResponse<T>(response: Response): Promise<T> {
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    const msg = Array.isArray(errorData.message) ? errorData.message[0] : errorData.message || 'Something went wrong';
-    throw new Error(msg);
-  }
-  const json = await response.json();
-  // If the response is wrapped by the ApiResponseInterceptor, return the data part
-  return (json && typeof json === 'object' && 'data' in json) ? json.data : json;
-}
-
-function authHeaders(token: string) {
-  return {
-    Authorization: `Bearer ${token}`,
-  };
-}
-
 export interface CreateProductInput {
   title: string;
   description?: string;
@@ -100,7 +83,12 @@ export interface CreateProductInput {
 }
 
 export const productApi = {
-  async createProduct(token: string, data: CreateProductInput, images: File[], video?: File | null) {
+  async createProduct(
+    token: string,
+    data: CreateProductInput,
+    images: File[],
+    video?: File | null,
+  ) {
     const formData = new FormData();
     formData.append('title', data.title);
     if (data.description) formData.append('description', data.description);
@@ -112,9 +100,9 @@ export const productApi = {
     if (data.status) formData.append('status', data.status);
     formData.append('category', data.category);
     if (data.brand) formData.append('brand', data.brand);
-    
+
     if (data.tags) {
-      data.tags.forEach(tag => formData.append('tags[]', tag));
+      data.tags.forEach((tag) => formData.append('tags[]', tag));
     }
 
     if (data.attributes) {
@@ -124,7 +112,7 @@ export const productApi = {
       formData.append('is_featured', String(data.is_featured));
     }
 
-    images.forEach(image => {
+    images.forEach((image) => {
       formData.append('images', image);
     });
 
@@ -132,23 +120,18 @@ export const productApi = {
       formData.append('video', video);
     }
 
-    const res = await fetch(`${API_URL}/products`, {
-      method: 'POST',
-      headers: authHeaders(token),
-      body: formData,
-    });
-
-    return handleResponse<{ message: string; product: any }>(res);
+    const res = await api.post<{ message: string; product: any }>('/products', formData, { token });
+    return res.data;
   },
 
   async getProducts() {
-    const res = await fetch(`${API_URL}/products`);
-    return handleResponse<any[]>(res);
+    const res = await api.get<any[]>('/products');
+    return res.data;
   },
 
   async searchProducts(query: string) {
-    const res = await fetch(`${API_URL}/products/search?q=${encodeURIComponent(query)}`);
-    return handleResponse<any[]>(res);
+    const res = await api.get<any[]>(`/products/search?q=${encodeURIComponent(query)}`);
+    return res.data;
   },
 
   /**
@@ -161,14 +144,11 @@ export const productApi = {
       if (v === undefined || v === null || v === '') continue;
       qs.set(k, typeof v === 'boolean' ? String(v) : String(v));
     }
-    const res = await fetch(`${API_URL}/products?${qs.toString()}`);
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      const msg = Array.isArray(data?.message) ? data.message[0] : data?.message || 'Failed to load';
-      throw new Error(msg);
-    }
-    const json = await res.json();
-    // Envelope is { data: [...], meta: { total, page, limit, totalPages } }
+    const res = await api.get<{ data?: BrowseProduct[]; meta?: BrowseProductsResponse['meta'] }>(
+      `/products?${qs.toString()}`,
+      { raw: true },
+    );
+    const json = res.data;
     return {
       data: (json?.data ?? []) as BrowseProduct[],
       meta: {
@@ -181,58 +161,62 @@ export const productApi = {
   },
 
   async getProductById(id: string) {
-    const res = await fetch(`${API_URL}/products/${id}`);
-    return handleResponse<any>(res);
+    const res = await api.get<any>(`/products/${id}`);
+    return res.data;
   },
 
   async getCategories() {
-    const res = await fetch(`${API_URL}/products/categories`);
-    return handleResponse<{ id: string; name: string; image_url?: string | null; fields: any[] }[]>(res);
+    const res =
+      await api.get<{ id: string; name: string; image_url?: string | null; fields: any[] }[]>(
+        '/products/categories',
+      );
+    return res.data;
   },
-  
+
   async getBrands(categoryName?: string, categoryId?: string) {
     const params = new URLSearchParams();
     if (categoryName) params.append('category', categoryName);
     if (categoryId) params.append('category_id', categoryId);
-    
-    const res = await fetch(`${API_URL}/brands?${params.toString()}`);
-    return handleResponse<{ id: string; name: string; image_url?: string | null; category_id: string }[]>(res);
+
+    const res = await api.get<
+      { id: string; name: string; image_url?: string | null; category_id: string }[]
+    >(`/brands?${params.toString()}`);
+    return res.data;
   },
 
   async getProductsByStoreSlug(slug: string) {
-    const res = await fetch(`${API_URL}/products/store/${slug}`);
-    return handleResponse<any[]>(res);
+    const res = await api.get<any[]>(`/products/store/${slug}`);
+    return res.data;
   },
 
   async getSellerProducts(token: string) {
-    const res = await fetch(`${API_URL}/products/seller/me`, {
-      headers: authHeaders(token),
-    });
-    return handleResponse<any[]>(res);
+    const res = await api.get<any[]>('/products/seller/me', { token });
+    return res.data;
   },
 
   async updateProduct(
-    token: string, 
-    id: string, 
-    data: Partial<CreateProductInput>, 
-    images?: File[], 
+    token: string,
+    id: string,
+    data: Partial<CreateProductInput>,
+    images?: File[],
     video?: File | null,
-    existing_images?: string[]
+    existing_images?: string[],
   ) {
     const formData = new FormData();
     if (data.title) formData.append('title', data.title);
     if (data.description) formData.append('description', data.description);
     if (data.price) formData.append('price', data.price);
-    if (data.original_price !== undefined) formData.append('original_price', data.original_price || '');
+    if (data.original_price !== undefined)
+      formData.append('original_price', data.original_price || '');
     if (data.currency) formData.append('currency', data.currency);
     if (data.condition) formData.append('condition', data.condition);
     if (data.quantity_available) formData.append('quantity_available', data.quantity_available);
     if (data.status) formData.append('status', data.status);
     if (data.category) formData.append('category', data.category);
     if (data.brand !== undefined) formData.append('brand', data.brand || '');
-    
+
     if (data.tags) {
-      data.tags.forEach(tag => formData.append('tags[]', tag));
+      data.tags.forEach((tag) => formData.append('tags[]', tag));
     }
 
     if (data.attributes) {
@@ -243,93 +227,68 @@ export const productApi = {
     }
 
     if (existing_images) {
-      existing_images.forEach(url => formData.append('existing_images[]', url));
+      existing_images.forEach((url) => formData.append('existing_images[]', url));
     }
 
     if (images) {
-      images.forEach(image => {
+      images.forEach((image) => {
         formData.append('images', image);
       });
     }
 
     if (video) {
-        formData.append('video', video);
+      formData.append('video', video);
     }
 
-    const res = await fetch(`${API_URL}/products/${id}`, {
-      method: 'PUT',
-      headers: authHeaders(token),
-      body: formData,
+    const res = await api.put<{ message: string; product: any }>(`/products/${id}`, formData, {
+      token,
     });
-
-    return handleResponse<{ message: string; product: any }>(res);
+    return res.data;
   },
 
   async toggleHotSales(token: string, id: string, is_featured: boolean) {
-    const res = await fetch(`${API_URL}/products/${id}/hot-sales`, {
-      method: 'PATCH',
-      headers: {
-        ...authHeaders(token),
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ is_featured }),
-    });
-
-    return handleResponse<{ message: string; product: { id: string; is_featured: boolean } }>(res);
+    const res = await api.patch<{ message: string; product: { id: string; is_featured: boolean } }>(
+      `/products/${id}/hot-sales`,
+      { is_featured },
+      { token },
+    );
+    return res.data;
   },
 
   async initializeHotSalesPayment(token: string, id: string) {
-    const res = await fetch(`${API_URL}/products/${id}/hot-sales/initialize-payment`, {
-      method: 'POST',
-      headers: authHeaders(token),
-    });
-
-    return handleResponse<{
+    const res = await api.post<{
       message: string;
       reference: string;
       amount: number;
       checkout_url: string | null;
       access_code: string | null;
-    }>(res);
+    }>(`/products/${id}/hot-sales/initialize-payment`, undefined, { token });
+    return res.data;
   },
 
-  async verifyHotSalesPayment(
-    token: string,
-    reference: string,
-    productId: string,
-  ) {
-    const res = await fetch(
-      `${API_URL}/products/hot-sales/verify?reference=${encodeURIComponent(reference)}&product_id=${encodeURIComponent(productId)}`,
-      {
-        headers: authHeaders(token),
-      },
-    );
-
-    return handleResponse<{
+  async verifyHotSalesPayment(token: string, reference: string, productId: string) {
+    const res = await api.get<{
       verified: boolean;
       status: string;
       is_featured: boolean;
-    }>(res);
+    }>(
+      `/products/hot-sales/verify?reference=${encodeURIComponent(reference)}&product_id=${encodeURIComponent(productId)}`,
+      { token },
+    );
+    return res.data;
   },
 
   async deleteProduct(token: string, id: string) {
-    const res = await fetch(`${API_URL}/products/${id}`, {
-      method: 'DELETE',
-      headers: authHeaders(token),
-    });
-
-    return handleResponse<{ message: string }>(res);
+    const res = await api.delete<{ message: string }>(`/products/${id}`, { token });
+    return res.data;
   },
 
   async duplicateProduct(token: string, id: string) {
-    const res = await fetch(`${API_URL}/products/${id}/duplicate`, {
-      method: 'POST',
-      headers: authHeaders(token),
-    });
-    return handleResponse<{
+    const res = await api.post<{
       message: string;
       product: { id: string; title: string };
-    }>(res);
+    }>(`/products/${id}/duplicate`, undefined, { token });
+    return res.data;
   },
 
   /**
@@ -339,23 +298,15 @@ export const productApi = {
   async updateStatus(token: string, id: string, status: string) {
     const fd = new FormData();
     fd.append('status', status);
-    const res = await fetch(`${API_URL}/products/${id}`, {
-      method: 'PUT',
-      headers: authHeaders(token),
-      body: fd,
-    });
-    return handleResponse<{ message: string; product: any }>(res);
+    const res = await api.put<{ message: string; product: any }>(`/products/${id}`, fd, { token });
+    return res.data;
   },
 
   /** Same trick for stock — single-field PUT to skip the full form. */
   async updateStock(token: string, id: string, quantity_available: number) {
     const fd = new FormData();
     fd.append('quantity_available', String(quantity_available));
-    const res = await fetch(`${API_URL}/products/${id}`, {
-      method: 'PUT',
-      headers: authHeaders(token),
-      body: fd,
-    });
-    return handleResponse<{ message: string; product: any }>(res);
+    const res = await api.put<{ message: string; product: any }>(`/products/${id}`, fd, { token });
+    return res.data;
   },
 };

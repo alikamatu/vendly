@@ -1,16 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1000';
-
-async function handleResponse<T>(response: Response): Promise<T> {
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    const msg = Array.isArray(errorData.message)
-      ? errorData.message[0]
-      : errorData.message || 'Something went wrong';
-    throw new Error(msg);
-  }
-  const json = await response.json();
-  return json && typeof json === 'object' && 'data' in json ? json.data : json;
-}
+import { api } from './index';
 
 export interface CreateStoreInput {
   store_name: string;
@@ -33,14 +21,8 @@ export const storeApi = {
     if (data.delivery_policies) formData.append('delivery_policies', data.delivery_policies);
     if (logoFile) formData.append('logo', logoFile);
 
-    const res = await fetch(`${API_URL}/stores`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: formData,
-    });
-    return handleResponse<{ message: string; store: any }>(res);
+    const res = await api.post<{ message: string; store: any }>('/stores', formData, { token });
+    return res.data;
   },
 
   async updateStore(token: string, data: any, logoFile?: File) {
@@ -56,43 +38,26 @@ export const storeApi = {
     });
     if (logoFile) formData.append('logo', logoFile);
 
-    const res = await fetch(`${API_URL}/stores`, {
-      method: 'PATCH',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: formData,
-    });
-    return handleResponse<{ message: string; store: any }>(res);
+    const res = await api.patch<{ message: string; store: any }>('/stores', formData, { token });
+    return res.data;
   },
 
   async getStoreStats(token: string) {
-    const res = await fetch(`${API_URL}/stores/stats`, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-    return handleResponse<{ stats: any[]; recentOrders: any[]; financials?: any }>(res);
+    const res = await api.get<{ stats: any[]; recentOrders: any[]; financials?: any }>(
+      '/stores/stats',
+      { token },
+    );
+    return res.data;
   },
 
   async getStoreBySlug(slug: string) {
-    const res = await fetch(`${API_URL}/stores/link/${slug}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    return handleResponse<any>(res);
+    const res = await api.get<any>(`/stores/link/${slug}`);
+    return res.data;
   },
 
   async getTopProVendors(limit = 6): Promise<TopProVendor[]> {
-    const res = await fetch(`${API_URL}/stores/top-pro?limit=${limit}`, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-    });
-    return handleResponse<TopProVendor[]>(res);
+    const res = await api.get<TopProVendor[]>(`/stores/top-pro?limit=${limit}`);
+    return res.data;
   },
 
   async browseStores(params: BrowseStoresParams): Promise<BrowseStoresResponse> {
@@ -101,11 +66,8 @@ export const storeApi = {
       if (v === undefined || v === null || v === '') continue;
       qs.set(k, String(v));
     }
-    const res = await fetch(`${API_URL}/stores?${qs.toString()}`, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-    });
-    return handleResponse<BrowseStoresResponse>(res);
+    const res = await api.get<BrowseStoresResponse>(`/stores?${qs.toString()}`);
+    return res.data;
   },
 };
 
