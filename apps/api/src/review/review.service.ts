@@ -328,9 +328,7 @@ export class ReviewService {
           ? { rating: 'desc' }
           : dto.sort === 'lowest'
             ? { rating: 'asc' }
-            : dto.sort === 'helpful'
-              ? { helpful_count: 'desc' }
-              : { created_at: 'desc' };
+            : { created_at: 'desc' };
 
     const take = Math.min(dto.limit ?? 10, 100);
     const skip = dto.cursor ?? 0;
