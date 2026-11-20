@@ -1,10 +1,5 @@
 import { VENDLY_API_BASE_URL, getVendlyHeaders, unwrap } from './config';
-import type {
-  AdminNotification,
-  NotificationStats,
-  BroadcastInput,
-  DirectNotificationInput,
-} from '@/types/operations';
+import type { AdminNotification, NotificationStats, BroadcastInput } from '@/types/operations';
 
 export class VendlyNotificationService {
   private static headers() {
@@ -42,23 +37,6 @@ export class VendlyNotificationService {
       body: JSON.stringify(input),
     });
     return unwrap<{ count: number }>(res);
-  }
-
-  static async sendDirect(input: DirectNotificationInput): Promise<AdminNotification> {
-    const res = await fetch(`${VENDLY_API_BASE_URL}/admin/notifications/direct`, {
-      method: 'POST',
-      headers: this.headers(),
-      body: JSON.stringify(input),
-    });
-    return unwrap<AdminNotification>(res);
-  }
-
-  static async markRead(id: string): Promise<AdminNotification> {
-    const res = await fetch(`${VENDLY_API_BASE_URL}/admin/notifications/${id}/read`, {
-      method: 'PATCH',
-      headers: this.headers(),
-    });
-    return unwrap<AdminNotification>(res);
   }
 
   static async markAllRead(): Promise<{ count: number }> {

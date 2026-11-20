@@ -1,5 +1,5 @@
-import { VENDLY_API_BASE_URL, getVendlyHeaders, qs, unwrap } from './config';
-import type { PlatformSettings, GlobalOverviewStats, OrderTransaction } from '@/types/operations';
+import { VENDLY_API_BASE_URL, getVendlyHeaders, unwrap } from './config';
+import type { PlatformSettings, GlobalOverviewStats } from '@/types/operations';
 
 export class VendlySettingsService {
   private static headers() {
@@ -29,24 +29,5 @@ export class VendlySettingsService {
       cache: 'no-store',
     });
     return unwrap<GlobalOverviewStats>(res);
-  }
-
-  static async getStats(): Promise<Record<string, unknown>> {
-    const res = await fetch(`${VENDLY_API_BASE_URL}/admin/stats`, {
-      headers: this.headers(),
-      cache: 'no-store',
-    });
-    return unwrap<Record<string, unknown>>(res);
-  }
-
-  static async getTransactions(params: Record<string, unknown> = {}): Promise<{
-    data: OrderTransaction[];
-    total: number;
-  }> {
-    const res = await fetch(`${VENDLY_API_BASE_URL}/admin/transactions${qs(params)}`, {
-      headers: this.headers(),
-      cache: 'no-store',
-    });
-    return unwrap<{ data: OrderTransaction[]; total: number }>(res);
   }
 }

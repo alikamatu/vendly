@@ -14,14 +14,6 @@ export class VendlyCategoryService {
     return unwrap<Category[]>(res);
   }
 
-  static async get(id: string): Promise<Category> {
-    const res = await fetch(`${VENDLY_API_BASE_URL}/admin/categories/${id}`, {
-      headers: this.headers(),
-      cache: 'no-store',
-    });
-    return unwrap<Category>(res);
-  }
-
   static async create(dto: CreateCategoryInput): Promise<Category> {
     const res = await fetch(`${VENDLY_API_BASE_URL}/admin/categories`, {
       method: 'POST',

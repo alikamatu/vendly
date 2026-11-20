@@ -33,19 +33,6 @@ export function getVendlyToken(): string {
   return process.env.NEXT_PUBLIC_VENDLY_ADMIN_TOKEN || process.env.VENDLY_ADMIN_TOKEN || '';
 }
 
-export function setVendlyToken(token: string) {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem('admin_token', token);
-  localStorage.setItem('vendly_admin_token', token);
-}
-
-export function clearVendlyToken() {
-  if (typeof window === 'undefined') return;
-  for (const key of TOKEN_KEYS) {
-    localStorage.removeItem(key);
-  }
-}
-
 export function getVendlyHeaders(isMultipart = false): Record<string, string> {
   const token = getVendlyToken();
   const headers: Record<string, string> = {};
