@@ -15,7 +15,7 @@ Order is the execution order. Take the first `[ ]` row.
 | T08 | [x]    | tasks/T08-coverage-claims.md             | P0               | HM-02, SW-04, SL-02, AB-03, SH-01 |
 | T09 | [~]    | tasks/T09-homepage-rails.md              | P1               | HM-03, HM-04, PD-04               |
 | T10 | [~]    | tasks/T10-escrow-and-fee-copy.md         | P1               | SW-03, SL-03                      |
-| T11 | [ ]    | tasks/T11-categories-empty.md            | P1               | CT-02                             |
+| T11 | [x]    | tasks/T11-categories-empty.md            | P1               | CT-02                             |
 | T12 | [ ]    | tasks/T12-product-page-quality.md        | P1               | PD-05, PD-06                      |
 | T13 | [ ]    | tasks/T13-pwa-footer-help-links.md       | P2               | SW-05, SW-06, SW-07, TX-04        |
 | T14 | [ ]    | tasks/T14-store-and-listing-polish.md    | P2               | ST-04, PD-08                      |

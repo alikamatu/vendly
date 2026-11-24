@@ -123,4 +123,16 @@ Append one entry per loop. Newest at the bottom.
   - `pnpm --filter @vendly/web type-check` — 0 errors.
 - NEEDS-HUMAN:
   - **SL-03**: Confirm whether Verndly's business policy is to absorb Paystack payout transfer fees (GHS 1 MoMo / GHS 8 bank, which matches current `processTransferToSeller` behavior) — if so, switch `ESCROW_AND_FEE_COPY.feeSettlementDisclosure` to state that Verndly absorbs them; otherwise update payout logic to deduct transfer fees on settlement.
-- Commit: pending (see git log for `fix(t10): ... [sw-03, sl-03]`)
+- Commit: `367ebd8`
+
+### 2026-11-24 — T11 (CT-02) — [x]
+
+- Changed:
+  - `apps/web/components/categories/CategoriesGalleryClient.tsx`: filtered categories to only those with ≥ 1 approved, in-stock listing (reusing `filterRailProducts` from T04/T09), removed the `"Verified category"` empty-tile label in favor of actual listing counts, rewrote the intro to `"Browse categories from verified independent sellers in Accra."`, and rendered a simple list with a link to `/products` when fewer than 3 categories qualify. Seller listing taxonomy remains unchanged.
+  - `apps/web/app/categories/layout.tsx`: aligned metadata and CollectionPage JSON-LD copy to Accra catalog.
+  - `apps/web/components/home/FeaturedCategories.tsx`: applied `filterRailProducts` so homepage category tiles also count only approved, in-stock products.
+  - `apps/web/app/sitemap.ts`: emitted `/categories/[slug]` sitemap entries only for categories with ≥ 1 approved, in-stock product (ready to coordinate with T15).
+- Verified:
+  - `git grep -ni "Verified category" apps/web/` — 0 matches.
+  - `pnpm --filter @vendly/web type-check` — 0 errors.
+- Commit: pending (see git log for `fix(t11): ... [ct-02]`)

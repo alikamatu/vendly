@@ -1,17 +1,18 @@
 import type { MetadataRoute } from 'next';
 import { SITE_URL } from '@/lib/seo';
 import { ALL_BLOG_POSTS } from '@/lib/content/blog-posts';
-import { CATEGORY_PROFILES, slugifyCategory } from '@/lib/content/categories';
-import { isPubliclyVisible } from '@/lib/product-visibility';
+import { slugifyCategory } from '@/lib/content/categories';
+import { isPubliclyVisible, isPubliclyVisibleInStock } from '@/lib/product-visibility';
 
 /**
- * Dynamic sitemap. Static informational routes, editorial guides, and dedicated
+ * Dynamic sitemap. Static informational routes, editorial guides, and stocked
  * category landing pages are included alongside live products and verified stores.
  */
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1000';
 
 interface ProductSlim {
   id: string;
+  category?: string;
   status?: string;
   quantity_available?: number;
   updated_at?: string;
@@ -21,9 +22,6 @@ interface StoreSlim {
   store_link?: string;
   updated_at?: string;
   created_at?: string;
-}
-interface CategorySlim {
-  name?: string;
 }
 
 async function safeFetchJson<T>(url: string): Promise<T | null> {
@@ -77,21 +75,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: post.rank <= 5 ? 0.9 : 0.8,
   }));
 
-  // Dedicated Category Landing Pages (/categories/[slug])
-  const categorySlugs = new Set<string>(CATEGORY_PROFILES.map((c) => c.slug));
-  const apiCats = (await safeFetchJson<CategorySlim[]>(`${API_URL}/categories`)) || [];
-  if (Array.isArray(apiCats)) {
-    for (const c of apiCats) {
-      if (c.name) categorySlugs.add(slugifyCategory(c.name));
-    }
-  }
-  const categoryEntries: MetadataRoute.Sitemap = Array.from(categorySlugs).map((slug) => ({
-    url: `${SITE_URL}/categories/${slug}`,
-    lastModified: now,
-    changeFrequency: 'daily' as const,
-    priority: 0.85,
-  }));
-
   // Products: take the first ~5000 to keep the sitemap under 50k entries.
   const productsResp = await safeFetchJson<{ data?: ProductSlim[] } | ProductSlim[]>(
     `${API_URL}/products?page=1&limit=5000`,
@@ -99,6 +82,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const products: ProductSlim[] = Array.isArray(productsResp)
     ? productsResp
     : (productsResp as any)?.data || [];
+
+  const inStockProducts = products.filter(isPubliclyVisibleInStock);
+
+  // Dedicated Category Landing Pages (/categories/[slug]):
+  // Include only categories with >= 1 approved, in-stock listing (CT-02 / TX-01).
+  const stockedCategorySlugs = new Set<string>();
+  for (const p of inStockProducts) {
+    if (p.category && p.category.trim()) {
+      stockedCategorySlugs.add(slugifyCategory(p.category));
+    }
+  }
+  const categoryEntries: MetadataRoute.Sitemap = Array.from(stockedCategorySlugs).map((slug) => ({
+    url: `${SITE_URL}/categories/${slug}`,
+    lastModified: now,
+    changeFrequency: 'daily' as const,
+    priority: 0.85,
+  }));
 
   const productEntries: MetadataRoute.Sitemap = products.filter(isPubliclyVisible).map((p) => ({
     url: `${SITE_URL}/product/${p.id}`,

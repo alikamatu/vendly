@@ -6,6 +6,7 @@ import { ArrowLeft, ArrowRight, Layers, Search, ShoppingBag, X } from 'lucide-re
 import Header from '@/components/layout/Header';
 import { CATEGORY_PROFILES, slugifyCategory } from '@/lib/content/categories';
 import { isBrandAllowedPublicly, SHOW_BRAND_RAIL } from '@/lib/brand-guard';
+import { filterRailProducts } from '@/lib/product-visibility';
 
 interface CategoriesGalleryClientProps {
   initialCategories: any[];
@@ -20,8 +21,9 @@ export default function CategoriesGalleryClient({
 }: CategoriesGalleryClientProps) {
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Merge API categories with our rich SEO category profiles so the directory is
-  // always populated, indexable, and links to real /categories/[slug] pages.
+  // Only approved, in-stock products qualify a category for the public directory (CT-02).
+  const inStockProducts = useMemo(() => filterRailProducts(initialProducts), [initialProducts]);
+
   const categoriesWithDetails = useMemo(() => {
     const source =
       initialCategories.length > 0
@@ -32,38 +34,49 @@ export default function CategoriesGalleryClient({
             description: p.subheadline,
           }));
 
-    return source.map((cat) => {
-      const slug = slugifyCategory(cat.name);
-      const profile = CATEGORY_PROFILES.find((p) => p.slug === slug);
-      const catBrands = SHOW_BRAND_RAIL
-        ? initialBrands.filter(
-            (b) =>
-              isBrandAllowedPublicly(b?.name) &&
-              (String(b.category_id) === String(cat.id) || b.category?.name === cat.name),
-          )
-        : [];
-      const catProductsCount = initialProducts.filter(
-        (p) => String(p.category).toLowerCase() === String(cat.name).toLowerCase(),
-      ).length;
+    return source
+      .map((cat) => {
+        const slug = slugifyCategory(cat.name);
+        const profile = CATEGORY_PROFILES.find((p) => p.slug === slug);
+        const catBrands = SHOW_BRAND_RAIL
+          ? initialBrands.filter(
+              (b) =>
+                isBrandAllowedPublicly(b?.name) &&
+                (String(b.category_id) === String(cat.id) || b.category?.name === cat.name),
+            )
+          : [];
+        const catProductsCount = inStockProducts.filter(
+          (p) =>
+            String(p.category || '')
+              .trim()
+              .toLowerCase() ===
+            String(cat.name || '')
+              .trim()
+              .toLowerCase(),
+        ).length;
 
-      const isDevices =
-        String(cat.name || '')
-          .trim()
-          .toLowerCase() === 'devices';
-      const safeDescription = isDevices
-        ? 'Phones, computers, and electronics from verified sellers.'
-        : cat.description || profile?.subheadline || '';
+        const isDevices =
+          String(cat.name || '')
+            .trim()
+            .toLowerCase() === 'devices';
+        const safeDescription = isDevices
+          ? 'Phones, computers, and electronics from verified sellers.'
+          : cat.description || profile?.subheadline || '';
 
-      return {
-        ...cat,
-        slug,
-        displayName: profile?.name || cat.name,
-        description: safeDescription,
-        brands: catBrands,
-        productCount: catProductsCount,
-      };
-    });
-  }, [initialCategories, initialBrands, initialProducts]);
+        return {
+          ...cat,
+          slug,
+          displayName: profile?.name || cat.name,
+          description: safeDescription,
+          brands: catBrands,
+          productCount: catProductsCount,
+        };
+      })
+      .filter((cat) => cat.productCount > 0)
+      .sort(
+        (a, b) => b.productCount - a.productCount || a.displayName.localeCompare(b.displayName),
+      );
+  }, [initialCategories, initialBrands, inStockProducts]);
 
   const filteredCategories = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -105,50 +118,106 @@ export default function CategoriesGalleryClient({
 
           <header className="max-w-3xl space-y-4">
             <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--color-accent)]">
-              Verified Directory · Ghana
+              Accra Catalog
             </p>
             <h1 className="text-3xl font-medium leading-[1.08] tracking-tight sm:text-4xl md:text-5xl">
-              Categories &amp; Independent Brands.
+              Shop by category.
             </h1>
             <p className="text-muted text-sm leading-relaxed md:text-base">
-              Browse curated shopping categories across Ghana — from independent fashion and
-              authentic skincare to verified electronics and home essentials, every purchase backed
-              by 7-day Paystack escrow.
+              Browse categories from verified independent sellers in Accra. Every order is backed by
+              7-day Paystack escrow.
             </p>
           </header>
 
-          {/* Search input — zero borders, zero shadows */}
-          <div className="max-w-md pt-1">
-            <div className="relative">
-              <Search className="text-muted pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search categories, collections, or brands…"
-                aria-label="Search categories and brands"
-                className="bg-surface text-foreground placeholder:text-muted h-11 w-full rounded-full pl-11 pr-10 text-xs outline-none"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="text-muted hover:text-foreground absolute inset-y-0 right-4 flex items-center"
-                  type="button"
-                  aria-label="Clear search"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              )}
+          {/* Search input — shown when there are at least 3 active categories */}
+          {(categoriesWithDetails.length >= 3 || searchQuery.length > 0) && (
+            <div className="max-w-md pt-1">
+              <div className="relative">
+                <Search className="text-muted pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search categories…"
+                  aria-label="Search categories"
+                  className="bg-surface text-foreground placeholder:text-muted h-11 w-full rounded-full pl-11 pr-10 text-xs outline-none"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="text-muted hover:text-foreground absolute inset-y-0 right-4 flex items-center"
+                    type="button"
+                    aria-label="Clear search"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
-        {/* Category cards grid — minimal, flat tonal, zero borders/shadows/blur */}
+        {/* Category listing — simple list when < 3 categories qualify, grid otherwise */}
         <section aria-label="Product categories">
           {filteredCategories.length === 0 ? (
-            <div className="bg-surface space-y-2 rounded-3xl px-6 py-16 text-center">
+            <div className="bg-surface space-y-4 rounded-3xl px-6 py-16 text-center">
               <Layers className="text-muted mx-auto h-7 w-7 opacity-50" />
-              <p className="text-muted text-sm">No categories match your search.</p>
+              <p className="text-muted text-sm">
+                {searchQuery
+                  ? 'No stocked categories match your search.'
+                  : 'New categories appear here automatically as verified sellers list in-stock items.'}
+              </p>
+              <Link
+                href="/products"
+                className="bg-foreground text-background inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-xs font-medium transition-opacity hover:opacity-90"
+              >
+                Browse all products
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          ) : filteredCategories.length < 3 ? (
+            <div className="space-y-6">
+              <ul className="space-y-3">
+                {filteredCategories.map((cat) => (
+                  <li key={cat.id || cat.name}>
+                    <Link
+                      href={`/categories/${cat.slug}`}
+                      className="bg-surface hover:bg-foreground/[0.05] group flex flex-col justify-between gap-4 rounded-3xl p-6 transition-colors sm:flex-row sm:items-center"
+                    >
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-3">
+                          <h2 className="text-foreground text-lg font-medium tracking-tight transition-colors group-hover:text-[var(--color-accent)]">
+                            {cat.displayName}
+                          </h2>
+                          <span className="bg-background text-muted inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-mono text-[11px]">
+                            <ShoppingBag className="h-3 w-3" />
+                            {cat.productCount} listing{cat.productCount === 1 ? '' : 's'}
+                          </span>
+                        </div>
+                        {cat.description && (
+                          <p className="text-muted max-w-2xl text-xs leading-relaxed">
+                            {cat.description}
+                          </p>
+                        )}
+                      </div>
+                      <span className="text-foreground inline-flex shrink-0 items-center gap-1.5 text-xs font-medium">
+                        Explore
+                        <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+
+              <div>
+                <Link
+                  href="/products"
+                  className="bg-foreground text-background inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-xs font-medium transition-opacity hover:opacity-90"
+                >
+                  Browse all products
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
@@ -161,9 +230,7 @@ export default function CategoriesGalleryClient({
                     <div className="flex items-center justify-between gap-3">
                       <span className="bg-background text-muted inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-mono text-[11px]">
                         <ShoppingBag className="h-3 w-3" />
-                        {cat.productCount > 0
-                          ? `${cat.productCount} listing${cat.productCount === 1 ? '' : 's'}`
-                          : 'Verified category'}
+                        {cat.productCount} listing{cat.productCount === 1 ? '' : 's'}
                       </span>
 
                       <Link
