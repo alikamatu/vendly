@@ -1,9 +1,10 @@
-import type { Metadata } from "next";
-import { buildMetadata, SITE_URL } from "@/lib/seo";
-import ProductJsonLd from "@/components/seo/ProductJsonLd";
-import BreadcrumbJsonLd from "@/components/seo/BreadcrumbJsonLd";
+import type { Metadata } from 'next';
+import { buildMetadata, SITE_URL } from '@/lib/seo';
+import { getPublicBrand } from '@/lib/brand-guard';
+import ProductJsonLd from '@/components/seo/ProductJsonLd';
+import BreadcrumbJsonLd from '@/components/seo/BreadcrumbJsonLd';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:1000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1000';
 
 async function fetchProduct(id: string) {
   try {
@@ -14,7 +15,7 @@ async function fetchProduct(id: string) {
     });
     if (!res.ok) return null;
     const json = await res.json();
-    return json && typeof json === "object" && "data" in json ? json.data : json;
+    return json && typeof json === 'object' && 'data' in json ? json.data : json;
   } catch {
     return null;
   }
@@ -29,24 +30,21 @@ export async function generateMetadata({
   const product = await fetchProduct(id);
   if (!product) {
     return buildMetadata({
-      title: "Product not found",
+      title: 'Product not found',
       description: "We couldn't find that product on Verndly.",
       noindex: true,
       path: `/product/${id}`,
     });
   }
-  const description = (product.description || product.title || "")
-    .toString()
-    .slice(0, 180);
+  const description = (product.description || product.title || '').toString().slice(0, 180);
+  const publicBrand = getPublicBrand(product.brand, product.seller);
   return buildMetadata({
     title: product.title,
     description: description || `Shop ${product.title} on Verndly.`,
     path: `/product/${id}`,
     image: product.image_urls?.[0] || `${SITE_URL}/api/cards/product/${id}?format=landscape`,
-    type: "product",
-    keywords: [product.title, product.category, product.brand, "Verndly"].filter(
-      Boolean,
-    ) as string[],
+    type: 'product',
+    keywords: [product.title, product.category, publicBrand, 'Verndly'].filter(Boolean) as string[],
   });
 }
 
@@ -74,7 +72,7 @@ export default async function ProductLayout({
               rating_avg: product.rating_avg,
               rating_count: product.rating_count,
               condition: product.condition,
-              brand: product.brand,
+              brand: getPublicBrand(product.brand, product.seller),
               category: product.category,
               quantity_available: product.quantity_available,
               seller: product.seller
@@ -87,8 +85,8 @@ export default async function ProductLayout({
           />
           <BreadcrumbJsonLd
             items={[
-              { name: "Home", path: "/" },
-              { name: "Products", path: "/products" },
+              { name: 'Home', path: '/' },
+              { name: 'Products', path: '/products' },
               ...(product.category
                 ? [
                     {

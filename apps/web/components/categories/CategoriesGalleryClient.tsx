@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft, ArrowRight, Layers, Search, ShoppingBag, X } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { CATEGORY_PROFILES, slugifyCategory } from '@/lib/content/categories';
+import { isBrandAllowedPublicly, SHOW_BRAND_RAIL } from '@/lib/brand-guard';
 
 interface CategoriesGalleryClientProps {
   initialCategories: any[];
@@ -34,18 +35,30 @@ export default function CategoriesGalleryClient({
     return source.map((cat) => {
       const slug = slugifyCategory(cat.name);
       const profile = CATEGORY_PROFILES.find((p) => p.slug === slug);
-      const catBrands = initialBrands.filter(
-        (b) => String(b.category_id) === String(cat.id) || b.category?.name === cat.name,
-      );
+      const catBrands = SHOW_BRAND_RAIL
+        ? initialBrands.filter(
+            (b) =>
+              isBrandAllowedPublicly(b?.name) &&
+              (String(b.category_id) === String(cat.id) || b.category?.name === cat.name),
+          )
+        : [];
       const catProductsCount = initialProducts.filter(
         (p) => String(p.category).toLowerCase() === String(cat.name).toLowerCase(),
       ).length;
+
+      const isDevices =
+        String(cat.name || '')
+          .trim()
+          .toLowerCase() === 'devices';
+      const safeDescription = isDevices
+        ? 'Phones, computers, and electronics from verified sellers.'
+        : cat.description || profile?.subheadline || '';
 
       return {
         ...cat,
         slug,
         displayName: profile?.name || cat.name,
-        description: cat.description || profile?.subheadline || '',
+        description: safeDescription,
         brands: catBrands,
         productCount: catProductsCount,
       };
@@ -65,9 +78,11 @@ export default function CategoriesGalleryClient({
   }, [categoriesWithDetails, searchQuery]);
 
   const filteredBrands = useMemo(() => {
+    if (!SHOW_BRAND_RAIL) return [];
+    const allowed = initialBrands.filter((b) => isBrandAllowedPublicly(b?.name));
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return initialBrands;
-    return initialBrands.filter(
+    if (!q) return allowed;
+    return allowed.filter(
       (b) =>
         b.name.toLowerCase().includes(q) ||
         (b.category?.name && b.category.name.toLowerCase().includes(q)),

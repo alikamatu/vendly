@@ -1,4 +1,5 @@
-import type { HomeBrand, HomeProduct } from "@/hooks/useHomeData";
+import type { HomeBrand, HomeProduct } from '@/hooks/useHomeData';
+import { getPublicBrand } from '@/lib/brand-guard';
 
 export interface BrandBucket {
   id: string;
@@ -23,7 +24,7 @@ export function groupByBrand(
 
   const buckets = new Map<string, HomeProduct[]>();
   for (const p of products) {
-    const name = (p.brand || "").trim();
+    const name = getPublicBrand(p.brand, (p.seller as any) ?? null);
     if (!name) continue;
     const key = name.toLowerCase();
     if (!buckets.has(key)) buckets.set(key, []);

@@ -6,7 +6,7 @@ Order is the execution order. Take the first `[ ]` row.
 | #   | Status | Task file                                | Highest priority | Items                             |
 | --- | ------ | ---------------------------------------- | ---------------- | --------------------------------- |
 | T01 | [x]    | tasks/T01-contact-and-schema.md          | P0               | SW-01, SW-02                      |
-| T02 | [ ]    | tasks/T02-brand-rail-apple-nike.md       | P0               | HM-01, CT-01, PD-01, PD-02        |
+| T02 | [~]    | tasks/T02-brand-rail-apple-nike.md       | P0               | HM-01, CT-01, PD-01, PD-02        |
 | T03 | [ ]    | tasks/T03-catalog-data-hoodies.md        | P0               | ST-01, ST-02, PD-03               |
 | T04 | [ ]    | tasks/T04-rejected-listing-moderation.md | P0               | ST-03                             |
 | T05 | [ ]    | tasks/T05-about-page.md                  | P0               | AB-01, AB-02                      |

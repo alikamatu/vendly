@@ -2,6 +2,7 @@ import ProductsBrowser from '@/components/products-browser/ProductsBrowser';
 import { buildMetadata } from '@/lib/seo';
 import BreadcrumbJsonLd from '@/components/seo/BreadcrumbJsonLd';
 import ItemListJsonLd from '@/components/seo/ItemListJsonLd';
+import { isBrandAllowedPublicly } from '@/lib/brand-guard';
 import {
   fetchBrandsServer,
   fetchBrowseProductsServer,
@@ -24,7 +25,11 @@ export default async function ProductsPage() {
   ]);
 
   const brands = Array.from(
-    new Set((Array.isArray(brandsRaw) ? brandsRaw : []).map((b: any) => b?.name).filter(Boolean)),
+    new Set(
+      (Array.isArray(brandsRaw) ? brandsRaw : [])
+        .map((b: any) => b?.name)
+        .filter((name: any) => Boolean(name) && isBrandAllowedPublicly(name)),
+    ),
   ) as string[];
 
   return (

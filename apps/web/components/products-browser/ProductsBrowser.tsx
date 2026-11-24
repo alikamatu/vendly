@@ -7,6 +7,7 @@ import Header from '@/components/layout/Header';
 import ProductCard from '@/components/products/ProductCard';
 import { useProductsBrowser, type InitialProductsBrowserData } from '@/hooks/useProductsBrowser';
 import { productApi } from '@/lib/api/product';
+import { isBrandAllowedPublicly } from '@/lib/brand-guard';
 import type { HomeCategory } from '@/hooks/useHomeData';
 import type { ViewMode } from './ViewToggle';
 
@@ -43,7 +44,15 @@ function ProductsBrowserInner({
     ]).then(([c, b]) => {
       if (cancelled) return;
       setCategories(c as HomeCategory[]);
-      setBrands(Array.from(new Set((b as any[]).map((x: any) => x?.name).filter(Boolean))));
+      setBrands(
+        Array.from(
+          new Set(
+            (b as any[])
+              .map((x: any) => x?.name)
+              .filter((name: any) => Boolean(name) && isBrandAllowedPublicly(name)),
+          ),
+        ),
+      );
     });
     return () => {
       cancelled = true;

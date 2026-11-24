@@ -1,11 +1,12 @@
-"use client";
+'use client';
 
-import React, { useMemo } from "react";
-import { Sparkles } from "lucide-react";
-import SectionHeader from "./SectionHeader";
-import BrandSection from "./BrandSection";
-import { groupByBrand } from "@/lib/home/brand-grouping";
-import type { HomeBrand, HomeProduct } from "@/hooks/useHomeData";
+import React, { useMemo } from 'react';
+import { Sparkles } from 'lucide-react';
+import SectionHeader from './SectionHeader';
+import BrandSection from './BrandSection';
+import { groupByBrand } from '@/lib/home/brand-grouping';
+import { SHOW_BRAND_RAIL } from '@/lib/brand-guard';
+import type { HomeBrand, HomeProduct } from '@/hooks/useHomeData';
 
 interface BrandSectionsListProps {
   products: HomeProduct[];
@@ -25,18 +26,24 @@ export default function BrandSectionsList({
   maxBrands,
 }: BrandSectionsListProps) {
   const buckets = useMemo(
-    () => groupByBrand(products, brands, { productsLimit: productsPerBrand, brandsLimit: maxBrands }),
+    () =>
+      SHOW_BRAND_RAIL
+        ? groupByBrand(products, brands, {
+            productsLimit: productsPerBrand,
+            brandsLimit: maxBrands,
+          })
+        : [],
     [products, brands, productsPerBrand, maxBrands],
   );
 
-  if (!buckets.length) return null;
+  if (!SHOW_BRAND_RAIL || !buckets.length) return null;
 
   return (
-    <section className="space-y-12 py-4 relative">
+    <section className="relative space-y-12 py-4">
       <SectionHeader
         eyebrow={
           <>
-            <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+            <Sparkles className="h-3.5 w-3.5 animate-pulse" />
             Shop by Brand
           </>
         }
@@ -46,12 +53,7 @@ export default function BrandSectionsList({
 
       <div className="space-y-14">
         {buckets.map((bucket, idx) => (
-          <BrandSection
-            key={bucket.id}
-            brand={bucket}
-            rank={idx + 1}
-            onViewAll={onBrandSelect}
-          />
+          <BrandSection key={bucket.id} brand={bucket} rank={idx + 1} onViewAll={onBrandSelect} />
         ))}
       </div>
     </section>
