@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
 import { ProductService } from './product.service';
 import { ProductController } from './product.controller';
 import { AdminProductController } from './admin-product.controller';
@@ -10,7 +11,12 @@ import { CloudinaryModule } from '../common/cloudinary.module';
 import { PaymentsModule } from '../payments/payments.module';
 
 @Module({
-  imports: [PrismaModule, CloudinaryModule, PaymentsModule],
+  imports: [
+    PrismaModule,
+    CloudinaryModule,
+    PaymentsModule,
+    JwtModule.register({}),
+  ],
   providers: [ProductService, AdminProductService, VariantService],
   controllers: [ProductController, AdminProductController, VariantController],
 })

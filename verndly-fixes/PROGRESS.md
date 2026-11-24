@@ -41,4 +41,13 @@ Append one entry per loop. Newest at the bottom.
 - Files changed: apps/web/components/product-detail/ProductDetailClient.tsx, apps/mobile/src/app/product/[id].tsx, apps/web/components/products/ProductForm.tsx, scripts/data-fixes/T03-st01-the-hoodies-area.sql, scripts/data-fixes/T03-st02-pd03-the-hoodies-categories.sql, verndly-fixes/TASKS.md, verndly-fixes/PROGRESS.md
 - NEEDS-HUMAN: (1) ST-01: confirm with `/s/the-hoodies` seller whether "Airpot 225" should be "Airport 225" before running `T03-st01-the-hoodies-area.sql`. (2) ST-02 & PD-03: approve and run `T03-st02-pd03-the-hoodies-categories.sql`. (3) PD-03: ask seller for African Dress factual description (style, size, fabric, fit).
 - Verification: `git grep -ni "No description provided for this item" apps/` returned 0 matches; `pnpm --filter @vendly/web type-check` passed with 0 errors.
-- Commit: pending (see git log for `fix(t03): ... [st-01, st-02, pd-03]`)
+- Commit: 79f55ec
+
+### 2026-11-24 — T04 Rejected listing is still public — status: [x]
+
+- Items closed: ST-03
+- Items open / blocked: none
+- Files changed: apps/api/src/product/product-visibility.ts, apps/api/src/product/product-visibility.spec.ts, apps/api/src/product/product.service.ts, apps/api/src/product/product.controller.ts, apps/web/lib/product-visibility.ts, apps/web/app/product/[id]/page.tsx, apps/web/app/product/[id]/layout.tsx, apps/web/app/s/[slug]/page.tsx, apps/web/app/s/[slug]/layout.tsx, apps/web/components/store/StorefrontClient.tsx, apps/web/app/sitemap.ts, verndly-fixes/TASKS.md, verndly-fixes/PROGRESS.md
+- NEEDS-HUMAN: Sobolo (`/product/c3661485-6244-4db1-8fae-3c7713e1f52d`) was left untouched (`status: rejected`); if the owner wants it sold, approve it, add a description, and restock it.
+- Verification: Jest `product-visibility.spec.ts` passed (4/4 tests: rejected product → 404 when logged out, owner/admin preview allowed, store listing excludes rejected); `pnpm --filter @vendly/api run build` and `pnpm --filter @vendly/web type-check` passed with 0 errors.
+- Commit: pending (see git log for `fix(t04): ... [st-03]`)

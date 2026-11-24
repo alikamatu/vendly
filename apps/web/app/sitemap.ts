@@ -2,6 +2,7 @@ import type { MetadataRoute } from 'next';
 import { SITE_URL } from '@/lib/seo';
 import { ALL_BLOG_POSTS } from '@/lib/content/blog-posts';
 import { CATEGORY_PROFILES, slugifyCategory } from '@/lib/content/categories';
+import { isPubliclyVisible } from '@/lib/product-visibility';
 
 /**
  * Dynamic sitemap. Static informational routes, editorial guides, and dedicated
@@ -11,6 +12,8 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1000';
 
 interface ProductSlim {
   id: string;
+  status?: string;
+  quantity_available?: number;
   updated_at?: string;
   created_at?: string;
 }
@@ -97,7 +100,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ? productsResp
     : (productsResp as any)?.data || [];
 
-  const productEntries: MetadataRoute.Sitemap = products.map((p) => ({
+  const productEntries: MetadataRoute.Sitemap = products.filter(isPubliclyVisible).map((p) => ({
     url: `${SITE_URL}/product/${p.id}`,
     lastModified: p.updated_at
       ? new Date(p.updated_at)

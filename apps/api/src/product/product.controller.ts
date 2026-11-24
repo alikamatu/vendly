@@ -14,8 +14,12 @@ import {
   Query,
 } from '@nestjs/common';
 import { CacheInterceptor, CacheKey, CacheTTL } from '@nestjs/cache-manager';
-import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express';
+import {
+  FileFieldsInterceptor,
+  FileInterceptor,
+} from '@nestjs/platform-express';
 import { UploadedFile } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -26,7 +30,10 @@ import { Roles } from '../auth/guards/roles.decorator';
 
 @Controller('products')
 export class ProductController {
-  constructor(private readonly productService: ProductService) {}
+  constructor(
+    private readonly productService: ProductService,
+    private readonly jwtService: JwtService,
+  ) {}
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -55,12 +62,13 @@ export class ProductController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SELLER')
   @UseInterceptors(FileInterceptor('file'))
-  async bulkImport(
-    @Request() req,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
+  async bulkImport(@Request() req, @UploadedFile() file: Express.Multer.File) {
     if (!file) {
-      return { message: 'No file uploaded', summary: { created: 0, failed: 0, total: 0 }, results: [] };
+      return {
+        message: 'No file uploaded',
+        summary: { created: 0, failed: 0, total: 0 },
+        results: [],
+      };
     }
     return this.productService.bulkImportFromCsv(req.user.id, file.buffer);
   }
@@ -117,13 +125,17 @@ export class ProductController {
     @Query('service_area') serviceArea?: string,
     @Query('avg_delivery_time') avgDeliveryTime?: string,
   ) {
-    const parseOptionalNumber = (value: string | undefined): number | undefined => {
+    const parseOptionalNumber = (
+      value: string | undefined,
+    ): number | undefined => {
       if (value === undefined || value === '') return undefined;
       const n = Number(value);
       return Number.isFinite(n) ? n : undefined;
     };
 
-    const parseOptionalBool = (value: string | undefined): boolean | undefined => {
+    const parseOptionalBool = (
+      value: string | undefined,
+    ): boolean | undefined => {
       if (value === undefined || value === '') return undefined;
       if (value === 'true') return true;
       if (value === 'false') return false;
@@ -152,7 +164,11 @@ export class ProductController {
         ? (sort as SortKey)
         : undefined;
 
-    const allowedServiceAreas = ['SAME_CITY', 'NEARBY_STATES', 'NATIONWIDE'] as const;
+    const allowedServiceAreas = [
+      'SAME_CITY',
+      'NEARBY_STATES',
+      'NATIONWIDE',
+    ] as const;
     const allowedDeliveryTimes = [
       'SAME_DAY',
       'NEXT_DAY',
@@ -203,9 +219,27 @@ export class ProductController {
   }
 
   @Get(':id')
-  @UseInterceptors(CacheInterceptor)
-  async getProductById(@Param('id') id: string) {
-    return this.productService.getProductById(id);
+  async getProductById(@Param('id') id: string, @Request() req?: any) {
+    let viewer: { id?: string; role?: string } | null = null;
+    const authHeader: string | undefined = req?.headers?.authorization;
+    if (
+      authHeader &&
+      authHeader.startsWith('Bearer ') &&
+      process.env.JWT_SECRET
+    ) {
+      try {
+        const decoded: any = this.jwtService.verify(
+          authHeader.slice(7).trim(),
+          {
+            secret: process.env.JWT_SECRET,
+          },
+        );
+        viewer = { id: decoded?.sub, role: decoded?.role };
+      } catch {
+        viewer = null;
+      }
+    }
+    return this.productService.getProductById(id, viewer);
   }
 
   @Get('store/:link')
@@ -253,21 +287,14 @@ export class ProductController {
     @Param('id') id: string,
     @Body() dto: ToggleHotSalesDto,
   ) {
-    return this.productService.toggleHotSales(
-      req.user.id,
-      id,
-      dto.is_featured,
-    );
+    return this.productService.toggleHotSales(req.user.id, id, dto.is_featured);
   }
 
   @Post(':id/hot-sales/initialize-payment')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SELLER')
   async initializeHotSalesPayment(@Request() req, @Param('id') id: string) {
-    return this.productService.initializeHotSalesPayment(
-      req.user.id,
-      id,
-    );
+    return this.productService.initializeHotSalesPayment(req.user.id, id);
   }
 
   @Post(':id/promotions/initialize-payment')

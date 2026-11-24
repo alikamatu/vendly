@@ -1,10 +1,11 @@
-import type { Metadata } from "next";
-import { buildMetadata, SITE_URL, SITE_NAME } from "@/lib/seo";
-import StoreJsonLd from "@/components/seo/StoreJsonLd";
-import BreadcrumbJsonLd from "@/components/seo/BreadcrumbJsonLd";
-import ItemListJsonLd from "@/components/seo/ItemListJsonLd";
+import type { Metadata } from 'next';
+import { buildMetadata, SITE_URL, SITE_NAME } from '@/lib/seo';
+import { isPubliclyVisible } from '@/lib/product-visibility';
+import StoreJsonLd from '@/components/seo/StoreJsonLd';
+import BreadcrumbJsonLd from '@/components/seo/BreadcrumbJsonLd';
+import ItemListJsonLd from '@/components/seo/ItemListJsonLd';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:1000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1000';
 
 async function fetchStore(slug: string) {
   try {
@@ -13,7 +14,7 @@ async function fetchStore(slug: string) {
     });
     if (!res.ok) return null;
     const json = await res.json();
-    return json && typeof json === "object" && "data" in json ? json.data : json;
+    return json && typeof json === 'object' && 'data' in json ? json.data : json;
   } catch {
     return null;
   }
@@ -26,7 +27,7 @@ async function fetchStoreProducts(slug: string) {
     });
     if (!res.ok) return [];
     const json = await res.json();
-    const list = json && typeof json === "object" && "data" in json ? json.data : json;
+    const list = json && typeof json === 'object' && 'data' in json ? json.data : json;
     return Array.isArray(list) ? list : [];
   } catch {
     return [];
@@ -43,7 +44,7 @@ export async function generateMetadata({
 
   if (!store) {
     return buildMetadata({
-      title: "Store not found",
+      title: 'Store not found',
       description: "We couldn't find that store on Verndly.",
       noindex: true,
       path: `/s/${slug}`,
@@ -55,10 +56,7 @@ export async function generateMetadata({
     store.bio ||
     `Shop verified products directly from ${store.store_name} on Verndly. Backed by 7-day buyer protection escrow, secure Paystack checkout, and swift courier delivery across Ghana.`;
 
-  const image =
-    store.logo_url ||
-    store.banner_url ||
-    `${SITE_URL}/logos/verndly.png`;
+  const image = store.logo_url || store.banner_url || `${SITE_URL}/logos/verndly.png`;
 
   return buildMetadata({
     title,
@@ -67,12 +65,12 @@ export async function generateMetadata({
     image,
     keywords: [
       store.store_name,
-      "Ghana online store",
-      "verified seller Ghana",
-      "independent vendor",
-      store.city || "Accra",
-      "Verndly store",
-      "buy online Ghana",
+      'Ghana online store',
+      'verified seller Ghana',
+      'independent vendor',
+      store.city || 'Accra',
+      'Verndly store',
+      'buy online Ghana',
     ].filter(Boolean) as string[],
   });
 }
@@ -85,10 +83,8 @@ export default async function StoreLayout({
   children: React.ReactNode;
 }) {
   const { slug } = await params;
-  const [store, products] = await Promise.all([
-    fetchStore(slug),
-    fetchStoreProducts(slug),
-  ]);
+  const [store, rawProducts] = await Promise.all([fetchStore(slug), fetchStoreProducts(slug)]);
+  const products = rawProducts.filter(isPubliclyVisible);
 
   return (
     <>
@@ -103,7 +99,7 @@ export default async function StoreLayout({
               banner_url: store.banner_url,
               phone: store.whatsapp_number,
               city: store.city,
-              country: "GH",
+              country: 'GH',
               is_verified: !!store.is_verified,
               products_count: products.length,
               top_products: products.slice(0, 10).map((p: any) => ({
@@ -116,8 +112,8 @@ export default async function StoreLayout({
           />
           <BreadcrumbJsonLd
             items={[
-              { name: "Home", path: "/" },
-              { name: "Stores", path: "/stores" },
+              { name: 'Home', path: '/' },
+              { name: 'Stores', path: '/stores' },
               { name: store.store_name, path: `/s/${slug}` },
             ]}
           />
@@ -131,7 +127,7 @@ export default async function StoreLayout({
                 url: `/product/${p.id}`,
                 image: p.image_urls?.[0] || null,
                 price: p.price,
-                currency: p.currency || "GHS",
+                currency: p.currency || 'GHS',
                 description: p.description,
               }))}
             />

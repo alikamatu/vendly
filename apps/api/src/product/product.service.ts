@@ -10,6 +10,11 @@ import { CloudinaryService } from '../common/cloudinary.service';
 import { Prisma, Role } from '@prisma/client';
 import { PaymentsService } from '../payments/payments.service';
 import { AuditLogService } from '../audit/audit-log.service';
+import {
+  PUBLIC_PRODUCT_STATUSES,
+  PUBLIC_PRODUCT_WHERE,
+  isPubliclyVisibleProduct,
+} from './product-visibility';
 
 type Decimal = Prisma.Decimal;
 const Decimal = Prisma.Decimal;
@@ -218,7 +223,7 @@ export class ProductService {
       page?: number;
       limit?: number;
       category?: string;
-      sellerId?: string | string;
+      sellerId?: string;
       status?: string;
       minDiscount?: number;
       search?: string;
@@ -270,12 +275,19 @@ export class ProductService {
     let { minDiscount } = params;
     const skip = (page - 1) * limit;
 
+    const requestedStatus = status?.trim().toLowerCase();
+    const safePublicStatus =
+      requestedStatus &&
+      (PUBLIC_PRODUCT_STATUSES as readonly string[]).includes(requestedStatus)
+        ? requestedStatus
+        : undefined;
+
     const where: Prisma.ProductWhereInput = {
       ...(category && { category }),
       ...(sellerId && { seller_id: sellerId }),
-      ...(status
-        ? { status }
-        : { status: { in: ['published', 'active', 'draft'] } }),
+      ...(safePublicStatus
+        ? { status: safePublicStatus }
+        : { status: { in: [...PUBLIC_PRODUCT_STATUSES] } }),
       ...(brand && { brand }),
       ...(condition && { condition }),
       ...(hasVideo === true && { video_url: { not: null } }),
@@ -284,7 +296,9 @@ export class ProductService {
     };
 
     // Seller-scoped filters (region, city, service area, delivery time)
-    const sellerFilter: Prisma.SellerProfileWhereInput = {};
+    const sellerFilter: Prisma.SellerProfileWhereInput = {
+      user: { is_suspended: false },
+    };
     if (cityId) {
       sellerFilter.location_id = cityId;
     }
@@ -292,10 +306,10 @@ export class ProductService {
       sellerFilter.structured_location = { region };
     }
     if (serviceArea) {
-      sellerFilter.service_area = serviceArea as any;
+      sellerFilter.service_area = serviceArea;
     }
     if (avgDeliveryTime) {
-      sellerFilter.avg_delivery_time = avgDeliveryTime as any;
+      sellerFilter.avg_delivery_time = avgDeliveryTime;
     }
     if (Object.keys(sellerFilter).length > 0) {
       where.seller = sellerFilter;
@@ -304,10 +318,10 @@ export class ProductService {
     if (typeof minPrice === 'number' || typeof maxPrice === 'number') {
       const priceFilter: Prisma.DecimalFilter = {};
       if (typeof minPrice === 'number' && !Number.isNaN(minPrice)) {
-        priceFilter.gte = new Decimal(minPrice) as any;
+        priceFilter.gte = new Decimal(minPrice);
       }
       if (typeof maxPrice === 'number' && !Number.isNaN(maxPrice)) {
-        priceFilter.lte = new Decimal(maxPrice) as any;
+        priceFilter.lte = new Decimal(maxPrice);
       }
       if (Object.keys(priceFilter).length > 0) {
         where.price = priceFilter;
@@ -356,7 +370,9 @@ export class ProductService {
             },
           },
         },
-        orderBy: this.resolveOrderBy(sort === 'discount_desc' ? 'newest' : sort),
+        orderBy: this.resolveOrderBy(
+          sort === 'discount_desc' ? 'newest' : sort,
+        ),
       });
 
       const withPct = allMatching
@@ -369,7 +385,9 @@ export class ProductService {
           return { product: p, pct };
         })
         .filter(
-          (entry): entry is { product: (typeof allMatching)[number]; pct: number } =>
+          (
+            entry,
+          ): entry is { product: (typeof allMatching)[number]; pct: number } =>
             entry !== null && entry.pct >= (minDiscount as number),
         );
 
@@ -449,7 +467,7 @@ export class ProductService {
 
   async getRecentProducts() {
     return this.prisma.product.findMany({
-      where: { status: 'active' },
+      where: PUBLIC_PRODUCT_WHERE,
       include: {
         seller: {
           select: {
@@ -464,7 +482,10 @@ export class ProductService {
     });
   }
 
-  async getProductById(id: string) {
+  async getProductById(
+    id: string,
+    viewer?: { id?: string; role?: string } | null,
+  ) {
     const product: any = await (this.prisma.product as any).findUnique({
       where: { id },
       include: {
@@ -486,6 +507,7 @@ export class ProductService {
                 is_pro: true,
                 pro_expires_at: true,
                 is_verified: true,
+                is_suspended: true,
                 created_at: true,
               },
             },
@@ -499,6 +521,13 @@ export class ProductService {
     });
 
     if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    const isOwner =
+      Boolean(viewer?.id) && product.seller?.user_id === viewer?.id;
+    const isAdmin = viewer?.role === 'ADMIN';
+    if (!isPubliclyVisibleProduct(product) && !isOwner && !isAdmin) {
       throw new NotFoundException('Product not found');
     }
 
@@ -528,8 +557,12 @@ export class ProductService {
   async getProductsByStoreLink(link: string) {
     return this.prisma.product.findMany({
       where: {
+        status: { in: [...PUBLIC_PRODUCT_STATUSES] },
         seller: {
           store_link: link,
+          user: {
+            is_suspended: false,
+          },
         },
       },
       include: {
@@ -1132,7 +1165,7 @@ export class ProductService {
           },
           { tags: { has: searchLower } },
         ],
-        status: { in: ['published', 'active', 'draft'] },
+        ...PUBLIC_PRODUCT_WHERE,
       },
       include: {
         seller: {
@@ -1164,7 +1197,7 @@ export class ProductService {
       throw new NotFoundException('Seller profile not found.');
     }
 
-    const text = csvBuffer.toString('utf8').replace(/^﻿/, '');
+    const text = csvBuffer.toString('utf8').replace(/^\uFEFF/, '');
     const rows = parseCsv(text);
     if (rows.length < 2) {
       throw new BadRequestException(
@@ -1236,8 +1269,7 @@ export class ProductService {
           originalPrice = op;
         }
 
-        const tagsRaw =
-          idx('tags') >= 0 ? (row[idx('tags')] || '').trim() : '';
+        const tagsRaw = idx('tags') >= 0 ? (row[idx('tags')] || '').trim() : '';
         const tags = normalizeTags(
           tagsRaw ? tagsRaw.split(/[|;]/).map((s) => s) : [],
         );
@@ -1269,7 +1301,9 @@ export class ProductService {
               'draft',
             category,
             brand:
-              idx('brand') >= 0 ? (row[idx('brand')] || '').trim() || null : null,
+              idx('brand') >= 0
+                ? (row[idx('brand')] || '').trim() || null
+                : null,
             image_urls: [],
             tags,
             is_featured: false,

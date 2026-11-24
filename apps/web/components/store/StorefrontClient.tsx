@@ -7,6 +7,7 @@ import { ShoppingBag, Search, SlidersHorizontal, ArrowUpDown, X, Sparkles } from
 import Link from 'next/link';
 import { storeApi } from '@/lib/api/store';
 import { productApi } from '@/lib/api/product';
+import { isPubliclyVisible } from '@/lib/product-visibility';
 import ProductCard from '@/components/products/ProductCard';
 import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
@@ -47,7 +48,9 @@ export default function StorefrontClient({
           productApi.getProductsByStoreSlug(slug as string),
         ]);
         if (storeData) setStore(storeData);
-        if (Array.isArray(productsData)) setProducts(productsData);
+        if (Array.isArray(productsData)) {
+          setProducts(productsData.filter(isPubliclyVisible));
+        }
       } catch (err: any) {
         if (!initialStore) setError(err.message || 'Failed to load store');
       } finally {

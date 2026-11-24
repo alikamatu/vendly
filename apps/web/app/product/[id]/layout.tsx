@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { buildMetadata, SITE_URL } from '@/lib/seo';
 import { getPublicBrand } from '@/lib/brand-guard';
+import { isPubliclyVisible } from '@/lib/product-visibility';
 import ProductJsonLd from '@/components/seo/ProductJsonLd';
 import BreadcrumbJsonLd from '@/components/seo/BreadcrumbJsonLd';
 
@@ -28,7 +29,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { id } = await params;
   const product = await fetchProduct(id);
-  if (!product) {
+  if (!product || !isPubliclyVisible(product)) {
     return buildMetadata({
       title: 'Product not found',
       description: "We couldn't find that product on Verndly.",
@@ -57,9 +58,10 @@ export default async function ProductLayout({
 }) {
   const { id } = await params;
   const product = await fetchProduct(id);
+  const visible = isPubliclyVisible(product);
   return (
     <>
-      {product && (
+      {product && visible && (
         <>
           <ProductJsonLd
             product={{
