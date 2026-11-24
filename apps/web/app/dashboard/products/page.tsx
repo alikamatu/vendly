@@ -24,6 +24,7 @@ import {
   X,
   MoreHorizontal,
   Trash2,
+  MessageCircle,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -118,11 +119,7 @@ export default function SellerProductsPage() {
       toast.info('Verifying Hot Sales boost payment...');
 
       try {
-        const verifyResult = await productApi.verifyHotSalesPayment(
-          token,
-          reference,
-          productId
-        );
+        const verifyResult = await productApi.verifyHotSalesPayment(token, reference, productId);
         await fetchProducts(true);
         if (verifyResult.verified && verifyResult.is_featured) {
           toast.success('Payment verified! Hot Sales boost is now active.');
@@ -147,17 +144,13 @@ export default function SellerProductsPage() {
     if (!token) return;
     const nextStatus = currentStatus === 'active' ? 'draft' : 'active';
 
-    setProducts((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, status: nextStatus } : p))
-    );
+    setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, status: nextStatus } : p)));
 
     try {
       await productApi.updateStatus(token, id, nextStatus);
       toast.success(`Listing status updated to ${nextStatus.toUpperCase()}`);
     } catch (err: any) {
-      setProducts((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, status: currentStatus } : p))
-      );
+      setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, status: currentStatus } : p)));
       toast.error(err?.message || 'Failed to update status');
     }
   };
@@ -169,7 +162,7 @@ export default function SellerProductsPage() {
     const oldQty = previousProduct?.quantity_available ?? 0;
 
     setProducts((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, quantity_available: newStock } : p))
+      prev.map((p) => (p.id === id ? { ...p, quantity_available: newStock } : p)),
     );
 
     try {
@@ -177,7 +170,7 @@ export default function SellerProductsPage() {
       toast.success(`Inventory updated to ${newStock}`);
     } catch (err: any) {
       setProducts((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, quantity_available: oldQty } : p))
+        prev.map((p) => (p.id === id ? { ...p, quantity_available: oldQty } : p)),
       );
       toast.error(err?.message || 'Failed to update stock');
     }
@@ -233,7 +226,8 @@ export default function SellerProductsPage() {
         if (hotOnly && !p.is_featured) return false;
         if (lowOnly && Number(p.quantity_available ?? 0) > LOW_STOCK_THRESHOLD) return false;
         if (q) {
-          const hay = `${p.title} ${p.category || ''} ${p.brand || ''} ${(p.tags || []).join(' ')}`.toLowerCase();
+          const hay =
+            `${p.title} ${p.category || ''} ${p.brand || ''} ${(p.tags || []).join(' ')}`.toLowerCase();
           if (!hay.includes(q)) return false;
         }
         return true;
@@ -259,9 +253,9 @@ export default function SellerProductsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col h-[60vh] items-center justify-center gap-3">
-        <Loader2 className="w-7 h-7 text-[var(--color-accent)] animate-spin" />
-        <p className="text-xs text-[var(--color-muted)] font-medium tracking-wider uppercase">
+      <div className="flex h-[60vh] flex-col items-center justify-center gap-3">
+        <Loader2 className="h-7 w-7 animate-spin text-[var(--color-accent)]" />
+        <p className="text-xs font-medium uppercase tracking-wider text-[var(--color-muted)]">
           Loading catalog...
         </p>
       </div>
@@ -269,140 +263,139 @@ export default function SellerProductsPage() {
   }
 
   const anyFilterActive =
-    statusGroup !== 'all' ||
-    categoryFilter !== 'all' ||
-    hotOnly ||
-    lowOnly ||
-    !!searchQuery.trim();
+    statusGroup !== 'all' || categoryFilter !== 'all' || hotOnly || lowOnly || !!searchQuery.trim();
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto pb-24 px-3 sm:px-6">
-      <div className="space-y-3 pt-2">
-        <Link
-          href="/dashboard"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)] hover:text-[var(--color-foreground)] transition-colors group"
-        >
-          <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
-          Dashboard
-        </Link>
-        <div className="flex items-end justify-between gap-3 flex-wrap">
+    <div className="w-full space-y-6">
+      <div className="space-y-3">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-[var(--color-foreground)]">
+            <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-foreground)] sm:text-3xl">
               Products &amp; Inventory
             </h1>
-            <p className="text-xs text-[var(--color-muted)] mt-1">
-              Showing <span className="font-semibold text-[var(--color-foreground)]">{filtered.length}</span> of{' '}
-              <span className="font-semibold text-[var(--color-foreground)]">{products.length}</span> listings
+            <p className="mt-1 text-xs text-[var(--color-muted)] sm:text-sm">
+              Showing{' '}
+              <span className="font-semibold text-[var(--color-foreground)]">
+                {filtered.length}
+              </span>{' '}
+              of{' '}
+              <span className="font-semibold text-[var(--color-foreground)]">
+                {products.length}
+              </span>{' '}
+              listings
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center rounded-xl bg-[var(--color-surface)] p-1">
               <button
                 type="button"
                 onClick={() => setViewMode('cards')}
-                className={`p-1.5 rounded-lg text-xs font-medium transition-colors ${
+                className={`rounded-lg p-1.5 text-xs font-medium transition-colors ${
                   viewMode === 'cards'
-                    ? 'bg-[var(--color-foreground)] text-[var(--color-surface)]'
+                    ? 'bg-[var(--color-foreground)] text-[var(--color-background)]'
                     : 'text-[var(--color-muted)] hover:text-[var(--color-foreground)]'
                 }`}
                 title="Card View"
               >
-                <LayoutGrid className="w-4 h-4" />
+                <LayoutGrid className="h-4 w-4" />
               </button>
               <button
                 type="button"
                 onClick={() => setViewMode('table')}
-                className={`p-1.5 rounded-lg text-xs font-medium transition-colors ${
+                className={`rounded-lg p-1.5 text-xs font-medium transition-colors ${
                   viewMode === 'table'
-                    ? 'bg-[var(--color-foreground)] text-[var(--color-surface)]'
+                    ? 'bg-[var(--color-foreground)] text-[var(--color-background)]'
                     : 'text-[var(--color-muted)] hover:text-[var(--color-foreground)]'
                 }`}
                 title="Compact Table View"
               >
-                <List className="w-4 h-4" />
+                <List className="h-4 w-4" />
               </button>
             </div>
 
             <button
               onClick={() => fetchProducts(true)}
               disabled={refreshing}
-              className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-foreground)] hover:bg-[var(--color-border)]/20 transition disabled:opacity-60"
+              className="hover:bg-foreground/[0.06] inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--color-surface)] text-[var(--color-foreground)] transition disabled:opacity-60"
               title="Refresh listings"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
             </button>
             <Link
-              href="/dashboard/products/import"
-              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-xs font-medium text-[var(--color-foreground)] hover:bg-[var(--color-border)]/20 transition"
+              href="/dashboard/products/whatsapp-import"
+              className="bg-emerald-500/12 inline-flex h-9 items-center gap-1.5 rounded-xl px-3.5 text-xs font-semibold text-emerald-600 transition hover:bg-emerald-500/20 dark:text-emerald-400"
             >
-              <Upload className="w-3.5 h-3.5" />
+              <MessageCircle className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">WhatsApp</span>
+            </Link>
+            <Link
+              href="/dashboard/products/import"
+              className="hover:bg-foreground/[0.06] inline-flex h-9 items-center gap-1.5 rounded-xl bg-[var(--color-surface)] px-3.5 text-xs font-medium text-[var(--color-foreground)] transition"
+            >
+              <Upload className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Bulk CSV</span>
             </Link>
             <Link
               href="/dashboard/products/add"
-              className="inline-flex items-center gap-1.5 h-9 px-4 rounded-xl bg-[var(--color-accent)] text-white text-xs font-semibold hover:opacity-90 transition"
+              className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-[var(--color-foreground)] px-4 text-xs font-semibold text-[var(--color-background)] transition hover:opacity-90"
             >
-              <Plus className="w-3.5 h-3.5" />
+              <Plus className="h-3.5 w-3.5" />
               <span>Add Product</span>
             </Link>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
         <StatTile
-          icon={<Boxes className="w-4 h-4" />}
+          icon={<Boxes className="h-4 w-4" />}
           label="Total"
           value={String(products.length)}
           hint="all catalog items"
         />
         <StatTile
-          icon={<CircleDot className="w-4 h-4 text-emerald-500" />}
+          icon={<CircleDot className="h-4 w-4 text-emerald-500" />}
           label="Active"
           value={String(stats.active)}
           hint={`${stats.drafts} draft${stats.drafts === 1 ? '' : 's'}`}
         />
         <StatTile
           accent={stats.lowStock + stats.outOfStock > 0}
-          icon={<PackageX className="w-4 h-4" />}
+          icon={<PackageX className="h-4 w-4" />}
           label="Low / Out"
           value={String(stats.lowStock + stats.outOfStock)}
-          hint={
-            stats.outOfStock > 0
-              ? `${stats.outOfStock} sold out`
-              : '≤ 5 left in stock'
-          }
+          hint={stats.outOfStock > 0 ? `${stats.outOfStock} sold out` : '≤ 5 left in stock'}
         />
         <StatTile
-          icon={<Eye className="w-4 h-4 text-[var(--color-accent)]" />}
+          icon={<Eye className="h-4 w-4 text-[var(--color-accent)]" />}
           label="Total Views"
           value={stats.totalViews.toLocaleString()}
           hint="across all products"
         />
       </div>
 
-      <div className="space-y-3 bg-[var(--color-surface)] border border-[var(--color-border)] p-4 rounded-2xl">
+      <div className="space-y-3 rounded-3xl bg-[var(--color-surface)] p-4">
         <div className="relative">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-muted)] pointer-events-none" />
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-muted)]" />
           <input
             type="search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by product name, category, brand, or tag..."
-            className="w-full h-11 pl-10 pr-9 rounded-xl bg-[var(--color-background)] border border-[var(--color-border)] text-xs sm:text-sm text-[var(--color-foreground)] placeholder:text-[var(--color-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/20 focus:border-[var(--color-accent)] transition"
+            className="h-11 w-full rounded-2xl bg-[var(--color-background)] pl-10 pr-9 text-xs text-[var(--color-foreground)] transition placeholder:text-[var(--color-muted)] focus:outline-none sm:text-sm"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-muted)] hover:text-[var(--color-foreground)]"
             >
-              <X className="w-4 h-4" />
+              <X className="h-4 w-4" />
             </button>
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-muted)] shrink-0 mr-1.5">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+          <span className="mr-1.5 shrink-0 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-muted)]">
             Status:
           </span>
           {STATUS_GROUPS.map((g) => {
@@ -416,18 +409,18 @@ export default function SellerProductsPage() {
                 key={g.key}
                 type="button"
                 onClick={() => setStatusGroup(g.key)}
-                className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full transition border ${
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition ${
                   active
-                    ? 'bg-[var(--color-foreground)] text-[var(--color-surface)] border-transparent'
-                    : 'bg-[var(--color-background)] text-[var(--color-foreground)] border-[var(--color-border)] hover:border-[var(--color-foreground)]/30'
+                    ? 'bg-[var(--color-foreground)] text-[var(--color-background)]'
+                    : 'bg-[var(--color-background)] text-[var(--color-foreground)] hover:opacity-80'
                 }`}
               >
                 <span>{g.label}</span>
                 <span
-                  className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                  className={`rounded-full px-1.5 text-[10px] ${
                     active
-                      ? 'bg-[var(--color-surface)]/20 text-[var(--color-surface)]'
-                      : 'bg-[var(--color-border)]/50 text-[var(--color-muted)]'
+                      ? 'bg-[var(--color-background)]/20 text-[var(--color-background)]'
+                      : 'bg-[var(--color-surface)] text-[var(--color-muted)]'
                   }`}
                 >
                   {count}
@@ -438,17 +431,17 @@ export default function SellerProductsPage() {
         </div>
 
         {categories.length > 0 && (
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 border-t border-[var(--color-border)]/50 pt-2.5">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-muted)] shrink-0 mr-1.5">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-1">
+            <span className="mr-1.5 shrink-0 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-muted)]">
               Category:
             </span>
             <button
               type="button"
               onClick={() => setCategoryFilter('all')}
-              className={`text-xs px-2.5 py-1 rounded-lg transition ${
+              className={`rounded-lg px-2.5 py-1 text-xs transition ${
                 categoryFilter === 'all'
-                  ? 'bg-[var(--color-accent)] text-white font-medium'
-                  : 'text-[var(--color-muted)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-border)]/30'
+                  ? 'bg-[var(--color-accent)] font-medium text-white'
+                  : 'text-[var(--color-muted)] hover:bg-[var(--color-background)] hover:text-[var(--color-foreground)]'
               }`}
             >
               All
@@ -458,10 +451,10 @@ export default function SellerProductsPage() {
                 key={c}
                 type="button"
                 onClick={() => setCategoryFilter(c)}
-                className={`text-xs px-2.5 py-1 rounded-lg whitespace-nowrap transition ${
+                className={`whitespace-nowrap rounded-lg px-2.5 py-1 text-xs transition ${
                   categoryFilter === c
-                    ? 'bg-[var(--color-accent)] text-white font-medium'
-                    : 'text-[var(--color-muted)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-border)]/30'
+                    ? 'bg-[var(--color-accent)] font-medium text-white'
+                    : 'text-[var(--color-muted)] hover:bg-[var(--color-background)] hover:text-[var(--color-foreground)]'
                 }`}
               >
                 {c}
@@ -470,26 +463,26 @@ export default function SellerProductsPage() {
           </div>
         )}
 
-        <div className="flex items-center gap-2 overflow-x-auto pt-2 border-t border-[var(--color-border)]/50">
-          <label className="inline-flex items-center gap-1.5 text-xs font-medium cursor-pointer select-none shrink-0 px-3 h-8 border border-[var(--color-border)] rounded-full hover:bg-[var(--color-border)]/20 transition">
+        <div className="flex items-center gap-2 overflow-x-auto pt-1">
+          <label className="inline-flex h-8 shrink-0 cursor-pointer select-none items-center gap-1.5 rounded-full bg-[var(--color-background)] px-3 text-xs font-medium transition hover:opacity-80">
             <input
               type="checkbox"
               checked={hotOnly}
               onChange={(e) => setHotOnly(e.target.checked)}
               className="h-3.5 w-3.5 rounded accent-[var(--color-accent)]"
             />
-            <Flame className="w-3.5 h-3.5 text-amber-500 fill-current" />
+            <Flame className="h-3.5 w-3.5 fill-current text-amber-500" />
             <span>Hot Sales only</span>
           </label>
 
-          <label className="inline-flex items-center gap-1.5 text-xs font-medium cursor-pointer select-none shrink-0 px-3 h-8 border border-[var(--color-border)] rounded-full hover:bg-[var(--color-border)]/20 transition">
+          <label className="inline-flex h-8 shrink-0 cursor-pointer select-none items-center gap-1.5 rounded-full bg-[var(--color-background)] px-3 text-xs font-medium transition hover:opacity-80">
             <input
               type="checkbox"
               checked={lowOnly}
               onChange={(e) => setLowOnly(e.target.checked)}
               className="h-3.5 w-3.5 rounded accent-[var(--color-accent)]"
             />
-            <PackageX className="w-3.5 h-3.5 text-red-500" />
+            <PackageX className="h-3.5 w-3.5 text-red-500" />
             <span>Low stock only</span>
           </label>
 
@@ -502,13 +495,13 @@ export default function SellerProductsPage() {
                 setLowOnly(false);
                 setSearchQuery('');
               }}
-              className="shrink-0 text-xs font-semibold text-[var(--color-danger)] hover:underline px-2 h-8"
+              className="h-8 shrink-0 px-2 text-xs font-semibold text-[var(--color-danger)] hover:underline"
             >
               Reset filters
             </button>
           )}
 
-          <div className="ml-auto shrink-0 flex items-center gap-2">
+          <div className="ml-auto flex shrink-0 items-center gap-2">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-muted)]">
               Sort:
             </span>
@@ -565,20 +558,20 @@ export default function SellerProductsPage() {
       )}
 
       {viewMode === 'table' && (
-        <div className="overflow-x-auto bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl">
+        <div className="overflow-x-auto rounded-3xl bg-[var(--color-surface)] p-2">
           {filtered.length > 0 ? (
-            <table className="w-full text-left border-collapse text-xs">
+            <table className="w-full border-collapse text-left text-xs">
               <thead>
-                <tr className="border-b border-[var(--color-border)] text-[10px] uppercase font-bold tracking-wider text-[var(--color-muted)] bg-[var(--color-surface)]">
-                  <th className="py-3 px-4">Item</th>
-                  <th className="py-3 px-4">Category</th>
-                  <th className="py-3 px-4">Price</th>
-                  <th className="py-3 px-4">Stock</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
+                <tr className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-muted)]">
+                  <th className="px-4 py-3">Item</th>
+                  <th className="px-4 py-3">Category</th>
+                  <th className="px-4 py-3">Price</th>
+                  <th className="px-4 py-3">Stock</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[var(--color-border)]/60">
+              <tbody>
                 {filtered.map((product) => {
                   const qty = Number(product.quantity_available ?? 0);
                   const isOut = qty === 0;
@@ -588,61 +581,61 @@ export default function SellerProductsPage() {
                   return (
                     <tr
                       key={product.id}
-                      className="hover:bg-[var(--color-border)]/10 transition-colors group"
+                      className="group transition-colors hover:bg-[var(--color-background)]"
                     >
-                      <td className="py-3 px-4">
+                      <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           <Link
                             href={`/dashboard/products/${product.id}`}
-                            className="relative h-10 w-10 shrink-0 rounded-xl overflow-hidden border border-[var(--color-border)] bg-[var(--color-background)] block"
+                            className="relative block h-10 w-10 shrink-0 overflow-hidden rounded-xl bg-[var(--color-background)]"
                           >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src={product.image_urls?.[0] || '/placeholder-product.png'}
                               alt=""
-                              className="w-full h-full object-cover"
+                              className="h-full w-full object-cover"
                             />
                             {product.is_featured && (
-                              <span className="absolute top-0.5 left-0.5 p-0.5 rounded-full bg-amber-500 text-white">
-                                <Flame className="w-2 h-2 fill-current" />
+                              <span className="absolute left-0.5 top-0.5 rounded-full bg-amber-500 p-0.5 text-white">
+                                <Flame className="h-2 w-2 fill-current" />
                               </span>
                             )}
                           </Link>
                           <div className="min-w-0 max-w-xs">
                             <Link
                               href={`/dashboard/products/${product.id}`}
-                              className="font-semibold text-[var(--color-foreground)] hover:text-[var(--color-accent)] line-clamp-1"
+                              className="line-clamp-1 font-semibold text-[var(--color-foreground)] hover:text-[var(--color-accent)]"
                             >
                               {product.title}
                             </Link>
-                            <span className="text-[10px] text-[var(--color-muted)] block font-mono">
+                            <span className="block font-mono text-[10px] text-[var(--color-muted)]">
                               #{product.id.slice(0, 8)}
                             </span>
                           </div>
                         </div>
                       </td>
 
-                      <td className="py-3 px-4 text-[var(--color-muted)] font-medium">
+                      <td className="px-4 py-3 font-medium text-[var(--color-muted)]">
                         {product.category}
                       </td>
 
-                      <td className="py-3 px-4 font-bold text-[var(--color-foreground)] tabular-nums">
+                      <td className="px-4 py-3 font-bold tabular-nums text-[var(--color-foreground)]">
                         {product.currency || 'GH₵'}
                         {parseFloat(product.price).toLocaleString()}
                       </td>
 
-                      <td className="py-3 px-4">
+                      <td className="px-4 py-3">
                         <div className="flex items-center gap-1.5">
                           <button
                             type="button"
                             onClick={() => handleQuickStockUpdate(product.id, Math.max(0, qty - 1))}
-                            className="w-6 h-6 rounded-lg border border-[var(--color-border)] flex items-center justify-center hover:bg-[var(--color-border)]/20 text-xs font-bold text-[var(--color-foreground)]"
+                            className="flex h-6 w-6 items-center justify-center rounded-lg bg-[var(--color-background)] text-xs font-bold text-[var(--color-foreground)] hover:opacity-80"
                             title="Decrease stock"
                           >
                             -
                           </button>
                           <span
-                            className={`min-w-8 text-center font-bold tabular-nums px-2 py-0.5 rounded-md text-[11px] ${
+                            className={`min-w-8 rounded-md px-2 py-0.5 text-center text-[11px] font-bold tabular-nums ${
                               isOut
                                 ? 'bg-red-500/10 text-red-600'
                                 : isLow
@@ -655,7 +648,7 @@ export default function SellerProductsPage() {
                           <button
                             type="button"
                             onClick={() => handleQuickStockUpdate(product.id, qty + 1)}
-                            className="w-6 h-6 rounded-lg border border-[var(--color-border)] flex items-center justify-center hover:bg-[var(--color-border)]/20 text-xs font-bold text-[var(--color-foreground)]"
+                            className="flex h-6 w-6 items-center justify-center rounded-lg bg-[var(--color-background)] text-xs font-bold text-[var(--color-foreground)] hover:opacity-80"
                             title="Increase stock"
                           >
                             +
@@ -663,14 +656,14 @@ export default function SellerProductsPage() {
                         </div>
                       </td>
 
-                      <td className="py-3 px-4">
+                      <td className="px-4 py-3">
                         <button
                           type="button"
                           onClick={() => handleQuickStatusToggle(product.id, product.status)}
-                          className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border transition-colors ${
+                          className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider transition-colors ${
                             isActive
-                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20'
-                              : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 hover:bg-amber-500/20'
+                              ? 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400'
+                              : 'bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 dark:text-amber-400'
                           }`}
                           title="Click to toggle status"
                         >
@@ -678,49 +671,50 @@ export default function SellerProductsPage() {
                         </button>
                       </td>
 
-                      <td className="py-3 px-4 text-right">
+                      <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-1">
                           <Link
                             href={`/dashboard/products/${product.id}`}
-                            className="p-1.5 rounded-lg text-[var(--color-muted)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-border)]/20 transition-colors"
+                            className="hover:bg-[var(--color-border)]/20 rounded-lg p-1.5 text-[var(--color-muted)] transition-colors hover:text-[var(--color-foreground)]"
                             title="Manage Hub"
                           >
-                            <Sliders className="w-3.5 h-3.5" />
+                            <Sliders className="h-3.5 w-3.5" />
                           </Link>
                           <DropdownMenu
                             trigger={
                               <button
                                 type="button"
-                                className="p-1.5 rounded-lg text-[var(--color-muted)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-border)]/20 transition-colors"
+                                className="hover:bg-[var(--color-border)]/20 rounded-lg p-1.5 text-[var(--color-muted)] transition-colors hover:text-[var(--color-foreground)]"
                                 title="More Actions"
                               >
-                                <MoreHorizontal className="w-3.5 h-3.5" />
+                                <MoreHorizontal className="h-3.5 w-3.5" />
                               </button>
                             }
                             items={[
                               {
                                 label: 'Manage Hub',
-                                icon: <Sliders className="w-3.5 h-3.5" />,
+                                icon: <Sliders className="h-3.5 w-3.5" />,
                                 onClick: () => router.push(`/dashboard/products/${product.id}`),
                               },
                               {
                                 label: 'Edit Details',
-                                icon: <Edit2 className="w-3.5 h-3.5" />,
-                                onClick: () => router.push(`/dashboard/products/edit/${product.id}`),
+                                icon: <Edit2 className="h-3.5 w-3.5" />,
+                                onClick: () =>
+                                  router.push(`/dashboard/products/edit/${product.id}`),
                               },
                               {
                                 label: 'View Public Page',
-                                icon: <ExternalLink className="w-3.5 h-3.5" />,
+                                icon: <ExternalLink className="h-3.5 w-3.5" />,
                                 onClick: () => window.open(`/product/${product.id}`, '_blank'),
                               },
                               {
                                 label: isActive ? 'Set as Draft' : 'Publish as Active',
-                                icon: <CircleDot className="w-3.5 h-3.5" />,
+                                icon: <CircleDot className="h-3.5 w-3.5" />,
                                 onClick: () => handleQuickStatusToggle(product.id, product.status),
                               },
                               {
                                 label: 'Delete Product',
-                                icon: <Trash2 className="w-3.5 h-3.5" />,
+                                icon: <Trash2 className="h-3.5 w-3.5" />,
                                 variant: 'danger',
                                 divider: true,
                                 onClick: () => setDeletingProductId(product.id),
@@ -766,7 +760,6 @@ export default function SellerProductsPage() {
   );
 }
 
-
 function StatTile({
   icon,
   label,
@@ -782,10 +775,8 @@ function StatTile({
 }) {
   return (
     <div
-      className={`p-4 rounded-2xl border transition-colors ${
-        accent
-          ? 'border-amber-500/30 bg-amber-500/5'
-          : 'border-[var(--color-border)] bg-[var(--color-surface)]'
+      className={`rounded-3xl p-4 transition-colors ${
+        accent ? 'bg-amber-500/10' : 'bg-[var(--color-surface)]'
       }`}
     >
       <div className="flex items-center gap-1.5">
@@ -795,14 +786,16 @@ function StatTile({
         </span>
       </div>
       <div
-        className={`mt-1.5 text-xl sm:text-2xl font-bold tabular-nums ${
+        className={`mt-1.5 text-xl font-bold tabular-nums sm:text-2xl ${
           accent ? 'text-amber-600 dark:text-amber-400' : 'text-[var(--color-foreground)]'
         }`}
       >
         {value}
       </div>
       {hint && (
-        <div className="text-[10px] text-[var(--color-muted)] mt-0.5 truncate font-medium">{hint}</div>
+        <div className="mt-0.5 truncate text-[10px] font-medium text-[var(--color-muted)]">
+          {hint}
+        </div>
       )}
     </div>
   );
@@ -820,15 +813,15 @@ function EmptyState({
   onReset: () => void;
 }) {
   return (
-    <div className="py-16 px-4 text-center bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl space-y-4">
-      <div className="w-12 h-12 rounded-2xl bg-[var(--color-accent)]/10 text-[var(--color-accent)] flex items-center justify-center mx-auto">
-        <Package className="w-6 h-6" />
+    <div className="space-y-4 rounded-3xl bg-[var(--color-surface)] px-4 py-16 text-center">
+      <div className="bg-[var(--color-accent)]/10 mx-auto flex h-12 w-12 items-center justify-center rounded-2xl text-[var(--color-accent)]">
+        <Package className="h-6 w-6" />
       </div>
-      <div className="max-w-sm mx-auto">
+      <div className="mx-auto max-w-sm">
         <h3 className="text-base font-semibold text-[var(--color-foreground)]">
           {hasProducts ? 'No products match your filters' : 'Your store has no products yet'}
         </h3>
-        <p className="text-xs text-[var(--color-muted)] mt-1">
+        <p className="mt-1 text-xs text-[var(--color-muted)]">
           {hasProducts
             ? `No listings matched "${query || 'your active filters'}". Try resetting or adjusting criteria.`
             : 'Start selling across Ghana by publishing your first product listing.'}
@@ -842,7 +835,7 @@ function EmptyState({
         ) : (
           <Link href="/dashboard/products/add">
             <Button size="sm" className="rounded-xl">
-              <Plus className="w-4 h-4 mr-1.5" /> Add New Product
+              <Plus className="mr-1.5 h-4 w-4" /> Add New Product
             </Button>
           </Link>
         )}

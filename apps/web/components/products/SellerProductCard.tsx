@@ -130,11 +130,11 @@ export default function SellerProductCard({
       transition={{ duration: 0.2, delay: Math.min(index * 0.02, 0.2) }}
       className="group"
     >
-      <div className="hover:border-[var(--color-foreground)]/25 relative rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3.5 transition-colors sm:p-4">
+      <div className="hover:bg-foreground/[0.04] relative rounded-3xl bg-[var(--color-surface)] p-3.5 transition-colors sm:p-4">
         <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
           <Link
             href={`/dashboard/products/${product.id}`}
-            className="group/media relative block h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] focus:outline-none sm:h-24 sm:w-24"
+            className="group/media relative block h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-[var(--color-background)] focus:outline-none sm:h-24 sm:w-24"
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
             aria-label={`Manage ${product.title}`}
@@ -201,10 +201,10 @@ export default function SellerProductCard({
                   onQuickStatusToggle?.(product.id, product.status);
                 }}
                 title={`Click to switch to ${isActive ? 'draft' : 'active'}`}
-                className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
+                className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
                   isActive
-                    ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400'
-                    : 'border-amber-500/20 bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 dark:text-amber-400'
+                    ? 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400'
+                    : 'bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 dark:text-amber-400'
                 }`}
               >
                 {product.status}
@@ -226,12 +226,12 @@ export default function SellerProductCard({
               </div>
 
               <span
-                className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
+                className={`inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
                   isOutOfStock
-                    ? 'border-red-500/20 bg-red-500/10 text-red-600 dark:text-red-400'
+                    ? 'bg-red-500/10 text-red-600 dark:text-red-400'
                     : isLowStock
-                      ? 'border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400'
-                      : 'border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-foreground)]'
+                      ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                      : 'bg-[var(--color-background)] text-[var(--color-foreground)]'
                 }`}
               >
                 <Package className="h-3 w-3" />
@@ -239,13 +239,13 @@ export default function SellerProductCard({
               </span>
 
               {promotionState === 'verifying' && (
-                <span className="inline-flex items-center gap-1 rounded-md border border-blue-500/20 bg-blue-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-blue-500">
+                <span className="inline-flex items-center gap-1 rounded-lg bg-blue-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-blue-500">
                   <Sparkles className="h-3 w-3 animate-spin" />
                   Verifying boost
                 </span>
               )}
               {promotionState === 'failed' && (
-                <span className="inline-flex items-center gap-1 rounded-md border border-red-500/20 bg-red-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-red-500">
+                <span className="inline-flex items-center gap-1 rounded-lg bg-red-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-red-500">
                   <AlertTriangle className="h-3 w-3" />
                   Boost failed
                 </span>
@@ -259,17 +259,17 @@ export default function SellerProductCard({
               )}
             </div>
 
-            <div className="border-[var(--color-border)]/50 flex items-center gap-2 border-t pt-1">
+            <div className="flex flex-wrap items-center gap-2 pt-1.5">
               <Link
                 href={`/dashboard/products/${product.id}`}
-                className="hover:bg-[var(--color-border)]/20 inline-flex items-center gap-1.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-1.5 text-xs font-medium text-[var(--color-foreground)] transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--color-background)] px-3 py-1.5 text-xs font-medium text-[var(--color-foreground)] transition-opacity hover:opacity-80"
               >
                 <Sliders className="h-3.5 w-3.5 text-[var(--color-accent)]" />
                 Manage Hub
               </Link>
               <Link
                 href={`/dashboard/products/edit/${product.id}`}
-                className="hover:bg-[var(--color-border)]/20 inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium text-[var(--color-muted)] transition-colors hover:text-[var(--color-foreground)]"
+                className="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium text-[var(--color-muted)] transition-colors hover:bg-[var(--color-background)] hover:text-[var(--color-foreground)]"
               >
                 <Edit2 className="h-3.5 w-3.5" />
                 Edit
@@ -278,7 +278,7 @@ export default function SellerProductCard({
                 href={`/product/${product.id}`}
                 target="_blank"
                 rel="noreferrer"
-                className="hover:bg-[var(--color-border)]/20 inline-flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-medium text-[var(--color-muted)] transition-colors hover:text-[var(--color-foreground)]"
+                className="inline-flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-medium text-[var(--color-muted)] transition-colors hover:bg-[var(--color-background)] hover:text-[var(--color-foreground)]"
                 title="View public listing in new tab"
               >
                 <Eye className="h-3.5 w-3.5" />
@@ -290,7 +290,7 @@ export default function SellerProductCard({
                   trigger={
                     <button
                       type="button"
-                      className="hover:bg-[var(--color-border)]/20 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-1.5 text-[var(--color-muted)] transition-colors hover:text-[var(--color-foreground)]"
+                      className="rounded-xl bg-[var(--color-background)] p-1.5 text-[var(--color-muted)] transition-colors hover:text-[var(--color-foreground)]"
                       title="More actions"
                     >
                       <MoreHorizontal className="h-4 w-4" />

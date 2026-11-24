@@ -26,7 +26,9 @@ import { NotificationModule } from './notification/notification.module';
 import { AuditModule } from './audit/audit.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { LoopsModule } from './loops/loops.module';
+import { EmailModule } from './email/email.module';
 import { EventsModule } from './events/events.module';
+import { AiModule } from './ai/ai.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { SentryModule } from '@sentry/nestjs/setup';
 import { APP_INTERCEPTOR } from '@nestjs/core';
@@ -38,6 +40,7 @@ import { ApiResponseInterceptor } from './common/interceptors/api-response.inter
     // every controller. The actual SDK was already init'd in main.ts.
     SentryModule.forRoot(),
     LoopsModule,
+    EmailModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),
@@ -91,6 +94,7 @@ import { ApiResponseInterceptor } from './common/interceptors/api-response.inter
     AuditModule,
     AnalyticsModule,
     EventsModule,
+    AiModule,
   ],
   controllers: [AppController],
   providers: [

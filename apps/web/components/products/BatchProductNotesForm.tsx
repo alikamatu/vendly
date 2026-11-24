@@ -2,8 +2,6 @@
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   Camera,
   ImagePlus,
@@ -15,30 +13,20 @@ import {
   CheckCircle2,
   AlertCircle,
   X,
-  Layers,
-  Tag,
-  DollarSign,
-  Package,
-  Percent,
-  Flame,
-  ArrowRight,
   ArrowLeft,
   ChevronDown,
-  ChevronRight,
   Sparkles,
   UploadCloud,
-  FileCheck2,
   ExternalLink,
   Loader2,
   RefreshCw,
-  Eye,
-  SlidersHorizontal,
+  Wand2,
 } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 import { productApi } from '@/lib/api/product';
+import { aiApi, AiConfidence } from '@/lib/api/ai';
 import { useAuth } from '@/lib/contexts/auth-context';
 import { toast } from 'sonner';
-
 
 export interface CategoryField {
   name?: string;
@@ -72,15 +60,10 @@ export interface ProductNoteItem {
   quantity_available: string;
   brand: string;
   tags: string[];
-  is_featured: boolean;
   status: 'active' | 'draft';
-  showCategory: boolean;
-  showCondition: boolean;
-  showStock: boolean;
-  showDiscount: boolean;
-  showBrand: boolean;
-  showTags: boolean;
-  showBoost: boolean;
+  aiGenerated?: boolean;
+  aiConfidence?: AiConfidence;
+  aiSuggestedPrice?: number | null;
 }
 
 export interface BatchPublishProgress {
@@ -103,12 +86,13 @@ interface BatchProductNotesFormProps {
 }
 
 const CONDITIONS = [
-  { value: 'new', label: 'Brand New', desc: 'Sealed or never opened' },
-  { value: 'used', label: 'Used / Pre-owned', desc: 'Good condition with minor wear' },
-  { value: 'refurbished', label: 'Refurbished', desc: 'Professionally restored & tested' },
+  { value: 'new', label: 'Brand New' },
+  { value: 'used', label: 'Pre-owned' },
+  { value: 'refurbished', label: 'Refurbished' },
 ] as const;
 
-const DISCOUNT_PRESETS = [5, 10, 15, 20, 25, 30, 50];
+const MIN_ACTIVE_DESCRIPTION_LENGTH = 20;
+const MAX_BULK_PHOTOS = 20;
 
 function createBlankProductNote(initialCategory = 'General'): ProductNoteItem {
   return {
@@ -129,20 +113,31 @@ function createBlankProductNote(initialCategory = 'General'): ProductNoteItem {
     quantity_available: '1',
     brand: '',
     tags: [],
-    is_featured: false,
     status: 'active',
-    showCategory: false,
-    showCondition: false,
-    showStock: false,
-    showDiscount: false,
-    showBrand: false,
-    showTags: false,
-    showBoost: false,
+    aiGenerated: false,
+    aiSuggestedPrice: null,
   };
 }
 
+function formatGhs(value: string | number): string {
+  const num = typeof value === 'number' ? value : parseFloat(value);
+  if (!Number.isFinite(num) || num <= 0) return '';
+  return `GH₵ ${num.toLocaleString('en-GH', { maximumFractionDigits: 2 })}`;
+}
+
+function getItemReadiness(item: ProductNoteItem): { ready: boolean; missing: string[] } {
+  const missing: string[] = [];
+  if (item.images.length === 0) missing.push('Photo');
+  if (!item.title.trim() || item.title.trim().length < 2) missing.push('Name');
+  const priceNum = parseFloat(item.price);
+  if (!item.price || Number.isNaN(priceNum) || priceNum <= 0) missing.push('Price');
+  if (item.status === 'active' && item.description.trim().length < MIN_ACTIVE_DESCRIPTION_LENGTH) {
+    missing.push('Description');
+  }
+  return { ready: missing.length === 0, missing };
+}
+
 export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProductNotesFormProps) {
-  const router = useRouter();
   const { token } = useAuth();
 
   const [categories, setCategories] = useState<Category[]>([]);
@@ -151,13 +146,20 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
   const [notes, setNotes] = useState<ProductNoteItem[]>([createBlankProductNote()]);
   const [activeNoteIndex, setActiveNoteIndex] = useState<number>(0);
   const [tagInput, setTagInput] = useState<string>('');
+  const [showMoreDetails, setShowMoreDetails] = useState<boolean>(false);
 
-  const [bulkImportOpen, setBulkImportOpen] = useState(false);
+  // AI states
+  const [aiConfigured, setAiConfigured] = useState<boolean | null>(null);
+  const [isBulkAnalyzing, setIsBulkAnalyzing] = useState<boolean>(false);
+  const [bulkAnalyzingCount, setBulkAnalyzingCount] = useState<number>(0);
+  const [isSingleAnalyzing, setIsSingleAnalyzing] = useState<boolean>(false);
+  const [bulkModalOpen, setBulkModalOpen] = useState<boolean>(false);
+
   const bulkFileInputRef = useRef<HTMLInputElement>(null);
-
   const activeImageInputRef = useRef<HTMLInputElement>(null);
   const activeCameraInputRef = useRef<HTMLInputElement>(null);
   const activeVideoInputRef = useRef<HTMLInputElement>(null);
+  const activeTabRef = useRef<HTMLButtonElement>(null);
 
   const [publishProgress, setPublishProgress] = useState<BatchPublishProgress>({
     total: 0,
@@ -169,6 +171,7 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
 
   const activeNote = notes[activeNoteIndex] || notes[0];
 
+  // Fetch categories
   useEffect(() => {
     productApi
       .getCategories()
@@ -182,366 +185,525 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
           );
         }
       })
-      .catch((err) => {
-        console.warn('Could not load categories:', err);
+      .catch(() => {
+        // Fallback stays 'General'
       });
   }, []);
 
+  // Check Gemini AI readiness silently
   useEffect(() => {
-    const currentCatName = activeNote?.category;
-    if (!currentCatName || brandsMap[currentCatName]) return;
+    if (!token) return;
+    aiApi
+      .getStatus(token)
+      .then((status) => setAiConfigured(status.configured))
+      .catch(() => setAiConfigured(null));
+  }, [token]);
 
-    const matchedCat = categories.find((c) => c.name === currentCatName);
+  // Fetch brands for active category
+  useEffect(() => {
+    if (!activeNote?.category) return;
+    const matchedCat = categories.find((c) => c.name === activeNote.category);
+    if (!matchedCat || brandsMap[matchedCat.id]) return;
+
     productApi
-      .getBrands(currentCatName, matchedCat?.id)
-      .then((brandsList) => {
-        setBrandsMap((prev) => ({
-          ...prev,
-          [currentCatName]: brandsList || [],
-        }));
+      .getBrands(undefined, matchedCat.id)
+      .then((list) => {
+        setBrandsMap((prev) => ({ ...prev, [matchedCat.id]: list }));
       })
       .catch(() => {});
   }, [activeNote?.category, categories, brandsMap]);
 
+  // Keep a ref synced for unmount cleanup without mutating during render
+  const notesRef = useRef(notes);
+  useEffect(() => {
+    notesRef.current = notes;
+  }, [notes]);
+  useEffect(() => {
+    return () => {
+      notesRef.current.forEach((n) => {
+        n.imagePreviews.forEach((url) => URL.revokeObjectURL(url));
+        if (n.videoPreview) URL.revokeObjectURL(n.videoPreview);
+      });
+    };
+  }, []);
+
+  // Scroll active item tab into view on mobile
+  useEffect(() => {
+    activeTabRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      inline: 'nearest',
+      block: 'nearest',
+    });
+  }, [activeNoteIndex]);
 
   const updateActiveNote = useCallback(
     (updater: Partial<ProductNoteItem> | ((prev: ProductNoteItem) => ProductNoteItem)) => {
-      setNotes((prev) => {
-        const next = [...prev];
-        const current = next[activeNoteIndex];
-        if (!current) return prev;
-        next[activeNoteIndex] =
-          typeof updater === 'function' ? updater(current) : { ...current, ...updater };
-        return next;
-      });
+      setNotes((prev) =>
+        prev.map((item, idx) => {
+          if (idx !== activeNoteIndex) return item;
+          return typeof updater === 'function' ? updater(item) : { ...item, ...updater };
+        }),
+      );
     },
     [activeNoteIndex],
   );
 
-  const addNewNote = useCallback(() => {
-    const defaultCat = categories[0]?.name || 'General';
-    const newNote = createBlankProductNote(defaultCat);
-    setNotes((prev) => [...prev, newNote]);
+  const handleAddNote = () => {
+    const defaultCat = categories[0]?.name || activeNote?.category || 'General';
+    const fresh = createBlankProductNote(defaultCat);
+    setNotes((prev) => [...prev, fresh]);
     setActiveNoteIndex(notes.length);
-    toast.success(`Product #${notes.length + 1} added`);
-  }, [categories, notes.length]);
+  };
 
-  const duplicateActiveNote = useCallback(() => {
-    if (!activeNote) return;
-    const duplicated: ProductNoteItem = {
+  const handleDuplicateActiveNote = () => {
+    const duplicate: ProductNoteItem = {
       ...activeNote,
       id:
         typeof crypto !== 'undefined' && crypto.randomUUID
           ? crypto.randomUUID()
           : `note_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-      title: `${activeNote.title} (Copy)`.trim(),
+      title: activeNote.title ? `${activeNote.title} (Copy)` : '',
       images: [...activeNote.images],
-      imagePreviews: [...activeNote.imagePreviews],
+      imagePreviews: activeNote.images.map((f) => URL.createObjectURL(f)),
       video: activeNote.video,
-      videoPreview: activeNote.videoPreview,
+      videoPreview: activeNote.video ? URL.createObjectURL(activeNote.video) : null,
       tags: [...activeNote.tags],
     };
-    setNotes((prev) => [...prev, duplicated]);
-    setActiveNoteIndex(notes.length);
-    toast.success('Product duplicated');
-  }, [activeNote, notes.length]);
-
-  const removeNote = useCallback(
-    (indexToRemove: number) => {
-      if (notes.length <= 1) {
-        toast.info('At least one product card is required');
-        return;
-      }
-      setNotes((prev) => prev.filter((_, idx) => idx !== indexToRemove));
-      if (activeNoteIndex >= indexToRemove && activeNoteIndex > 0) {
-        setActiveNoteIndex(activeNoteIndex - 1);
-      }
-      toast.info('Product note removed');
-    },
-    [activeNoteIndex, notes.length],
-  );
-
-
-  const processAndCompressImages = async (files: File[]): Promise<File[]> => {
-    const compressedList: File[] = [];
-    for (const file of files) {
-      let src = file;
-      const lower = file.name.toLowerCase();
-      if (
-        lower.endsWith('.heic') ||
-        lower.endsWith('.heif') ||
-        file.type === 'image/heic' ||
-        file.type === 'image/heif'
-      ) {
-        try {
-          const heic2any = (await import('heic2any')).default;
-          const blob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 });
-          const finalBlob = Array.isArray(blob) ? blob[0] : blob;
-          src = new File([finalBlob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), {
-            type: 'image/jpeg',
-          });
-        } catch (e) {
-          console.warn('HEIC preview conversion fallback:', e);
-        }
-      }
-
-      try {
-        const compressed = await imageCompression(src, {
-          maxSizeMB: 1,
-          maxWidthOrHeight: 1920,
-          useWebWorker: true,
-          fileType: 'image/webp',
-        });
-        compressedList.push(compressed);
-      } catch (compErr) {
-        console.warn('Compression fallback to original file:', compErr);
-        compressedList.push(src);
-      }
-    }
-    return compressedList;
+    const nextIdx = activeNoteIndex + 1;
+    setNotes((prev) => [...prev.slice(0, nextIdx), duplicate, ...prev.slice(nextIdx)]);
+    setActiveNoteIndex(nextIdx);
+    toast.success('Item duplicated');
   };
 
-  const handleAddImagesToActive = async (files: FileList | File[] | null) => {
-    if (!files || files.length === 0) return;
-    const incoming = Array.from(files);
-    const currentCount = activeNote.images.length;
-    if (currentCount + incoming.length > 3) {
-      toast.error('Maximum 3 photos allowed per product');
+  const handleDeleteNote = (index: number) => {
+    if (notes.length <= 1) {
+      toast.info('At least one product item is required');
       return;
     }
+    const target = notes[index];
+    target.imagePreviews.forEach((url) => URL.revokeObjectURL(url));
+    if (target.videoPreview) URL.revokeObjectURL(target.videoPreview);
 
-    const toastId = toast.loading('Optimizing photos...');
-    try {
-      const compressed = await processAndCompressImages(incoming);
-      const newPreviews = compressed.map((file) => URL.createObjectURL(file));
-
-      updateActiveNote((prev) => ({
-        ...prev,
-        images: [...prev.images, ...compressed],
-        imagePreviews: [...prev.imagePreviews, ...newPreviews],
-      }));
-      toast.success(`${compressed.length} photo${compressed.length > 1 ? 's' : ''} attached`, {
-        id: toastId,
-      });
-    } catch {
-      toast.error('Failed to process photos', { id: toastId });
+    const updated = notes.filter((_, i) => i !== index);
+    setNotes(updated);
+    if (activeNoteIndex >= updated.length) {
+      setActiveNoteIndex(updated.length - 1);
+    } else if (activeNoteIndex > index) {
+      setActiveNoteIndex(activeNoteIndex - 1);
     }
   };
 
-  const handleAddVideoToActive = (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    const file = files[0];
-    const MAX_VIDEO_BYTES = 60 * 1024 * 1024;
-    if (file.size > MAX_VIDEO_BYTES) {
-      toast.error('Product video must be under 60MB');
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []).filter((f) => f.type.startsWith('image/'));
+    e.target.value = '';
+    if (!files.length) return;
+
+    const remaining = 3 - activeNote.images.length;
+    if (remaining <= 0) {
+      toast.error('Maximum 3 photos per product');
       return;
     }
-    const previewUrl = URL.createObjectURL(file);
+
+    const toAdd = files.slice(0, remaining);
+    if (files.length > remaining) {
+      toast.info(`Added ${remaining} photo${remaining === 1 ? '' : 's'} (max 3 per item)`);
+    }
+
+    const previews = toAdd.map((f) => URL.createObjectURL(f));
+    updateActiveNote((prev) => ({
+      ...prev,
+      images: [...prev.images, ...toAdd],
+      imagePreviews: [...prev.imagePreviews, ...previews],
+    }));
+  };
+
+  const handleRemoveImage = (imgIdx: number) => {
+    const previewToRevoke = activeNote.imagePreviews[imgIdx];
+    if (previewToRevoke) URL.revokeObjectURL(previewToRevoke);
+    updateActiveNote((prev) => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== imgIdx),
+      imagePreviews: prev.imagePreviews.filter((_, i) => i !== imgIdx),
+    }));
+  };
+
+  const handleSetCoverImage = (imgIdx: number) => {
+    if (imgIdx === 0) return;
+    updateActiveNote((prev) => {
+      const nextImages = [...prev.images];
+      const nextPreviews = [...prev.imagePreviews];
+      const [img] = nextImages.splice(imgIdx, 1);
+      const [preview] = nextPreviews.splice(imgIdx, 1);
+      nextImages.unshift(img);
+      nextPreviews.unshift(preview);
+      return { ...prev, images: nextImages, imagePreviews: nextPreviews };
+    });
+  };
+
+  const handleVideoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    if (!file.type.startsWith('video/')) {
+      toast.error('Please select a valid video file');
+      return;
+    }
+    if (file.size > 15 * 1024 * 1024) {
+      toast.error('Video must be 15 MB or smaller');
+      return;
+    }
+    if (activeNote.videoPreview) URL.revokeObjectURL(activeNote.videoPreview);
     updateActiveNote({
       video: file,
-      videoPreview: previewUrl,
-    });
-    toast.success('Video attached');
-  };
-
-  const removeImageFromActive = (index: number) => {
-    updateActiveNote((prev) => {
-      const updatedImages = prev.images.filter((_, idx) => idx !== index);
-      const updatedPreviews = prev.imagePreviews.filter((_, idx) => idx !== index);
-      return {
-        ...prev,
-        images: updatedImages,
-        imagePreviews: updatedPreviews,
-      };
+      videoPreview: URL.createObjectURL(file),
     });
   };
 
-  const removeVideoFromActive = () => {
-    updateActiveNote({
-      video: null,
-      videoPreview: null,
-    });
+  const handleRemoveVideo = () => {
+    if (activeNote.videoPreview) URL.revokeObjectURL(activeNote.videoPreview);
+    updateActiveNote({ video: null, videoPreview: null });
   };
 
-
-  const handleBulkPhotosSelected = async (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    const list = Array.from(files);
-    setBulkImportOpen(false);
-
-    const toastId = toast.loading(`Preparing ${list.length} photos for multiple products...`);
+  const compressForAi = async (file: File): Promise<File> => {
     try {
-      const compressed = await processAndCompressImages(list);
+      const compressed = await imageCompression(file, {
+        maxSizeMB: 0.45,
+        maxWidthOrHeight: 1024,
+        useWebWorker: true,
+      });
+      return new File([compressed], file.name, {
+        type: compressed.type || file.type || 'image/jpeg',
+      });
+    } catch {
+      return file;
+    }
+  };
 
-      const PHOTOS_PER_CARD = 2;
-      const chunks: File[][] = [];
-      for (let i = 0; i < compressed.length; i += PHOTOS_PER_CARD) {
-        chunks.push(compressed.slice(i, i + PHOTOS_PER_CARD));
+  // Gemini AI: Bulk Add Photos for Multiple Products
+  const handleBulkPhotosSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawFiles = Array.from(e.target.files || []).filter((f) => f.type.startsWith('image/'));
+    e.target.value = '';
+    if (!rawFiles.length) return;
+
+    const files = rawFiles.slice(0, MAX_BULK_PHOTOS);
+    if (rawFiles.length > MAX_BULK_PHOTOS) {
+      toast.info(`Analyzing the first ${MAX_BULK_PHOTOS} photos in this batch`);
+    }
+
+    const defaultCat = categories[0]?.name || 'General';
+    const isCurrentNoteEmpty =
+      notes.length === 1 &&
+      !notes[0].title.trim() &&
+      !notes[0].price.trim() &&
+      notes[0].images.length === 0;
+
+    setBulkModalOpen(false);
+    setIsBulkAnalyzing(true);
+    setBulkAnalyzingCount(files.length);
+
+    try {
+      if (!token) {
+        throw new Error('Please sign in to use Verndly AI.');
       }
 
-      const defaultCat = categories[0]?.name || 'General';
-      const createdNotes: ProductNoteItem[] = chunks.map((chunk, index) => {
-        const previews = chunk.map((f) => URL.createObjectURL(f));
+      // Compress lightweight copies for fast Gemini Vision upload
+      const aiFiles = await Promise.all(files.map(compressForAi));
+      const analysis = await aiApi.analyzeBulkPhotos(token, aiFiles);
+
+      const createdNotes: ProductNoteItem[] = analysis.products.map((group) => {
+        const groupedFiles = group.photo_indices
+          .map((idx) => files[idx])
+          .filter((f): f is File => Boolean(f));
         return {
-          ...createBlankProductNote(defaultCat),
-          images: chunk,
-          imagePreviews: previews,
-          title: '',
+          ...createBlankProductNote(group.category || defaultCat),
+          title: group.title || '',
+          description: group.description || '',
+          category: group.category || defaultCat,
+          condition: group.condition || 'new',
+          brand: group.brand || '',
+          tags: group.tags || [],
+          images: groupedFiles,
+          imagePreviews: groupedFiles.map((f) => URL.createObjectURL(f)),
+          aiGenerated: true,
+          aiConfidence: group.confidence,
+          aiSuggestedPrice: group.suggested_price_ghs,
         };
       });
 
-      setNotes((prevNotes) => {
-        // If current note is blank, replace it; otherwise append
-        const firstNoteIsBlank =
-          prevNotes.length === 1 &&
-          !prevNotes[0].title &&
-          !prevNotes[0].price &&
-          prevNotes[0].images.length === 0;
+      if (createdNotes.length === 0) {
+        throw new Error('Could not detect any products from the uploaded photos.');
+      }
 
-        if (firstNoteIsBlank) {
-          return createdNotes;
-        }
-        return [...prevNotes, ...createdNotes];
-      });
+      if (isCurrentNoteEmpty) {
+        setNotes(createdNotes);
+        setActiveNoteIndex(0);
+      } else {
+        setNotes((prev) => [...prev, ...createdNotes]);
+        setActiveNoteIndex(notes.length);
+      }
 
-      setActiveNoteIndex(0);
+      if (createdNotes.some((n) => n.brand || n.tags.length > 0)) {
+        setShowMoreDetails(true);
+      }
+
       toast.success(
-        `Created ${createdNotes.length} product drafts! Now enter name & price for each.`,
-        { id: toastId, duration: 4500 },
+        `Verndly AI grouped ${files.length} photo${files.length === 1 ? '' : 's'} into ${createdNotes.length} distinct product${createdNotes.length === 1 ? '' : 's'}`,
       );
-    } catch (err: any) {
-      toast.error('Bulk photo import failed: ' + (err?.message || 'Unknown error'), {
-        id: toastId,
-      });
+    } catch (err: unknown) {
+      const apiErr = err as { status?: number; message?: string };
+      const status = apiErr?.status;
+      const msg = apiErr?.message || 'Verndly AI could not analyze the photos.';
+
+      // Graceful fallback: 1 photo per product draft so the seller is never blocked
+      const fallbackNotes: ProductNoteItem[] = files.map((file) => ({
+        ...createBlankProductNote(defaultCat),
+        images: [file],
+        imagePreviews: [URL.createObjectURL(file)],
+      }));
+
+      if (isCurrentNoteEmpty) {
+        setNotes(fallbackNotes);
+        setActiveNoteIndex(0);
+      } else {
+        setNotes((prev) => [...prev, ...fallbackNotes]);
+        setActiveNoteIndex(notes.length);
+      }
+
+      if (status === 503) {
+        setAiConfigured(false);
+        toast.warning(
+          `${msg} Added ${fallbackNotes.length} separate draft${fallbackNotes.length === 1 ? '' : 's'} so you can continue.`,
+        );
+      } else {
+        toast.error(
+          `${msg} Added ${fallbackNotes.length} draft${fallbackNotes.length === 1 ? '' : 's'} manually instead.`,
+        );
+      }
+    } finally {
+      setIsBulkAnalyzing(false);
+      setBulkAnalyzingCount(0);
     }
   };
 
-
-  const checkNoteValidation = (note: ProductNoteItem) => {
-    const hasTitle = Boolean(note.title && note.title.trim().length > 0);
-    const numPrice = Number(note.price);
-    const hasValidPrice = Boolean(note.price && Number.isFinite(numPrice) && numPrice > 0);
-    const hasMedia = Boolean(note.images.length > 0 || note.video);
-
-    const missingFields: string[] = [];
-    if (!hasTitle) missingFields.push('Name');
-    if (!hasValidPrice) missingFields.push('Price');
-    if (!hasMedia) missingFields.push('Photo or Video');
-
-    return {
-      isValid: hasTitle && hasValidPrice && hasMedia,
-      missingFields,
-    };
-  };
-
-  const validationSummary = useMemo(() => {
-    let validCount = 0;
-    const items = notes.map((note, index) => {
-      const v = checkNoteValidation(note);
-      if (v.isValid) validCount++;
-      return { index, id: note.id, ...v };
-    });
-    return {
-      total: notes.length,
-      validCount,
-      allValid: validCount === notes.length,
-      items,
-    };
-  }, [notes]);
-
-  const totalBatchValue = useMemo(() => {
-    return notes.reduce((sum, n) => {
-      const p = parseFloat(n.price);
-      return sum + (Number.isFinite(p) ? p : 0);
-    }, 0);
-  }, [notes]);
-
-
-  const handleStartPublishing = async () => {
+  // Gemini AI: Auto-fill details for the active product from its photos
+  const handleAnalyzeActiveProduct = async () => {
     if (!token) {
-      toast.error('You must be logged in as a seller to publish products');
+      toast.error('Please sign in to use Verndly AI');
+      return;
+    }
+    if (activeNote.images.length === 0) {
+      toast.info('Add at least one photo first so Verndly AI can inspect your item');
       return;
     }
 
-    const firstInvalid = validationSummary.items.find((item) => !item.isValid);
-    if (firstInvalid) {
-      setActiveNoteIndex(firstInvalid.index);
+    const targetId = activeNote.id;
+    setIsSingleAnalyzing(true);
+    try {
+      const aiFiles = await Promise.all(activeNote.images.map(compressForAi));
+      const { product } = await aiApi.analyzeProductPhotos(token, aiFiles);
+
+      setNotes((prev) =>
+        prev.map((item) => {
+          if (item.id !== targetId) return item;
+          return {
+            ...item,
+            title: product.title || item.title,
+            description: product.description || item.description,
+            category: product.category || item.category,
+            condition: product.condition || item.condition,
+            brand: product.brand || item.brand,
+            tags: product.tags.length > 0 ? product.tags : item.tags,
+            aiGenerated: true,
+            aiConfidence: product.confidence,
+            aiSuggestedPrice: product.suggested_price_ghs,
+          };
+        }),
+      );
+
+      if (product.brand || product.tags.length > 0) {
+        setShowMoreDetails(true);
+      }
+      toast.success('Product details filled by Verndly AI');
+    } catch (err: unknown) {
+      const apiErr = err as { status?: number; message?: string };
+      if (apiErr?.status === 503) {
+        setAiConfigured(false);
+      }
+      toast.error(apiErr?.message || 'Failed to analyze photos with Verndly AI');
+    } finally {
+      setIsSingleAnalyzing(false);
+    }
+  };
+
+  const handleAddTag = () => {
+    const clean = tagInput.trim().toLowerCase().replace(/^#+/, '');
+    if (!clean) return;
+    if (activeNote.tags.includes(clean)) {
+      setTagInput('');
+      return;
+    }
+    if (activeNote.tags.length >= 8) {
+      toast.info('Up to 8 tags per product');
+      return;
+    }
+    updateActiveNote({ tags: [...activeNote.tags, clean] });
+    setTagInput('');
+  };
+
+  const handleRemoveTag = (tag: string) => {
+    updateActiveNote({ tags: activeNote.tags.filter((t) => t !== tag) });
+  };
+
+  // Readiness summary
+  const readinessById = useMemo(() => {
+    const map: Record<string, { ready: boolean; missing: string[] }> = {};
+    notes.forEach((n) => {
+      map[n.id] = getItemReadiness(n);
+    });
+    return map;
+  }, [notes]);
+
+  const readyCount = useMemo(
+    () => notes.filter((n) => readinessById[n.id]?.ready).length,
+    [notes, readinessById],
+  );
+
+  const activeCategory = activeNote.category;
+  const activePrice = activeNote.price;
+  const activeOriginalPrice = activeNote.original_price;
+
+  const activeCategoryBrands = useMemo(() => {
+    const matched = categories.find((c) => c.name === activeCategory);
+    return matched ? brandsMap[matched.id] || [] : [];
+  }, [categories, brandsMap, activeCategory]);
+
+  const discountPercent = useMemo(() => {
+    const p = parseFloat(activePrice || '');
+    const orig = parseFloat(activeOriginalPrice || '');
+    if (!Number.isFinite(p) || !Number.isFinite(orig) || orig <= p || p <= 0) return 0;
+    return Math.round(((orig - p) / orig) * 100);
+  }, [activePrice, activeOriginalPrice]);
+
+  // Publish all items sequentially
+  const publishItems = async (targetNotes: ProductNoteItem[]) => {
+    if (!token) {
+      toast.error('Please sign in to publish products');
+      return;
+    }
+
+    const firstIncompleteIndex = notes.findIndex(
+      (n) => targetNotes.some((t) => t.id === n.id) && !getItemReadiness(n).ready,
+    );
+    if (firstIncompleteIndex !== -1) {
+      const target = notes[firstIncompleteIndex];
+      const { missing } = getItemReadiness(target);
+      setActiveNoteIndex(firstIncompleteIndex);
       toast.error(
-        `Product #${firstInvalid.index + 1} is incomplete: Please provide ${firstInvalid.missingFields.join(', ')}`,
+        `"${target.title.trim() || `Item ${firstIncompleteIndex + 1}`}" needs: ${missing.join(', ')}`,
       );
       return;
     }
 
-    const initialItemStatuses = notes.map((n) => ({
+    const initialStatuses: BatchPublishProgress['itemStatuses'] = targetNotes.map((n, i) => ({
       id: n.id,
-      title: n.title.trim() || 'Untitled Item',
-      status: 'pending' as const,
+      title: n.title.trim() || `Item ${i + 1}`,
+      status: 'pending',
     }));
 
     setPublishProgress({
-      total: notes.length,
-      currentStep: 'validating',
+      total: targetNotes.length,
+      currentStep: 'compressing',
       currentProductIndex: 0,
-      itemStatuses: initialItemStatuses,
+      itemStatuses: initialStatuses,
       overallPercent: 5,
     });
 
-    const createdProductIds: string[] = [];
+    const createdIds: string[] = [];
+    let hasError = false;
 
-    for (let i = 0; i < notes.length; i++) {
-      const note = notes[i];
-      const progressBase = Math.round((i / notes.length) * 90);
+    for (let i = 0; i < targetNotes.length; i++) {
+      const item = targetNotes[i];
 
       setPublishProgress((prev) => ({
         ...prev,
-        currentStep: 'uploading',
+        currentStep: 'compressing',
         currentProductIndex: i,
-        overallPercent: progressBase + 10,
-        itemStatuses: prev.itemStatuses.map((st, idx) =>
-          idx === i ? { ...st, status: 'uploading' } : st,
+        overallPercent: Math.round(((i + 0.25) / targetNotes.length) * 100),
+        itemStatuses: prev.itemStatuses.map((s, idx) =>
+          idx === i ? { ...s, status: 'compressing', error: undefined } : s,
         ),
       }));
 
       try {
+        const compressedImages = await Promise.all(
+          item.images.map(async (img) => {
+            try {
+              const compressed = await imageCompression(img, {
+                maxSizeMB: 1,
+                maxWidthOrHeight: 1600,
+                useWebWorker: true,
+              });
+              return new File([compressed], img.name, {
+                type: compressed.type || img.type,
+              });
+            } catch {
+              return img;
+            }
+          }),
+        );
+
+        setPublishProgress((prev) => ({
+          ...prev,
+          currentStep: 'uploading',
+          overallPercent: Math.round(((i + 0.65) / targetNotes.length) * 100),
+          itemStatuses: prev.itemStatuses.map((s, idx) =>
+            idx === i ? { ...s, status: 'uploading' } : s,
+          ),
+        }));
+
         const created = await productApi.createProduct(
           token,
           {
-            title: note.title.trim(),
-            description: note.description.trim() || undefined,
-            price: note.price.trim(),
-            original_price: note.original_price?.trim() || undefined,
+            title: item.title.trim(),
+            description: item.description.trim() || undefined,
+            price: item.price.trim(),
+            original_price: item.original_price.trim() || undefined,
             currency: 'GHS',
-            condition: note.condition || 'new',
-            quantity_available: note.quantity_available?.trim() || '1',
-            status: note.status || 'active',
-            category: note.category || 'General',
-            brand: note.brand?.trim() || undefined,
-            tags: note.tags,
-            attributes: {},
+            condition: item.condition,
+            quantity_available: item.quantity_available || '1',
+            status: item.status,
+            category: item.category || categories[0]?.name || 'General',
+            brand: item.brand.trim() || undefined,
+            tags: item.tags,
           },
-          note.images,
-          note.video,
+          compressedImages,
+          item.video,
         );
 
-        const prodId = created?.product?.id;
-        if (prodId) {
-          createdProductIds.push(prodId);
-        }
+        const productId = created?.product?.id;
+        if (productId) createdIds.push(productId);
 
         setPublishProgress((prev) => ({
           ...prev,
-          itemStatuses: prev.itemStatuses.map((st, idx) =>
-            idx === i ? { ...st, status: 'success', productId: prodId } : st,
+          overallPercent: Math.round(((i + 1) / targetNotes.length) * 100),
+          itemStatuses: prev.itemStatuses.map((s, idx) =>
+            idx === i ? { ...s, status: 'success', productId } : s,
           ),
         }));
-      } catch (err: any) {
-        console.error(`Error uploading item #${i + 1}:`, err);
-        const errMsg = err?.message || 'Upload failed';
-
+      } catch (err: unknown) {
+        const apiErr = err as { message?: string };
+        hasError = true;
         setPublishProgress((prev) => ({
           ...prev,
-          itemStatuses: prev.itemStatuses.map((st, idx) =>
-            idx === i ? { ...st, status: 'error', error: errMsg } : st,
+          itemStatuses: prev.itemStatuses.map((s, idx) =>
+            idx === i
+              ? {
+                  ...s,
+                  status: 'error',
+                  error: apiErr?.message || 'Failed to upload product',
+                }
+              : s,
           ),
         }));
       }
@@ -549,277 +711,487 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
 
     setPublishProgress((prev) => ({
       ...prev,
-      currentStep: 'completed',
+      currentStep: hasError ? 'error' : 'completed',
       overallPercent: 100,
     }));
 
-    if (createdProductIds.length === notes.length) {
-      toast.success(`All ${notes.length} products published successfully!`);
-      if (onSuccess) onSuccess(createdProductIds);
-    } else if (createdProductIds.length > 0) {
-      toast.warning(
-        `${createdProductIds.length} of ${notes.length} products were published. Review errors below.`,
-      );
-    } else {
-      toast.error('Failed to publish products. Please check the errors below.');
+    if (!hasError && createdIds.length > 0) {
+      toast.success(`Published ${createdIds.length} product${createdIds.length === 1 ? '' : 's'}!`);
     }
   };
 
-  const handleRetryFailed = async () => {
-    if (!token) return;
-    const failedIndices = publishProgress.itemStatuses
-      .map((st, idx) => (st.status === 'error' ? idx : -1))
-      .filter((idx) => idx !== -1);
-
-    if (failedIndices.length === 0) return;
-
-    setPublishProgress((prev) => ({
-      ...prev,
-      currentStep: 'uploading',
-      overallPercent: 50,
-      itemStatuses: prev.itemStatuses.map((st) =>
-        st.status === 'error' ? { ...st, status: 'pending', error: undefined } : st,
-      ),
-    }));
-
-    for (const i of failedIndices) {
-      const note = notes[i];
-      setPublishProgress((prev) => ({
-        ...prev,
-        currentProductIndex: i,
-        itemStatuses: prev.itemStatuses.map((st, idx) =>
-          idx === i ? { ...st, status: 'uploading' } : st,
-        ),
-      }));
-
-      try {
-        const created = await productApi.createProduct(
-          token,
-          {
-            title: note.title.trim(),
-            description: note.description.trim() || undefined,
-            price: note.price.trim(),
-            original_price: note.original_price?.trim() || undefined,
-            currency: 'GHS',
-            condition: note.condition || 'new',
-            quantity_available: note.quantity_available?.trim() || '1',
-            status: note.status || 'active',
-            category: note.category || 'General',
-            brand: note.brand?.trim() || undefined,
-            tags: note.tags,
-            attributes: {},
-          },
-          note.images,
-          note.video,
-        );
-
-        const prodId = created?.product?.id;
-        setPublishProgress((prev) => ({
-          ...prev,
-          itemStatuses: prev.itemStatuses.map((st, idx) =>
-            idx === i ? { ...st, status: 'success', productId: prodId } : st,
-          ),
-        }));
-      } catch (err: any) {
-        const errMsg = err?.message || 'Upload failed';
-        setPublishProgress((prev) => ({
-          ...prev,
-          itemStatuses: prev.itemStatuses.map((st, idx) =>
-            idx === i ? { ...st, status: 'error', error: errMsg } : st,
-          ),
-        }));
-      }
+  const handleRetryFailed = () => {
+    const failedIds = new Set(
+      publishProgress.itemStatuses.filter((s) => s.status === 'error').map((s) => s.id),
+    );
+    const failedNotes = notes.filter((n) => failedIds.has(n.id));
+    if (failedNotes.length > 0) {
+      publishItems(failedNotes);
     }
-
-    setPublishProgress((prev) => ({
-      ...prev,
-      currentStep: 'completed',
-      overallPercent: 100,
-    }));
   };
 
+  const isPublishing =
+    publishProgress.currentStep === 'compressing' || publishProgress.currentStep === 'uploading';
+  const activeReadiness = readinessById[activeNote.id] || { ready: false, missing: [] };
 
   return (
-    <div
-      className="min-h-screen pb-32 font-sans text-zinc-900 dark:text-zinc-100 [&_button]:font-sans [&_input]:font-sans [&_select]:font-sans [&_textarea]:font-sans"
-      style={{
-        fontFamily:
-          '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "SF Pro", "San Francisco", system-ui, sans-serif',
-      }}
-    >
-      <header className="sticky top-0 z-30 border-b border-zinc-200/80 bg-white/80 backdrop-blur-xl dark:border-zinc-800/80 dark:bg-[#121214]/80">
-        <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3 sm:px-6">
-          <div className="flex items-center gap-3">
-            {onCancel ? (
-              <button
-                type="button"
-                onClick={onCancel}
-                className="flex h-9 w-9 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </button>
-            ) : (
-              <Link
-                href="/dashboard/products"
-                className="flex h-9 w-9 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </Link>
-            )}
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-                  Quick Add Notes
-                </span>
-                <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
-                  {notes.length} {notes.length === 1 ? 'item' : 'items'}
-                </span>
-              </div>
-              <h1 className="text-base font-bold tracking-tight text-zinc-900 sm:text-lg dark:text-zinc-100">
+    <div className="w-full space-y-6 pb-32 sm:pb-28">
+      {/* Hidden native file inputs */}
+      <input
+        ref={bulkFileInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        className="hidden"
+        onChange={handleBulkPhotosSelected}
+      />
+      <input
+        ref={activeImageInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        className="hidden"
+        onChange={handleImageSelect}
+      />
+      <input
+        ref={activeCameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={handleImageSelect}
+      />
+      <input
+        ref={activeVideoInputRef}
+        type="file"
+        accept="video/mp4,video/quicktime,video/webm"
+        className="hidden"
+        onChange={handleVideoSelect}
+      />
+
+      {/* Top inline header — sits naturally below DashboardHeader, zero overlap */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => onCancel?.()}
+            className="bg-surface text-foreground hover:bg-foreground/10 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors"
+            aria-label="Back to products"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-foreground text-xl font-bold tracking-tight sm:text-2xl">
                 Add Products
               </h1>
+              <span className="bg-surface text-muted rounded-full px-2.5 py-0.5 text-xs font-semibold">
+                {notes.length} {notes.length === 1 ? 'item' : 'items'}
+              </span>
             </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setBulkImportOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-xs font-medium text-zinc-700 transition-all hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800/80 dark:text-zinc-200 dark:hover:bg-zinc-700"
-            >
-              <ImagePlus className="h-3.5 w-3.5 text-amber-500" />
-              <span className="hidden sm:inline">Bulk Add</span> Photos
-            </button>
-
-            <button
-              type="button"
-              onClick={addNewNote}
-              className="inline-flex items-center gap-1.5 rounded-full bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              <span>Add Note</span>
-            </button>
+            <p className="text-muted mt-0.5 text-xs sm:text-sm">
+              Upload photos and let Verndly AI sort products and draft details automatically.
+            </p>
           </div>
         </div>
 
-        <div className="border-t border-zinc-100 bg-zinc-50/60 px-4 py-2 dark:border-zinc-800/60 dark:bg-zinc-900/40">
-          <div className="no-scrollbar mx-auto flex max-w-4xl items-center gap-2 overflow-x-auto py-0.5">
-            {notes.map((note, idx) => {
-              const check = checkNoteValidation(note);
-              const isActive = idx === activeNoteIndex;
-              const displayTitle = note.title.trim() || `Item ${idx + 1}`;
-              const displayPrice = note.price ? `GH₵ ${note.price}` : '';
+        {/* Primary AI bulk entry */}
+        <button
+          type="button"
+          disabled={isBulkAnalyzing}
+          onClick={() => setBulkModalOpen(true)}
+          className="bg-foreground text-background inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-50 sm:w-auto sm:py-2.5"
+        >
+          {isBulkAnalyzing ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Verndly AI analyzing {bulkAnalyzingCount} photos…</span>
+            </>
+          ) : (
+            <>
+              <Sparkles className="h-4 w-4" />
+              <span>Verndly AI Bulk Add</span>
+            </>
+          )}
+        </button>
+      </div>
 
-              return (
+      {/* Live Verndly AI bulk analysis banner */}
+      {isBulkAnalyzing && (
+        <div className="bg-[var(--color-accent)]/10 flex items-center gap-3 rounded-2xl px-4 py-3.5 sm:px-5">
+          <Loader2 className="h-5 w-5 shrink-0 animate-spin text-[var(--color-accent)]" />
+          <div className="min-w-0 flex-1">
+            <p className="text-foreground text-sm font-semibold">
+              Verndly AI is sorting {bulkAnalyzingCount} photos into separate products
+            </p>
+            <p className="text-muted text-xs">
+              Matching angles of the same item, picking cover shots, and writing titles, categories,
+              and descriptions…
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Item Count Tabs Strip — shows thumbnail, product name, price & readiness */}
+      <section aria-label="Products in this batch" className="w-full space-y-2.5">
+        <div className="flex items-center justify-between">
+          <span className="text-muted text-xs font-semibold uppercase tracking-wider">
+            Items ({readyCount}/{notes.length} ready)
+          </span>
+          <button
+            type="button"
+            onClick={handleAddNote}
+            className="text-foreground hover:bg-surface inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            New item
+          </button>
+        </div>
+
+        <div className="flex items-stretch gap-2.5 overflow-x-auto pb-1">
+          {notes.map((item, idx) => {
+            const isActive = idx === activeNoteIndex;
+            const status = readinessById[item.id] || { ready: false, missing: [] };
+            const formattedPrice = formatGhs(item.price);
+            const cover = item.imagePreviews[0];
+
+            return (
+              <div
+                key={item.id}
+                className={`group relative flex min-w-[210px] max-w-[260px] shrink-0 items-center rounded-2xl transition-colors ${
+                  isActive
+                    ? 'bg-foreground text-background'
+                    : 'bg-surface text-foreground hover:bg-foreground/[0.06]'
+                }`}
+              >
                 <button
-                  key={note.id}
+                  ref={isActive ? activeTabRef : undefined}
                   type="button"
                   onClick={() => setActiveNoteIndex(idx)}
-                  className={`group relative flex shrink-0 items-center gap-2 rounded-2xl px-3.5 py-2 text-left transition-all ${
-                    isActive
-                      ? 'bg-white shadow-sm ring-1 ring-zinc-300 dark:bg-[#1c1c1e] dark:ring-zinc-700'
-                      : 'bg-transparent text-zinc-600 hover:bg-zinc-200/50 dark:text-zinc-400 dark:hover:bg-zinc-800/50'
-                  }`}
+                  className="flex min-w-0 flex-1 items-center gap-3 p-2.5 text-left"
                 >
-                  <div className="relative flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-zinc-100 dark:bg-zinc-800">
-                    {note.imagePreviews[0] ? (
+                  {/* Thumbnail */}
+                  <div
+                    className={`relative h-12 w-12 shrink-0 overflow-hidden rounded-xl ${
+                      isActive ? 'bg-background/15' : 'bg-background'
+                    }`}
+                  >
+                    {cover ? (
                       <img
-                        src={note.imagePreviews[0]}
-                        alt=""
+                        src={cover}
+                        alt={item.title || `Item ${idx + 1}`}
                         className="h-full w-full object-cover"
                       />
-                    ) : note.videoPreview ? (
-                      <Video className="h-3.5 w-3.5 text-zinc-400" />
                     ) : (
-                      <span className="text-xs font-semibold text-zinc-400">{idx + 1}</span>
+                      <div className="flex h-full w-full flex-col items-center justify-center gap-0.5">
+                        <Camera
+                          className={`h-4 w-4 ${isActive ? 'text-background/60' : 'text-muted'}`}
+                        />
+                        <span
+                          className={`text-[10px] font-semibold ${
+                            isActive ? 'text-background/60' : 'text-muted'
+                          }`}
+                        >
+                          #{idx + 1}
+                        </span>
+                      </div>
                     )}
-
-                    <span
-                      className={`absolute bottom-0 right-0 h-2 w-2 rounded-full border border-white dark:border-zinc-900 ${
-                        check.isValid ? 'bg-emerald-500' : 'bg-amber-400'
-                      }`}
-                    />
                   </div>
 
-                  <div className="min-w-0 pr-1">
-                    <p
-                      className={`max-w-[110px] truncate text-xs font-semibold sm:max-w-[140px] ${
-                        isActive
-                          ? 'text-zinc-900 dark:text-zinc-100'
-                          : 'text-zinc-600 dark:text-zinc-400'
-                      }`}
-                    >
-                      {displayTitle}
-                    </p>
-                    <p className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500">
-                      {displayPrice || 'No price'}
-                    </p>
+                  {/* Name & Price */}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                          status.ready ? 'bg-emerald-500' : 'bg-amber-500'
+                        }`}
+                      />
+                      <p className="truncate text-sm font-semibold leading-tight">
+                        {item.title.trim() || `Item ${idx + 1}`}
+                      </p>
+                    </div>
+                    <div className="mt-1 flex items-center gap-1.5">
+                      <span
+                        className={`truncate text-xs font-semibold ${
+                          isActive
+                            ? formattedPrice
+                              ? 'text-background/90'
+                              : 'text-background/55'
+                            : formattedPrice
+                              ? 'text-foreground'
+                              : 'text-muted'
+                        }`}
+                      >
+                        {formattedPrice || 'Set price'}
+                      </span>
+                      {item.aiGenerated && (
+                        <Sparkles
+                          className={`h-3 w-3 shrink-0 ${
+                            isActive ? 'text-background/75' : 'text-[var(--color-accent)]'
+                          }`}
+                        />
+                      )}
+                    </div>
                   </div>
-
-                  {notes.length > 1 && (
-                    <span
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeNote(idx);
-                      }}
-                      className="ml-1 flex h-5 w-5 items-center justify-center rounded-full text-zinc-400 opacity-60 transition-opacity hover:bg-zinc-200 hover:text-zinc-700 group-hover:opacity-100 dark:hover:bg-zinc-700 dark:hover:text-zinc-200"
-                    >
-                      <X className="h-3 w-3" />
-                    </span>
-                  )}
                 </button>
-              );
-            })}
+
+                {notes.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteNote(idx);
+                    }}
+                    aria-label={`Remove ${item.title || `Item ${idx + 1}`}`}
+                    className={`mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors ${
+                      isActive
+                        ? 'text-background/60 hover:bg-background/15 hover:text-background'
+                        : 'text-muted hover:bg-foreground/10 hover:text-foreground'
+                    }`}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+            );
+          })}
+
+          {/* Add new item tile */}
+          <button
+            type="button"
+            onClick={handleAddNote}
+            className="bg-surface text-muted hover:bg-foreground/[0.06] hover:text-foreground flex min-w-[116px] shrink-0 flex-col items-center justify-center gap-1 rounded-2xl px-4 py-2.5 text-xs font-semibold transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Add Item</span>
+          </button>
+        </div>
+      </section>
+
+      {/* Main Mobile-First Responsive Workspace — full width, zero overlap, zero borders */}
+      <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-12 lg:items-start">
+        {/* LEFT COLUMN (Mobile first): Photos & Verndly AI */}
+        <section className="bg-surface space-y-5 rounded-3xl p-5 sm:p-6 lg:col-span-5">
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <h2 className="text-foreground text-base font-semibold">Photos & Media</h2>
+              <p className="text-muted text-xs">
+                {activeNote.images.length}/3 photos · First photo is the cover
+              </p>
+            </div>
+
+            {activeNote.images.length > 0 && (
+              <button
+                type="button"
+                disabled={isSingleAnalyzing}
+                onClick={handleAnalyzeActiveProduct}
+                className="bg-[var(--color-accent)]/12 hover:bg-[var(--color-accent)]/20 inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold text-[var(--color-accent)] transition-colors disabled:opacity-50"
+              >
+                {isSingleAnalyzing ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <span>Analyzing…</span>
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="h-3.5 w-3.5" />
+                    <span>Fill with Verndly AI</span>
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+
+          {/* Photo Grid */}
+          <div className="grid grid-cols-3 gap-3">
+            {activeNote.imagePreviews.map((preview, imgIdx) => (
+              <div
+                key={`${activeNote.id}-img-${imgIdx}`}
+                className="bg-background group relative aspect-square overflow-hidden rounded-2xl"
+              >
+                <img
+                  src={preview}
+                  alt={`Product photo ${imgIdx + 1}`}
+                  className="h-full w-full object-cover"
+                />
+
+                {imgIdx === 0 ? (
+                  <span className="bg-foreground text-background absolute bottom-2 left-2 rounded-md px-2 py-0.5 text-[10px] font-semibold">
+                    Cover
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleSetCoverImage(imgIdx)}
+                    className="bg-background/90 text-foreground absolute bottom-2 left-2 rounded-md px-2 py-0.5 text-[10px] font-semibold opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
+                  >
+                    Set cover
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => handleRemoveImage(imgIdx)}
+                  aria-label="Remove photo"
+                  className="bg-foreground/80 text-background hover:bg-foreground absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full transition-colors"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+
+            {activeNote.images.length < 3 && (
+              <button
+                type="button"
+                onClick={() => activeImageInputRef.current?.click()}
+                className="bg-background text-muted hover:text-foreground flex aspect-square flex-col items-center justify-center gap-1.5 rounded-2xl p-2 text-center transition-colors"
+              >
+                <ImagePlus className="h-5 w-5" />
+                <span className="text-[11px] font-semibold">Add photo</span>
+              </button>
+            )}
+          </div>
+
+          {/* Quick mobile media actions */}
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+            <button
+              type="button"
+              disabled={activeNote.images.length >= 3}
+              onClick={() => activeImageInputRef.current?.click()}
+              className="bg-background text-foreground hover:bg-foreground/[0.06] inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs font-semibold transition-colors disabled:opacity-40"
+            >
+              <ImagePlus className="h-4 w-4" />
+              <span>Gallery</span>
+            </button>
 
             <button
               type="button"
-              onClick={addNewNote}
-              className="flex shrink-0 items-center gap-1.5 rounded-2xl border border-dashed border-zinc-300 px-3 py-2 text-xs font-medium text-zinc-500 transition-colors hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:text-zinc-200"
+              disabled={activeNote.images.length >= 3}
+              onClick={() => activeCameraInputRef.current?.click()}
+              className="bg-background text-foreground hover:bg-foreground/[0.06] inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs font-semibold transition-colors disabled:opacity-40"
             >
-              <Plus className="h-3.5 w-3.5" />
-              <span>Add</span>
+              <Camera className="h-4 w-4" />
+              <span>Camera</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => activeVideoInputRef.current?.click()}
+              className="bg-background text-foreground hover:bg-foreground/[0.06] col-span-2 inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs font-semibold transition-colors sm:col-span-1"
+            >
+              <Video className="h-4 w-4" />
+              <span>{activeNote.video ? 'Swap video' : 'Add video'}</span>
             </button>
           </div>
-        </div>
-      </header>
 
-      <main className="mx-auto max-w-4xl px-4 pt-6 sm:px-6">
-        <div className="relative rounded-3xl border border-zinc-200/80 bg-white p-5 shadow-sm transition-all sm:p-8 dark:border-zinc-800 dark:bg-[#1c1c1e]">
-          <div className="mb-4 flex items-center justify-between border-b border-zinc-100 pb-3 text-xs text-zinc-400 dark:border-zinc-800/80">
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-amber-600 dark:text-amber-400">
-                PRODUCT {activeNoteIndex + 1} OF {notes.length}
-              </span>
-              <span className="text-zinc-300 dark:text-zinc-700">•</span>
-              <span className="text-zinc-500">
-                {checkNoteValidation(activeNote).isValid ? (
-                  <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                    <CheckCircle2 className="h-3.5 w-3.5" /> Ready to publish
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 text-amber-500">
-                    <AlertCircle className="h-3.5 w-3.5" /> Requires{' '}
-                    {checkNoteValidation(activeNote).missingFields.join(', ')}
-                  </span>
-                )}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-1">
+          {/* Attached video preview */}
+          {activeNote.videoPreview && (
+            <div className="bg-background relative overflow-hidden rounded-2xl">
+              <video
+                src={activeNote.videoPreview}
+                controls
+                playsInline
+                className="max-h-52 w-full object-cover"
+              />
               <button
                 type="button"
-                onClick={duplicateActiveNote}
-                title="Duplicate this item"
-                className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                onClick={handleRemoveVideo}
+                aria-label="Remove video"
+                className="bg-foreground/80 text-background hover:bg-foreground absolute right-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-full"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
+
+          {/* Contextual AI Bulk helper card when no photos yet */}
+          {activeNote.images.length === 0 && (
+            <div className="bg-background rounded-2xl p-4">
+              <div className="flex items-start gap-3">
+                <div className="bg-[var(--color-accent)]/12 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[var(--color-accent)]">
+                  <Sparkles className="h-4 w-4" />
+                </div>
+                <div className="min-w-0 flex-1 space-y-1.5">
+                  <p className="text-foreground text-sm font-semibold">
+                    Listing multiple items at once?
+                  </p>
+                  <p className="text-muted text-xs leading-relaxed">
+                    Select up to {MAX_BULK_PHOTOS} photos together. Verndly AI separates distinct
+                    products, groups matching angles, and writes titles and descriptions for you.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => bulkFileInputRef.current?.click()}
+                    className="pt-1 text-xs font-semibold text-[var(--color-accent)] hover:underline"
+                  >
+                    Select photos for Verndly AI bulk sort →
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* RIGHT COLUMN: Product Details */}
+        <section className="bg-surface space-y-5 rounded-3xl p-5 sm:p-6 lg:col-span-7">
+          {/* Card Header with Item status & quick actions */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-foreground text-base font-semibold">
+                Item {activeNoteIndex + 1} Details
+              </span>
+              {activeNote.aiGenerated && (
+                <span className="bg-[var(--color-accent)]/12 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold text-[var(--color-accent)]">
+                  <Sparkles className="h-3 w-3" />
+                  Verndly AI
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              {/* Status switch: Live vs Draft */}
+              <div className="bg-background inline-flex rounded-xl p-1">
+                <button
+                  type="button"
+                  onClick={() => updateActiveNote({ status: 'active' })}
+                  className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
+                    activeNote.status === 'active'
+                      ? 'bg-foreground text-background'
+                      : 'text-muted hover:text-foreground'
+                  }`}
+                >
+                  Active
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateActiveNote({ status: 'draft' })}
+                  className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
+                    activeNote.status === 'draft'
+                      ? 'bg-foreground text-background'
+                      : 'text-muted hover:text-foreground'
+                  }`}
+                >
+                  Draft
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleDuplicateActiveNote}
+                title="Duplicate item"
+                aria-label="Duplicate item"
+                className="bg-background text-muted hover:text-foreground flex h-8 w-8 items-center justify-center rounded-xl transition-colors"
               >
                 <Copy className="h-3.5 w-3.5" />
               </button>
+
               {notes.length > 1 && (
                 <button
                   type="button"
-                  onClick={() => removeNote(activeNoteIndex)}
-                  title="Delete this note"
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-400"
+                  onClick={() => handleDeleteNote(activeNoteIndex)}
+                  title="Delete item"
+                  aria-label="Delete item"
+                  className="bg-background text-muted flex h-8 w-8 items-center justify-center rounded-xl transition-colors hover:text-red-500"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
@@ -827,850 +1199,508 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
             </div>
           </div>
 
-          <div className="mb-3">
+          {/* Product Name */}
+          <div className="space-y-1.5">
+            <label
+              htmlFor="product-title"
+              className="text-muted block text-xs font-semibold uppercase tracking-wider"
+            >
+              Product name
+            </label>
             <input
+              id="product-title"
               type="text"
               value={activeNote.title}
               onChange={(e) => updateActiveNote({ title: e.target.value })}
-              placeholder="Name of item..."
-              className="w-full border-none bg-transparent p-0 text-2xl font-bold tracking-tight text-zinc-900 placeholder:text-zinc-300 focus:outline-none focus:ring-0 sm:text-3xl dark:text-zinc-50 dark:placeholder:text-zinc-600"
-              autoFocus={activeNoteIndex === 0}
+              placeholder="e.g. Woven Cotton Tote Bag — Cream"
+              className="bg-background text-foreground placeholder:text-muted/60 focus:bg-background w-full rounded-2xl px-4 py-3.5 text-base font-semibold outline-none transition-colors"
             />
           </div>
 
-          <div className="mb-4 flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2 rounded-2xl bg-zinc-100/80 px-3 py-1.5 dark:bg-zinc-800/70">
-              <span className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                GH₵
-              </span>
-              <input
-                type="number"
-                min="0"
-                step="any"
-                inputMode="decimal"
-                value={activeNote.price}
-                onChange={(e) => updateActiveNote({ price: e.target.value })}
-                placeholder="0.00"
-                className="w-28 border-none bg-transparent p-0 text-xl font-bold tracking-tight text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-0 sm:w-36 sm:text-2xl dark:text-zinc-100 dark:placeholder:text-zinc-600"
-              />
-            </div>
-
-            {activeNote.showDiscount ? (
-              <div className="flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 py-1.5 dark:border-zinc-700 dark:bg-zinc-800">
-                <span className="text-xs text-zinc-400 line-through">GH₵</span>
+          {/* Price & Category Row */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <label
+                htmlFor="product-price"
+                className="text-muted block text-xs font-semibold uppercase tracking-wider"
+              >
+                Price (GH₵)
+              </label>
+              <div className="bg-background flex items-center rounded-2xl px-4 py-3">
+                <span className="text-muted mr-2 text-sm font-bold">GH₵</span>
                 <input
+                  id="product-price"
                   type="number"
-                  min="0"
-                  step="any"
                   inputMode="decimal"
-                  value={activeNote.original_price}
-                  onChange={(e) => updateActiveNote({ original_price: e.target.value })}
-                  placeholder="Original price"
-                  className="w-24 border-none bg-transparent p-0 text-sm font-semibold text-zinc-500 focus:outline-none focus:ring-0 dark:text-zinc-400"
+                  min="0"
+                  step="0.01"
+                  value={activeNote.price}
+                  onChange={(e) => updateActiveNote({ price: e.target.value })}
+                  placeholder="0.00"
+                  className="text-foreground placeholder:text-muted/60 w-full bg-transparent text-base font-bold outline-none"
                 />
+              </div>
+
+              {/* Optional Gemini price estimate pill (never auto-applied) */}
+              {activeNote.aiSuggestedPrice && !activeNote.price && (
                 <button
                   type="button"
-                  onClick={() => updateActiveNote({ original_price: '', showDiscount: false })}
-                  className="text-zinc-400 hover:text-zinc-600"
+                  onClick={() => updateActiveNote({ price: String(activeNote.aiSuggestedPrice) })}
+                  className="bg-[var(--color-accent)]/10 hover:bg-[var(--color-accent)]/20 mt-1.5 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold text-[var(--color-accent)] transition-colors"
                 >
-                  <X className="h-3 w-3" />
+                  <Sparkles className="h-3 w-3" />
+                  <span>
+                    Verndly AI estimate: {formatGhs(activeNote.aiSuggestedPrice)} · Tap to apply
+                  </span>
                 </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => updateActiveNote({ showDiscount: true })}
-                className="inline-flex items-center gap-1 rounded-full border border-zinc-200/80 px-2.5 py-1 text-xs font-medium text-zinc-500 transition-colors hover:border-zinc-300 hover:text-zinc-800 dark:border-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
-              >
-                <Percent className="h-3 w-3 text-amber-500" />
-                <span>+ Original price</span>
-              </button>
-            )}
-
-            {activeNote.original_price &&
-              Number(activeNote.original_price) > Number(activeNote.price) && (
-                <span className="rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-bold text-rose-600 dark:bg-rose-950/40 dark:text-rose-400">
-                  {Math.round(
-                    ((Number(activeNote.original_price) - Number(activeNote.price)) /
-                      Number(activeNote.original_price)) *
-                      100,
-                  )}
-                  % OFF
-                </span>
               )}
+            </div>
+
+            <div className="space-y-1.5">
+              <label
+                htmlFor="product-category"
+                className="text-muted block text-xs font-semibold uppercase tracking-wider"
+              >
+                Category
+              </label>
+              <select
+                id="product-category"
+                value={activeNote.category}
+                onChange={(e) => updateActiveNote({ category: e.target.value })}
+                className="bg-background text-foreground w-full rounded-2xl px-4 py-3.5 text-sm font-semibold outline-none"
+              >
+                {categories.length === 0 ? (
+                  <option value="General">General</option>
+                ) : (
+                  categories.map((c) => (
+                    <option key={c.id} value={c.name}>
+                      {c.name}
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
           </div>
 
-          <div className="mb-6">
+          {/* Condition selector pills */}
+          <div className="space-y-1.5">
+            <span className="text-muted block text-xs font-semibold uppercase tracking-wider">
+              Condition
+            </span>
+            <div className="grid grid-cols-3 gap-2">
+              {CONDITIONS.map((cond) => {
+                const selected = activeNote.condition === cond.value;
+                return (
+                  <button
+                    key={cond.value}
+                    type="button"
+                    onClick={() => updateActiveNote({ condition: cond.value })}
+                    className={`rounded-xl px-3 py-2.5 text-xs font-semibold transition-colors sm:text-sm ${
+                      selected
+                        ? 'bg-foreground text-background'
+                        : 'bg-background text-muted hover:text-foreground'
+                    }`}
+                  >
+                    {cond.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Description */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label
+                htmlFor="product-description"
+                className="text-muted text-xs font-semibold uppercase tracking-wider"
+              >
+                Description
+              </label>
+              <span
+                className={`text-[11px] font-medium ${
+                  activeNote.status === 'active' &&
+                  activeNote.description.trim().length < MIN_ACTIVE_DESCRIPTION_LENGTH
+                    ? 'text-amber-600 dark:text-amber-400'
+                    : 'text-muted'
+                }`}
+              >
+                {activeNote.description.trim().length} chars
+                {activeNote.status === 'active' &&
+                activeNote.description.trim().length < MIN_ACTIVE_DESCRIPTION_LENGTH
+                  ? ` (${MIN_ACTIVE_DESCRIPTION_LENGTH - activeNote.description.trim().length} more to publish)`
+                  : ''}
+              </span>
+            </div>
             <textarea
-              rows={3}
+              id="product-description"
+              rows={4}
               value={activeNote.description}
               onChange={(e) => updateActiveNote({ description: e.target.value })}
-              placeholder="Describe condition, features, sizing, or pickup details..."
-              className="w-full resize-none border-none bg-transparent p-0 text-base leading-relaxed text-zinc-700 placeholder:text-zinc-400/60 focus:outline-none focus:ring-0 sm:text-lg dark:text-zinc-300 dark:placeholder:text-zinc-600"
+              placeholder="Describe the item clearly — size, color, material, and what’s included."
+              className="bg-background text-foreground placeholder:text-muted/60 w-full resize-y rounded-2xl px-4 py-3 text-sm leading-relaxed outline-none"
             />
           </div>
 
-          <div className="mb-6 rounded-2xl bg-zinc-50/70 p-4 dark:bg-zinc-900/50">
-            <div className="mb-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                  Photos & Video
+          {/* Optional Details Accordion — keeps mobile UI clean & uncluttered */}
+          <div className="bg-background rounded-2xl p-4">
+            <button
+              type="button"
+              onClick={() => setShowMoreDetails((prev) => !prev)}
+              className="flex w-full items-center justify-between text-left"
+            >
+              <div>
+                <span className="text-foreground text-sm font-semibold">
+                  More details (optional)
                 </span>
-                <span className="text-[11px] text-zinc-400">(Up to 3 photos + 1 short video)</span>
+                <p className="text-muted text-xs">
+                  Compare-at price, stock quantity, brand, and search tags
+                </p>
               </div>
-              <span className="text-xs font-semibold text-zinc-400">
-                {activeNote.images.length}/3 photos
-              </span>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              {activeNote.imagePreviews.map((preview, imgIdx) => (
-                <div
-                  key={imgIdx}
-                  className="group relative h-24 w-24 overflow-hidden rounded-2xl border border-zinc-200/80 bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-800"
-                >
-                  <img
-                    src={preview}
-                    alt={`Product attachment ${imgIdx + 1}`}
-                    className="h-full w-full object-cover"
-                  />
-                  {imgIdx === 0 && (
-                    <span className="absolute bottom-1.5 left-1.5 rounded-md bg-zinc-900/80 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white backdrop-blur-sm">
-                      Cover
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => removeImageFromActive(imgIdx)}
-                    className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-zinc-900/80 text-white opacity-90 transition-all hover:scale-110 hover:bg-rose-600"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              ))}
-
-              {activeNote.videoPreview && (
-                <div className="group relative h-24 w-24 overflow-hidden rounded-2xl border border-purple-200 bg-purple-50 dark:border-purple-900 dark:bg-purple-950/40">
-                  <video
-                    src={activeNote.videoPreview}
-                    className="h-full w-full object-cover"
-                    muted
-                    loop
-                  />
-                  <span className="absolute bottom-1.5 left-1.5 rounded-md bg-purple-900/80 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white backdrop-blur-sm">
-                    Video
-                  </span>
-                  <button
-                    type="button"
-                    onClick={removeVideoFromActive}
-                    className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-zinc-900/80 text-white opacity-90 transition-all hover:scale-110 hover:bg-rose-600"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              )}
-
-              {activeNote.images.length < 3 && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => activeImageInputRef.current?.click()}
-                    className="flex h-24 w-24 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-zinc-200 bg-white text-zinc-500 transition-all hover:border-amber-500 hover:text-amber-600 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-amber-400 dark:hover:text-amber-400"
-                  >
-                    <ImagePlus className="h-5 w-5" />
-                    <span className="mt-1 text-[11px] font-semibold">Add Photo</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => activeCameraInputRef.current?.click()}
-                    className="flex h-24 w-24 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-zinc-200 bg-white text-zinc-500 transition-all hover:border-zinc-400 hover:text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700 dark:hover:text-zinc-300"
-                  >
-                    <Camera className="h-5 w-5" />
-                    <span className="mt-1 text-[11px] font-semibold">Take Photo</span>
-                  </button>
-                </>
-              )}
-
-              {!activeNote.video && (
-                <button
-                  type="button"
-                  onClick={() => activeVideoInputRef.current?.click()}
-                  className="flex h-24 w-24 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-zinc-200 bg-white text-zinc-500 transition-all hover:border-purple-400 hover:text-purple-600 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-purple-500 dark:hover:text-purple-400"
-                >
-                  <Video className="h-5 w-5" />
-                  <span className="mt-1 text-[11px] font-semibold">+ 5s Video</span>
-                </button>
-              )}
-            </div>
-
-            <input
-              ref={activeImageInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              className="hidden"
-              onChange={(e) => handleAddImagesToActive(e.target.files)}
-            />
-            <input
-              ref={activeCameraInputRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              className="hidden"
-              onChange={(e) => handleAddImagesToActive(e.target.files)}
-            />
-            <input
-              ref={activeVideoInputRef}
-              type="file"
-              accept="video/*"
-              className="hidden"
-              onChange={(e) => handleAddVideoToActive(e.target.files)}
-            />
-          </div>
-
-          <div className="border-t border-zinc-100 pt-4 dark:border-zinc-800/80">
-            <div className="mb-3 flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
-                Optional Details (Tap to add)
-              </span>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() =>
-                  updateActiveNote((prev) => ({ ...prev, showCategory: !prev.showCategory }))
-                }
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
-                  activeNote.showCategory || activeNote.category !== 'General'
-                    ? 'bg-amber-500/15 text-amber-700 ring-1 ring-amber-500/30 dark:bg-amber-400/15 dark:text-amber-300 dark:ring-amber-400/30'
-                    : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200/70 dark:bg-zinc-800 dark:text-zinc-300'
+              <ChevronDown
+                className={`text-muted h-4 w-4 shrink-0 transition-transform ${
+                  showMoreDetails ? 'rotate-180' : ''
                 }`}
-              >
-                <Layers className="h-3 w-3" />
-                <span>Category: {activeNote.category || 'General'}</span>
-              </button>
+              />
+            </button>
 
-              <button
-                type="button"
-                onClick={() =>
-                  updateActiveNote((prev) => ({ ...prev, showCondition: !prev.showCondition }))
-                }
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
-                  activeNote.showCondition || activeNote.condition !== 'new'
-                    ? 'bg-blue-500/15 text-blue-700 ring-1 ring-blue-500/30 dark:bg-blue-400/15 dark:text-blue-300 dark:ring-blue-400/30'
-                    : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200/70 dark:bg-zinc-800 dark:text-zinc-300'
-                }`}
-              >
-                <Package className="h-3 w-3" />
-                <span className="capitalize">{activeNote.condition}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  updateActiveNote((prev) => ({ ...prev, showStock: !prev.showStock }))
-                }
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
-                  activeNote.showStock || Number(activeNote.quantity_available) > 1
-                    ? 'bg-emerald-500/15 text-emerald-700 ring-1 ring-emerald-500/30 dark:bg-emerald-400/15 dark:text-emerald-300 dark:ring-emerald-400/30'
-                    : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200/70 dark:bg-zinc-800 dark:text-zinc-300'
-                }`}
-              >
-                <span>Stock: {activeNote.quantity_available || '1'}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  updateActiveNote((prev) => ({ ...prev, showBrand: !prev.showBrand }))
-                }
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
-                  activeNote.showBrand || Boolean(activeNote.brand)
-                    ? 'bg-purple-500/15 text-purple-700 ring-1 ring-purple-500/30 dark:bg-purple-400/15 dark:text-purple-300 dark:ring-purple-400/30'
-                    : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200/70 dark:bg-zinc-800 dark:text-zinc-300'
-                }`}
-              >
-                <span>Brand {activeNote.brand ? `: ${activeNote.brand}` : ''}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => updateActiveNote((prev) => ({ ...prev, showTags: !prev.showTags }))}
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
-                  activeNote.showTags || activeNote.tags.length > 0
-                    ? 'bg-zinc-800 text-zinc-100 dark:bg-zinc-200 dark:text-zinc-900'
-                    : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200/70 dark:bg-zinc-800 dark:text-zinc-300'
-                }`}
-              >
-                <Tag className="h-3 w-3" />
-                <span>Tags {activeNote.tags.length > 0 ? `(${activeNote.tags.length})` : ''}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  updateActiveNote((prev) => ({ ...prev, is_featured: !prev.is_featured }))
-                }
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
-                  activeNote.is_featured
-                    ? 'bg-rose-500 text-white shadow-sm'
-                    : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200/70 dark:bg-zinc-800 dark:text-zinc-300'
-                }`}
-              >
-                <Flame
-                  className={`h-3 w-3 ${activeNote.is_featured ? 'text-white' : 'text-rose-500'}`}
-                />
-                <span>{activeNote.is_featured ? 'Boosted' : '+ Hot Sales Boost'}</span>
-              </button>
-            </div>
-
-            <div className="mt-4 space-y-3">
-              {activeNote.showCategory && (
-                <div className="rounded-2xl border border-zinc-200/80 bg-zinc-50/80 p-4 dark:border-zinc-800 dark:bg-zinc-900/40">
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-zinc-500">
-                      Select Category
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => updateActiveNote({ showCategory: false })}
-                      className="text-xs text-zinc-400 hover:text-zinc-600"
-                    >
-                      Done
-                    </button>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {categories.map((cat) => (
-                      <button
-                        key={cat.id}
-                        type="button"
-                        onClick={() =>
-                          updateActiveNote({
-                            category: cat.name,
-                            brand: '',
-                          })
-                        }
-                        className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
-                          activeNote.category === cat.name
-                            ? 'bg-amber-500 text-white shadow-sm'
-                            : 'bg-white text-zinc-700 hover:bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-300'
-                        }`}
+            {showMoreDetails && (
+              <div className="mt-4 space-y-4 pt-2">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                  {/* Compare-at / original price */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label
+                        htmlFor="product-original-price"
+                        className="text-muted text-xs font-semibold"
                       >
-                        {cat.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {activeNote.showCondition && (
-                <div className="rounded-2xl border border-zinc-200/80 bg-zinc-50/80 p-4 dark:border-zinc-800 dark:bg-zinc-900/40">
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-zinc-500">
-                      Item Condition
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => updateActiveNote({ showCondition: false })}
-                      className="text-xs text-zinc-400 hover:text-zinc-600"
-                    >
-                      Done
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                    {CONDITIONS.map((cond) => (
-                      <button
-                        key={cond.value}
-                        type="button"
-                        onClick={() => updateActiveNote({ condition: cond.value })}
-                        className={`rounded-xl p-3 text-left transition-all ${
-                          activeNote.condition === cond.value
-                            ? 'bg-white shadow-sm ring-2 ring-blue-500 dark:bg-zinc-800'
-                            : 'bg-white/60 hover:bg-white dark:bg-zinc-800/40 dark:hover:bg-zinc-800'
-                        }`}
-                      >
-                        <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
-                          {cond.label}
-                        </p>
-                        <p className="mt-0.5 text-[11px] text-zinc-500">{cond.desc}</p>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {activeNote.showStock && (
-                <div className="flex items-center gap-4 rounded-2xl border border-zinc-200/80 bg-zinc-50/80 p-4 dark:border-zinc-800 dark:bg-zinc-900/40">
-                  <div>
-                    <span className="text-xs font-bold uppercase tracking-wider text-zinc-500">
-                      Units Available in Stock
-                    </span>
-                    <p className="text-[11px] text-zinc-400">
-                      Total inventory available for checkout
-                    </p>
-                  </div>
-                  <div className="ml-auto flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const current = parseInt(activeNote.quantity_available || '1', 10);
-                        if (current > 1) {
-                          updateActiveNote({ quantity_available: String(current - 1) });
-                        }
-                      }}
-                      className="flex h-8 w-8 items-center justify-center rounded-xl border border-zinc-200 bg-white font-bold text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-                    >
-                      -
-                    </button>
+                        Compare-at (GH₵)
+                      </label>
+                      {discountPercent > 0 && (
+                        <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                          -{discountPercent}%
+                        </span>
+                      )}
+                    </div>
                     <input
+                      id="product-original-price"
                       type="number"
+                      inputMode="decimal"
+                      min="0"
+                      value={activeNote.original_price}
+                      onChange={(e) => updateActiveNote({ original_price: e.target.value })}
+                      placeholder="Optional"
+                      className="bg-surface text-foreground placeholder:text-muted/60 w-full rounded-xl px-3.5 py-2.5 text-sm font-medium outline-none"
+                    />
+                  </div>
+
+                  {/* Stock quantity */}
+                  <div className="space-y-1.5">
+                    <label htmlFor="product-stock" className="text-muted text-xs font-semibold">
+                      Stock quantity
+                    </label>
+                    <input
+                      id="product-stock"
+                      type="number"
+                      inputMode="numeric"
                       min="1"
                       value={activeNote.quantity_available}
                       onChange={(e) => updateActiveNote({ quantity_available: e.target.value })}
-                      className="w-16 rounded-xl border border-zinc-200 bg-white py-1 text-center text-sm font-bold text-zinc-900 focus:outline-none focus:ring-1 focus:ring-amber-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                      className="bg-surface text-foreground w-full rounded-xl px-3.5 py-2.5 text-sm font-medium outline-none"
                     />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const current = parseInt(activeNote.quantity_available || '1', 10);
-                        updateActiveNote({ quantity_available: String(current + 1) });
-                      }}
-                      className="flex h-8 w-8 items-center justify-center rounded-xl border border-zinc-200 bg-white font-bold text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-                    >
-                      +
-                    </button>
                   </div>
-                </div>
-              )}
 
-              {activeNote.showBrand && (
-                <div className="rounded-2xl border border-zinc-200/80 bg-zinc-50/80 p-4 dark:border-zinc-800 dark:bg-zinc-900/40">
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-zinc-500">
-                      Brand / Manufacturer
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => updateActiveNote({ showBrand: false })}
-                      className="text-xs text-zinc-400 hover:text-zinc-600"
-                    >
-                      Done
-                    </button>
-                  </div>
-                  <div className="mb-3">
+                  {/* Brand */}
+                  <div className="space-y-1.5">
+                    <label htmlFor="product-brand" className="text-muted text-xs font-semibold">
+                      Brand
+                    </label>
                     <input
+                      id="product-brand"
                       type="text"
+                      list="verndly-brand-suggestions"
                       value={activeNote.brand}
                       onChange={(e) => updateActiveNote({ brand: e.target.value })}
-                      placeholder="e.g. Apple, Nike, Samsung, Zara..."
-                      className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-purple-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                      placeholder="Only if branded"
+                      className="bg-surface text-foreground placeholder:text-muted/60 w-full rounded-xl px-3.5 py-2.5 text-sm font-medium outline-none"
                     />
+                    {activeCategoryBrands.length > 0 && (
+                      <datalist id="verndly-brand-suggestions">
+                        {activeCategoryBrands.map((b) => (
+                          <option key={b.id} value={b.name} />
+                        ))}
+                      </datalist>
+                    )}
                   </div>
-                  {brandsMap[activeNote.category] && brandsMap[activeNote.category].length > 0 && (
-                    <div className="flex flex-wrap gap-1.5">
-                      {brandsMap[activeNote.category].map((b) => (
-                        <button
-                          key={b.id}
-                          type="button"
-                          onClick={() => updateActiveNote({ brand: b.name })}
-                          className={`rounded-lg px-2.5 py-1 text-[11px] font-medium transition-colors ${
-                            activeNote.brand === b.name
-                              ? 'bg-purple-600 text-white'
-                              : 'bg-white text-zinc-600 hover:bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-300'
-                          }`}
-                        >
-                          {b.name}
-                        </button>
-                      ))}
-                    </div>
-                  )}
                 </div>
-              )}
 
-              {activeNote.showTags && (
-                <div className="rounded-2xl border border-zinc-200/80 bg-zinc-50/80 p-4 dark:border-zinc-800 dark:bg-zinc-900/40">
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-zinc-500">
-                      Search Tags & Keywords
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => updateActiveNote({ showTags: false })}
-                      className="text-xs text-zinc-400 hover:text-zinc-600"
-                    >
-                      Done
-                    </button>
-                  </div>
-                  <div className="mb-2 flex gap-2">
+                {/* Search Tags */}
+                <div className="space-y-2">
+                  <label htmlFor="product-tags" className="text-muted text-xs font-semibold">
+                    Search tags
+                  </label>
+                  <div className="flex gap-2">
                     <input
+                      id="product-tags"
                       type="text"
                       value={tagInput}
                       onChange={(e) => setTagInput(e.target.value)}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
+                        if (e.key === 'Enter' || e.key === ',') {
                           e.preventDefault();
-                          const val = tagInput.trim();
-                          if (val && !activeNote.tags.includes(val)) {
-                            updateActiveNote({ tags: [...activeNote.tags, val] });
-                            setTagInput('');
-                          }
+                          handleAddTag();
                         }
                       }}
-                      placeholder="Add tag and press Enter..."
-                      className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                      placeholder="Type a tag and press Enter"
+                      className="bg-surface text-foreground placeholder:text-muted/60 flex-1 rounded-xl px-3.5 py-2.5 text-sm outline-none"
                     />
                     <button
                       type="button"
-                      onClick={() => {
-                        const val = tagInput.trim();
-                        if (val && !activeNote.tags.includes(val)) {
-                          updateActiveNote({ tags: [...activeNote.tags, val] });
-                          setTagInput('');
-                        }
-                      }}
-                      className="rounded-xl bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900"
+                      onClick={handleAddTag}
+                      className="bg-surface text-foreground hover:bg-foreground/10 rounded-xl px-4 py-2.5 text-xs font-semibold transition-colors"
                     >
                       Add
                     </button>
                   </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {activeNote.tags.map((t, tIdx) => (
-                      <span
-                        key={tIdx}
-                        className="inline-flex items-center gap-1 rounded-full bg-zinc-200/80 px-2.5 py-0.5 text-xs font-medium text-zinc-700 dark:bg-zinc-700 dark:text-zinc-200"
-                      >
-                        #{t}
-                        <button
-                          type="button"
-                          onClick={() =>
-                            updateActiveNote({
-                              tags: activeNote.tags.filter((_, idx) => idx !== tIdx),
-                            })
-                          }
-                          className="hover:text-rose-500"
+
+                  {activeNote.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {activeNote.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="bg-surface text-foreground inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium"
                         >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
+                          #{tag}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveTag(tag)}
+                            aria-label={`Remove ${tag}`}
+                            className="text-muted hover:text-foreground"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
-        </div>
 
-        <div className="mt-4 flex items-center justify-between px-1">
-          <button
-            type="button"
-            disabled={activeNoteIndex === 0}
-            onClick={() => setActiveNoteIndex((i) => Math.max(0, i - 1))}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-500 hover:text-zinc-900 disabled:opacity-30 dark:text-zinc-400 dark:hover:text-zinc-100"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            Previous Product
-          </button>
-
-          <span className="text-xs text-zinc-400">
-            {activeNoteIndex + 1} of {notes.length}
-          </span>
-
-          {activeNoteIndex < notes.length - 1 ? (
-            <button
-              type="button"
-              onClick={() => setActiveNoteIndex((i) => Math.min(notes.length - 1, i + 1))}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-800 hover:text-zinc-900 dark:text-zinc-200 dark:hover:text-white"
-            >
-              Next Product
-              <ArrowRight className="h-3.5 w-3.5" />
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={addNewNote}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:text-amber-700 dark:text-amber-400"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Add Another Product
-            </button>
-          )}
-        </div>
-      </main>
-
-      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-zinc-200/80 bg-white/90 p-3 backdrop-blur-xl sm:p-4 dark:border-zinc-800 dark:bg-[#121214]/90">
-        <div className="mx-auto flex max-w-4xl items-center justify-between gap-3">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-zinc-900 sm:text-sm dark:text-zinc-100">
-                {notes.length} {notes.length === 1 ? 'Product' : 'Products'}
-              </span>
-              <span className="text-zinc-300 dark:text-zinc-700">•</span>
-              <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                {validationSummary.validCount}/{notes.length} Ready
+          {/* Missing-field hint for current item */}
+          {!activeReadiness.ready && (
+            <div className="bg-background flex items-center gap-2.5 rounded-2xl px-4 py-3 text-xs">
+              <AlertCircle className="h-4 w-4 shrink-0 text-amber-500" />
+              <span className="text-muted">
+                Still needed for this item:{' '}
+                <strong className="text-foreground">{activeReadiness.missing.join(', ')}</strong>
               </span>
             </div>
-            <p className="truncate text-[11px] text-zinc-500 dark:text-zinc-400">
-              {totalBatchValue > 0
-                ? `Total batch value: GH₵ ${totalBatchValue.toLocaleString()}`
-                : 'Fill required: Name, Price, Photos'}
+          )}
+        </section>
+      </div>
+
+      {/* Bottom Publish Bar — aligned cleanly with lg:ml-64 sidebar, zero border/blur/shadow */}
+      <div className="bg-background fixed bottom-0 left-0 right-0 z-30 lg:left-64">
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 px-4 py-3.5 sm:px-6 md:px-8">
+          <div className="min-w-0">
+            <p className="text-foreground truncate text-sm font-semibold">
+              {readyCount} of {notes.length} {notes.length === 1 ? 'item' : 'items'} ready
+            </p>
+            <p className="text-muted hidden text-xs sm:block">
+              {readyCount === notes.length
+                ? 'Everything looks good to publish to your Verndly store.'
+                : 'Complete the highlighted fields on each item before publishing.'}
             </p>
           </div>
 
-          <div className="flex shrink-0 items-center gap-2">
-            <button
-              type="button"
-              onClick={addNewNote}
-              className="hidden items-center gap-1.5 rounded-2xl border border-zinc-200 bg-zinc-50 px-3.5 py-2.5 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 sm:inline-flex dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Add Another</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleStartPublishing}
-              disabled={
-                publishProgress.currentStep !== 'idle' &&
-                publishProgress.currentStep !== 'completed'
-              }
-              className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-xs font-bold text-white shadow-md transition-all hover:bg-zinc-800 active:scale-95 disabled:opacity-50 sm:text-sm dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
-            >
-              <UploadCloud className="h-4 w-4 text-amber-400" />
-              <span>
-                Publish {notes.length} {notes.length === 1 ? 'Product' : 'Products'}
-              </span>
-            </button>
-          </div>
+          <button
+            type="button"
+            disabled={isPublishing || isBulkAnalyzing || isSingleAnalyzing}
+            onClick={() => publishItems(notes)}
+            className="bg-foreground text-background inline-flex shrink-0 items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-40 sm:px-6"
+          >
+            {isPublishing ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Publishing…</span>
+              </>
+            ) : (
+              <>
+                <Check className="h-4 w-4" />
+                <span>
+                  Publish {notes.length} {notes.length === 1 ? 'Product' : 'Products'}
+                </span>
+              </>
+            )}
+          </button>
         </div>
       </div>
 
-      <AnimatePresence>
-        {bulkImportOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div
-              onClick={() => setBulkImportOpen(false)}
-              className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="relative w-full max-w-md rounded-3xl border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-[#1c1c1e]"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500">
-                  <ImagePlus className="h-5 w-5" />
+      {/* Verndly AI Bulk Photo Import Modal — flat tonal, zero borders/shadows/blur */}
+      {bulkModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
+          <div className="bg-background w-full max-w-lg rounded-t-3xl p-6 sm:rounded-3xl">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="bg-[var(--color-accent)]/12 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-[var(--color-accent)]">
+                  <Sparkles className="h-5 w-5" />
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setBulkImportOpen(false)}
-                  className="rounded-full p-1 text-zinc-400 hover:text-zinc-600"
-                >
-                  <X className="h-4 w-4" />
-                </button>
+                <div>
+                  <h3 className="text-foreground text-lg font-bold">Bulk Add with Verndly AI</h3>
+                  <p className="text-muted text-xs">Powered by Verndly AI</p>
+                </div>
               </div>
+              <button
+                type="button"
+                onClick={() => setBulkModalOpen(false)}
+                aria-label="Close modal"
+                className="bg-surface text-muted hover:text-foreground flex h-8 w-8 items-center justify-center rounded-xl"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
 
-              <h2 className="mt-4 text-lg font-bold text-zinc-900 dark:text-zinc-100">
-                Bulk Add Photos for Multiple Products
-              </h2>
-              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                Select photos from your gallery. We will automatically create product drafts for
-                you, ready to fill in the item name and price.
-              </p>
+            <div className="bg-surface mt-5 space-y-2.5 rounded-2xl p-4 text-xs leading-relaxed">
+              <p className="text-foreground font-semibold">How Verndly AI handles your batch:</p>
+              <ul className="text-muted space-y-1.5">
+                <li>
+                  • Groups multiple angles of the same item together (up to 3 photos per product)
+                  and selects the best cover shot.
+                </li>
+                <li>• Separates distinct items or colorways into individual product tabs.</li>
+                <li>
+                  • Auto-writes factual titles, descriptions, categories, conditions, and tags — you
+                  just review and set your final prices.
+                </li>
+              </ul>
+            </div>
 
-              <div className="mt-6 flex flex-col gap-3">
-                <button
-                  type="button"
-                  onClick={() => bulkFileInputRef.current?.click()}
-                  className="flex items-center justify-center gap-2 rounded-2xl bg-zinc-900 py-3 text-xs font-bold text-white shadow-sm hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
-                >
-                  <ImagePlus className="h-4 w-4" />
-                  Select Photos from Device
-                </button>
-                <input
-                  ref={bulkFileInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                  onChange={(e) => handleBulkPhotosSelected(e.target.files)}
-                />
+            {aiConfigured === false && (
+              <div className="mt-3 rounded-2xl bg-amber-500/10 px-4 py-3 text-xs text-amber-700 dark:text-amber-300">
+                Verndly AI is currently offline on this server. Selecting photos will still create
+                separate drafts so you can keep listing.
               </div>
-            </motion.div>
+            )}
+
+            <button
+              type="button"
+              onClick={() => bulkFileInputRef.current?.click()}
+              className="bg-foreground text-background mt-5 flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-3.5 text-sm font-semibold transition-opacity hover:opacity-90"
+            >
+              <UploadCloud className="h-4 w-4" />
+              <span>Select up to {MAX_BULK_PHOTOS} photos</span>
+            </button>
           </div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
 
-      <AnimatePresence>
-        {publishProgress.currentStep !== 'idle' && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/60 backdrop-blur-md"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.94, y: 12 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.94, y: 12 }}
-              className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-[#1a1a1c]"
-            >
-              <div className="flex items-center justify-between pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500">
-                    {publishProgress.currentStep === 'completed' ? (
-                      <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                    ) : (
-                      <UploadCloud className="h-5 w-5" />
+      {/* Batch Publish Progress Modal — flat tonal, zero borders/shadows/blur */}
+      {publishProgress.currentStep !== 'idle' && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
+          <div className="bg-background w-full max-w-lg rounded-t-3xl p-6 sm:rounded-3xl">
+            <div className="flex items-center justify-between">
+              <h3 className="text-foreground text-lg font-bold">
+                {publishProgress.currentStep === 'completed'
+                  ? 'All products published'
+                  : publishProgress.currentStep === 'error'
+                    ? 'Published with some issues'
+                    : 'Publishing your products…'}
+              </h3>
+              <span className="text-muted text-sm font-semibold">
+                {publishProgress.overallPercent}%
+              </span>
+            </div>
+
+            {/* Progress bar */}
+            <div className="bg-surface mt-3 h-2 w-full overflow-hidden rounded-full">
+              <div
+                className="bg-foreground h-full rounded-full transition-all duration-300"
+                style={{ width: `${publishProgress.overallPercent}%` }}
+              />
+            </div>
+
+            {/* Item list */}
+            <div className="mt-5 max-h-64 space-y-2 overflow-y-auto">
+              {publishProgress.itemStatuses.map((item) => (
+                <div
+                  key={item.id}
+                  className="bg-surface flex items-center justify-between gap-3 rounded-2xl px-4 py-3"
+                >
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    {item.status === 'success' && (
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
                     )}
+                    {item.status === 'error' && (
+                      <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
+                    )}
+                    {(item.status === 'compressing' || item.status === 'uploading') && (
+                      <Loader2 className="text-foreground h-4 w-4 shrink-0 animate-spin" />
+                    )}
+                    {item.status === 'pending' && (
+                      <span className="bg-muted/40 h-2.5 w-2.5 shrink-0 rounded-full" />
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-foreground truncate text-sm font-semibold">{item.title}</p>
+                      {item.error && <p className="truncate text-xs text-red-500">{item.error}</p>}
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
-                      {publishProgress.currentStep === 'completed'
-                        ? 'Publishing Completed'
-                        : `Publishing ${publishProgress.total} Products...`}
-                    </h3>
-                    <p className="text-xs text-zinc-500">
-                      {publishProgress.currentStep === 'completed'
-                        ? 'All items have been processed and synced with your store.'
-                        : 'Compressing media and creating store catalog listings.'}
-                    </p>
-                  </div>
-                </div>
 
-                {publishProgress.currentStep === 'completed' && (
+                  {item.productId && (
+                    <Link
+                      href={`/dashboard/products/${item.productId}`}
+                      className="text-muted hover:text-foreground inline-flex shrink-0 items-center gap-1 text-xs font-semibold"
+                    >
+                      View
+                      <ExternalLink className="h-3 w-3" />
+                    </Link>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Actions after completion */}
+            {(publishProgress.currentStep === 'completed' ||
+              publishProgress.currentStep === 'error') && (
+              <div className="mt-5 flex flex-col gap-2.5 sm:flex-row">
+                {publishProgress.currentStep === 'error' && (
                   <button
                     type="button"
-                    onClick={() => {
-                      setPublishProgress({
-                        total: 0,
-                        currentStep: 'idle',
-                        currentProductIndex: 0,
-                        itemStatuses: [],
-                        overallPercent: 0,
-                      });
-                      router.push('/dashboard/products');
-                    }}
-                    className="rounded-full p-1 text-zinc-400 hover:text-zinc-600"
+                    onClick={handleRetryFailed}
+                    className="bg-surface text-foreground hover:bg-foreground/10 inline-flex flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition-colors"
                   >
-                    <X className="h-4 w-4" />
+                    <RefreshCw className="h-4 w-4" />
+                    Retry failed
                   </button>
                 )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const createdIds = publishProgress.itemStatuses
+                      .map((s) => s.productId)
+                      .filter((id): id is string => Boolean(id));
+                    setPublishProgress({
+                      total: 0,
+                      currentStep: 'idle',
+                      currentProductIndex: 0,
+                      itemStatuses: [],
+                      overallPercent: 0,
+                    });
+                    if (createdIds.length > 0 && publishProgress.currentStep === 'completed') {
+                      onSuccess?.(createdIds);
+                    }
+                  }}
+                  className="bg-foreground text-background flex-1 rounded-2xl px-4 py-3 text-sm font-semibold transition-opacity hover:opacity-90"
+                >
+                  {publishProgress.currentStep === 'completed' ? 'Done' : 'Close'}
+                </button>
               </div>
-
-              <div className="my-3">
-                <div className="mb-1.5 flex items-center justify-between text-xs font-semibold text-zinc-500">
-                  <span>Batch Process</span>
-                  <span>{publishProgress.overallPercent}%</span>
-                </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-amber-500 to-amber-600 transition-all duration-300"
-                    style={{ width: `${publishProgress.overallPercent}%` }}
-                  />
-                </div>
-              </div>
-
-              <div className="no-scrollbar my-4 max-h-60 space-y-2 overflow-y-auto pr-1">
-                {publishProgress.itemStatuses.map((item, idx) => (
-                  <div
-                    key={item.id}
-                    className="flex flex-col gap-1 rounded-2xl border border-zinc-100 bg-zinc-50/70 p-3 text-xs dark:border-zinc-800/80 dark:bg-zinc-900/40"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex min-w-0 items-center gap-2.5 pr-2">
-                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-[10px] font-bold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-                          {idx + 1}
-                        </span>
-                        <span className="truncate font-semibold text-zinc-900 dark:text-zinc-100">
-                          {item.title}
-                        </span>
-                      </div>
-
-                      <div className="flex shrink-0 items-center gap-2">
-                        {item.status === 'success' && (
-                          <>
-                            <span className="inline-flex items-center gap-1 font-semibold text-emerald-600 dark:text-emerald-400">
-                              <Check className="h-3.5 w-3.5" /> Published
-                            </span>
-                            {item.productId && (
-                              <Link
-                                href={`/dashboard/products/${item.productId}`}
-                                target="_blank"
-                                className="inline-flex items-center gap-0.5 text-[11px] font-medium text-amber-600 hover:underline dark:text-amber-400"
-                              >
-                                View <ExternalLink className="h-3 w-3" />
-                              </Link>
-                            )}
-                          </>
-                        )}
-                        {item.status === 'uploading' && (
-                          <span className="inline-flex items-center gap-1.5 font-semibold text-amber-500">
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" /> Uploading...
-                          </span>
-                        )}
-                        {item.status === 'pending' && <span className="text-zinc-400">Queued</span>}
-                        {item.status === 'error' && (
-                          <span className="inline-flex items-center gap-1 font-semibold text-rose-500">
-                            <AlertCircle className="h-3.5 w-3.5" /> Failed
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {item.status === 'error' && item.error && (
-                      <p className="pl-7 text-[11px] font-medium text-rose-500/90">{item.error}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              {publishProgress.currentStep === 'completed' && (
-                <div className="mt-5 flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-end">
-                  {publishProgress.itemStatuses.some((st) => st.status === 'error') && (
-                    <button
-                      type="button"
-                      onClick={handleRetryFailed}
-                      className="inline-flex items-center justify-center gap-1.5 rounded-2xl bg-amber-500 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-amber-600 active:scale-95"
-                    >
-                      <RefreshCw className="h-3.5 w-3.5" />
-                      Retry Failed Items
-                    </button>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPublishProgress({
-                        total: 0,
-                        currentStep: 'idle',
-                        currentProductIndex: 0,
-                        itemStatuses: [],
-                        overallPercent: 0,
-                      });
-                      setNotes([createBlankProductNote(categories[0]?.name || 'General')]);
-                      setActiveNoteIndex(0);
-                    }}
-                    className="rounded-2xl border border-zinc-200 px-4 py-2.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
-                  >
-                    Add More Products
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => router.push('/dashboard/products')}
-                    className="rounded-2xl bg-zinc-900 px-5 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
-                  >
-                    Go to Products Dashboard →
-                  </button>
-                </div>
-              )}
-            </motion.div>
+            )}
           </div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
     </div>
   );
 }

@@ -69,15 +69,14 @@ export default function DashboardSearchModal({ isOpen, onClose }: SearchModalPro
     Promise.allSettled([
       productApi.getSellerProducts(token).catch(() => []),
       orderApi.getSellerOrders(token).catch(() => []),
-    ])
-      .then(([prodRes, ordRes]) => {
-        if (prodRes.status === 'fulfilled' && Array.isArray(prodRes.value)) {
-          setProducts(prodRes.value);
-        }
-        if (ordRes.status === 'fulfilled' && Array.isArray(ordRes.value)) {
-          setOrders(ordRes.value);
-        }
-      });
+    ]).then(([prodRes, ordRes]) => {
+      if (prodRes.status === 'fulfilled' && Array.isArray(prodRes.value)) {
+        setProducts(prodRes.value);
+      }
+      if (ordRes.status === 'fulfilled' && Array.isArray(ordRes.value)) {
+        setOrders(ordRes.value);
+      }
+    });
   }, [isOpen, token]);
 
   // Focus input when opened
@@ -198,7 +197,7 @@ export default function DashboardSearchModal({ isOpen, onClose }: SearchModalPro
         href: '/dashboard/settings/terms',
       },
     ],
-    []
+    [],
   );
 
   // Quick Actions
@@ -330,7 +329,7 @@ export default function DashboardSearchModal({ isOpen, onClose }: SearchModalPro
         router.push(item.href);
       }
     },
-    [onClose, router]
+    [onClose, router],
   );
 
   // Keyboard navigation inside modal
@@ -356,23 +355,20 @@ export default function DashboardSearchModal({ isOpen, onClose }: SearchModalPro
   return (
     <Portal>
       {/* Backdrop */}
-      <div
-        onClick={onClose}
-        className="fixed inset-0 z-[100] bg-black/60 transition-opacity"
-      />
+      <div onClick={onClose} className="fixed inset-0 z-[100] bg-black/60 transition-opacity" />
 
       {/* Modal Dialog */}
-      <div className="fixed inset-0 z-[101] flex items-end sm:items-start justify-center sm:pt-20 md:pt-24 p-0 sm:p-4 pointer-events-none">
+      <div className="pointer-events-none fixed inset-0 z-[101] flex items-end justify-center p-0 sm:items-start sm:p-4 sm:pt-20 md:pt-24">
         <motion.div
           initial={{ opacity: 0, y: 16, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 16, scale: 0.98 }}
           transition={{ duration: 0.16, ease: 'easeOut' }}
-          className="pointer-events-auto w-full sm:max-w-xl max-h-[85vh] sm:max-h-[600px] flex flex-col rounded-t-3xl sm:rounded-3xl bg-background border border-border/70 overflow-hidden shadow-none"
+          className="bg-background pointer-events-auto flex max-h-[85vh] w-full flex-col overflow-hidden rounded-t-3xl sm:max-h-[600px] sm:max-w-xl sm:rounded-3xl"
         >
           {/* Top Search Input */}
-          <div className="flex items-center gap-3 px-4 sm:px-5 py-3.5 border-b border-border/60 bg-surface/30">
-            <Search className="w-4 h-4 text-muted shrink-0" />
+          <div className="bg-surface flex items-center gap-3 px-4 py-4 sm:px-5">
+            <Search className="text-muted h-4 w-4 shrink-0" />
             <input
               ref={inputRef}
               type="text"
@@ -383,28 +379,28 @@ export default function DashboardSearchModal({ isOpen, onClose }: SearchModalPro
               }}
               onKeyDown={handleKeyDown}
               placeholder="Search products, orders, settings, or actions..."
-              className="w-full bg-transparent text-sm text-foreground placeholder:text-muted/70 focus:outline-none"
+              className="text-foreground placeholder:text-muted/70 w-full bg-transparent text-sm focus:outline-none"
             />
             {query ? (
               <button
                 onClick={() => setQuery('')}
-                className="p-1 rounded-lg text-muted hover:text-foreground hover:bg-surface transition-colors"
+                className="text-muted hover:text-foreground hover:bg-background rounded-lg p-1 transition-colors"
               >
-                <X className="w-4 h-4" />
+                <X className="h-4 w-4" />
               </button>
             ) : (
-              <span className="hidden sm:inline-flex items-center text-[10px] font-mono font-medium text-muted bg-surface px-1.5 py-0.5 rounded border border-border/60">
+              <span className="text-muted bg-background hidden items-center rounded-md px-1.5 py-0.5 font-mono text-[10px] font-medium sm:inline-flex">
                 ESC
               </span>
             )}
           </div>
 
           {/* Results List */}
-          <div className="flex-1 overflow-y-auto p-2 sm:p-3 space-y-1">
+          <div className="flex-1 space-y-1 overflow-y-auto p-2.5 sm:p-3">
             {filteredResults.length === 0 ? (
-              <div className="py-12 px-4 text-center">
-                <p className="text-sm text-foreground font-medium">No results found</p>
-                <p className="text-xs text-muted mt-1">
+              <div className="px-4 py-12 text-center">
+                <p className="text-foreground text-sm font-medium">No results found</p>
+                <p className="text-muted mt-1 text-xs">
                   We couldn&apos;t find anything matching &quot;{query}&quot; in your dashboard.
                 </p>
               </div>
@@ -418,31 +414,29 @@ export default function DashboardSearchModal({ isOpen, onClose }: SearchModalPro
                     key={item.id}
                     onClick={() => handleSelect(item)}
                     onMouseEnter={() => setSelectedIndex(index)}
-                    className={`flex items-center justify-between gap-3 px-3 py-2.5 rounded-2xl cursor-pointer transition-colors ${
+                    className={`flex cursor-pointer items-center justify-between gap-3 rounded-2xl px-3 py-2.5 transition-colors ${
                       isSelected
-                        ? 'bg-primary/10 text-primary border border-primary/20'
-                        : 'hover:bg-surface text-foreground border border-transparent'
+                        ? 'bg-surface text-foreground'
+                        : 'hover:bg-surface/60 text-foreground'
                     }`}
                   >
-                    <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex min-w-0 items-center gap-3">
                       <div
-                        className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-                          isSelected
-                            ? 'bg-primary text-background'
-                            : 'bg-surface border border-border/60 text-muted'
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${
+                          isSelected ? 'bg-foreground text-background' : 'bg-surface text-muted'
                         }`}
                       >
-                        <Icon className="w-4 h-4" />
+                        <Icon className="h-4 w-4" />
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs sm:text-sm font-medium leading-tight truncate">
+                          <span className="truncate text-xs font-medium leading-tight sm:text-sm">
                             {item.title}
                           </span>
                           {item.badge && (
                             <span
-                              className={`text-[9px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded-full ${
-                                item.badgeColor || 'bg-surface text-muted border border-border/60'
+                              className={`rounded-full px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider ${
+                                item.badgeColor || 'bg-surface text-muted'
                               }`}
                             >
                               {item.badge}
@@ -450,18 +444,16 @@ export default function DashboardSearchModal({ isOpen, onClose }: SearchModalPro
                           )}
                         </div>
                         {item.subtitle && (
-                          <p className="text-[11px] text-muted truncate mt-0.5">
-                            {item.subtitle}
-                          </p>
+                          <p className="text-muted mt-0.5 truncate text-[11px]">{item.subtitle}</p>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1.5 shrink-0 text-muted">
-                      <span className="text-[9px] uppercase tracking-wider hidden sm:inline-block font-mono">
+                    <div className="text-muted flex shrink-0 items-center gap-1.5">
+                      <span className="hidden font-mono text-[9px] uppercase tracking-wider sm:inline-block">
                         {item.category}
                       </span>
-                      <ChevronRight className="w-3.5 h-3.5" />
+                      <ChevronRight className="h-3.5 w-3.5" />
                     </div>
                   </div>
                 );
@@ -470,21 +462,15 @@ export default function DashboardSearchModal({ isOpen, onClose }: SearchModalPro
           </div>
 
           {/* Footer Controls / Shortcuts */}
-          <div className="hidden sm:flex items-center justify-between px-4 py-2.5 border-t border-border/60 bg-surface/30 text-[10px] text-muted">
+          <div className="bg-surface text-muted hidden items-center justify-between px-4 py-2.5 text-[10px] sm:flex">
             <div className="flex items-center gap-3">
               <span className="flex items-center gap-1">
-                <kbd className="px-1.5 py-0.5 rounded bg-background border border-border/70 font-mono text-[9px]">
-                  ↑
-                </kbd>
-                <kbd className="px-1.5 py-0.5 rounded bg-background border border-border/70 font-mono text-[9px]">
-                  ↓
-                </kbd>
+                <kbd className="bg-background rounded-md px-1.5 py-0.5 font-mono text-[9px]">↑</kbd>
+                <kbd className="bg-background rounded-md px-1.5 py-0.5 font-mono text-[9px]">↓</kbd>
                 to navigate
               </span>
               <span className="flex items-center gap-1">
-                <kbd className="px-1.5 py-0.5 rounded bg-background border border-border/70 font-mono text-[9px]">
-                  ↵
-                </kbd>
+                <kbd className="bg-background rounded-md px-1.5 py-0.5 font-mono text-[9px]">↵</kbd>
                 to select
               </span>
             </div>

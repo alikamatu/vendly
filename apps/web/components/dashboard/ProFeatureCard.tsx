@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import React from "react";
-import Link from "next/link";
-import { Lock, Sparkles, type LucideIcon } from "lucide-react";
+import React from 'react';
+import Link from 'next/link';
+import { Lock, Sparkles, type LucideIcon } from 'lucide-react';
 
 interface ProFeatureCardProps {
   icon: LucideIcon;
@@ -12,7 +12,7 @@ interface ProFeatureCardProps {
   /** When unlocked, render an action button; otherwise an upgrade prompt. */
   cta?: { label: string; onClick: () => void } | { label: string; href: string };
   previewHref?: string;
-  accent?: "accent" | "neutral";
+  accent?: 'accent' | 'neutral';
 }
 
 export default function ProFeatureCard({
@@ -22,31 +22,29 @@ export default function ProFeatureCard({
   isPro,
   cta,
   previewHref,
-  accent = "neutral",
+  accent = 'neutral',
 }: ProFeatureCardProps) {
   const unlocked = isPro;
 
-  const cardClass = unlocked
-    ? "border-[var(--color-border)] bg-[var(--color-surface)]"
-    : "border-[var(--color-border)] bg-[var(--color-surface)]/60";
+  const cardClass = unlocked ? 'bg-[var(--color-surface)]' : 'bg-[var(--color-surface)]/70';
 
   const iconClass = unlocked
-    ? accent === "accent"
-      ? "bg-[var(--color-accent)]/15 text-[var(--color-accent)]"
-      : "bg-[var(--color-foreground)]/10 text-[var(--color-foreground)]"
-    : "bg-[var(--color-border)]/40 text-[var(--color-muted)]";
+    ? accent === 'accent'
+      ? 'bg-[var(--color-accent)]/15 text-[var(--color-accent)]'
+      : 'bg-[var(--color-foreground)]/10 text-[var(--color-foreground)]'
+    : 'bg-[var(--color-background)] text-[var(--color-muted)]';
 
   function renderCta() {
     if (!cta) return null;
     const btnClass =
-      "h-9 inline-flex items-center justify-center gap-1.5 px-3.5 rounded-xl text-[11px] font-medium uppercase tracking-wider transition-opacity";
+      'h-9 inline-flex items-center justify-center gap-1.5 px-3.5 rounded-xl text-xs font-semibold transition-opacity';
     if (!unlocked) {
       return (
         <div className="flex items-center gap-2">
           {previewHref && (
             <Link
               href={previewHref}
-              className={`${btnClass} bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-foreground)] hover:bg-[var(--color-surface)]/80`}
+              className={`${btnClass} bg-[var(--color-background)] text-[var(--color-foreground)] hover:opacity-80`}
             >
               Preview
             </Link>
@@ -55,13 +53,13 @@ export default function ProFeatureCard({
             href="/dashboard/settings"
             className={`${btnClass} bg-[var(--color-accent)] text-white hover:opacity-90`}
           >
-            <Sparkles className="w-3.5 h-3.5" />
+            <Sparkles className="h-3.5 w-3.5" />
             Upgrade
           </Link>
         </div>
       );
     }
-    if ("href" in cta) {
+    if ('href' in cta) {
       return (
         <Link
           href={cta.href}
@@ -84,34 +82,32 @@ export default function ProFeatureCard({
 
   return (
     <div
-      className={`relative rounded-3xl border p-4 md:p-5 flex flex-col gap-4 transition-colors ${cardClass}`}
+      className={`relative flex flex-col gap-4 rounded-3xl p-4 transition-colors md:p-5 ${cardClass}`}
     >
       {!unlocked && (
-        <span className="absolute top-3 right-3 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-medium uppercase tracking-wider bg-[var(--color-foreground)]/[0.06] text-[var(--color-muted)]">
-          <Lock className="w-2.5 h-2.5" />
+        <span className="bg-[var(--color-foreground)]/[0.06] absolute right-3 top-3 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
+          <Lock className="h-2.5 w-2.5" />
           Pro
         </span>
       )}
       {unlocked && (
-        <span className="absolute top-3 right-3 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-medium uppercase tracking-wider bg-[var(--color-accent)]/15 text-[var(--color-accent)]">
-          <Sparkles className="w-2.5 h-2.5" />
+        <span className="bg-[var(--color-accent)]/15 absolute right-3 top-3 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider text-[var(--color-accent)]">
+          <Sparkles className="h-2.5 w-2.5" />
           Pro
         </span>
       )}
 
       <div className="flex items-start gap-3">
         <div
-          className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 ${iconClass}`}
+          className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl ${iconClass}`}
         >
-          <Icon className="w-5 h-5" />
+          <Icon className="h-5 w-5" />
         </div>
-        <div className="space-y-1 min-w-0">
-          <h3 className="text-sm font-medium text-[var(--color-foreground)] leading-tight">
+        <div className="min-w-0 space-y-1">
+          <h3 className="text-sm font-medium leading-tight text-[var(--color-foreground)]">
             {title}
           </h3>
-          <p className="text-[11px] text-[var(--color-muted)] leading-snug">
-            {description}
-          </p>
+          <p className="text-[11px] leading-snug text-[var(--color-muted)]">{description}</p>
         </div>
       </div>
 
