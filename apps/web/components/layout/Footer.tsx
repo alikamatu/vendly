@@ -23,6 +23,7 @@ import {
   Download,
 } from 'lucide-react';
 import { contactApi } from '@/lib/api/contact';
+import { SUPPORT_CONTACT } from '@/lib/contact';
 import Spinner from '@/components/ui/Spinner';
 
 interface FooterLink {
@@ -166,7 +167,7 @@ export default function Footer() {
 
               <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                 <a
-                  href="https://wa.me/233534065652?text=Hello%20Verndly%20Support"
+                  href={SUPPORT_CONTACT.whatsappSupportHref}
                   target="_blank"
                   rel="noreferrer"
                   className="border-border/60 bg-background/60 hover:bg-background text-foreground group flex items-center gap-2.5 rounded-xl border p-2.5 transition-all hover:border-emerald-500/40"
@@ -176,7 +177,7 @@ export default function Footer() {
                   </div>
                   <div className="min-w-0">
                     <p className="text-foreground truncate text-[11px] font-medium leading-none">
-                      +233 53 406 5652
+                      {SUPPORT_CONTACT.phoneDisplay}
                     </p>
                     <p className="text-muted-foreground mt-1 text-[10px] transition-colors group-hover:text-emerald-600 dark:group-hover:text-emerald-400">
                       WhatsApp Direct
@@ -185,7 +186,7 @@ export default function Footer() {
                 </a>
 
                 <a
-                  href="tel:+233534065652"
+                  href={SUPPORT_CONTACT.phoneHref}
                   className="border-border/60 bg-background/60 hover:bg-background hover:border-primary/40 text-foreground group flex items-center gap-2.5 rounded-xl border p-2.5 transition-all"
                 >
                   <div className="bg-primary/10 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg">
@@ -193,7 +194,7 @@ export default function Footer() {
                   </div>
                   <div className="min-w-0">
                     <p className="text-foreground truncate text-[11px] font-medium leading-none">
-                      +233 53 406 5652
+                      {SUPPORT_CONTACT.phoneDisplay}
                     </p>
                     <p className="text-muted-foreground group-hover:text-primary mt-1 text-[10px] transition-colors">
                       Voice Calls
@@ -204,13 +205,13 @@ export default function Footer() {
 
               <div className="border-border/40 space-y-2 border-t pt-3 text-xs">
                 <a
-                  href="mailto:alikamatu14@gmail.com"
+                  href={SUPPORT_CONTACT.emailHref}
                   className="text-muted-foreground hover:text-primary group flex items-center justify-between py-0.5 transition-colors"
                 >
                   <span className="flex items-center gap-2.5">
                     <Mail className="h-3.5 w-3.5 shrink-0 text-blue-500" />
                     <span className="text-foreground text-xs font-medium">
-                      alikamatu14@gmail.com
+                      {SUPPORT_CONTACT.email}
                     </span>
                   </span>
                   <ArrowUpRight className="h-3.5 w-3.5 opacity-60 transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:opacity-100" />
@@ -219,11 +220,11 @@ export default function Footer() {
                 <div className="text-muted-foreground flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 pt-1 text-[11px]">
                   <div className="flex items-center gap-2">
                     <Clock className="h-3.5 w-3.5 shrink-0" />
-                    <span>Mon – Sat: 8:00 AM – 8:00 PM GMT</span>
+                    <span>{SUPPORT_CONTACT.hours}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <MapPin className="h-3.5 w-3.5 shrink-0" />
-                    <span>Accra, Ghana</span>
+                    <span>{SUPPORT_CONTACT.location}</span>
                   </div>
                 </div>
               </div>

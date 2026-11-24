@@ -15,7 +15,7 @@ async function main() {
   });
   const adapter = new PrismaPg(pool);
   const prisma = new PrismaClient({ adapter });
-  const email = process.env.ADMIN_NOTIFY_EMAIL || 'alikamatu14@gmail.com';
+  const email = process.env.ADMIN_NOTIFY_EMAIL || 'support@verndly.com';
   const phone = process.env.ADMIN_NOTIFY_PHONE || '+233534065652';
   const password = process.env.ADMIN_SEED_PASSWORD || 'Admin@123';
   const password_hash = await bcrypt.hash(password, 10);
