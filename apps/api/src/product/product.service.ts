@@ -11,6 +11,7 @@ import { Prisma, Role } from '@prisma/client';
 import { PaymentsService } from '../payments/payments.service';
 import { AuditLogService } from '../audit/audit-log.service';
 import {
+  PUBLIC_IN_STOCK_PRODUCT_WHERE,
   PUBLIC_PRODUCT_STATUSES,
   PUBLIC_PRODUCT_WHERE,
   isPubliclyVisibleProduct,
@@ -282,6 +283,13 @@ export class ProductService {
         ? requestedStatus
         : undefined;
 
+    const shouldHideOutOfStock =
+      inStock === true ||
+      (inStock !== false &&
+        (Boolean(search && search.trim().length > 0) ||
+          isFeatured === true ||
+          minDiscount !== undefined));
+
     const where: Prisma.ProductWhereInput = {
       ...(category && { category }),
       ...(sellerId && { seller_id: sellerId }),
@@ -291,7 +299,7 @@ export class ProductService {
       ...(brand && { brand }),
       ...(condition && { condition }),
       ...(hasVideo === true && { video_url: { not: null } }),
-      ...(inStock === true && { quantity_available: { gt: 0 } }),
+      ...(shouldHideOutOfStock && { quantity_available: { gt: 0 } }),
       ...(typeof isFeatured === 'boolean' && { is_featured: isFeatured }),
     };
 
@@ -467,7 +475,7 @@ export class ProductService {
 
   async getRecentProducts() {
     return this.prisma.product.findMany({
-      where: PUBLIC_PRODUCT_WHERE,
+      where: PUBLIC_IN_STOCK_PRODUCT_WHERE,
       include: {
         seller: {
           select: {
@@ -1165,7 +1173,7 @@ export class ProductService {
           },
           { tags: { has: searchLower } },
         ],
-        ...PUBLIC_PRODUCT_WHERE,
+        ...PUBLIC_IN_STOCK_PRODUCT_WHERE,
       },
       include: {
         seller: {

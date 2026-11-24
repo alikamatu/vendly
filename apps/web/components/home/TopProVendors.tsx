@@ -47,6 +47,22 @@ export default function TopProVendors({ vendors }: TopProVendorsProps) {
   if (!vendors.length) return null;
 
   const displayVendors = vendors.slice(0, 10);
+  const countWords = [
+    '',
+    'One',
+    'Two',
+    'Three',
+    'Four',
+    'Five',
+    'Six',
+    'Seven',
+    'Eight',
+    'Nine',
+    'Ten',
+  ];
+  const countLabel = countWords[vendors.length] ?? String(vendors.length);
+  const storeNoun = vendors.length === 1 ? 'Pro store' : 'Pro stores';
+  const proDescription = `${countLabel} ${storeNoun} on Verndly right now — more selling spots opening as new merchants are verified.`;
 
   return (
     <section className="space-y-6 md:space-y-8">
@@ -57,8 +73,8 @@ export default function TopProVendors({ vendors }: TopProVendorsProps) {
             Top Pro Vendors
           </>
         }
-        title="Featured Pro sellers"
-        description="Hand-picked Pro vendors delivering quality across the Verndly marketplace."
+        title="Featured Pro sellers in Accra"
+        description={proDescription}
         action={
           <div className="hidden items-center gap-2 md:flex">
             <button

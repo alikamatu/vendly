@@ -122,4 +122,51 @@ describe('Product public visibility & moderation (T04 / ST-03)', () => {
       }),
     );
   });
+
+  it('excludes qty 0 products from recent rails and search (T09 / HM-03 / PD-04)', async () => {
+    const findMany = jest.fn().mockResolvedValue([]);
+    const prisma = {
+      product: {
+        findUnique: jest.fn(),
+        findMany,
+        count: jest.fn().mockResolvedValue(0),
+        update: jest.fn().mockResolvedValue({}),
+      },
+    } as any;
+    const service = new ProductService(
+      prisma,
+      {} as any,
+      {} as any,
+      { record: jest.fn() } as any,
+    );
+
+    await service.getRecentProducts();
+    expect(findMany).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          status: { in: [...PUBLIC_PRODUCT_STATUSES] },
+          quantity_available: { gt: 0 },
+        }),
+      }),
+    );
+
+    await service.searchProducts('jacket');
+    expect(findMany).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          status: { in: [...PUBLIC_PRODUCT_STATUSES] },
+          quantity_available: { gt: 0 },
+        }),
+      }),
+    );
+
+    await service.getProducts({ search: 'jacket' });
+    expect(findMany).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          quantity_available: { gt: 0 },
+        }),
+      }),
+    );
+  });
 });

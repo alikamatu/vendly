@@ -6,6 +6,7 @@ import SectionHeader from './SectionHeader';
 import BrandSection from './BrandSection';
 import { groupByBrand } from '@/lib/home/brand-grouping';
 import { SHOW_BRAND_RAIL } from '@/lib/brand-guard';
+import { filterRailProducts } from '@/lib/product-visibility';
 import type { HomeBrand, HomeProduct } from '@/hooks/useHomeData';
 
 interface BrandSectionsListProps {
@@ -28,7 +29,7 @@ export default function BrandSectionsList({
   const buckets = useMemo(
     () =>
       SHOW_BRAND_RAIL
-        ? groupByBrand(products, brands, {
+        ? groupByBrand(filterRailProducts(products), brands, {
             productsLimit: productsPerBrand,
             brandsLimit: maxBrands,
           })

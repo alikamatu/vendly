@@ -86,4 +86,23 @@ Append one entry per loop. Newest at the bottom.
 - Files changed: apps/web/lib/copy/coverage.ts, apps/web/components/home/HomeView.tsx, apps/web/components/layout/Footer.tsx, apps/web/app/sell/page.tsx, apps/web/app/about/page.tsx, apps/web/app/shipping/page.tsx, apps/web/components/legal/LegalPage.tsx, apps/web/app/categories/[slug]/page.tsx, apps/web/components/editorial/VisualDiagrams.tsx, apps/web/lib/content/categories.ts, apps/web/lib/content/blog-posts-core.ts, apps/web/lib/content/blog-posts-extended.ts, apps/web/app/privacy/page.tsx, apps/web/public/llms.txt, apps/web/public/llms-full.txt, verndly-fixes/TASKS.md, verndly-fixes/PROGRESS.md
 - NEEDS-HUMAN: none
 - Verification: `git grep -niE "16 Regions|All 16|Nationwide Dispatch|Tamale|West Africa|International Orders" apps/web/` confirmed zero overclaimed copy in visible UI (only preserved URL slug `nationwide-delivery-ghana-accra-kumasi-takoradi-tamale` to avoid breaking links); `pnpm --filter @vendly/web type-check` passed with 0 errors.
-- Commit: pending (see git log for `fix(t08): ... [hm-02, sw-04, sl-02, ab-03, sh-01]`)
+- Commit: `b809f51`
+
+### 2026-11-24 — T09 (HM-03, HM-04, PD-04) — [~]
+
+- Changed:
+  - `apps/web/lib/product-visibility.ts`: added `filterRailProducts` reusing `isPubliclyVisibleInStock` from T04 so homepage rails only display approved, in-stock listings.
+  - `apps/web/components/home/TopDeals.tsx`: filtered deals through `filterRailProducts` (excludes `quantity_available = 0` such as the PD-04 jacket) and changed description to `Limited-time markdowns from verified sellers.` (removed `"Going fast."`).
+  - `apps/web/components/home/FeaturedMarketplace.tsx`, `apps/web/components/home/RecentProducts.tsx`, `apps/web/components/home/BrandSectionsList.tsx`, `apps/web/components/home/HomeView.tsx`, `apps/web/app/page.tsx`, `apps/web/lib/server-api.ts`: applied `filterRailProducts` / `in_stock=true` across every homepage rail and SSR `ItemListJsonLd`.
+  - `apps/web/components/home/TopProVendors.tsx`: updated heading to `Featured Pro sellers in Accra` and made description dynamically count API Pro stores (`Two Pro stores on Verndly right now — more selling spots opening as new merchants are verified.` when 2).
+  - `apps/api/src/product/product.service.ts`: applied `PUBLIC_IN_STOCK_PRODUCT_WHERE` to `getRecentProducts` and `searchProducts`, and excluded `quantity_available = 0` in `getProducts` when searching or querying featured/discounted deals (unless `inStock=false` is explicitly passed).
+  - `apps/api/src/product/product-visibility.spec.ts` & `apps/web/lib/product-visibility.test.mjs`: added mock-product tests verifying qty-0 items (including the −53% jacket) never appear in homepage rails or search.
+  - `scripts/data-fixes/T09-pd04-zip-up-jacket.sql`: committed (NOT run) SQL script to move PD-04 (`c5537034-4bfd-4460-b1bc-c469ab1827bb`) from `General` → `Fashion` and rewrite title to `Men's black zip-up hooded jacket`.
+- Verified:
+  - `node --test apps/web/lib/product-visibility.test.mjs` — passed.
+  - `pnpm --filter @vendly/api test -- product-visibility.spec.ts` — passed.
+  - `pnpm --filter @vendly/web type-check` and `pnpm --filter @vendly/api run build` — passed.
+  - `git grep -niE "Going fast|across the Verndly marketplace" apps/` — 0 matches.
+- NEEDS-HUMAN:
+  - **PD-04**: Confirm with the seller whether to keep and restock `/product/c5537034-4bfd-4460-b1bc-c469ab1827bb` or archive it, and approve running `scripts/data-fixes/T09-pd04-zip-up-jacket.sql`.
+- Commit: pending (see git log for `fix(t09): ... [hm-03, hm-04, pd-04]`)

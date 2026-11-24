@@ -1,10 +1,11 @@
-"use client";
+'use client';
 
-import React, { useMemo } from "react";
-import { Tag } from "lucide-react";
-import ProductGridSection from "./ProductGridSection";
-import { filterByMinDiscount, getDiscountPercent } from "@/lib/home/discount";
-import type { HomeProduct } from "@/hooks/useHomeData";
+import React, { useMemo } from 'react';
+import { Tag } from 'lucide-react';
+import ProductGridSection from './ProductGridSection';
+import { filterByMinDiscount, getDiscountPercent } from '@/lib/home/discount';
+import { filterRailProducts } from '@/lib/product-visibility';
+import type { HomeProduct } from '@/hooks/useHomeData';
 
 interface TopDealsProps {
   products: HomeProduct[];
@@ -15,7 +16,8 @@ interface TopDealsProps {
 
 export default function TopDeals({ products, minDiscount = 20, limit = 20 }: TopDealsProps) {
   const deals = useMemo(() => {
-    const filtered = filterByMinDiscount(products, minDiscount);
+    const visibleInStock = filterRailProducts(products);
+    const filtered = filterByMinDiscount(visibleInStock, minDiscount);
     return filtered
       .sort((a, b) => (getDiscountPercent(b as any) ?? 0) - (getDiscountPercent(a as any) ?? 0))
       .slice(0, limit);
@@ -28,12 +30,12 @@ export default function TopDeals({ products, minDiscount = 20, limit = 20 }: Top
       products={deals}
       eyebrow={
         <>
-          <Tag className="w-3.5 h-3.5" />
+          <Tag className="h-3.5 w-3.5" />
           Save more
         </>
       }
       title={`Top Deals · ${minDiscount}% off or more`}
-      description="Limited-time markdowns from verified sellers. Going fast."
+      description="Limited-time markdowns from verified sellers."
     />
   );
 }

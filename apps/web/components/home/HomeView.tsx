@@ -10,6 +10,7 @@ import Loading from '@/app/loading';
 import { useHomeData, type InitialHomeData } from '@/hooks/useHomeData';
 import { COVERAGE_COPY } from '@/lib/copy/coverage';
 import { sortByRecent } from '@/lib/home/discount';
+import { filterRailProducts } from '@/lib/product-visibility';
 import CategoryShowcase from './CategoryShowcase';
 import FeaturedMarketplace from './FeaturedMarketplace';
 import BrandSectionsList from './BrandSectionsList';
@@ -79,17 +80,19 @@ export default function HomeView({ initialData }: { initialData?: InitialHomeDat
   const router = useRouter();
   const { products, categories, brands, topProVendors, isLoading } = useHomeData(initialData);
 
+  const railProducts = useMemo(() => filterRailProducts(products), [products]);
+
   const featured = useMemo(
     () =>
       sortByRecent(
-        products.filter((product) => product.is_featured && inDefaultPrice(product.price)),
+        railProducts.filter((product) => product.is_featured && inDefaultPrice(product.price)),
       ),
-    [products],
+    [railProducts],
   );
 
   const hasResults = useMemo(
-    () => products.some((product) => inDefaultPrice(product.price)),
-    [products],
+    () => railProducts.some((product) => inDefaultPrice(product.price)),
+    [railProducts],
   );
 
   const goToProducts = useCallback(
@@ -153,15 +156,15 @@ export default function HomeView({ initialData }: { initialData?: InitialHomeDat
         <RecentlyViewed limit={12} />
 
         <BrandSectionsList
-          products={products}
+          products={railProducts}
           brands={brands}
           productsPerBrand={PRODUCTS_PER_BRAND}
           onBrandSelect={handleBrandSelect}
         />
 
-        <RecentProducts products={products} limit={RECENT_LIMIT} />
+        <RecentProducts products={railProducts} limit={RECENT_LIMIT} />
 
-        <TopDeals products={products} minDiscount={DEALS_MIN_DISCOUNT} limit={DEALS_LIMIT} />
+        <TopDeals products={railProducts} minDiscount={DEALS_MIN_DISCOUNT} limit={DEALS_LIMIT} />
 
         {/* Clean, borderless, shadowless SSR-rendered Trust & Discovery Section */}
         <section

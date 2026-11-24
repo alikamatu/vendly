@@ -7,6 +7,7 @@ import {
   fetchHomeProductsServer,
   fetchTopProVendorsServer,
 } from '@/lib/server-api';
+import { filterRailProducts } from '@/lib/product-visibility';
 
 export const metadata = buildMetadata({
   title: 'Verndly — Discover & Shop Verified Independent Stores in Ghana',
@@ -33,7 +34,8 @@ export default async function HomePage() {
     fetchTopProVendorsServer(6),
   ]);
 
-  const topProducts = products.slice(0, 16);
+  const inStockProducts = filterRailProducts(products);
+  const topProducts = inStockProducts.slice(0, 16);
 
   return (
     <>

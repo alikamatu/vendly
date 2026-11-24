@@ -42,7 +42,7 @@ export async function fetchTopProVendorsServer<T = any[]>(limit = 6): Promise<T>
 }
 
 export async function fetchHomeProductsServer<T = any[]>(limit = 48): Promise<T> {
-  const raw = await safeFetch<any>(`/products?page=1&limit=${limit}`, []);
+  const raw = await safeFetch<any>(`/products?page=1&limit=${limit}&in_stock=true`, []);
   const list = Array.isArray(raw) ? raw : Array.isArray(raw?.data) ? raw.data : [];
   return list as T;
 }

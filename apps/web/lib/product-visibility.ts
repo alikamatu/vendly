@@ -23,3 +23,11 @@ export function isPubliclyVisibleInStock(product?: PublicProductLike | null): bo
   if (!isPubliclyVisible(product)) return false;
   return typeof product?.quantity_available === 'number' ? product.quantity_available > 0 : true;
 }
+
+/**
+ * Shared filter for homepage rails (Top Deals, Featured, Recently Added, Brand sections)
+ * and sitemaps: only approved AND in-stock items appear.
+ */
+export function filterRailProducts<T extends object>(products: readonly T[]): T[] {
+  return products.filter((p) => isPubliclyVisibleInStock(p as PublicProductLike));
+}

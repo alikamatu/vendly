@@ -4,6 +4,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
 import ProductCard from '@/components/products/ProductCard';
+import { filterRailProducts } from '@/lib/product-visibility';
 import type { HomeProduct } from '@/hooks/useHomeData';
 
 interface FeaturedMarketplaceProps {
@@ -12,7 +13,7 @@ interface FeaturedMarketplaceProps {
 }
 
 export default function FeaturedMarketplace({ products, limit = 10 }: FeaturedMarketplaceProps) {
-  const items = products.slice(0, limit);
+  const items = filterRailProducts(products).slice(0, limit);
   if (!items.length) return null;
 
   return (
