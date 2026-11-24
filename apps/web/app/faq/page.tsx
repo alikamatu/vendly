@@ -66,7 +66,10 @@ export default function FAQPage() {
 function FaqItem({ item }: { item: SiteFaqEntry }) {
   const [open, setOpen] = useState(true);
   return (
-    <li className="border-border bg-surface/30 overflow-hidden rounded-2xl border">
+    <li
+      id={item.id}
+      className="border-border bg-surface/30 scroll-mt-24 overflow-hidden rounded-2xl border"
+    >
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}

@@ -6,7 +6,6 @@ import {
   CreditCard,
   Truck,
   ShieldCheck,
-  Sparkles,
   Mail,
   HelpCircle,
   ArrowRight,
@@ -30,8 +29,8 @@ const SECTIONS = [
     description: 'Find items, place orders, and track delivery.',
     links: [
       { label: 'Browsing & search', href: '/products' },
-      { label: 'Placing an order', href: '/faq' },
-      { label: 'Tracking your order', href: '/orders' },
+      { label: 'Placing an order', href: '/faq#create-account' },
+      { label: 'Tracking your order', href: '/faq#tracking-your-order' },
       { label: 'Shipping & delivery', href: '/shipping' },
     ],
   },
@@ -46,7 +45,7 @@ const SECTIONS = [
         label: 'Jumia vs Verndly fee calculator',
         href: '/blog/jumia-seller-fees-ghana-2026-vs-verndly',
       },
-      { label: 'Seller dashboard', href: '/dashboard' },
+      { label: 'How verification works', href: '/faq#seller-verification' },
     ],
   },
   {
@@ -54,8 +53,8 @@ const SECTIONS = [
     Icon: CreditCard,
     description: 'How money moves on Verndly.',
     links: [
-      { label: 'Payment methods', href: '/faq' },
-      { label: 'Seller payouts', href: '/dashboard/payouts' },
+      { label: 'Payment methods', href: '/faq#payment-methods' },
+      { label: 'Seller payouts', href: '/faq#seller-payouts' },
       { label: 'Refunds', href: '/returns' },
     ],
   },
@@ -78,16 +77,6 @@ const SECTIONS = [
       { label: 'Shop safely & avoid MoMo scams', href: '/blog/how-to-shop-online-safely-in-ghana' },
       { label: 'Reporting an issue', href: '/contact' },
       { label: 'Terms & Privacy', href: '/terms' },
-    ],
-  },
-  {
-    title: 'Pro features',
-    Icon: Sparkles,
-    description: 'Get the most out of Verndly Pro.',
-    links: [
-      { label: "What's included", href: '/dashboard/settings' },
-      { label: 'Storefront QR code', href: '/dashboard' },
-      { label: 'Featured placement', href: '/dashboard' },
     ],
   },
 ];

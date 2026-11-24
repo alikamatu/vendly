@@ -1,5 +1,5 @@
-// Vendly PWA Service Worker
-const CACHE_NAME = 'vendly-pwa-v2';
+// Verndly PWA Service Worker
+const CACHE_NAME = 'verndly-pwa-v3';
 
 const STATIC_ASSETS = [
   '/',

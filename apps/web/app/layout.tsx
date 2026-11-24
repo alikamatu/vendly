@@ -115,7 +115,7 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="Vendly" />
+        <meta name="apple-mobile-web-app-title" content="Verndly" />
 
         {/*
           Eager TCP + TLS handshakes for the two origins every page hits:

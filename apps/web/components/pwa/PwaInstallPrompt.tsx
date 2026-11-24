@@ -92,7 +92,7 @@ export default function PwaInstallPrompt() {
       setIsInstalled(true);
       setIsOpen(false);
       setDeferredPrompt(null);
-      toast.success('Vendly has been added to your home screen!');
+      toast.success('Verndly has been added to your home screen!');
     };
 
     window.addEventListener('appinstalled', handleAppInstalled);
@@ -131,7 +131,7 @@ export default function PwaInstallPrompt() {
     }
 
     if (!deferredPrompt) {
-      toast.info('To install Vendly, tap your browser menu (⋮) and select "Add to Home Screen"');
+      toast.info('To install Verndly, tap your browser menu (⋮) and select "Add to Home Screen"');
       return;
     }
 
@@ -141,7 +141,7 @@ export default function PwaInstallPrompt() {
       const choiceResult = await deferredPrompt.userChoice;
 
       if (choiceResult.outcome === 'accepted') {
-        toast.success('Installing Vendly to your device...');
+        toast.success('Installing Verndly to your device...');
         setIsInstalled(true);
         setIsOpen(false);
       } else {
@@ -201,7 +201,7 @@ export default function PwaInstallPrompt() {
               <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-zinc-900 shadow-md ring-2 ring-amber-500/30">
                 <img
                   src="/icons/icon-192x192.png"
-                  alt="Vendly Icon"
+                  alt="Verndly Icon"
                   className="h-full w-full object-cover"
                 />
               </div>
@@ -214,7 +214,7 @@ export default function PwaInstallPrompt() {
                   <span className="flex h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
                 </div>
                 <h3 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-                  Install Vendly on your Screen
+                  Install Verndly on your Screen
                 </h3>
               </div>
             </div>

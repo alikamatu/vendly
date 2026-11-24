@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth, type User } from '@/lib/contexts/auth-context';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Lock, ArrowLeft } from 'lucide-react';
 import Spinner from '@/components/ui/Spinner';
 
@@ -28,9 +28,13 @@ export default function ProtectedRoute({
 }: ProtectedRouteProps) {
   const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
-  const roleAllowed =
-    !allowedRoles || (user ? allowedRoles.includes(user.role) : false);
+  const roleAllowed = !allowedRoles || (user ? allowedRoles.includes(user.role) : false);
+
+  const signedOutPrompt = pathname?.startsWith('/orders')
+    ? 'Sign in to view your orders'
+    : 'Sign in to continue';
 
   useEffect(() => {
     if (isLoading) return;
@@ -42,16 +46,40 @@ export default function ProtectedRoute({
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[var(--color-background)]">
-        <div className="flex flex-col items-center gap-3">
+      <div className="flex min-h-screen items-center justify-center bg-[var(--color-background)] px-4">
+        <div className="flex flex-col items-center gap-3 text-center">
           <Spinner size="lg" />
-          <p className="text-sm text-[var(--color-muted)]">Checking access…</p>
+          <p className="text-sm text-[var(--color-muted)]">{signedOutPrompt}</p>
         </div>
       </div>
     );
   }
 
-  if (!isAuthenticated) return null;
+  if (!isAuthenticated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[var(--color-background)] px-4">
+        <div className="w-full max-w-sm space-y-5 rounded-3xl bg-[var(--color-surface)] p-8 text-center">
+          <div className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--color-background)] text-[var(--color-foreground)]">
+            <Lock className="h-5 w-5" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-lg font-medium tracking-tight text-[var(--color-foreground)]">
+              {signedOutPrompt}
+            </h1>
+            <p className="text-xs leading-relaxed text-[var(--color-muted)]">
+              This page requires a Verndly account. Sign in to access your details.
+            </p>
+          </div>
+          <Link
+            href={loginPath}
+            className="inline-flex h-11 w-full items-center justify-center rounded-full bg-[var(--color-foreground)] px-5 text-xs font-medium text-[var(--color-background)] transition-opacity hover:opacity-90"
+          >
+            Sign in
+          </Link>
+        </div>
+      </div>
+    );
+  }
   if (!roleAllowed) return <AccessDenied />;
 
   return <>{children}</>;
@@ -59,31 +87,31 @@ export default function ProtectedRoute({
 
 function AccessDenied() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[var(--color-background)] px-4">
-      <div className="w-full max-w-md text-center space-y-6 p-8 rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)]">
-        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[var(--color-accent)]/10 text-[var(--color-accent)] mx-auto">
-          <Lock className="w-6 h-6" />
+    <div className="flex min-h-screen items-center justify-center bg-[var(--color-background)] px-4">
+      <div className="w-full max-w-md space-y-6 rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8 text-center">
+        <div className="bg-[var(--color-accent)]/10 mx-auto inline-flex h-14 w-14 items-center justify-center rounded-2xl text-[var(--color-accent)]">
+          <Lock className="h-6 w-6" />
         </div>
         <div className="space-y-2">
           <h1 className="text-lg font-medium tracking-tight text-[var(--color-foreground)]">
             Seller access only
           </h1>
-          <p className="text-sm text-[var(--color-muted)] leading-relaxed">
-            This area is for verified sellers and administrators. Open a store on
-            Verndly to unlock the seller dashboard.
+          <p className="text-sm leading-relaxed text-[var(--color-muted)]">
+            This area is for verified sellers and administrators. Open a store on Verndly to unlock
+            the seller dashboard.
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+        <div className="flex flex-col justify-center gap-3 sm:flex-row">
           <Link
             href="/"
-            className="inline-flex items-center justify-center gap-2 px-5 h-11 rounded-2xl bg-[var(--color-foreground)] text-[var(--color-background)] text-sm font-normal hover:opacity-90 transition-opacity"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-[var(--color-foreground)] px-5 text-sm font-normal text-[var(--color-background)] transition-opacity hover:opacity-90"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="h-4 w-4" />
             Back to shop
           </Link>
           <Link
             href="/create-store"
-            className="inline-flex items-center justify-center px-5 h-11 rounded-2xl border border-[var(--color-border)] text-sm font-normal text-[var(--color-foreground)] hover:bg-[var(--color-border)]/40 transition-colors"
+            className="hover:bg-[var(--color-border)]/40 inline-flex h-11 items-center justify-center rounded-2xl border border-[var(--color-border)] px-5 text-sm font-normal text-[var(--color-foreground)] transition-colors"
           >
             Become a seller
           </Link>

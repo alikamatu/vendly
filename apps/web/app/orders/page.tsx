@@ -31,7 +31,7 @@ import { toast } from 'sonner';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 export default function BuyerOrdersPage() {
-  const { token, user } = useAuth();
+  const { token, user, isLoading: isAuthLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -42,7 +42,9 @@ export default function BuyerOrdersPage() {
   const [isRetrying, setIsRetrying] = useState<string | null>(null);
   const [cancellingOrder, setCancellingOrder] = useState<any | null>(null);
   const [receiptOrder, setReceiptOrder] = useState<any | null>(null);
-  const [paymentModalState, setPaymentModalState] = useState<'verifying' | 'success' | 'failed' | null>(null);
+  const [paymentModalState, setPaymentModalState] = useState<
+    'verifying' | 'success' | 'failed' | null
+  >(null);
   const [paymentErrorMessage, setPaymentErrorMessage] = useState('');
 
   // Real-time synchronization
@@ -63,11 +65,14 @@ export default function BuyerOrdersPage() {
   }
 
   useEffect(() => {
+    if (isAuthLoading) return;
     if (token) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       fetchOrders();
+    } else {
+      setIsLoading(false);
     }
-  }, [token]);
+  }, [token, isAuthLoading]);
 
   useEffect(() => {
     if (!token) return;
@@ -116,9 +121,9 @@ export default function BuyerOrdersPage() {
     try {
       setIsRetrying(order.id);
       const buyerEmail =
-        (order.buyer?.email && order.buyer.email.includes('@'))
+        order.buyer?.email && order.buyer.email.includes('@')
           ? order.buyer.email
-          : (user?.email && user.email.includes('@'))
+          : user?.email && user.email.includes('@')
             ? user.email
             : 'customer@verndly.com';
 
@@ -166,10 +171,52 @@ export default function BuyerOrdersPage() {
     }
   };
 
-  if (isLoading) {
+  if (isAuthLoading || isLoading) {
     return (
-      <div className="flex h-[60vh] items-center justify-center">
-        <Spinner size="lg" />
+      <div className="bg-background min-h-screen">
+        <Header />
+        <div className="flex h-[60vh] flex-col items-center justify-center gap-3">
+          <Spinner size="lg" />
+          <p className="text-muted text-sm">Loading your orders…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!token) {
+    return (
+      <div className="bg-background min-h-screen">
+        <Header />
+        <main className="mx-auto flex max-w-md flex-col items-center justify-center px-4 py-28 text-center">
+          <div className="bg-surface w-full space-y-5 rounded-3xl p-8">
+            <div className="bg-background text-foreground mx-auto inline-flex h-12 w-12 items-center justify-center rounded-2xl">
+              <ShoppingBag className="h-5 w-5" />
+            </div>
+            <div className="space-y-2">
+              <h1 className="text-foreground text-xl font-medium tracking-tight">
+                Sign in to view your orders
+              </h1>
+              <p className="text-muted text-xs leading-relaxed">
+                Track active deliveries, review Paystack escrow protection, and download receipts
+                from your Verndly account.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2.5 pt-1">
+              <Link
+                href="/login?next=/orders"
+                className="bg-foreground text-background inline-flex h-11 items-center justify-center rounded-full px-6 text-xs font-medium transition-opacity hover:opacity-90"
+              >
+                Sign in
+              </Link>
+              <Link
+                href="/faq#tracking-your-order"
+                className="bg-background text-foreground inline-flex h-11 items-center justify-center rounded-full px-6 text-xs font-medium transition-opacity hover:opacity-80"
+              >
+                How order tracking works
+              </Link>
+            </div>
+          </div>
+        </main>
       </div>
     );
   }
@@ -223,10 +270,10 @@ export default function BuyerOrdersPage() {
                   transition={{ delay: idx * 0.05 }}
                 >
                   <Card
-                    className="overflow-hidden rounded-3xl bg-surface/40 hover:bg-surface/60 p-5 transition-colors sm:p-6 border-0 shadow-none"
+                    className="bg-surface/40 hover:bg-surface/60 overflow-hidden rounded-3xl border-0 p-5 shadow-none transition-colors sm:p-6"
                     hoverEffect={false}
                   >
-                    <div className="mb-6 flex flex-col justify-between gap-4 border-b border-border/30 pb-6 sm:flex-row sm:items-center">
+                    <div className="border-border/30 mb-6 flex flex-col justify-between gap-4 border-b pb-6 sm:flex-row sm:items-center">
                       <div className="flex items-center gap-3">
                         <div className="bg-surface rounded-2xl p-3">
                           <ShoppingBag className="text-primary h-5 w-5" />
@@ -250,9 +297,7 @@ export default function BuyerOrdersPage() {
                             {new Date(order.created_at).toLocaleDateString()}
                           </p>
                         </div>
-                        <div
-                          className="bg-surface/80 flex items-center gap-2 rounded-xl px-3.5 py-1.5 shadow-none"
-                        >
+                        <div className="bg-surface/80 flex items-center gap-2 rounded-xl px-3.5 py-1.5 shadow-none">
                           {getStatusIcon(order.status)}
                           <span className="text-[10px] font-medium uppercase tracking-wider">
                             {order.status.replace('_', ' ')}
@@ -263,7 +308,7 @@ export default function BuyerOrdersPage() {
 
                     {/* Seller Info */}
                     {order.items[0]?.product?.seller && (
-                      <div className="bg-surface/30 mb-6 flex items-center justify-between rounded-2xl px-4 py-3 border-0 shadow-none">
+                      <div className="bg-surface/30 mb-6 flex items-center justify-between rounded-2xl border-0 px-4 py-3 shadow-none">
                         <div className="flex items-center gap-3">
                           <div className="bg-background flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg">
                             {order.items[0].product.seller.logo_url ? (
@@ -304,7 +349,10 @@ export default function BuyerOrdersPage() {
 
                     <div className="space-y-3">
                       {order.items.map((item: any) => (
-                        <div key={item.id} className="flex items-center gap-4 bg-surface/20 rounded-2xl p-3 border-0 shadow-none">
+                        <div
+                          key={item.id}
+                          className="bg-surface/20 flex items-center gap-4 rounded-2xl border-0 p-3 shadow-none"
+                        >
                           <div className="bg-surface group relative h-16 w-16 shrink-0 overflow-hidden rounded-xl">
                             {item.product.video_url ? (
                               <video
@@ -357,9 +405,9 @@ export default function BuyerOrdersPage() {
                     </div>
 
                     {/* Order & Payment Details */}
-                    <div className="mt-6 grid grid-cols-1 gap-4 border-t border-border/30 pt-6 sm:grid-cols-2">
+                    <div className="border-border/30 mt-6 grid grid-cols-1 gap-4 border-t pt-6 sm:grid-cols-2">
                       <div className="space-y-3">
-                        <p className="text-muted border-b border-border/20 pb-2 text-[10px] font-medium uppercase tracking-wider">
+                        <p className="text-muted border-border/20 border-b pb-2 text-[10px] font-medium uppercase tracking-wider">
                           Delivery Details
                         </p>
                         <div className="space-y-2">
@@ -392,7 +440,7 @@ export default function BuyerOrdersPage() {
                       </div>
 
                       <div className="space-y-3">
-                        <p className="text-muted border-b border-border/20 pb-2 text-[10px] font-medium uppercase tracking-wider">
+                        <p className="text-muted border-border/20 border-b pb-2 text-[10px] font-medium uppercase tracking-wider">
                           Payment Details
                         </p>
                         <div className="space-y-2">
@@ -440,8 +488,7 @@ export default function BuyerOrdersPage() {
                               </Button>
                             </div>
                           )}
-                          {(order.status === 'PENDING' ||
-                            order.status === 'AWAITING_PAYMENT') && (
+                          {(order.status === 'PENDING' || order.status === 'AWAITING_PAYMENT') && (
                             <div className="pt-2">
                               <Button
                                 variant="ghost"
@@ -457,18 +504,22 @@ export default function BuyerOrdersPage() {
                       </div>
                     </div>
 
-                    <div className="mt-6 flex items-center justify-between border-t border-border/30 pt-6 gap-2 flex-wrap">
+                    <div className="border-border/30 mt-6 flex flex-wrap items-center justify-between gap-2 border-t pt-6">
                       <div>
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="mb-1 flex items-center gap-2">
                           <p className="text-muted text-[10px] font-medium uppercase tracking-wider">
                             Total Amount
                           </p>
-                          <span className="text-[9px] px-1.5 py-0.2 rounded bg-foreground/10 text-foreground font-semibold">
+                          <span className="py-0.2 bg-foreground/10 text-foreground rounded px-1.5 text-[9px] font-semibold">
                             Incl. 4% Escrow Fee
                           </span>
                         </div>
                         <p className="text-primary text-lg font-medium leading-none">
-                          GH₵{parseFloat(order.total_amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          GH₵
+                          {parseFloat(order.total_amount).toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
@@ -477,16 +528,20 @@ export default function BuyerOrdersPage() {
                             variant="secondary"
                             size="sm"
                             onClick={() => setReceiptOrder(order)}
-                            className="h-9 px-3.5 rounded-xl text-[10px] font-medium uppercase tracking-wider gap-1.5"
+                            className="h-9 gap-1.5 rounded-xl px-3.5 text-[10px] font-medium uppercase tracking-wider"
                           >
-                            <Receipt className="w-3.5 h-3.5" />
+                            <Receipt className="h-3.5 w-3.5" />
                             Receipt
                           </Button>
                         )}
                         <Link href={`/orders/${order.id}`}>
-                          <Button variant="secondary" size="sm" className="h-9 px-5 rounded-xl text-[10px] font-medium uppercase tracking-wider gap-2">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            className="h-9 gap-2 rounded-xl px-5 text-[10px] font-medium uppercase tracking-wider"
+                          >
                             View Details
-                            <ChevronRight className="w-3.5 h-3.5" />
+                            <ChevronRight className="h-3.5 w-3.5" />
                           </Button>
                         </Link>
                       </div>
@@ -495,7 +550,7 @@ export default function BuyerOrdersPage() {
                 </motion.div>
               ))
             ) : (
-              <div className="bg-surface/20 space-y-4 rounded-3xl py-20 text-center border-0 shadow-none">
+              <div className="bg-surface/20 space-y-4 rounded-3xl border-0 py-20 text-center shadow-none">
                 <Package className="text-muted mx-auto h-12 w-12 opacity-10" />
                 <div className="space-y-1">
                   <p className="text-muted text-[11px] font-medium uppercase tracking-wider">

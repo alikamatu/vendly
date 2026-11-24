@@ -46,8 +46,6 @@ const SELL_LINKS: FooterLink[] = [
   { label: 'Sell on Verndly', href: '/sell' },
   { label: 'Jumia vs Verndly Fees', href: '/blog/jumia-seller-fees-ghana-2026-vs-verndly' },
   { label: 'Seller Verification', href: '/seller-verification' },
-  { label: 'Seller Dashboard', href: '/dashboard' },
-  { label: 'Pro Membership', href: '/dashboard/settings' },
 ];
 
 const SUPPORT_LINKS: FooterLink[] = [
@@ -64,7 +62,7 @@ const LEGAL_LINKS: FooterLink[] = [
   { label: 'Privacy Policy', href: '/privacy' },
   { label: 'Returns & Refunds', href: '/returns' },
   { label: 'Shipping Policy', href: '/shipping' },
-  { label: 'Payment Security', href: '/account/security' },
+  { label: 'Payment Security', href: '/buyer-protection' },
 ];
 
 const SOCIALS = [

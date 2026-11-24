@@ -151,4 +151,19 @@ Append one entry per loop. Newest at the bottom.
   - `pnpm --filter @vendly/web type-check` — 0 errors.
 - NEEDS-HUMAN:
   - **PD-05**: Confirm garment type, real color (currently Red vs title Pink/Rose White), gender (`Women's` vs `Unisex`), and a ≥ 20 char description with the seller for `/product/29e33ade-701f-4731-9394-71346e4b6244`, then fill placeholders and approve running `scripts/data-fixes/T12-pd05-women-pink-rose.sql`.
-- Commit: pending (see git log for `fix(t12): ... [pd-05, pd-06]`)
+- Commit: `065a59e`
+
+### 2026-11-24 — T13 (SW-05, SW-06, SW-07, TX-04) — [~]
+
+- Changed:
+  - **SW-05**: Updated `apps/web/public/manifest.json` (`name`/`short_name` → `"Verndly"`), `apps/web/app/layout.tsx` (`apple-mobile-web-app-title` → `"Verndly"`), `apps/web/components/pwa/PwaInstallPrompt.tsx` (all user-facing copy & alt text → `Verndly`), `apps/web/public/sw.js` (`verndly-pwa-v3`), and `apps/web/app/dashboard/products/import/page.tsx` sample CSV brand → `Verndly`.
+  - **SW-06**: Updated Footer Legal `"Payment Security"` in `apps/web/components/layout/Footer.tsx` from `/account/security` to public `/buyer-protection`.
+  - **SW-07**: Hid public `"Pro Membership"` and auth-walled `"Seller Dashboard"` links in `apps/web/components/layout/Footer.tsx`, removed the auth-walled `"Pro features"` section from `apps/web/app/help/page.tsx`, and removed the unconfirmed Pro pricing entry from `apps/web/lib/content/faq.ts` pending owner confirmation of real Pro price and benefits.
+  - **TX-04**: Added anchored public FAQ explainers (`#tracking-your-order`, `#seller-payouts`) in `apps/web/lib/content/faq.ts` and `apps/web/app/faq/page.tsx`; pointed all Help Center links in `apps/web/app/help/page.tsx` to public routes (no auth walls or 404s when signed out); updated `apps/web/app/orders/page.tsx` and `apps/web/components/auth/ProtectedRoute.tsx` to show `"Sign in to view your orders"` / `"Sign in to continue"` instead of an infinite loader or `"Checking access…"`.
+- Verified:
+  - `git grep -n "Vendly" apps/web/` — 0 user-facing matches.
+  - `git grep -ni "Checking access" apps/web/` — 0 matches.
+  - `pnpm --filter @vendly/web type-check` — 0 errors.
+- NEEDS-HUMAN:
+  - **SW-07**: Confirm the real Verndly Pro price and included benefits so we can publish a public `/pricing` page (and re-enable the footer/Help links pointing to `/pricing`).
+- Commit: pending (see git log for `fix(t13): ... [sw-05, sw-06, sw-07, tx-04]`)

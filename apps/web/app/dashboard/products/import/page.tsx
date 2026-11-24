@@ -45,7 +45,7 @@ const TEMPLATE_ROWS = [
     'new',
     '12',
     'Clothing',
-    'Vendly',
+    'Verndly',
     'linen|summer|menswear',
     'Lightweight breathable linen shirt.',
     'draft',
@@ -58,7 +58,7 @@ const TEMPLATE_ROWS = [
     'new',
     '30',
     'Home & Kitchen',
-    'Vendly',
+    'Verndly',
     'kitchen|gift|ceramics',
     'Handmade stoneware mug, dishwasher safe.',
     'draft',
@@ -71,9 +71,7 @@ function csvEscape(v: string) {
 }
 
 function buildTemplate(): string {
-  return [TEMPLATE_HEADERS, ...TEMPLATE_ROWS]
-    .map((r) => r.map(csvEscape).join(','))
-    .join('\n');
+  return [TEMPLATE_HEADERS, ...TEMPLATE_ROWS].map((r) => r.map(csvEscape).join(',')).join('\n');
 }
 
 interface RowResult {
@@ -174,36 +172,40 @@ export default function BulkImportPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6 px-4 py-8 sm:px-6">
       {/* Header */}
       <div>
         <Link
           href="/dashboard/products"
-          className="text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)] hover:text-[var(--color-foreground)] inline-flex items-center gap-1.5 transition-colors group mb-3"
+          className="group mb-3 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)] transition-colors hover:text-[var(--color-foreground)]"
         >
-          <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+          <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" />
           Back to products
         </Link>
-        <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-[var(--color-foreground)]">
+        <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-foreground)] sm:text-3xl">
           Bulk CSV Import
         </h1>
-        <p className="text-xs sm:text-sm text-[var(--color-muted)] mt-1">
-          Upload a CSV file to add dozens of product listings in seconds. Product photos and videos can be added after import.
+        <p className="mt-1 text-xs text-[var(--color-muted)] sm:text-sm">
+          Upload a CSV file to add dozens of product listings in seconds. Product photos and videos
+          can be added after import.
         </p>
       </div>
 
       {/* Step 1: Download Template */}
-      <Card className="p-6 space-y-4 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl" hoverEffect={false}>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <Card
+        className="space-y-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6"
+        hoverEffect={false}
+      >
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[var(--color-accent)]/10 text-[var(--color-accent)] flex items-center justify-center shrink-0">
-              <FileSpreadsheet className="w-5 h-5" />
+            <div className="bg-[var(--color-accent)]/10 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[var(--color-accent)]">
+              <FileSpreadsheet className="h-5 w-5" />
             </div>
             <div>
               <div className="text-sm font-semibold text-[var(--color-foreground)]">
                 Step 1: Download Sample CSV Template
               </div>
-              <div className="text-xs text-[var(--color-muted)] mt-0.5">
+              <div className="mt-0.5 text-xs text-[var(--color-muted)]">
                 Formatted with required headers, accepted enums, and 2 sample rows.
               </div>
             </div>
@@ -213,37 +215,46 @@ export default function BulkImportPage() {
             onClick={downloadTemplate}
             className="gap-2 rounded-xl text-xs font-semibold"
           >
-            <Download className="w-4 h-4" /> Download Template (.csv)
+            <Download className="h-4 w-4" /> Download Template (.csv)
           </Button>
         </div>
 
         {/* Column Specs */}
-        <div className="bg-[var(--color-background)] border border-[var(--color-border)] p-4 rounded-xl space-y-2 text-xs">
-          <div className="font-semibold text-[var(--color-foreground)] flex items-center gap-1.5">
-            <HelpCircle className="w-3.5 h-3.5 text-[var(--color-accent)]" /> Expected Column Headers
+        <div className="space-y-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-4 text-xs">
+          <div className="flex items-center gap-1.5 font-semibold text-[var(--color-foreground)]">
+            <HelpCircle className="h-3.5 w-3.5 text-[var(--color-accent)]" /> Expected Column
+            Headers
           </div>
-          <p className="text-[11px] font-mono text-[var(--color-muted)] bg-[var(--color-surface)] px-2.5 py-1.5 rounded-lg border border-[var(--color-border)] overflow-x-auto whitespace-nowrap">
-            title, price, original_price, currency, condition, quantity_available, category, brand, tags, description, status
+          <p className="overflow-x-auto whitespace-nowrap rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1.5 font-mono text-[11px] text-[var(--color-muted)]">
+            title, price, original_price, currency, condition, quantity_available, category, brand,
+            tags, description, status
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-[var(--color-muted)] pt-1">
+          <div className="grid grid-cols-1 gap-2 pt-1 text-[11px] text-[var(--color-muted)] sm:grid-cols-2">
             <div>
-              <span className="font-semibold text-[var(--color-foreground)]">Mandatory:</span> title, price, category
+              <span className="font-semibold text-[var(--color-foreground)]">Mandatory:</span>{' '}
+              title, price, category
             </div>
             <div>
-              <span className="font-semibold text-[var(--color-foreground)]">Condition:</span> new, used, refurbished
+              <span className="font-semibold text-[var(--color-foreground)]">Condition:</span> new,
+              used, refurbished
             </div>
             <div>
-              <span className="font-semibold text-[var(--color-foreground)]">Status:</span> active, draft
+              <span className="font-semibold text-[var(--color-foreground)]">Status:</span> active,
+              draft
             </div>
             <div>
-              <span className="font-semibold text-[var(--color-foreground)]">Tags:</span> pipe-separated (e.g. <code>shoes|leather|formal</code>)
+              <span className="font-semibold text-[var(--color-foreground)]">Tags:</span>{' '}
+              pipe-separated (e.g. <code>shoes|leather|formal</code>)
             </div>
           </div>
         </div>
       </Card>
 
       {/* Step 2: Upload CSV */}
-      <Card className="p-6 space-y-4 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl" hoverEffect={false}>
+      <Card
+        className="space-y-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6"
+        hoverEffect={false}
+      >
         <div className="text-sm font-semibold text-[var(--color-foreground)]">
           Step 2: Upload Completed CSV File
         </div>
@@ -253,12 +264,12 @@ export default function BulkImportPage() {
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           onClick={() => inputRef.current?.click()}
-          className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-colors ${
+          className={`cursor-pointer rounded-2xl border-2 border-dashed p-8 text-center transition-colors ${
             isDragging
-              ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/5'
+              ? 'bg-[var(--color-accent)]/5 border-[var(--color-accent)]'
               : file
                 ? 'border-emerald-500/40 bg-emerald-500/[0.02]'
-                : 'border-[var(--color-border)] hover:border-[var(--color-foreground)]/30 hover:bg-[var(--color-background)]/50'
+                : 'hover:border-[var(--color-foreground)]/30 hover:bg-[var(--color-background)]/50 border-[var(--color-border)]'
           }`}
         >
           <input
@@ -272,13 +283,15 @@ export default function BulkImportPage() {
             }}
           />
 
-          <div className="w-12 h-12 rounded-xl bg-[var(--color-background)] border border-[var(--color-border)] flex items-center justify-center mx-auto mb-3">
-            <Upload className={`w-5 h-5 ${file ? 'text-emerald-500' : 'text-[var(--color-muted)]'}`} />
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-background)]">
+            <Upload
+              className={`h-5 w-5 ${file ? 'text-emerald-500' : 'text-[var(--color-muted)]'}`}
+            />
           </div>
 
           {file ? (
             <div className="space-y-1">
-              <div className="text-sm font-bold text-[var(--color-foreground)] flex items-center justify-center gap-2">
+              <div className="flex items-center justify-center gap-2 text-sm font-bold text-[var(--color-foreground)]">
                 <span>{file.name}</span>
                 <button
                   type="button"
@@ -286,9 +299,9 @@ export default function BulkImportPage() {
                     e.stopPropagation();
                     setFile(null);
                   }}
-                  className="p-1 rounded-full hover:bg-[var(--color-border)] text-[var(--color-muted)]"
+                  className="rounded-full p-1 text-[var(--color-muted)] hover:bg-[var(--color-border)]"
                 >
-                  <X className="w-3.5 h-3.5" />
+                  <X className="h-3.5 w-3.5" />
                 </button>
               </div>
               <div className="text-xs text-[var(--color-muted)]">
@@ -330,15 +343,15 @@ export default function BulkImportPage() {
           <Button
             onClick={upload}
             disabled={!file || uploading}
-            className="gap-2 rounded-xl text-xs font-semibold ml-auto"
+            className="ml-auto gap-2 rounded-xl text-xs font-semibold"
           >
             {uploading ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" /> Importing CSV...
+                <Loader2 className="h-4 w-4 animate-spin" /> Importing CSV...
               </>
             ) : (
               <>
-                <Upload className="w-4 h-4" /> Import Products
+                <Upload className="h-4 w-4" /> Import Products
               </>
             )}
           </Button>
@@ -347,25 +360,32 @@ export default function BulkImportPage() {
 
       {/* Step 3: Results & Audit Table */}
       {result && (
-        <Card className="p-6 space-y-4 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl" hoverEffect={false}>
+        <Card
+          className="space-y-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6"
+          hoverEffect={false}
+        >
           <Alert
             variant={result.summary.failed > 0 ? 'warning' : 'success'}
-            title={result.summary.failed > 0 ? 'Import Finished with Warnings' : 'Import Finished Successfully'}
+            title={
+              result.summary.failed > 0
+                ? 'Import Finished with Warnings'
+                : 'Import Finished Successfully'
+            }
             message={`${result.summary.created} products created, ${result.summary.failed} failed out of ${result.summary.total} total rows processed.`}
           />
 
-          <div className="border border-[var(--color-border)] rounded-xl overflow-hidden text-xs">
-            <div className="grid grid-cols-12 px-4 py-2.5 text-[10px] uppercase font-bold tracking-wider text-[var(--color-muted)] bg-[var(--color-background)] border-b border-[var(--color-border)]">
+          <div className="overflow-hidden rounded-xl border border-[var(--color-border)] text-xs">
+            <div className="grid grid-cols-12 border-b border-[var(--color-border)] bg-[var(--color-background)] px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-[var(--color-muted)]">
               <div className="col-span-1">Row</div>
               <div className="col-span-1">Status</div>
               <div className="col-span-5">Product Title</div>
               <div className="col-span-5">Report / Error</div>
             </div>
-            <div className="divide-y divide-[var(--color-border)] max-h-96 overflow-y-auto">
+            <div className="max-h-96 divide-y divide-[var(--color-border)] overflow-y-auto">
               {result.results.map((r) => (
                 <div
                   key={r.row}
-                  className={`grid grid-cols-12 px-4 py-3 items-center ${
+                  className={`grid grid-cols-12 items-center px-4 py-3 ${
                     r.ok ? 'bg-[var(--color-surface)]' : 'bg-[var(--color-danger)]/[0.04]'
                   }`}
                 >
@@ -374,21 +394,23 @@ export default function BulkImportPage() {
                   </div>
                   <div className="col-span-1">
                     {r.ok ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                     ) : (
-                      <AlertCircle className="w-4 h-4 text-[var(--color-danger)]" />
+                      <AlertCircle className="h-4 w-4 text-[var(--color-danger)]" />
                     )}
                   </div>
-                  <div className="col-span-5 font-semibold text-[var(--color-foreground)] truncate pr-2">
+                  <div className="col-span-5 truncate pr-2 font-semibold text-[var(--color-foreground)]">
                     {r.title || '—'}
                   </div>
-                  <div className="col-span-5 text-[var(--color-muted)] text-[11px]">
+                  <div className="col-span-5 text-[11px] text-[var(--color-muted)]">
                     {r.ok ? (
-                      <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                      <span className="font-medium text-emerald-600 dark:text-emerald-400">
                         Imported successfully
                       </span>
                     ) : (
-                      <span className="text-[var(--color-danger)]">{r.error || 'Validation error'}</span>
+                      <span className="text-[var(--color-danger)]">
+                        {r.error || 'Validation error'}
+                      </span>
                     )}
                   </div>
                 </div>
