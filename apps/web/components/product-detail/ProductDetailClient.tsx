@@ -36,6 +36,7 @@ import VariantPicker, {
 } from '@/components/product-detail/VariantPicker';
 import QuickCheckoutModal from '@/components/product-detail/QuickCheckoutModal';
 import ShareProductModal from '@/components/product-detail/ShareProductModal';
+import { isProductTrending } from '@/lib/product-badges';
 import { toast } from 'sonner';
 
 type MediaItem = { type: 'image'; url: string } | { type: 'video'; url: string };
@@ -442,16 +443,20 @@ export default function ProductDetailClient({
             transition={{ delay: 0.2 }}
             className="space-y-4"
           >
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-primary text-[10px] font-medium uppercase tracking-wider">
-                <Sparkles className="mr-1 inline h-3 w-3" /> Trending Now
-              </span>
-              {product.category && (
-                <span className="bg-surface border-border/50 text-muted rounded-full border px-3 py-1 text-[10px] font-normal uppercase tracking-wider">
-                  {product.category}
-                </span>
-              )}
-            </div>
+            {(isProductTrending(product) || product.category) && (
+              <div className="flex flex-wrap items-center gap-2">
+                {isProductTrending(product) && (
+                  <span className="text-primary text-[10px] font-medium uppercase tracking-wider">
+                    <Sparkles className="mr-1 inline h-3 w-3" /> Trending Now
+                  </span>
+                )}
+                {product.category && (
+                  <span className="bg-surface border-border/50 text-muted rounded-full border px-3 py-1 text-[10px] font-normal uppercase tracking-wider">
+                    {product.category}
+                  </span>
+                )}
+              </div>
+            )}
             <h1 className="text-xl font-medium uppercase leading-tight tracking-tighter">
               {product.title ?? 'Product'}
             </h1>

@@ -135,4 +135,20 @@ Append one entry per loop. Newest at the bottom.
 - Verified:
   - `git grep -ni "Verified category" apps/web/` — 0 matches.
   - `pnpm --filter @vendly/web type-check` — 0 errors.
-- Commit: pending (see git log for `fix(t11): ... [ct-02]`)
+- Commit: `af5aae3`
+
+### 2026-11-24 — T12 (PD-05, PD-06) — [~]
+
+- Changed:
+  - `apps/web/lib/product-badges.ts` & `apps/web/lib/product-badges.test.mjs`: added conservative `TRENDING_THRESHOLDS` + `isProductTrending()` (requires in-stock plus `views_7d >= 50` OR `orders_7d >= 5` OR `views_count >= 100 && rating_count >= 3`) and shared Ghana-accurate `SERVICE_AREA_LABELS` (`SAME_CITY: 'Same city only'`, `NEARBY_STATES: 'Nearby areas'`, `NATIONWIDE: 'Delivery set by seller'`).
+  - `apps/web/components/product-detail/ProductDetailClient.tsx`: gated `"Trending Now"` badge behind `isProductTrending(product)` so 0-view / 0-review listings never show it.
+  - `apps/web/components/product-detail/SellerCard.tsx`, `apps/web/components/store/StorefrontHeader.tsx`, `apps/web/components/onboarding/ServiceAreaSelect.tsx`, `apps/web/hooks/useProductsBrowser.ts`: replaced `"Nearby states"` with `"Nearby areas"` and aligned `"Nationwide"` labels to `"Delivery set by seller"` / `"Inter-regional (seller-arranged)"` per T08.
+  - `scripts/data-fixes/T12-pd05-women-pink-rose.sql`: committed (NOT run) placeholder SQL script for `/product/29e33ade-701f-4731-9394-71346e4b6244`.
+  - Confirmed seller form description guard (≥ 20 chars on publish) is enforced in `apps/web/components/products/ProductForm.tsx` (added in T03).
+- Verified:
+  - `node --test apps/web/lib/product-badges.test.mjs` — passed.
+  - `git grep -ni "Nearby states" apps/ packages/` — 0 matches.
+  - `pnpm --filter @vendly/web type-check` — 0 errors.
+- NEEDS-HUMAN:
+  - **PD-05**: Confirm garment type, real color (currently Red vs title Pink/Rose White), gender (`Women's` vs `Unisex`), and a ≥ 20 char description with the seller for `/product/29e33ade-701f-4731-9394-71346e4b6244`, then fill placeholders and approve running `scripts/data-fixes/T12-pd05-women-pink-rose.sql`.
+- Commit: pending (see git log for `fix(t12): ... [pd-05, pd-06]`)

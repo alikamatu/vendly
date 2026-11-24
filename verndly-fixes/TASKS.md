@@ -16,7 +16,7 @@ Order is the execution order. Take the first `[ ]` row.
 | T09 | [~]    | tasks/T09-homepage-rails.md              | P1               | HM-03, HM-04, PD-04               |
 | T10 | [~]    | tasks/T10-escrow-and-fee-copy.md         | P1               | SW-03, SL-03                      |
 | T11 | [x]    | tasks/T11-categories-empty.md            | P1               | CT-02                             |
-| T12 | [ ]    | tasks/T12-product-page-quality.md        | P1               | PD-05, PD-06                      |
+| T12 | [~]    | tasks/T12-product-page-quality.md        | P1               | PD-05, PD-06                      |
 | T13 | [ ]    | tasks/T13-pwa-footer-help-links.md       | P2               | SW-05, SW-06, SW-07, TX-04        |
 | T14 | [ ]    | tasks/T14-store-and-listing-polish.md    | P2               | ST-04, PD-08                      |
 | T15 | [ ]    | tasks/T15-seo-technical.md               | P2               | PD-07, TX-01, TX-02, TX-03        |

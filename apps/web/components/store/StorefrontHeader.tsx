@@ -52,7 +52,7 @@ export interface StorefrontHeaderData {
 const SERVICE_AREA_LABEL: Record<NonNullable<StorefrontHeaderData['service_area']>, string> = {
   SAME_CITY: 'Same city only',
   NEARBY_STATES: 'Nearby areas',
-  NATIONWIDE: 'Nationwide delivery',
+  NATIONWIDE: 'Delivery set by seller',
 };
 
 const DELIVERY_LABEL: Record<NonNullable<StorefrontHeaderData['avg_delivery_time']>, string> = {

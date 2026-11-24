@@ -423,8 +423,8 @@ function readParams(sp: URLSearchParams) {
 
 export const SERVICE_AREA_LABEL: Record<ServiceAreaFilter, string> = {
   SAME_CITY: 'Same city only',
-  NEARBY_STATES: 'Nearby states',
-  NATIONWIDE: 'Nationwide',
+  NEARBY_STATES: 'Nearby areas',
+  NATIONWIDE: 'Delivery set by seller',
 };
 
 export const DELIVERY_TIME_LABEL: Record<DeliveryTimeFilter, string> = {

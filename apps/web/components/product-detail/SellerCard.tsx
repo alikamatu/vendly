@@ -4,12 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Sparkles, BadgeCheck, MapPin, Clock, Truck } from 'lucide-react';
 import Card from '@/components/ui/Card';
-
-const SERVICE_AREA_LABEL: Record<string, string> = {
-  SAME_CITY: 'Same city only',
-  NEARBY_STATES: 'Nearby states',
-  NATIONWIDE: 'Nationwide',
-};
+import { getServiceAreaLabel } from '@/lib/product-badges';
 
 const DELIVERY_LABEL: Record<string, string> = {
   SAME_DAY: 'Same day',
@@ -86,9 +81,7 @@ export default function SellerCard({ seller }: SellerCardProps) {
               <div className="flex flex-wrap gap-1.5 pt-1">
                 {seller.location && <Chip icon={MapPin}>{seller.location}</Chip>}
                 {seller.service_area && (
-                  <Chip icon={Truck}>
-                    {SERVICE_AREA_LABEL[seller.service_area] ?? seller.service_area}
-                  </Chip>
+                  <Chip icon={Truck}>{getServiceAreaLabel(seller.service_area)}</Chip>
                 )}
                 {seller.avg_delivery_time && (
                   <Chip icon={Clock}>
