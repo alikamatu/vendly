@@ -19,6 +19,7 @@ import JsonLd from '@/components/seo/JsonLd';
 import FeeCalculator from '@/components/editorial/FeeCalculator';
 import { EscrowFlowSvg } from '@/components/editorial/VisualDiagrams';
 import { COVERAGE_COPY } from '@/lib/copy/coverage';
+import { ESCROW_AND_FEE_COPY } from '@/lib/copy/escrow-and-fees';
 
 export const metadata = buildMetadata({
   title: 'Sell on Verndly — Verified Store, Flat 4% Fee, Paid via Escrow',
@@ -38,8 +39,8 @@ export const metadata = buildMetadata({
 const SELLER_METRICS = [
   {
     value: '4%',
-    label: 'Flat fee, all-in',
-    detail: 'Includes Paystack MoMo & card processing. Zero buyer surcharge.',
+    label: 'Flat platform fee',
+    detail: ESCROW_AND_FEE_COPY.feeSettlementDisclosure,
   },
   {
     value: '96%',
@@ -152,8 +153,7 @@ const SELLER_FAQS = [
   },
   {
     question: "Does the 4% fee include Paystack's Mobile Money and card fee?",
-    answer:
-      "Yes. Because checkout funds are collected into Verndly's Paystack escrow ledger first, Paystack's 1.95% collection cost is absorbed within our flat 4% fee. Sellers are not charged a separate Paystack processing fee on top.",
+    answer: `Yes. ${ESCROW_AND_FEE_COPY.feeSettlementDisclosure}`,
   },
   {
     question: 'Do I need a registered business (ORC) to start selling on Verndly?',

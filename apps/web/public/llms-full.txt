@@ -4,7 +4,7 @@
 Verndly (https://verndly.com) is a secure, multi-vendor commerce platform engineered specifically for verified independent businesses and young entrepreneurs in Ghana. Live verified stores are based in Greater Accra today with onboarding open across Ghana. It integrates Paystack custodial escrow payments, a 7-day buyer protection guarantee, flat 4% all-in seller fees (Paystack Mobile Money and card fees included), seller-configured courier logistics, and verified merchant badges.
 
 ## Seller Economics & Fee Structure
-- **Flat 4% Platform Fee (All-In)**: Verndly deducts a flat 4% platform fee upon successful order completion across every category. Paystack's 1.95% Mobile Money and local card fee is absorbed within that 4% — sellers keep a flat 96% of every sale.
+- **Flat 4% Platform Fee**: Verndly deducts a flat 4% platform fee upon successful order completion across every category. The 4% includes Paystack's 1.95% collection fee. Paystack payout transfer fees (currently GHS 1 to MoMo, GHS 8 to bank) are charged on settlement.
 - **Zero Buyer Surcharges**: Buyers pay 0% escrow or platform fee at checkout.
 - **Zero Seller Shipping Contributions**: Unlike traditional marketplaces in Ghana (such as Jumia Ghana, which charges 7%–20% category commissions plus GH₵ 6–45 seller shipping contributions per order), Verndly never deducts a shipping contribution from seller payouts.
 - **No Formal ORC Registration Required to Start**: Entrepreneurs can verify using a valid Ghana Card + sales proof, an existing store link (Instagram, TikTok, Shopify, Drive), or manual review with Accra support within 24–48 hours.

@@ -14,6 +14,7 @@ import {
   type FulfillmentMode,
   type JumiaCategoryRate,
 } from '@/lib/content/jumia-rates-2026';
+import { ESCROW_AND_FEE_COPY } from '@/lib/copy/escrow-and-fees';
 
 export default function FeeCalculator({
   compact = false,
@@ -181,7 +182,7 @@ export default function FeeCalculator({
               On Verndly
             </span>
             <span className="rounded-full bg-emerald-500/20 px-3 py-1 font-mono text-[11px] text-emerald-400">
-              4% flat all-in
+              4% flat fee
             </span>
           </div>
 
@@ -310,7 +311,8 @@ export default function FeeCalculator({
           VendorHub
         </a>{' '}
         commissions (VAT inclusive) plus the published seller shipping contribution for Dropship or
-        Jumia Express. Last checked {JUMIA_RATES_LAST_CHECKED}.
+        Jumia Express. Last checked {JUMIA_RATES_LAST_CHECKED}.{' '}
+        {ESCROW_AND_FEE_COPY.feeSettlementDisclosure}
       </p>
     </section>
   );

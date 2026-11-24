@@ -155,7 +155,7 @@ export const CORE_BLOG_POSTS: BlogPost[] = [
       {
         question: "Does Verndly's 4% fee include Paystack Mobile Money charges?",
         answer:
-          'Yes. Verndly collects checkout payments into its Paystack escrow ledger and deducts a single flat 4% fee upon settlement. Sellers receive 96% of the order value without an extra 1.95% Paystack fee deducted on top.',
+          "Yes. The 4% includes Paystack's 1.95% collection fee. Paystack payout transfer fees (currently GHS 1 to MoMo, GHS 8 to bank) are charged on settlement.",
       },
       {
         question: 'Are there setup or monthly fees to open a store on Verndly?',

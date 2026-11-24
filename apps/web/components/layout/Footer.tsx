@@ -25,6 +25,7 @@ import {
 import { contactApi } from '@/lib/api/contact';
 import { SUPPORT_CONTACT } from '@/lib/contact';
 import { COVERAGE_COPY } from '@/lib/copy/coverage';
+import { ESCROW_AND_FEE_COPY } from '@/lib/copy/escrow-and-fees';
 import Spinner from '@/components/ui/Spinner';
 
 interface FooterLink {
@@ -93,7 +94,7 @@ const TRUST_METRICS = [
   {
     Icon: ShieldCheck,
     title: 'Escrow Protection',
-    desc: 'Payments held safely until order confirmation',
+    desc: ESCROW_AND_FEE_COPY.escrowTrustBarDesc,
   },
   {
     Icon: Percent,

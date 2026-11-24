@@ -105,4 +105,22 @@ Append one entry per loop. Newest at the bottom.
   - `git grep -niE "Going fast|across the Verndly marketplace" apps/` — 0 matches.
 - NEEDS-HUMAN:
   - **PD-04**: Confirm with the seller whether to keep and restock `/product/c5537034-4bfd-4460-b1bc-c469ab1827bb` or archive it, and approve running `scripts/data-fixes/T09-pd04-zip-up-jacket.sql`.
-- Commit: pending (see git log for `fix(t09): ... [hm-03, hm-04, pd-04]`)
+- Commit: `d765d4e`
+
+### 2026-11-24 — T10 (SW-03, SL-03) — [~]
+
+- Changed:
+  - `apps/web/lib/copy/escrow-and-fees.ts`: added shared `ESCROW_AND_FEE_COPY` single source of truth for escrow timing (`Payments held in Paystack escrow until delivery and the 7-day inspection window`) and Paystack payout transfer fee disclosure (`The 4% includes Paystack's 1.95% collection fee. Paystack payout transfer fees (currently GHS 1 to MoMo, GHS 8 to bank) are charged on settlement.`).
+  - `apps/web/components/layout/Footer.tsx`: replaced `"Payments held safely until order confirmation"` in the global trust bar with `ESCROW_AND_FEE_COPY.escrowTrustBarDesc`.
+  - `apps/web/app/sell/page.tsx`: updated the 4% fee summary card and Paystack fee FAQ with `ESCROW_AND_FEE_COPY.feeSettlementDisclosure` and removed `"all-in"` / `"not charged a separate Paystack processing fee on top"` ambiguity.
+  - `apps/web/components/editorial/FeeCalculator.tsx`: updated the fee pill (`4% flat fee`) and methodology footnote to include `ESCROW_AND_FEE_COPY.feeSettlementDisclosure` so calculator copy matches `/sell`.
+  - `apps/web/lib/content/blog-posts-core.ts` & `apps/web/public/llms-full.txt`: aligned fee disclosure wording.
+- Payout-fee code investigation (`apps/api/src/payments/payments.service.ts:617-697`):
+  - `releaseEscrowForOrder` calculates `fee = gross * 4%`, `net = gross - fee` (96%), and `processTransferToSeller` calls Paystack `POST /transfer` with `source: 'balance'` and `amount: Math.round(Number(net) * 100)`.
+  - In code today, Verndly does **not** deduct Paystack's transfer fee (GHS 1 MoMo / GHS 8 bank) from `net` — Paystack bills the transfer fee against Verndly's Paystack balance. Applied the safe default disclosure per T10 pending explicit owner confirmation.
+- Verified:
+  - `git grep -ni "Payments held safely until order confirmation" apps/` — 0 matches.
+  - `pnpm --filter @vendly/web type-check` — 0 errors.
+- NEEDS-HUMAN:
+  - **SL-03**: Confirm whether Verndly's business policy is to absorb Paystack payout transfer fees (GHS 1 MoMo / GHS 8 bank, which matches current `processTransferToSeller` behavior) — if so, switch `ESCROW_AND_FEE_COPY.feeSettlementDisclosure` to state that Verndly absorbs them; otherwise update payout logic to deduct transfer fees on settlement.
+- Commit: pending (see git log for `fix(t10): ... [sw-03, sl-03]`)
