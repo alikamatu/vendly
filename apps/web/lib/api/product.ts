@@ -124,8 +124,8 @@ export const productApi = {
     return res.data;
   },
 
-  async getProducts() {
-    const res = await api.get<any[]>('/products');
+  async getProducts(limit = 100) {
+    const res = await api.get<any[]>(`/products?page=1&limit=${limit}`);
     return res.data;
   },
 
@@ -144,18 +144,31 @@ export const productApi = {
       if (v === undefined || v === null || v === '') continue;
       qs.set(k, typeof v === 'boolean' ? String(v) : String(v));
     }
-    const res = await api.get<{ data?: BrowseProduct[]; meta?: BrowseProductsResponse['meta'] }>(
-      `/products?${qs.toString()}`,
-      { raw: true },
-    );
-    const json = res.data;
+    const res = await api.get<any>(`/products?${qs.toString()}`, { raw: true });
+    const rawJson = res.data;
+    const payload =
+      rawJson &&
+      typeof rawJson === 'object' &&
+      !Array.isArray(rawJson.data) &&
+      rawJson.data &&
+      typeof rawJson.data === 'object'
+        ? rawJson.data
+        : rawJson;
+    const items = Array.isArray(payload?.data)
+      ? payload.data
+      : Array.isArray(payload)
+        ? payload
+        : [];
+    const metaSource = payload?.meta ?? rawJson?.meta;
     return {
-      data: (json?.data ?? []) as BrowseProduct[],
+      data: items as BrowseProduct[],
       meta: {
-        total: Number(json?.meta?.total ?? 0),
-        page: Number(json?.meta?.page ?? 1),
-        limit: Number(json?.meta?.limit ?? 20),
-        totalPages: Number(json?.meta?.totalPages ?? 1),
+        total: Number(metaSource?.total ?? items.length),
+        page: Number(metaSource?.page ?? params.page ?? 1),
+        limit: Number(metaSource?.limit ?? params.limit ?? 24),
+        totalPages: Number(
+          metaSource?.totalPages ?? Math.max(1, Math.ceil(items.length / (params.limit ?? 24))),
+        ),
       },
     };
   },

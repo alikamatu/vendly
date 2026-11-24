@@ -1,7 +1,7 @@
 import { NotFoundException } from '@nestjs/common';
 import { ProductService } from './product.service';
 import {
-  PUBLIC_PRODUCT_STATUSES,
+  PUBLIC_PRODUCT_STATUS_FILTER,
   isPubliclyVisibleProduct,
   isPubliclyVisibleInStock,
 } from './product-visibility';
@@ -113,7 +113,7 @@ describe('Product public visibility & moderation (T04 / ST-03)', () => {
     expect(findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          status: { in: [...PUBLIC_PRODUCT_STATUSES] },
+          status: PUBLIC_PRODUCT_STATUS_FILTER,
           seller: expect.objectContaining({
             store_link: 'kitchenhub-application',
             user: { is_suspended: false },
@@ -144,7 +144,7 @@ describe('Product public visibility & moderation (T04 / ST-03)', () => {
     expect(findMany).toHaveBeenLastCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          status: { in: [...PUBLIC_PRODUCT_STATUSES] },
+          status: PUBLIC_PRODUCT_STATUS_FILTER,
           quantity_available: { gt: 0 },
         }),
       }),
@@ -154,7 +154,7 @@ describe('Product public visibility & moderation (T04 / ST-03)', () => {
     expect(findMany).toHaveBeenLastCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          status: { in: [...PUBLIC_PRODUCT_STATUSES] },
+          status: PUBLIC_PRODUCT_STATUS_FILTER,
           quantity_available: { gt: 0 },
         }),
       }),

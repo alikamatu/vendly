@@ -4,7 +4,7 @@
  * cleanly for search crawlers and users without failing builds when the API is offline.
  */
 
-import { isPubliclyVisibleInStock } from '@/lib/product-visibility';
+import { isPubliclyVisible, isPubliclyVisibleInStock } from '@/lib/product-visibility';
 
 const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1000').replace(/\/$/, '');
 
@@ -55,6 +55,7 @@ export async function fetchBrowseProductsServer(params?: {
   page?: number;
   limit?: number;
   sort?: string;
+  inStock?: boolean;
 }): Promise<{
   data: any[];
   meta: { total: number; page: number; limit: number; totalPages: number };
@@ -62,7 +63,7 @@ export async function fetchBrowseProductsServer(params?: {
   const qs = new URLSearchParams();
   qs.set('page', String(params?.page || 1));
   qs.set('limit', String(params?.limit || 24));
-  qs.set('in_stock', 'true');
+  if (params?.inStock) qs.set('in_stock', 'true');
   if (params?.category) qs.set('category', params.category);
   if (params?.search) qs.set('search', params.search);
   if (params?.sort) qs.set('sort', params.sort);
@@ -88,7 +89,7 @@ export async function fetchBrowseProductsServer(params?: {
       : Array.isArray(payload)
         ? payload
         : [];
-    const items = rawItems.filter(isPubliclyVisibleInStock);
+    const items = rawItems.filter(params?.inStock ? isPubliclyVisibleInStock : isPubliclyVisible);
     const meta = payload?.meta || {
       total: items.length,
       page: params?.page || 1,

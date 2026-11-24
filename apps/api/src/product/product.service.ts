@@ -13,6 +13,7 @@ import { AuditLogService } from '../audit/audit-log.service';
 import {
   PUBLIC_IN_STOCK_PRODUCT_WHERE,
   PUBLIC_PRODUCT_STATUSES,
+  PUBLIC_PRODUCT_STATUS_FILTER,
   PUBLIC_PRODUCT_WHERE,
   isPubliclyVisibleProduct,
 } from './product-visibility';
@@ -297,12 +298,14 @@ export class ProductService {
           minDiscount !== undefined));
 
     const where: Prisma.ProductWhereInput = {
-      ...(category && { category }),
+      ...(category && {
+        category: { equals: category.trim(), mode: 'insensitive' },
+      }),
       ...(sellerId && { seller_id: sellerId }),
       ...(safePublicStatus
-        ? { status: safePublicStatus }
-        : { status: { in: [...PUBLIC_PRODUCT_STATUSES] } }),
-      ...(brand && { brand }),
+        ? { status: { equals: safePublicStatus, mode: 'insensitive' } }
+        : { status: PUBLIC_PRODUCT_STATUS_FILTER }),
+      ...(brand && { brand: { equals: brand.trim(), mode: 'insensitive' } }),
       ...(condition && { condition }),
       ...(hasVideo === true && { video_url: { not: null } }),
       ...(shouldHideOutOfStock && { quantity_available: { gt: 0 } }),
@@ -632,7 +635,7 @@ export class ProductService {
   async getProductsByStoreLink(link: string) {
     const items = await this.prisma.product.findMany({
       where: {
-        status: { in: [...PUBLIC_PRODUCT_STATUSES] },
+        status: PUBLIC_PRODUCT_STATUS_FILTER,
         seller: {
           store_link: link,
           user: {

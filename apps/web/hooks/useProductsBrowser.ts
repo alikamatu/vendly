@@ -77,8 +77,10 @@ export function useProductsBrowser(
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // Initialize from URL on mount only
+  // Initialize from URL
+  const searchParamsKey = searchParams.toString();
   const initial = useMemo(() => readParams(searchParams), []);
+  const lastPushedQuery = useRef<string | null>(null);
 
   const [search, setSearchValue] = useState(initial.search);
   const [category, setCategory] = useState<string | null>(initial.category);
@@ -102,6 +104,33 @@ export function useProductsBrowser(
     const t = setTimeout(() => setCommittedSearch(search), SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(t);
   }, [search]);
+
+  // Re-sync local filter state when the user navigates externally (e.g. clicking
+  // "Products" in the header after viewing `/products?category=Fashion`, or
+  // clicking another category link).
+  useEffect(() => {
+    if (lastPushedQuery.current !== null && searchParamsKey === lastPushedQuery.current) {
+      return;
+    }
+    const next = readParams(new URLSearchParams(searchParamsKey));
+    setSearchValue(next.search);
+    setCommittedSearch(next.search);
+    setCategory(next.category);
+    setBrand(next.brand);
+    setMinPrice(next.minPrice);
+    setMaxPrice(next.maxPrice);
+    setCondition(next.condition);
+    setInStock(next.inStock);
+    setHasVideo(next.hasVideo);
+    setHasDiscount(next.hasDiscount);
+    setRegion(next.region);
+    setCityId(next.cityId);
+    setServiceArea(next.serviceArea);
+    setDeliveryTime(next.deliveryTime);
+    setSort(next.sort);
+    setPageValue(next.page);
+    lastPushedQuery.current = searchParamsKey;
+  }, [searchParamsKey]);
 
   const setPrice = useCallback((min: number | null, max: number | null) => {
     setMinPrice(min);
@@ -146,6 +175,11 @@ export function useProductsBrowser(
     if (sort !== 'newest') qs.set('sort', sort);
     if (page > 1) qs.set('page', String(page));
     const s = qs.toString();
+    if (s === searchParamsKey) {
+      lastPushedQuery.current = s;
+      return;
+    }
+    lastPushedQuery.current = s;
     router.replace(s ? `${pathname}?${s}` : pathname, { scroll: false });
   }, [
     committedSearch,
@@ -165,6 +199,7 @@ export function useProductsBrowser(
     page,
     pathname,
     router,
+    searchParamsKey,
   ]);
 
   // Fetch

@@ -104,6 +104,7 @@ export class ProductController {
 
   @Get()
   @UseInterceptors(CacheInterceptor)
+  @CacheTTL(15_000)
   async getProducts(
     @Query('page') page?: string,
     @Query('limit') limit?: string,

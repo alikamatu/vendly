@@ -10,8 +10,15 @@ export const PUBLIC_PRODUCT_STATUSES = [
   'approved',
 ] as const;
 
+export const PUBLIC_PRODUCT_STATUS_FILTER: Prisma.StringFilter = {
+  in: [
+    ...PUBLIC_PRODUCT_STATUSES,
+    ...PUBLIC_PRODUCT_STATUSES.map((s) => s.toUpperCase()),
+  ],
+};
+
 export const PUBLIC_PRODUCT_WHERE: Prisma.ProductWhereInput = {
-  status: { in: [...PUBLIC_PRODUCT_STATUSES] },
+  status: PUBLIC_PRODUCT_STATUS_FILTER,
   seller: {
     user: {
       is_suspended: false,
