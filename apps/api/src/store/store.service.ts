@@ -328,8 +328,12 @@ export class StoreService {
     const now = new Date();
     const stores = await this.prisma.sellerProfile.findMany({
       where: {
+        // ST-04: Do not show logo-less stores in Featured modules.
+        logo_url: { not: null },
+        NOT: { logo_url: '' },
         user: {
           is_pro: true,
+          is_suspended: false,
           OR: [{ pro_expires_at: null }, { pro_expires_at: { gt: now } }],
         },
       },

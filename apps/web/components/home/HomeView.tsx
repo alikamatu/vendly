@@ -139,7 +139,7 @@ export default function HomeView({ initialData }: { initialData?: InitialHomeDat
         onSelect={handleCategorySelect}
       />
 
-      {topProVendors.length > 0 && (
+      {topProVendors.some((v) => Boolean(v.logo_url && v.logo_url.trim())) && (
         <section className="relative z-10 mx-auto max-w-7xl px-4 py-8 md:px-8 md:py-12">
           <TopProVendors vendors={topProVendors} />
         </section>

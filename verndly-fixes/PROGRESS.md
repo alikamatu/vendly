@@ -166,4 +166,18 @@ Append one entry per loop. Newest at the bottom.
   - `pnpm --filter @vendly/web type-check` — 0 errors.
 - NEEDS-HUMAN:
   - **SW-07**: Confirm the real Verndly Pro price and included benefits so we can publish a public `/pricing` page (and re-enable the footer/Help links pointing to `/pricing`).
-- Commit: pending (see git log for `fix(t13): ... [sw-05, sw-06, sw-07, tx-04]`)
+- Commit: `a2f66d8`
+
+### 2026-11-24 — T14 (ST-04, PD-08) — [~]
+
+- Changed:
+  - **ST-04 (Featured stores logo filter)**: updated `apps/api/src/store/store.service.ts` (`getTopProVendors`) to require non-null, non-empty `logo_url` (and `is_suspended: false`), and filtered `logo_url` in `apps/web/components/home/TopProVendors.tsx` and `apps/web/components/home/HomeView.tsx`. Verified `StoreCard`, `SellerCard`, and `StorefrontHeader` render clean monogram placeholder avatars elsewhere.
+  - **PD-08 (Numeric shoe sizes)**: created `apps/web/lib/shoe-sizing.ts` (`SHOE_SIZE_OPTIONS` EU 35–47 / UK / US, `isShoeListing`, `resolveSizeFieldOptions`) + unit test `apps/web/lib/shoe-sizing.test.mjs`, and wired it into `apps/web/components/products/ProductForm.tsx` so shoe categories and shoe listings offer numeric EU/UK/US shoe sizes rather than XS–XL.
+  - **Seller outreach & data-fix queue**: created `scripts/data-fixes/seller-requests.md` (message templates for D'Men's wear, Mimi's world Trendz, The Hoodies, and Italian shoes) and unrun placeholder SQL script `scripts/data-fixes/T14-st04-pd08-polish.sql`.
+- Verified:
+  - `node --test apps/web/lib/shoe-sizing.test.mjs` — passed.
+  - `pnpm --filter @vendly/web type-check` and `pnpm --filter @vendly/api run build` — passed.
+- NEEDS-HUMAN:
+  - **ST-04**: Confirm `"Kaneshi"` → `"Kaneshie"` and logo/bio with D'Men's wear (`/s/dmens-wear`), and collect improved bios from Mimi's world Trendz (`/s/mimis-world-trendz`) and The Hoodies (`/s/the-hoodies`) using `scripts/data-fixes/seller-requests.md`.
+  - **PD-08**: Collect EU/UK/US shoe size, color, material, condition, specific title, gender (`Men's`), and description for `/product/48265a0c-2857-4e65-a4d8-d2471974132a`, then fill placeholders and approve running `scripts/data-fixes/T14-st04-pd08-polish.sql`.
+- Commit: pending (see git log for `fix(t14): ... [st-04, pd-08]`)

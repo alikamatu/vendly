@@ -30,6 +30,7 @@ import Alert from '@/components/ui/Alert';
 import imageCompression from 'browser-image-compression';
 import { productApi } from '@/lib/api/product';
 import VariantEditor from '@/components/dashboard/VariantEditor';
+import { resolveSizeFieldOptions } from '@/lib/shoe-sizing';
 import { toast } from 'sonner';
 
 export interface CategoryField {
@@ -732,11 +733,23 @@ export default function ProductForm({
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {selectedCategory.fields.map((field, idx) => {
                 const fieldKey = field.key || field.name || `field_${idx}`;
-                const currentValue =
+                const isSizeField =
+                  fieldKey.toLowerCase() === 'size' || field.name?.toLowerCase() === 'size';
+                const resolvedOptions = isSizeField
+                  ? resolveSizeFieldOptions(formData.category, field.options || [], formData.title)
+                  : Array.from(new Set(field.options || []));
+                const rawValue =
                   formData.attributes[fieldKey] ??
                   (field.name ? formData.attributes[field.name] : undefined) ??
                   (field.key ? formData.attributes[field.key] : undefined) ??
                   '';
+                const currentValue =
+                  field.type === 'select' &&
+                  isSizeField &&
+                  rawValue &&
+                  !resolvedOptions.includes(rawValue)
+                    ? ''
+                    : rawValue;
 
                 return (
                   <div key={fieldKey} className="space-y-1.5">
@@ -745,7 +758,7 @@ export default function ProductForm({
                         label={field.label}
                         value={currentValue}
                         onChange={(val) => handleAttributeChange(fieldKey, val)}
-                        options={Array.from(new Set(field.options || [])).map((opt) => ({
+                        options={resolvedOptions.map((opt) => ({
                           value: opt,
                           label: opt,
                         }))}

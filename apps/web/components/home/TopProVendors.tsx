@@ -44,9 +44,11 @@ export default function TopProVendors({ vendors }: TopProVendorsProps) {
     });
   }
 
-  if (!vendors.length) return null;
+  // ST-04: Featured modules skip stores without a logo_url.
+  const eligibleVendors = vendors.filter((v) => Boolean(v.logo_url && v.logo_url.trim()));
+  if (!eligibleVendors.length) return null;
 
-  const displayVendors = vendors.slice(0, 10);
+  const displayVendors = eligibleVendors.slice(0, 10);
   const countWords = [
     '',
     'One',
@@ -60,8 +62,8 @@ export default function TopProVendors({ vendors }: TopProVendorsProps) {
     'Nine',
     'Ten',
   ];
-  const countLabel = countWords[vendors.length] ?? String(vendors.length);
-  const storeNoun = vendors.length === 1 ? 'Pro store' : 'Pro stores';
+  const countLabel = countWords[eligibleVendors.length] ?? String(eligibleVendors.length);
+  const storeNoun = eligibleVendors.length === 1 ? 'Pro store' : 'Pro stores';
   const proDescription = `${countLabel} ${storeNoun} on Verndly right now — more selling spots opening as new merchants are verified.`;
 
   return (
