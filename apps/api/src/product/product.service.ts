@@ -16,6 +16,12 @@ import {
   PUBLIC_PRODUCT_WHERE,
   isPubliclyVisibleProduct,
 } from './product-visibility';
+import {
+  attachProductSlugs,
+  buildBaseProductSlug,
+  buildProductSlug,
+  isUuid,
+} from './product-slug';
 
 type Decimal = Prisma.Decimal;
 const Decimal = Prisma.Decimal;
@@ -437,7 +443,7 @@ export class ProductService {
     ]);
 
     return {
-      data,
+      data: attachProductSlugs(data),
       meta: {
         total,
         page,
@@ -474,7 +480,7 @@ export class ProductService {
   }
 
   async getRecentProducts() {
-    return this.prisma.product.findMany({
+    const items = await this.prisma.product.findMany({
       where: PUBLIC_IN_STOCK_PRODUCT_WHERE,
       include: {
         seller: {
@@ -488,45 +494,81 @@ export class ProductService {
       orderBy: { created_at: 'desc' },
       take: 20,
     });
+    return attachProductSlugs(items);
   }
 
   async getProductById(
-    id: string,
+    idOrSlug: string,
     viewer?: { id?: string; role?: string } | null,
   ) {
-    const product: any = await (this.prisma.product as any).findUnique({
-      where: { id },
-      include: {
-        seller: {
-          select: {
-            id: true,
-            // Needed by the seller dashboard's ownership check on the
-            // manage page (/dashboard/products/[id]).
-            user_id: true,
-            store_name: true,
-            logo_url: true,
-            store_link: true,
-            bio: true,
-            location: true,
-            service_area: true,
-            avg_delivery_time: true,
-            user: {
-              select: {
-                is_pro: true,
-                pro_expires_at: true,
-                is_verified: true,
-                is_suspended: true,
-                created_at: true,
-              },
+    const detailInclude = {
+      seller: {
+        select: {
+          id: true,
+          // Needed by the seller dashboard's ownership check on the
+          // manage page (/dashboard/products/[id]).
+          user_id: true,
+          store_name: true,
+          logo_url: true,
+          store_link: true,
+          bio: true,
+          location: true,
+          service_area: true,
+          avg_delivery_time: true,
+          user: {
+            select: {
+              is_pro: true,
+              pro_expires_at: true,
+              is_verified: true,
+              is_suspended: true,
+              created_at: true,
             },
           },
         },
-        variants: {
-          where: { is_active: true },
-          orderBy: { created_at: 'asc' },
-        },
       },
-    });
+      variants: {
+        where: { is_active: true },
+        orderBy: { created_at: 'asc' },
+      },
+    };
+
+    let product: any = null;
+    let resolvedSlug: string | null = null;
+
+    if (isUuid(idOrSlug)) {
+      product = await (this.prisma.product as any).findUnique({
+        where: { id: idOrSlug },
+        include: detailInclude,
+      });
+    } else {
+      const targetSlug = idOrSlug.trim().toLowerCase();
+      const candidates: any[] = await this.prisma.product.findMany({
+        where: PUBLIC_PRODUCT_WHERE,
+        select: {
+          id: true,
+          title: true,
+          seller: {
+            select: {
+              store_link: true,
+              store_name: true,
+            },
+          },
+        },
+        take: 2000,
+      });
+      const withSlugs = attachProductSlugs(candidates);
+      const match =
+        withSlugs.find((c) => c.slug === targetSlug) ||
+        withSlugs.find((c) => buildBaseProductSlug(c) === targetSlug);
+
+      if (match) {
+        resolvedSlug = match.slug;
+        product = await (this.prisma.product as any).findUnique({
+          where: { id: match.id },
+          include: detailInclude,
+        });
+      }
+    }
 
     if (!product) {
       throw new NotFoundException('Product not found');
@@ -539,9 +581,33 @@ export class ProductService {
       throw new NotFoundException('Product not found');
     }
 
+    if (!resolvedSlug) {
+      const siblings: any[] =
+        typeof this.prisma.product.findMany === 'function' && product.seller_id
+          ? (await this.prisma.product.findMany({
+              where: { seller_id: product.seller_id },
+              select: {
+                id: true,
+                title: true,
+                seller: {
+                  select: { store_link: true, store_name: true },
+                },
+              },
+            })) || []
+          : [];
+      const base = buildBaseProductSlug(product);
+      const sameBaseCount = siblings.filter(
+        (s) => buildBaseProductSlug(s) === base,
+      ).length;
+      resolvedSlug = buildProductSlug(product, sameBaseCount > 1);
+    }
+
     // Bump views_count fire-and-forget (don't block the response)
     this.prisma.product
-      .update({ where: { id }, data: { views_count: { increment: 1 } } })
+      .update({
+        where: { id: product.id },
+        data: { views_count: { increment: 1 } },
+      })
       .catch(() => undefined);
 
     // Compute derived Pro flag (active subscription)
@@ -552,6 +618,7 @@ export class ProductService {
 
     return {
       ...product,
+      slug: resolvedSlug,
       seller: product.seller
         ? {
             ...product.seller,
@@ -563,7 +630,7 @@ export class ProductService {
   }
 
   async getProductsByStoreLink(link: string) {
-    return this.prisma.product.findMany({
+    const items = await this.prisma.product.findMany({
       where: {
         status: { in: [...PUBLIC_PRODUCT_STATUSES] },
         seller: {
@@ -586,6 +653,7 @@ export class ProductService {
         created_at: 'desc',
       },
     });
+    return attachProductSlugs(items);
   }
 
   async getCategories() {
@@ -1160,7 +1228,7 @@ export class ProductService {
     const searchLower = query.toLowerCase();
 
     // Simple autocomplete/suggestion search
-    return this.prisma.product.findMany({
+    const items = await this.prisma.product.findMany({
       where: {
         OR: [
           { title: { contains: searchLower, mode: 'insensitive' } },
@@ -1185,6 +1253,7 @@ export class ProductService {
       },
       take: 20, // Limit suggestions
     });
+    return attachProductSlugs(items);
   }
 
   /**

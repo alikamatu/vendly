@@ -1,20 +1,13 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Search,
-  X,
-  ArrowRight,
-  ShoppingBag,
-  Store,
-  Tag,
-  Sparkles,
-} from "lucide-react";
-import { useRouter } from "next/navigation";
-import { productApi } from "@/lib/api/product";
-import Portal from "../common/Portal";
-import Spinner from "@/components/ui/Spinner";
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Search, X, ArrowRight, ShoppingBag, Store, Tag, Sparkles } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { productApi } from '@/lib/api/product';
+import { getProductPath } from '@/lib/product-slug';
+import Portal from '../common/Portal';
+import Spinner from '@/components/ui/Spinner';
 
 // aliases used to bypass strict framer-motion prop typings
 const MotionDiv: any = motion.div;
@@ -26,7 +19,7 @@ interface GlobalSearchProps {
 }
 
 export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -34,17 +27,41 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
+  const fetchCategories = async () => {
+    try {
+      setIsLoadingCats(true);
+      const data = await productApi.getCategories();
+      setCategories(data);
+    } catch (err) {
+      console.error('Failed to fetch categories', err);
+    } finally {
+      setIsLoadingCats(false);
+    }
+  };
+
+  const fetchSuggestions = async () => {
+    try {
+      setIsLoading(true);
+      const data = await productApi.searchProducts(query);
+      setSuggestions(data);
+    } catch (err) {
+      console.error('Failed to search products', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = "hidden";
+      document.body.style.overflow = 'hidden';
       fetchCategories();
     } else {
-      document.body.style.overflow = "unset";
-      setQuery("");
+      document.body.style.overflow = 'unset';
+      setQuery('');
       setSuggestions([]);
     }
     return () => {
-      document.body.style.overflow = "unset";
+      document.body.style.overflow = 'unset';
     };
   }, [isOpen]);
 
@@ -69,37 +86,13 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
     return () => clearTimeout(delayDebounceFn);
   }, [query]);
 
-  const fetchCategories = async () => {
-    try {
-      setIsLoadingCats(true);
-      const data = await productApi.getCategories();
-      setCategories(data);
-    } catch (err) {
-      console.error("Failed to fetch categories", err);
-    } finally {
-      setIsLoadingCats(false);
-    }
-  };
-
-  const fetchSuggestions = async () => {
-    try {
-      setIsLoading(true);
-      const data = await productApi.searchProducts(query);
-      setSuggestions(data);
-    } catch (err) {
-      console.error("Failed to search products", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleSelect = (item: any) => {
-    router.push(`/product/${item.id}`);
+    router.push(getProductPath(item));
     onClose();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Escape") onClose();
+    if (e.key === 'Escape') onClose();
   };
 
   return (
@@ -116,25 +109,25 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
             />
 
             <MotionDiv
-              initial={{ y: "100%" }}
+              initial={{ y: '100%' }}
               animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 32, stiffness: 350 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 32, stiffness: 350 }}
               drag="y"
               dragConstraints={{ top: 0 }}
               dragElastic={0.2}
               onDragEnd={(_event: any, info: any) => {
                 if (info.offset.y > 100) onClose();
               }}
-              className="relative w-full bg-background rounded-t-[3rem] shadow-2xl flex flex-col h-[90vh] md:h-[85vh] overflow-hidden border-t border-border"
+              className="bg-background border-border relative flex h-[90vh] w-full flex-col overflow-hidden rounded-t-[3rem] border-t shadow-2xl md:h-[85vh]"
               onClick={(e: React.MouseEvent) => e.stopPropagation()}
             >
-              <div className="w-16 h-1.5 bg-border/40 rounded-full mx-auto mt-4 shrink-0" />
+              <div className="bg-border/40 mx-auto mt-4 h-1.5 w-16 shrink-0 rounded-full" />
 
-              <header className="px-6 pt-6 pb-6 md:px-12 md:pt-10 border-b border-border/50 shrink-0">
-                <div className="max-w-4xl mx-auto flex items-center gap-4">
-                  <div className="relative flex-1 group">
-                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-muted group-focus-within:text-primary transition-colors" />
+              <header className="border-border/50 shrink-0 border-b px-6 pb-6 pt-6 md:px-12 md:pt-10">
+                <div className="mx-auto flex max-w-4xl items-center gap-4">
+                  <div className="group relative flex-1">
+                    <Search className="text-muted group-focus-within:text-primary absolute left-6 top-1/2 h-5 w-5 -translate-y-1/2 transition-colors" />
                     <input
                       ref={inputRef}
                       type="text"
@@ -142,7 +135,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
                       onKeyDown={handleKeyDown}
-                      className="w-full h-14 md:h-16 pl-14 pr-14 bg-surface/50 border-2 border-border/50 rounded-3xl text-sm md:text-base font-normal outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/5 transition-all"
+                      className="bg-surface/50 border-border/50 focus:border-primary/50 focus:ring-primary/5 h-14 w-full rounded-3xl border-2 pl-14 pr-14 text-sm font-normal outline-none transition-all focus:ring-4 md:h-16 md:text-base"
                     />
                     {isLoading && (
                       <div className="absolute right-14 top-1/2 -translate-y-1/2">
@@ -152,22 +145,22 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                   </div>
                   <button
                     onClick={onClose}
-                    className="p-3 md:p-4 rounded-2xl bg-surface border border-border/50 text-muted active:scale-90 transition-all shadow-sm"
+                    className="bg-surface border-border/50 text-muted rounded-2xl border p-3 shadow-sm transition-all active:scale-90 md:p-4"
                   >
-                    <X className="w-5 h-5" />
+                    <X className="h-5 w-5" />
                   </button>
                 </div>
               </header>
 
               <div className="flex-1 overflow-y-auto px-6 py-8 md:px-12 md:py-10">
-                <div className="max-w-4xl mx-auto space-y-10">
+                <div className="mx-auto max-w-4xl space-y-10">
                   {query.length > 0 ? (
                     <div className="space-y-6">
-                      <p className="px-2 text-[10px] font-medium uppercase tracking-[0.3em] text-primary/60">
+                      <p className="text-primary/60 px-2 text-[10px] font-medium uppercase tracking-[0.3em]">
                         Results
                       </p>
                       {suggestions.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                           {suggestions.map((item, idx) => (
                             <MotionButton
                               key={item.id}
@@ -175,9 +168,9 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                               animate={{ opacity: 1, y: 0 }}
                               transition={{ delay: idx * 0.03 }}
                               onClick={() => handleSelect(item)}
-                              className="flex items-center gap-4 p-4 rounded-3xl bg-surface/30 border border-border/50 hover:border-primary/30 hover:bg-primary transition-all text-left group"
+                              className="bg-surface/30 border-border/50 hover:border-primary/30 hover:bg-primary group flex items-center gap-4 rounded-3xl border p-4 text-left transition-all"
                             >
-                              <div className="w-16 h-16 rounded-2xl border border-border/50 overflow-hidden bg-white shrink-0 relative group">
+                              <div className="border-border/50 group relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl border bg-white">
                                 {item.video_url ? (
                                   <video
                                     src={item.video_url}
@@ -185,40 +178,38 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                                     muted
                                     loop
                                     playsInline
-                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                                   />
                                 ) : (
                                   <img
-                                    src={
-                                      item.image_urls[0] || "/placeholder.png"
-                                    }
-                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                    src={item.image_urls[0] || '/placeholder.png'}
+                                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                                     alt=""
                                   />
                                 )}
                               </div>
-                              <div className="flex-1 min-w-0">
-                                <h4 className="text-xs font-medium uppercase tracking-tight truncate mb-1">
+                              <div className="min-w-0 flex-1">
+                                <h4 className="mb-1 truncate text-xs font-medium uppercase tracking-tight">
                                   {item.title}
                                 </h4>
                                 <div className="flex items-center gap-3">
-                                  <span className="text-[9px] font-medium uppercase tracking-wider text-primary">
+                                  <span className="text-primary text-[9px] font-medium uppercase tracking-wider">
                                     {item.category}
                                   </span>
-                                  <span className="text-[9px] font-normal text-muted uppercase tracking-wider italic">
+                                  <span className="text-muted text-[9px] font-normal uppercase italic tracking-wider">
                                     {item.seller.store_name}
                                   </span>
                                 </div>
                               </div>
-                              <ArrowRight className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-all" />
+                              <ArrowRight className="text-primary h-4 w-4 opacity-0 transition-all group-hover:opacity-100" />
                             </MotionButton>
                           ))}
                         </div>
                       ) : (
                         !isLoading && (
-                          <div className="py-20 text-center space-y-4">
-                            <ShoppingBag className="w-12 h-12 text-muted mx-auto opacity-10" />
-                            <p className="text-[11px] font-medium uppercase tracking-wider text-muted">
+                          <div className="space-y-4 py-20 text-center">
+                            <ShoppingBag className="text-muted mx-auto h-12 w-12 opacity-10" />
+                            <p className="text-muted text-[11px] font-medium uppercase tracking-wider">
                               No products found
                             </p>
                           </div>
@@ -229,17 +220,17 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                     <div className="space-y-10">
                       <section className="space-y-6">
                         <div className="flex items-center gap-3">
-                          <Sparkles className="w-4 h-4 text-primary" />
-                          <h3 className="text-[11px] font-medium uppercase tracking-[0.3em] text-foreground">
+                          <Sparkles className="text-primary h-4 w-4" />
+                          <h3 className="text-foreground text-[11px] font-medium uppercase tracking-[0.3em]">
                             Trending Categories
                           </h3>
                         </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
                           {isLoadingCats
                             ? Array.from({ length: 8 }).map((_, i) => (
                                 <div
                                   key={i}
-                                  className="h-14 bg-surface rounded-2xl animate-pulse"
+                                  className="bg-surface h-14 animate-pulse rounded-2xl"
                                 />
                               ))
                             : categories.map((cat, idx) => (
@@ -249,10 +240,10 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                                   animate={{ opacity: 1, scale: 1 }}
                                   transition={{ delay: idx * 0.04 }}
                                   onClick={() => setQuery(cat.name)}
-                                  className="flex items-center gap-3 p-4 rounded-3xl bg-surface border border-border/50 hover:border-primary/30 hover:bg-white transition-all text-left active:scale-95 group"
+                                  className="bg-surface border-border/50 hover:border-primary/30 group flex items-center gap-3 rounded-3xl border p-4 text-left transition-all hover:bg-white active:scale-95"
                                 >
-                                  <Tag className="w-4 h-4 text-primary group-hover:rotate-12 transition-transform" />
-                                  <span className="text-[10px] font-medium uppercase tracking-tight truncate">
+                                  <Tag className="text-primary h-4 w-4 transition-transform group-hover:rotate-12" />
+                                  <span className="truncate text-[10px] font-medium uppercase tracking-tight">
                                     {cat.name}
                                   </span>
                                 </MotionButton>
@@ -264,11 +255,11 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                 </div>
               </div>
 
-              <footer className="px-10 py-6 border-t border-border/50 bg-background shrink-0 flex items-center justify-between">
-                <p className="text-[9px] font-medium text-muted uppercase tracking-wider opacity-40">
+              <footer className="border-border/50 bg-background flex shrink-0 items-center justify-between border-t px-10 py-6">
+                <p className="text-muted text-[9px] font-medium uppercase tracking-wider opacity-40">
                   Drag down to close
                 </p>
-                <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                <div className="bg-primary h-1.5 w-1.5 animate-pulse rounded-full" />
               </footer>
             </MotionDiv>
           </div>

@@ -180,4 +180,22 @@ Append one entry per loop. Newest at the bottom.
 - NEEDS-HUMAN:
   - **ST-04**: Confirm `"Kaneshi"` → `"Kaneshie"` and logo/bio with D'Men's wear (`/s/dmens-wear`), and collect improved bios from Mimi's world Trendz (`/s/mimis-world-trendz`) and The Hoodies (`/s/the-hoodies`) using `scripts/data-fixes/seller-requests.md`.
   - **PD-08**: Collect EU/UK/US shoe size, color, material, condition, specific title, gender (`Men's`), and description for `/product/48265a0c-2857-4e65-a4d8-d2471974132a`, then fill placeholders and approve running `scripts/data-fixes/T14-st04-pd08-polish.sql`.
-- Commit: pending (see git log for `fix(t14): ... [st-04, pd-08]`)
+- Commit: `95aad3b`
+
+### 2026-11-24 — T15 (PD-07, TX-01, TX-02, TX-03) — [x]
+
+- Changed:
+  - **TX-03 (SSR catalog index pages)**: fixed `apps/web/lib/server-api.ts` (`fetchBrowseProductsServer` → `/products?in_stock=true`, `fetchBrowseStoresServer` → `/stores`, previously hitting non-existent `/products/browse` and `/stores/browse`), added `export const revalidate = 300` on `apps/web/app/products/page.tsx` and `apps/web/app/stores/page.tsx`, and rendered the SSR first page of products (title, GH₵ price, image, slug link) and stores (name, area, bio, `/s/{store_link}`) inside the `<Suspense>` fallbacks of `ProductsBrowser.tsx` and `StoresBrowser.tsx` with unique Accra intro copy.
+  - **TX-02 (SSR `/seller-verification`)**: converted `apps/web/app/(auth)/seller-verification/page.tsx` into a Server Component with `title: "Get verified to sell on Verndly"`, unique meta description, Breadcrumb JSON-LD, the 24–48h review timeline, and the three verification tracks (`Existing store link`, `Ghana Card & sales proof`, `Direct support review`) rendered in server HTML. Moved only the auth-gated submission form into `apps/web/app/(auth)/seller-verification/SellerVerificationForm.tsx` (which renders a clean sign-in CTA instead of redirecting crawlers, and uses `SUPPORT_CONTACT.email`).
+  - **TX-01 (Sitemap storefronts & stocked categories)**: updated `apps/api/src/store/store.service.ts` (`getPublicStores`: excludes `is_suspended: true`, allows `limit` up to `500`) and fixed `apps/web/app/sitemap.ts` to unpack `{ stores: [...] }` from `GET /stores?page=1&limit=500` so every public storefront (`/s/{store_link}`) is listed, alongside stocked categories (T11) and approved in-stock slug product URLs (T04/PD-07).
+  - **PD-07 (Human-readable product slugs + 301 redirects)**:
+    - Created deterministic collision-safe slug helpers `apps/api/src/product/product-slug.ts` and `apps/web/lib/product-slug.ts` (`<title>-<store_link>`, appending 6-char UUID suffix on collision) + unit tests (`apps/web/lib/product-slug.test.mjs`, `apps/api/src/product/product-visibility.spec.ts`).
+    - Updated `apps/api/src/product/product.service.ts` to resolve `GET /products/:idOrSlug` by either UUID or slug and attach `slug` on product responses.
+    - Added `apps/web/proxy.ts` (Next.js 16 proxy) to return HTTP **301** redirects from `/product/{uuid}` → `/product/{slug}`, plus `permanentRedirect` fallback in `apps/web/app/product/[id]/page.tsx`.
+    - Updated canonicals, OG tags, `ProductJsonLd`, `StoreJsonLd`, `ItemListJsonLd`, sitemap, internal product links (`ProductCard`, `ProductListRow`, `StoreCard`, `RecentlyViewed`, `GlobalSearch`, `categories/[slug]`), and share links (`ProductDetailClient`, `ShareProductCardModal`) to use `getProductPath(...)`.
+- Verified:
+  - `node --test apps/web/lib/product-slug.test.mjs` — passed.
+  - `pnpm --filter @vendly/api test -- product-visibility.spec.ts` — 6/6 passed.
+  - `pnpm --filter @vendly/web type-check` and `pnpm --filter @vendly/api run build` — passed.
+  - `pnpm --filter @vendly/web build` — verified production Next.js 16 build compiles `proxy.ts`, `/products`, `/stores`, `/seller-verification`, `/sitemap.xml`, and `/product/[id]`.
+- Commit: pending (see git log for `fix(t15): ... [pd-07, tx-01, tx-02, tx-03]`)

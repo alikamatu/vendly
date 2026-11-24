@@ -4,10 +4,12 @@ import { buildMetadata } from '@/lib/seo';
 import BreadcrumbJsonLd from '@/components/seo/BreadcrumbJsonLd';
 import { fetchBrowseStoresServer } from '@/lib/server-api';
 
+export const revalidate = 300;
+
 export const metadata = buildMetadata({
   title: 'Discover independent stores',
   description:
-    'Explore verified vendor stores on Verndly Ghana. Support young local entrepreneurs, check active product showcases, and shop with 7-day Paystack escrow.',
+    'Explore verified independent stores in Accra on Verndly Ghana. Browse active catalogs, dispatch timelines, and shop with 7-day Paystack escrow.',
   path: '/stores',
   keywords: ['independent stores ghana', 'Ghana sellers', 'verified small businesses', 'vendors'],
 });

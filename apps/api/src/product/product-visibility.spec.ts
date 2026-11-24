@@ -169,4 +169,39 @@ describe('Product public visibility & moderation (T04 / ST-03)', () => {
       }),
     );
   });
+
+  it('resolves products by human-readable slug and disambiguates collisions (T15 / PD-07)', async () => {
+    const hoodie = {
+      id: '240b8f0c-227c-414b-a6de-0a1b2c3d4e5f',
+      seller_id: 'seller-hoodies',
+      title: 'Chill Hoodie',
+      status: 'active',
+      quantity_available: 3,
+      seller: {
+        id: 'seller-hoodies',
+        user_id: 'owner-2',
+        store_name: 'The Hoodies',
+        store_link: 'the-hoodies',
+        user: {
+          is_pro: true,
+          pro_expires_at: null,
+          is_verified: true,
+          is_suspended: false,
+          created_at: new Date(),
+        },
+      },
+      variants: [],
+    };
+
+    const findMany = jest.fn().mockResolvedValue([hoodie]);
+    const findUnique = jest.fn().mockResolvedValue(hoodie);
+    const { service } = makeService({ findMany, findUnique });
+
+    const result = await service.getProductById(
+      'chill-hoodie-the-hoodies',
+      null,
+    );
+    expect(result.id).toBe(hoodie.id);
+    expect(result.slug).toBe('chill-hoodie-the-hoodies');
+  });
 });

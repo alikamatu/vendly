@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { buildMetadata, SITE_URL, SITE_NAME } from '@/lib/seo';
 import { isPubliclyVisible } from '@/lib/product-visibility';
+import { getProductPath } from '@/lib/product-slug';
 import StoreJsonLd from '@/components/seo/StoreJsonLd';
 import BreadcrumbJsonLd from '@/components/seo/BreadcrumbJsonLd';
 import ItemListJsonLd from '@/components/seo/ItemListJsonLd';
@@ -124,7 +125,10 @@ export default async function StoreLayout({
               items={products.map((p: any) => ({
                 id: String(p.id),
                 name: p.title,
-                url: `/product/${p.id}`,
+                url: getProductPath({
+                  ...p,
+                  seller: { store_link: store.store_link || slug, store_name: store.store_name },
+                }),
                 image: p.image_urls?.[0] || null,
                 price: p.price,
                 currency: p.currency || 'GHS',

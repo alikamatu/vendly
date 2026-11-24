@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Crown, MapPin, CheckCircle2, ShoppingBag } from 'lucide-react';
+import { getProductPath } from '@/lib/product-slug';
 import type { BrowseStore } from '@/lib/api/store';
 
 interface StoreCardProps {
@@ -95,7 +96,10 @@ export default function StoreCard({ store, index }: StoreCardProps) {
               {store.products.slice(0, 3).map((product) => (
                 <Link
                   key={product.id}
-                  href={`/product/${product.id}`}
+                  href={getProductPath({
+                    ...product,
+                    seller: { store_link: store.store_link, store_name: store.store_name },
+                  })}
                   className="group/item border-[var(--color-border)]/50 relative block aspect-square overflow-hidden rounded-xl border bg-[var(--color-surface)]"
                 >
                   {product.image_url ? (

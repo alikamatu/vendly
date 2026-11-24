@@ -2,9 +2,11 @@ import React from 'react';
 import JsonLd from './JsonLd';
 import { absoluteUrl, SITE_NAME, SITE_URL } from '@/lib/seo';
 import { getPublicBrand } from '@/lib/brand-guard';
+import { getProductPath } from '@/lib/product-slug';
 
 export interface ProductSchemaInput {
   id: string;
+  slug?: string | null;
   title: string;
   description?: string | null;
   price: string | number;
@@ -38,7 +40,7 @@ function conditionUri(c?: string | null) {
 }
 
 export default function ProductJsonLd({ product }: { product: ProductSchemaInput }) {
-  const url = absoluteUrl(`/product/${product.id}`);
+  const url = absoluteUrl(getProductPath(product));
   const inStock =
     typeof product.quantity_available === 'number' ? product.quantity_available > 0 : true;
 

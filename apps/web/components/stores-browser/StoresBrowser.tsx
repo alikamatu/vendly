@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, Suspense } from 'react';
+import Link from 'next/link';
 import { AlertCircle, ArrowUpDown, SlidersHorizontal, Store } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { useStoresBrowser, type InitialStoresBrowserData } from '@/hooks/useStoresBrowser';
@@ -201,6 +202,8 @@ function EmptyState({ onReset }: { onReset: () => void }) {
 }
 
 export default function StoresBrowser({ initialData }: { initialData?: InitialStoresBrowserData }) {
+  const ssrStores = initialData?.stores ?? [];
+
   return (
     <Suspense
       fallback={
@@ -212,11 +215,56 @@ export default function StoresBrowser({ initialData }: { initialData?: InitialSt
                 Discover Verified <span className="text-[var(--color-accent)]">Entrepreneurs</span>
               </h1>
               <p className="mx-auto max-w-2xl text-sm leading-relaxed text-[var(--color-muted)]">
-                Support verified Ghanaian businesses and independent creators backed by 7-day
-                Paystack escrow.
+                Browse verified independent stores in Accra on Verndly. Check each merchant&apos;s
+                catalog, dispatch area, and shop safely with 7-day Paystack escrow.
               </p>
             </div>
           </div>
+
+          {ssrStores.length > 0 && (
+            <main className="mx-auto max-w-7xl px-4 py-10 md:px-8">
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {ssrStores.map((store: any) => (
+                  <article key={store.id} className="bg-surface space-y-3 rounded-3xl p-6">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-background h-12 w-12 shrink-0 overflow-hidden rounded-2xl">
+                        {store.logo_url ? (
+                          <img
+                            src={store.logo_url}
+                            alt={store.store_name}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="text-foreground flex h-full w-full items-center justify-center text-sm font-semibold uppercase">
+                            {String(store.store_name || '?').slice(0, 2)}
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <h2 className="text-foreground truncate text-base font-medium">
+                          <Link href={`/s/${store.store_link}`}>{store.store_name}</Link>
+                        </h2>
+                        {(store.area || store.location) && (
+                          <p className="text-muted truncate text-xs">
+                            {[store.area, store.location].filter(Boolean).join(', ')}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    {store.bio && (
+                      <p className="text-muted line-clamp-2 text-xs leading-relaxed">{store.bio}</p>
+                    )}
+                    <Link
+                      href={`/s/${store.store_link}`}
+                      className="text-foreground inline-block text-xs font-medium underline underline-offset-2"
+                    >
+                      Visit storefront ({store.products_count ?? 0} listings)
+                    </Link>
+                  </article>
+                ))}
+              </div>
+            </main>
+          )}
         </div>
       }
     >

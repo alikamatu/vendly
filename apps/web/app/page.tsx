@@ -8,6 +8,7 @@ import {
   fetchTopProVendorsServer,
 } from '@/lib/server-api';
 import { filterRailProducts } from '@/lib/product-visibility';
+import { getProductPath } from '@/lib/product-slug';
 
 export const metadata = buildMetadata({
   title: 'Verndly — Discover & Shop Verified Independent Stores in Ghana',
@@ -46,7 +47,7 @@ export default async function HomePage() {
           items={topProducts.map((p: any) => ({
             id: String(p.id),
             name: p.title,
-            url: `/product/${p.id}`,
+            url: getProductPath(p),
             image: p.image_urls?.[0] || null,
             price: p.price,
             currency: p.currency || 'GHS',

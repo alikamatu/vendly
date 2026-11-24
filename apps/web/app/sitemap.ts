@@ -2,19 +2,27 @@ import type { MetadataRoute } from 'next';
 import { SITE_URL } from '@/lib/seo';
 import { ALL_BLOG_POSTS } from '@/lib/content/blog-posts';
 import { slugifyCategory } from '@/lib/content/categories';
-import { isPubliclyVisible, isPubliclyVisibleInStock } from '@/lib/product-visibility';
+import { isPubliclyVisibleInStock } from '@/lib/product-visibility';
+import { getProductPath } from '@/lib/product-slug';
 
 /**
- * Dynamic sitemap. Static informational routes, editorial guides, and stocked
- * category landing pages are included alongside live products and verified stores.
+ * Dynamic sitemap. Static informational routes, editorial guides, stocked
+ * category landing pages, approved in-stock slug product URLs, and all public
+ * storefronts are included automatically from the API.
  */
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1000';
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1000').replace(/\/$/, '');
 
 interface ProductSlim {
   id: string;
+  slug?: string;
+  title?: string;
   category?: string;
   status?: string;
   quantity_available?: number;
+  seller?: {
+    store_link?: string | null;
+    store_name?: string | null;
+  } | null;
   updated_at?: string;
   created_at?: string;
 }
@@ -100,8 +108,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.85,
   }));
 
-  const productEntries: MetadataRoute.Sitemap = products.filter(isPubliclyVisible).map((p) => ({
-    url: `${SITE_URL}/product/${p.id}`,
+  const productEntries: MetadataRoute.Sitemap = inStockProducts.map((p) => ({
+    url: `${SITE_URL}${getProductPath(p)}`,
     lastModified: p.updated_at
       ? new Date(p.updated_at)
       : p.created_at
@@ -111,13 +119,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.85,
   }));
 
-  // Stores
-  const stores = (await safeFetchJson<StoreSlim[]>(`${API_URL}/stores`)) || [];
-  const storeEntries: MetadataRoute.Sitemap = (Array.isArray(stores) ? stores : []).flatMap((s) =>
+  // Public Stores (/s/{store_link}) — API returns { stores, total, ... } (TX-01).
+  const storesResp = await safeFetchJson<
+    { stores?: StoreSlim[]; data?: { stores?: StoreSlim[] } } | StoreSlim[]
+  >(`${API_URL}/stores?page=1&limit=500`);
+  const stores: StoreSlim[] = Array.isArray(storesResp)
+    ? storesResp
+    : Array.isArray(storesResp?.stores)
+      ? storesResp.stores
+      : Array.isArray(storesResp?.data?.stores)
+        ? storesResp.data.stores
+        : [];
+  const storeEntries: MetadataRoute.Sitemap = stores.flatMap((s) =>
     s.store_link
       ? [
           {
-            url: `${SITE_URL}/s/${s.store_link}`,
+            url: `${SITE_URL}/s/${encodeURIComponent(s.store_link)}`,
             lastModified: s.updated_at ? new Date(s.updated_at) : now,
             changeFrequency: 'daily' as const,
             priority: 0.8,

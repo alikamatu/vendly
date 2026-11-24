@@ -4,6 +4,8 @@
  * cleanly for search crawlers and users without failing builds when the API is offline.
  */
 
+import { isPubliclyVisibleInStock } from '@/lib/product-visibility';
+
 const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1000').replace(/\/$/, '');
 
 async function safeFetch<T>(path: string, fallback: T, revalidate = 300): Promise<T> {
@@ -60,6 +62,7 @@ export async function fetchBrowseProductsServer(params?: {
   const qs = new URLSearchParams();
   qs.set('page', String(params?.page || 1));
   qs.set('limit', String(params?.limit || 24));
+  qs.set('in_stock', 'true');
   if (params?.category) qs.set('category', params.category);
   if (params?.search) qs.set('search', params.search);
   if (params?.sort) qs.set('sort', params.sort);
@@ -67,7 +70,7 @@ export async function fetchBrowseProductsServer(params?: {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
-    const res = await fetch(`${API_URL}/products/browse?${qs.toString()}`, {
+    const res = await fetch(`${API_URL}/products?${qs.toString()}`, {
       next: { revalidate: 300 },
       signal: controller.signal,
     });
@@ -80,11 +83,12 @@ export async function fetchBrowseProductsServer(params?: {
       json && typeof json === 'object' && 'data' in json && !Array.isArray(json.data)
         ? json.data
         : json;
-    const items = Array.isArray(payload?.data)
+    const rawItems = Array.isArray(payload?.data)
       ? payload.data
       : Array.isArray(payload)
         ? payload
         : [];
+    const items = rawItems.filter(isPubliclyVisibleInStock);
     const meta = payload?.meta || {
       total: items.length,
       page: params?.page || 1,
@@ -104,7 +108,7 @@ export async function fetchBrowseStoresServer(limit = 12): Promise<{
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
-    const res = await fetch(`${API_URL}/stores/browse?page=1&limit=${limit}`, {
+    const res = await fetch(`${API_URL}/stores?page=1&limit=${limit}`, {
       next: { revalidate: 300 },
       signal: controller.signal,
     });

@@ -2,14 +2,15 @@ import type { Metadata } from 'next';
 import { buildMetadata, SITE_URL } from '@/lib/seo';
 import { getPublicBrand } from '@/lib/brand-guard';
 import { isPubliclyVisible } from '@/lib/product-visibility';
+import { buildProductSlug, getProductPath } from '@/lib/product-slug';
 import ProductJsonLd from '@/components/seo/ProductJsonLd';
 import BreadcrumbJsonLd from '@/components/seo/BreadcrumbJsonLd';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1000';
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1000').replace(/\/$/, '');
 
 async function fetchProduct(id: string) {
   try {
-    const res = await fetch(`${API_URL}/products/${id}`, {
+    const res = await fetch(`${API_URL}/products/${encodeURIComponent(id)}`, {
       // ISR — revalidate every 5 min so price/stock stay reasonably fresh
       // without smashing the API on every crawl request.
       next: { revalidate: 300 },
@@ -37,13 +38,16 @@ export async function generateMetadata({
       path: `/product/${id}`,
     });
   }
+  const canonicalPath = getProductPath(product);
   const description = (product.description || product.title || '').toString().slice(0, 180);
   const publicBrand = getPublicBrand(product.brand, product.seller);
   return buildMetadata({
     title: product.title,
     description: description || `Shop ${product.title} on Verndly.`,
-    path: `/product/${id}`,
-    image: product.image_urls?.[0] || `${SITE_URL}/api/cards/product/${id}?format=landscape`,
+    path: canonicalPath,
+    image:
+      product.image_urls?.[0] ||
+      `${SITE_URL}/api/cards/product/${encodeURIComponent(String(product.id))}?format=landscape`,
     type: 'product',
     keywords: [product.title, product.category, publicBrand, 'Verndly'].filter(Boolean) as string[],
   });
@@ -59,6 +63,8 @@ export default async function ProductLayout({
   const { id } = await params;
   const product = await fetchProduct(id);
   const visible = isPubliclyVisible(product);
+  const canonicalPath = product ? getProductPath(product) : `/product/${id}`;
+  const productSlug = product ? buildProductSlug(product) : id;
   return (
     <>
       {product && visible && (
@@ -66,6 +72,7 @@ export default async function ProductLayout({
           <ProductJsonLd
             product={{
               id: String(product.id),
+              slug: productSlug,
               title: product.title,
               description: product.description,
               price: product.price,
@@ -97,7 +104,7 @@ export default async function ProductLayout({
                     },
                   ]
                 : []),
-              { name: product.title, path: `/product/${id}` },
+              { name: product.title, path: canonicalPath },
             ]}
           />
         </>

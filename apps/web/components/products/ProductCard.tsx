@@ -7,6 +7,7 @@ import Link from 'next/link';
 import Card from '@/components/ui/Card';
 import { useCart } from '@/lib/contexts/cart-context';
 import { useFavorites } from '@/lib/contexts/favorite-context';
+import { getProductPath } from '@/lib/product-slug';
 import { toast } from 'sonner';
 
 const MotionButton = motion.button as any;
@@ -110,7 +111,7 @@ export default function ProductCard({ product, index }: ProductCardProps) {
         onMouseLeave={handleMouseLeave}
       >
         <div className="group/media relative">
-          <Link href={`/product/${product.id}`} className="block">
+          <Link href={getProductPath(product)} className="block">
             <div className="relative w-full overflow-hidden rounded-[1.5rem]">
               {product.video_url ? (
                 <video

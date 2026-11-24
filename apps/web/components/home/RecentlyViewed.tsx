@@ -1,9 +1,10 @@
-"use client";
+'use client';
 
-import React from "react";
-import Link from "next/link";
-import { Eye, X } from "lucide-react";
-import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
+import React from 'react';
+import Link from 'next/link';
+import { Eye, X } from 'lucide-react';
+import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
+import { getProductPath } from '@/lib/product-slug';
 
 interface Props {
   limit?: number;
@@ -37,15 +38,15 @@ export default function RecentlyViewed({
     <section className={`space-y-4 ${className}`}>
       <div className="flex items-end justify-between">
         <div>
-          <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.15em] text-muted">
-            <Eye className="w-3.5 h-3.5" />
+          <div className="text-muted flex items-center gap-1.5 text-[10px] uppercase tracking-[0.15em]">
+            <Eye className="h-3.5 w-3.5" />
             Recently viewed
           </div>
           <h2
             className={
               isCompact
-                ? 'text-lg md:text-xl tracking-tight mt-1'
-                : 'text-2xl md:text-3xl tracking-tight mt-1'
+                ? 'mt-1 text-lg tracking-tight md:text-xl'
+                : 'mt-1 text-2xl tracking-tight md:text-3xl'
             }
           >
             {headline}
@@ -53,50 +54,48 @@ export default function RecentlyViewed({
         </div>
         <button
           onClick={clear}
-          className="text-[10px] uppercase tracking-wider text-muted hover:text-foreground transition inline-flex items-center gap-1"
+          className="text-muted hover:text-foreground inline-flex items-center gap-1 text-[10px] uppercase tracking-wider transition"
         >
-          <X className="w-3 h-3" /> Clear
+          <X className="h-3 w-3" /> Clear
         </button>
       </div>
 
-      <div className="-mx-4 px-4 md:mx-0 md:px-0 overflow-x-auto">
+      <div className="-mx-4 overflow-x-auto px-4 md:mx-0 md:px-0">
         <div
           className={
             isCompact
-              ? 'flex gap-3 min-w-max'
-              : 'flex gap-3 md:grid md:grid-cols-6 md:gap-4 min-w-max md:min-w-0'
+              ? 'flex min-w-max gap-3'
+              : 'flex min-w-max gap-3 md:grid md:min-w-0 md:grid-cols-6 md:gap-4'
           }
         >
           {list.map((p) => (
             <Link
               key={p.id}
-              href={`/product/${p.id}`}
-              className="group w-[150px] md:w-auto shrink-0 rounded-2xl border border-border/40 hover:border-primary/40 bg-surface/40 hover:bg-surface transition overflow-hidden"
+              href={getProductPath(p)}
+              className="border-border/40 hover:border-primary/40 bg-surface/40 hover:bg-surface group w-[150px] shrink-0 overflow-hidden rounded-2xl border transition md:w-auto"
             >
-              <div className="aspect-square bg-neutral-100 dark:bg-neutral-900 overflow-hidden">
+              <div className="aspect-square overflow-hidden bg-neutral-100 dark:bg-neutral-900">
                 {p.image ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={p.image}
                     alt={p.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition"
+                    className="h-full w-full object-cover transition group-hover:scale-105"
                     loading="lazy"
                   />
                 ) : (
-                  <div className="w-full h-full" />
+                  <div className="h-full w-full" />
                 )}
               </div>
               <div className="p-2.5">
-                <div className="text-xs font-medium leading-tight line-clamp-2 group-hover:text-primary transition">
+                <div className="group-hover:text-primary line-clamp-2 text-xs font-medium leading-tight transition">
                   {p.title}
                 </div>
                 {p.storeName && (
-                  <div className="text-[10px] text-muted mt-1 truncate">{p.storeName}</div>
+                  <div className="text-muted mt-1 truncate text-[10px]">{p.storeName}</div>
                 )}
                 {p.price !== undefined && (
-                  <div className="text-xs font-semibold mt-1">
-                    {`GHS ${p.price}`}
-                  </div>
+                  <div className="mt-1 text-xs font-semibold">{`GHS ${p.price}`}</div>
                 )}
               </div>
             </Link>

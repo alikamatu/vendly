@@ -2,12 +2,14 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { Suspense } from 'react';
+import Link from 'next/link';
 import { AlertCircle } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import ProductCard from '@/components/products/ProductCard';
 import { useProductsBrowser, type InitialProductsBrowserData } from '@/hooks/useProductsBrowser';
 import { productApi } from '@/lib/api/product';
 import { isBrandAllowedPublicly } from '@/lib/brand-guard';
+import { getProductPath } from '@/lib/product-slug';
 import type { HomeCategory } from '@/hooks/useHomeData';
 import type { ViewMode } from './ViewToggle';
 
@@ -228,25 +230,58 @@ export default function ProductsBrowser({
   initialCategories?: HomeCategory[];
   initialBrands?: string[];
 }) {
+  const ssrItems = initialData?.data ?? [];
+
   return (
     <Suspense
       fallback={
         <div className="min-h-screen bg-[var(--color-background)]">
           <Header />
-          <div className="mx-auto max-w-7xl space-y-6 px-4 pb-24 pt-6 md:px-8 md:pt-10">
-            <header className="space-y-1">
+          <main className="mx-auto max-w-7xl space-y-8 px-4 pb-24 pt-6 md:px-8 md:pt-10">
+            <header className="space-y-2">
               <p className="text-[10px] font-medium uppercase tracking-wider text-[var(--color-accent)]">
-                Marketplace
+                Marketplace · Accra
               </p>
               <h1 className="text-2xl font-medium tracking-tight text-[var(--color-foreground)] md:text-3xl">
                 Explore every product
               </h1>
-              <p className="text-[12px] text-[var(--color-muted)]">
-                Browse verified products from independent Ghanaian stores backed by 7-day Paystack
-                escrow.
+              <p className="max-w-2xl text-xs leading-relaxed text-[var(--color-muted)]">
+                Browse in-stock listings from verified independent sellers in Accra. Pay via MTN
+                MoMo, Telecel Cash, AirtelTigo Money, or card under 7-day Paystack escrow.
               </p>
             </header>
-          </div>
+
+            {ssrItems.length > 0 && (
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                {ssrItems.map((product: any) => (
+                  <article key={product.id} className="bg-surface overflow-hidden rounded-2xl p-3">
+                    <Link href={getProductPath(product)} className="block space-y-2.5">
+                      <div className="bg-background aspect-square overflow-hidden rounded-xl">
+                        <img
+                          src={product.image_urls?.[0] || '/placeholder-product.png'}
+                          alt={product.title}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <h2 className="text-foreground line-clamp-2 text-xs font-medium">
+                          {product.title}
+                        </h2>
+                        <p className="text-foreground text-sm font-medium tabular-nums">
+                          GH₵{Number(product.price).toLocaleString()}
+                        </p>
+                        {product.seller?.store_name && (
+                          <p className="text-muted truncate text-[11px]">
+                            {product.seller.store_name}
+                          </p>
+                        )}
+                      </div>
+                    </Link>
+                  </article>
+                ))}
+              </div>
+            )}
+          </main>
         </div>
       }
     >

@@ -19,7 +19,7 @@ Order is the execution order. Take the first `[ ]` row.
 | T12 | [~]    | tasks/T12-product-page-quality.md        | P1               | PD-05, PD-06                      |
 | T13 | [~]    | tasks/T13-pwa-footer-help-links.md       | P2               | SW-05, SW-06, SW-07, TX-04        |
 | T14 | [~]    | tasks/T14-store-and-listing-polish.md    | P2               | ST-04, PD-08                      |
-| T15 | [ ]    | tasks/T15-seo-technical.md               | P2               | PD-07, TX-01, TX-02, TX-03        |
+| T15 | [x]    | tasks/T15-seo-technical.md               | P2               | PD-07, TX-01, TX-02, TX-03        |
 
 Coverage check: 2+4+3+1+2+2+2+5+3+2+1+2+4+2+4 = **39 items**.
 

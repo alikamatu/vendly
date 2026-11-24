@@ -13,6 +13,7 @@ import {
   slugifyCategory,
 } from '@/lib/content/categories';
 import { fetchBrowseProductsServer, fetchCategoriesServer } from '@/lib/server-api';
+import { getProductPath } from '@/lib/product-slug';
 
 export function generateStaticParams() {
   return CATEGORY_PROFILES.map((c) => ({ slug: c.slug }));
@@ -123,7 +124,7 @@ export default async function CategoryDetailPage({
           items={products.map((p: any) => ({
             id: String(p.id),
             name: p.title,
-            url: `/product/${p.id}`,
+            url: getProductPath(p),
             image: p.image_urls?.[0] || null,
             price: p.price,
             currency: p.currency || 'GHS',
@@ -214,7 +215,7 @@ export default async function CategoryDetailPage({
                 return (
                   <Link
                     key={product.id}
-                    href={`/product/${product.id}`}
+                    href={getProductPath(product)}
                     className="bg-surface group flex flex-col overflow-hidden rounded-3xl transition-opacity hover:opacity-95"
                   >
                     <div className="bg-foreground/[0.04] aspect-[4/5] w-full overflow-hidden">

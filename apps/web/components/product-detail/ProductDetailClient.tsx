@@ -37,6 +37,7 @@ import VariantPicker, {
 import QuickCheckoutModal from '@/components/product-detail/QuickCheckoutModal';
 import ShareProductModal from '@/components/product-detail/ShareProductModal';
 import { isProductTrending } from '@/lib/product-badges';
+import { getProductPath } from '@/lib/product-slug';
 import { toast } from 'sonner';
 
 type MediaItem = { type: 'image'; url: string } | { type: 'video'; url: string };
@@ -208,7 +209,9 @@ export default function ProductDetailClient({
 
   const handleShare = async () => {
     if (typeof window === 'undefined') return;
-    const url = window.location.href;
+    const url = product
+      ? `${window.location.origin}${getProductPath(product)}`
+      : window.location.href;
     const imageUrl = product?.image_urls?.[0];
     const title = product?.title ?? 'Verndly product';
     const text = `Check out ${title} on Verndly! GH₵${product?.price}`;

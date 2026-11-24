@@ -1,9 +1,10 @@
-"use client";
+'use client';
 
-import React from "react";
-import Link from "next/link";
-import { Sparkles, Play, BadgePercent } from "lucide-react";
-import type { BrowseProduct } from "@/lib/api/product";
+import React from 'react';
+import Link from 'next/link';
+import { Sparkles, Play, BadgePercent } from 'lucide-react';
+import { getProductPath } from '@/lib/product-slug';
+import type { BrowseProduct } from '@/lib/api/product';
 
 interface ProductListRowProps {
   product: BrowseProduct;
@@ -21,63 +22,66 @@ function ProductListRow({ product }: ProductListRowProps) {
   const discount = discountPercent(product);
   return (
     <Link
-      href={`/product/${product.id}`}
-      className="group flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-accent)]/40 hover:bg-[var(--color-surface)]/80 transition-colors"
+      href={getProductPath(product)}
+      className="hover:border-[var(--color-accent)]/40 hover:bg-[var(--color-surface)]/80 group flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 transition-colors md:gap-4 md:p-4"
     >
-      <div className="relative w-16 h-16 md:w-20 md:h-20 rounded-xl overflow-hidden bg-[var(--color-background)] flex-shrink-0 border border-[var(--color-border)]">
+      <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] md:h-20 md:w-20">
         {product.image_urls?.[0] ? (
           <img
             src={product.image_urls[0]}
             alt={product.title}
             loading="lazy"
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
-          <div className="w-full h-full bg-[var(--color-border)]/40" />
+          <div className="bg-[var(--color-border)]/40 h-full w-full" />
         )}
         {product.video_url && (
-          <span className="absolute bottom-1 right-1 inline-flex items-center justify-center w-5 h-5 rounded-full bg-black/70 text-white">
-            <Play className="w-2.5 h-2.5" fill="currentColor" />
+          <span className="absolute bottom-1 right-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-white">
+            <Play className="h-2.5 w-2.5" fill="currentColor" />
           </span>
         )}
       </div>
 
-      <div className="flex-1 min-w-0 space-y-1">
+      <div className="min-w-0 flex-1 space-y-1">
         <div className="flex items-start gap-2">
-          <h3 className="text-sm font-normal text-[var(--color-foreground)] truncate flex-1">
+          <h3 className="flex-1 truncate text-sm font-normal text-[var(--color-foreground)]">
             {product.title}
           </h3>
           {product.is_featured && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-medium uppercase bg-amber-500/15 text-amber-600 flex-shrink-0">
-              <Sparkles className="w-2.5 h-2.5" />
+            <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[9px] font-medium uppercase text-amber-600">
+              <Sparkles className="h-2.5 w-2.5" />
               Hot
             </span>
           )}
           {discount != null && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-medium uppercase bg-emerald-500/15 text-emerald-600 flex-shrink-0">
-              <BadgePercent className="w-2.5 h-2.5" />−{discount}%
+            <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[9px] font-medium uppercase text-emerald-600">
+              <BadgePercent className="h-2.5 w-2.5" />−{discount}%
             </span>
           )}
         </div>
-        <p className="text-[11px] text-[var(--color-muted)] truncate">
+        <p className="truncate text-[11px] text-[var(--color-muted)]">
           @{product.seller.store_link}
           {product.category && (
-            <span> · <span className="capitalize">{product.category}</span></span>
+            <span>
+              {' '}
+              · <span className="capitalize">{product.category}</span>
+            </span>
           )}
         </p>
         {product.description && (
-          <p className="text-[11px] text-[var(--color-muted)] line-clamp-1">
+          <p className="line-clamp-1 text-[11px] text-[var(--color-muted)]">
             {product.description}
           </p>
         )}
       </div>
 
-      <div className="text-right flex-shrink-0 space-y-0.5">
-        <p className="text-sm font-medium text-[var(--color-foreground)] tabular-nums">
+      <div className="flex-shrink-0 space-y-0.5 text-right">
+        <p className="text-sm font-medium tabular-nums text-[var(--color-foreground)]">
           GH₵{Number(product.price).toLocaleString()}
         </p>
         {product.original_price != null && discount != null && (
-          <p className="text-[10px] text-[var(--color-muted)] line-through tabular-nums">
+          <p className="text-[10px] tabular-nums text-[var(--color-muted)] line-through">
             GH₵{Number(product.original_price).toLocaleString()}
           </p>
         )}

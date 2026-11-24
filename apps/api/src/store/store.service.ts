@@ -9,6 +9,7 @@ import { Role, ApprovalStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateStoreDto } from './dto/create-store.dto';
 import { CloudinaryService } from '../common/cloudinary.service';
+import { attachProductSlugs } from '../product/product-slug';
 
 @Injectable()
 export class StoreService {
@@ -367,10 +368,14 @@ export class StoreService {
     limit?: number;
   }) {
     const page = Math.max(1, query.page || 1);
-    const limit = Math.min(50, Math.max(1, query.limit || 12));
+    const limit = Math.min(500, Math.max(1, query.limit || 12));
     const skip = (page - 1) * limit;
 
-    const whereClause: any = {};
+    const whereClause: any = {
+      user: {
+        is_suspended: false,
+      },
+    };
 
     // Search query on store_name or bio
     if (query.search) {
@@ -394,11 +399,13 @@ export class StoreService {
       const now = new Date();
       if (query.is_pro) {
         whereClause.user = {
+          ...whereClause.user,
           is_pro: true,
           OR: [{ pro_expires_at: null }, { pro_expires_at: { gt: now } }],
         };
       } else {
         whereClause.user = {
+          ...whereClause.user,
           OR: [{ is_pro: false }, { pro_expires_at: { lt: now } }],
         };
       }
@@ -472,12 +479,15 @@ export class StoreService {
         products_count: s._count.products,
         is_pro: proActive,
         is_verified: s.user?.is_verified ?? false,
-        products: s.products.map((p) => ({
-          id: p.id.toString(),
-          title: p.title,
-          price: Number(p.price),
-          image_url: p.image_urls?.[0] || null,
-        })),
+        products: attachProductSlugs(
+          s.products.map((p) => ({
+            id: p.id.toString(),
+            title: p.title,
+            price: Number(p.price),
+            image_url: p.image_urls?.[0] || null,
+            seller: { store_link: s.store_link, store_name: s.store_name },
+          })),
+        ).map(({ seller: _seller, ...rest }) => rest),
       };
     });
 
