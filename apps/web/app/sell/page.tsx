@@ -18,6 +18,7 @@ import FaqJsonLd from '@/components/seo/FaqJsonLd';
 import JsonLd from '@/components/seo/JsonLd';
 import FeeCalculator from '@/components/editorial/FeeCalculator';
 import { EscrowFlowSvg } from '@/components/editorial/VisualDiagrams';
+import { COVERAGE_COPY } from '@/lib/copy/coverage';
 
 export const metadata = buildMetadata({
   title: 'Sell on Verndly — Verified Store, Flat 4% Fee, Paid via Escrow',
@@ -51,9 +52,9 @@ const SELLER_METRICS = [
     detail: 'Start with your Ghana Card or existing Instagram/TikTok store.',
   },
   {
-    value: '16',
-    label: 'Regions nationwide',
-    detail: 'Ship safely to Accra, Kumasi, Takoradi, Tamale & beyond.',
+    value: 'GH₵ 0',
+    label: 'Setup cost',
+    detail: COVERAGE_COPY.sellDeliveryDetail,
   },
 ];
 
@@ -225,7 +226,7 @@ export default function SellPage() {
           <p className="text-muted max-w-2xl text-base leading-relaxed md:text-lg">
             Stop losing 20% to legacy marketplace commissions or chasing unpaid Instagram DMs.
             Verndly gives Ghanaian entrepreneurs a clean storefront, Paystack escrow checkout, and
-            nationwide reach — while you keep 96% of every sale.
+            seller-configured delivery — while you keep 96% of every sale.
           </p>
 
           <div className="flex flex-col items-stretch gap-3 pt-2 sm:flex-row sm:items-center">

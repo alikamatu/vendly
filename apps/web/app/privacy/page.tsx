@@ -341,9 +341,9 @@ export default function PrivacyPage() {
             body: (
               <>
                 <p>
-                  While Verndly primarily serves merchants and consumers in Ghana and West Africa,
-                  our technical infrastructure and cloud sub-processors operate high-availability
-                  data centers distributed globally.
+                  While Verndly serves merchants and consumers in Ghana, our technical
+                  infrastructure and cloud sub-processors operate high-availability data centers
+                  distributed globally.
                 </p>
                 <p>
                   Where personal information is transferred across international borders, Verndly

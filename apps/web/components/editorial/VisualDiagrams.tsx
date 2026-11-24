@@ -345,7 +345,7 @@ export function GhanaDeliveryNetworkSvg({ className = 'w-full h-auto' }: { class
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       role="img"
-      aria-label="Verndly nationwide courier network connecting Accra, Kumasi, Takoradi, and Tamale across all 16 regions of Ghana."
+      aria-label="Verndly seller-configured delivery network starting in Greater Accra with optional inter-regional courier dispatch and free store pickup."
       className={className}
     >
       <rect width="760" height="240" rx="24" fill="var(--color-surface)" />
@@ -429,27 +429,27 @@ export function GhanaDeliveryNetworkSvg({ className = 'w-full h-auto' }: { class
         </text>
       </g>
 
-      {/* Hub 4: Tamale & North */}
+      {/* Hub 4: Store Pickup */}
       <g transform="translate(520, 48)">
         <rect width="176" height="56" rx="16" fill="var(--color-background)" />
         <circle cx="22" cy="28" r="5" fill="var(--color-foreground)" />
         <text x="36" y="25" fill="var(--color-foreground)" fontSize="13" fontWeight="500">
-          Tamale · Northern
+          Store Pickup
         </text>
         <text x="36" y="42" fill="var(--color-muted)" fontSize="11" fontFamily="var(--font-mono)">
-          2–3 business days
+          Free where offered
         </text>
       </g>
 
-      {/* Hub 5: All 16 Regions */}
+      {/* Hub 5: Inter-Regional */}
       <g transform="translate(520, 130)">
         <rect width="176" height="56" rx="16" fill="var(--color-background)" />
         <circle cx="22" cy="28" r="5" fill="#10b981" />
         <text x="36" y="25" fill="var(--color-foreground)" fontSize="13" fontWeight="500">
-          All 16 Regions
+          Other Regions
         </text>
         <text x="36" y="42" fill="var(--color-muted)" fontSize="11" fontFamily="var(--font-mono)">
-          2–4 business days
+          Seller-arranged
         </text>
       </g>
     </svg>

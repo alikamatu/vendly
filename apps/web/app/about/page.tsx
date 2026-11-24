@@ -4,6 +4,7 @@ import { ArrowRight } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { buildMetadata } from '@/lib/seo';
 import BreadcrumbJsonLd from '@/components/seo/BreadcrumbJsonLd';
+import { COVERAGE_COPY } from '@/lib/copy/coverage';
 
 export const metadata: Metadata = buildMetadata({
   title: 'About Verndly',
@@ -45,13 +46,12 @@ const STORY_SECTIONS = [
     title: 'Where we operate',
     body: (
       <p>
-        We&apos;re live in Accra and onboarding verified sellers across Ghana. Want Verndly in your
-        area or interested in opening a store?{' '}
+        {COVERAGE_COPY.aboutLocation}{' '}
         <Link
           href="/contact"
           className="text-foreground underline underline-offset-4 hover:text-[var(--color-accent)]"
         >
-          Get in touch
+          Contact us
         </Link>
         .
       </p>

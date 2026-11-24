@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { contactApi } from '@/lib/api/contact';
 import { SUPPORT_CONTACT } from '@/lib/contact';
+import { COVERAGE_COPY } from '@/lib/copy/coverage';
 import Spinner from '@/components/ui/Spinner';
 
 interface FooterLink {
@@ -106,8 +107,8 @@ const TRUST_METRICS = [
   },
   {
     Icon: Truck,
-    title: 'Nationwide Dispatch',
-    desc: 'Fast, door-to-door delivery across all regions',
+    title: COVERAGE_COPY.footerTrustTitle,
+    desc: COVERAGE_COPY.footerTrustDesc,
   },
 ];
 
@@ -149,8 +150,7 @@ export default function Footer() {
                 </span>
               </Link>
               <p className="text-muted-foreground max-w-md text-xs leading-relaxed">
-                The modern marketplace built for verified young entrepreneurs and independent
-                brands. Buy with escrow protection, sell nationwide, and scale your business.
+                {COVERAGE_COPY.footerBrandSummary}
               </p>
             </div>
 

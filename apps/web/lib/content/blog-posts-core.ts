@@ -218,7 +218,7 @@ export const CORE_BLOG_POSTS: BlogPost[] = [
         id: 'why-momo-scams-work',
         heading: 'Why MoMo shopping scams succeed — and the one thing they all require',
         paragraphs: [
-          'Across Accra, Kumasi, Takoradi, and Tamale, shopping via Instagram, TikTok, Facebook Marketplace, and Jiji has become everyday life. Unfortunately, so has getting blocked the second a Mobile Money transfer goes through.',
+          'Across Greater Accra and Ghana, shopping via Instagram, TikTok, Facebook Marketplace, and Jiji has become everyday life. Unfortunately, so has getting blocked the second a Mobile Money transfer goes through.',
           "Look closely at every advisory issued by Ghana's Cyber Security Authority (CERT-GH): whether it is a fake boutique running sponsored Black Friday ads, a cloned electronics page selling laptops at 40% below Circle prices, or a classifieds seller demanding a 'commitment deposit' for dispatch, every single scam requires the buyer to send irreversible cash directly to a stranger first.",
           "Once those cedis land in a fraudster's MoMo wallet and are transferred out or withdrawn via a mule agent, recovering them through telcos or police reports is slow and rarely guaranteed.",
         ],
@@ -256,7 +256,7 @@ export const CORE_BLOG_POSTS: BlogPost[] = [
         id: 'how-escrow-fixes-it',
         heading: "Why escrow beats both 'pay first' and 'pay on delivery'",
         paragraphs: [
-          'Conventional advice tells Ghanaian buyers to insist on Pay on Delivery (POD). While POD protects you against total non-delivery, honest sellers increasingly refuse it — especially for inter-regional orders to Kumasi or Tamale — because buyers sometimes cancel at the gate or take items without paying.',
+          'Conventional advice tells Ghanaian buyers to insist on Pay on Delivery (POD). While POD protects you against total non-delivery, honest sellers increasingly refuse it — especially for long-distance courier orders — because buyers sometimes cancel at the gate or take items without paying.',
           'Marketplace escrow solves trust for both sides simultaneously. When you buy on Verndly, you pay conveniently with MTN MoMo, Telecel Cash, AirtelTigo Money, or card through Paystack — but the merchant does NOT receive your money yet. Your payment is locked in Paystack escrow custody.',
           'The merchant sees verified confirmation that funds are secured, so they dispatch quickly. After the parcel arrives, you get 7 calendar days to inspect, test, and verify authenticity. If the item never arrives, arrives broken, or does not match the listing, you file a claim and Paystack reverses the funds directly back to your MoMo wallet or card.',
         ],
@@ -533,9 +533,9 @@ export const CORE_BLOG_POSTS: BlogPost[] = [
               'Buyer protected for full 7 calendar days',
             ],
             [
-              'Inter-regional shipping (Accra → Kumasi/Tamale)',
+              'Inter-regional courier orders (where seller ships)',
               'Rarely offered due to return risk',
-              'Standard nationwide across all 16 regions',
+              'Supported wherever the merchant enables regional dispatch',
             ],
             [
               "Upfront scammer vanishing with buyer's MoMo",
@@ -557,7 +557,7 @@ export const CORE_BLOG_POSTS: BlogPost[] = [
         id: 'why-sellers-win-with-escrow',
         heading: 'Why sellers stop losing money to no-shows',
         paragraphs: [
-          "For Ghanaian entrepreneurs, escrow is the cleanest filter for serious buyers ever built. Every order that reaches your Verndly dashboard is already paid in full via Paystack. You never waste courier money on impulse orders from people who won't pick up their phone, you never inspect questionable MoMo screenshots, and you can confidently ship nationwide to Kumasi, Takoradi, and Tamale.",
+          "For Ghanaian entrepreneurs, escrow is the cleanest filter for serious buyers ever built. Every order that reaches your Verndly dashboard is already paid in full via Paystack. You never waste courier money on impulse orders from people who won't pick up their phone, you never inspect questionable MoMo screenshots, and you can safely expand your delivery zones as your courier network grows.",
         ],
         callout: {
           eyebrow: 'Built for Both Sides',
@@ -580,7 +580,7 @@ export const CORE_BLOG_POSTS: BlogPost[] = [
       {
         question: 'Does Verndly support nationwide delivery without needing Cash on Delivery?',
         answer:
-          'Yes. Because buyers pay upfront into protected Paystack escrow, merchants across Accra, Kumasi, Takoradi, and Tamale can ship inter-regionally across all 16 regions safely.',
+          'Yes. Because buyers pay upfront into protected Paystack escrow, merchants can configure same-city or inter-regional courier delivery on their storefront without Pay on Delivery no-show risk.',
       },
     ],
     cta: {

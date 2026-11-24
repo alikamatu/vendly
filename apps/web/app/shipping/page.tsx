@@ -2,18 +2,15 @@ import type { Metadata } from 'next';
 import LegalPage from '@/components/legal/LegalPage';
 import Link from 'next/link';
 import { buildMetadata } from '@/lib/seo';
+import { COVERAGE_COPY } from '@/lib/copy/coverage';
 import BreadcrumbJsonLd from '@/components/seo/BreadcrumbJsonLd';
 
 export const metadata: Metadata = buildMetadata({
   title: 'Shipping & Delivery Policy',
   description:
-    'Official logistics guidelines, merchant dispatch SLAs, nationwide delivery zones across Ghana, real-time tracking, and lost parcel protection on Verndly.',
+    'Logistics guidelines, merchant dispatch windows, seller-configured delivery zones in Ghana, tracking, and lost parcel protection on Verndly.',
   path: '/shipping',
-  keywords: [
-    'verndly shipping',
-    'nationwide delivery ghana',
-    'accra kumasi takoradi tamale delivery',
-  ],
+  keywords: ['verndly shipping', 'ghana courier delivery', 'accra delivery and pickup'],
 });
 
 export default function ShippingPage() {
@@ -28,7 +25,7 @@ export default function ShippingPage() {
       <LegalPage
         eyebrow="Logistics & Delivery Standards"
         title="Shipping, Dispatch & Delivery Policy"
-        description="Verndly connects you with verified independent merchants across Ghana. This policy explains our dispatch standards, delivery coverage zones, tracking protocols, courier handover procedures, and our commitment to prompt, safe doorstep delivery."
+        description={COVERAGE_COPY.shippingIntro}
         updatedAt="September 2026"
         sections={[
           {
@@ -131,9 +128,9 @@ export default function ShippingPage() {
                     <em>Typical transit duration: 24 to 48 hours after courier handover.</em>
                   </li>
                   <li>
-                    <strong>Nationwide &amp; Remote Districts:</strong> Complete coverage extending
-                    to district capitals and remote towns across all 16 regions. Dispatched via
-                    intercity commercial transport hubs and express parcel networks.{' '}
+                    <strong>Extended Regional Delivery (where the seller ships):</strong> Where a
+                    merchant enables inter-regional delivery options, parcels are dispatched via
+                    regional logistics partners to supported towns and cities.{' '}
                     <em>Typical transit duration: 2 to 4 business days.</em>
                   </li>
                 </ul>

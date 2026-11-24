@@ -6,10 +6,10 @@ All purchases on Verndly are protected by Paystack escrow settlement, offering a
 
 ## Core Features
 - **Flat 4% Seller Fee (Paystack Included)**: No 7–20% category commissions, no per-order seller shipping contribution, and GH₵ 0 setup or monthly fee on standard verified stores.
-- **Verified Independent Merchants**: Curated stores across Ghana (Accra, Kumasi, Takoradi, Tamale, and all 16 regions) verified via Ghana Card + sales proof, existing store link, or direct review within 24–48 hours.
+- **Verified Independent Merchants**: Curated stores operating in Greater Accra today and onboarding verified sellers across Ghana via Ghana Card + sales proof, existing store link, or direct review within 24–48 hours.
 - **7-Day Escrow Buyer Protection**: Online payments via Paystack (MTN Mobile Money, Telecel Cash, AirtelTigo Money, Visa, Mastercard) are held in escrow and only released to the seller after delivery and inspection.
 - **Direct Storefronts**: Each verified seller operates an independent storefront accessible at `https://verndly.com/s/[store_link]`.
-- **Nationwide Courier Logistics**: Same-day express in Accra/Kumasi, 24–48 hour inter-regional transit, and free Store Pickup.
+- **Seller-Configured Courier Delivery**: Delivery zones and dispatch windows are set by each verified merchant, including same-day Accra delivery and free Store Pickup where offered.
 
 ## Key URLs
 - Homepage & Featured Marketplace: https://verndly.com/

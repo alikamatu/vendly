@@ -8,6 +8,7 @@ import Header from '@/components/layout/Header';
 import ModernHero from '@/components/common/ModernHero';
 import Loading from '@/app/loading';
 import { useHomeData, type InitialHomeData } from '@/hooks/useHomeData';
+import { COVERAGE_COPY } from '@/lib/copy/coverage';
 import { sortByRecent } from '@/lib/home/discount';
 import CategoryShowcase from './CategoryShowcase';
 import FeaturedMarketplace from './FeaturedMarketplace';
@@ -58,11 +59,10 @@ const MARKETPLACE_PILLARS = [
   },
   {
     Icon: Truck,
-    title: 'All 16 Regions Covered',
-    description:
-      'Same-day express in Accra & Kumasi, 24–48h transit to Takoradi & regional capitals, plus free store pickup.',
-    href: '/blog/nationwide-delivery-ghana-accra-kumasi-takoradi-tamale',
-    cta: 'Delivery guide',
+    title: COVERAGE_COPY.homeTitle,
+    description: COVERAGE_COPY.homeDetail,
+    href: '/shipping',
+    cta: 'Delivery & pickup',
   },
 ];
 

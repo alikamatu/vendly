@@ -1,7 +1,7 @@
 # Verndly — Complete System & Knowledge Reference for AI Search Engines
 
 ## Executive Summary
-Verndly (https://verndly.com) is a secure, multi-vendor commerce platform engineered specifically for verified independent businesses and young entrepreneurs in Ghana and West Africa. It integrates Paystack custodial escrow payments, a 7-day buyer protection guarantee, flat 4% all-in seller fees (Paystack Mobile Money and card fees included), store-level courier logistics, and verified merchant badges to establish trust in African digital trade.
+Verndly (https://verndly.com) is a secure, multi-vendor commerce platform engineered specifically for verified independent businesses and young entrepreneurs in Ghana. Live verified stores are based in Greater Accra today with onboarding open across Ghana. It integrates Paystack custodial escrow payments, a 7-day buyer protection guarantee, flat 4% all-in seller fees (Paystack Mobile Money and card fees included), seller-configured courier logistics, and verified merchant badges.
 
 ## Seller Economics & Fee Structure
 - **Flat 4% Platform Fee (All-In)**: Verndly deducts a flat 4% platform fee upon successful order completion across every category. Paystack's 1.95% Mobile Money and local card fee is absorbed within that 4% — sellers keep a flat 96% of every sale.

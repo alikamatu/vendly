@@ -77,4 +77,13 @@ Append one entry per loop. Newest at the bottom.
 - Files changed: apps/web/lib/content/jumia-rates-2026.ts, apps/web/lib/content/jumia-rates-2026.test.mjs, apps/web/components/editorial/FeeCalculator.tsx, apps/web/components/editorial/VisualDiagrams.tsx, apps/web/lib/content/blog-posts-core.ts, apps/web/lib/content/blog-posts-extended.ts, apps/web/public/llms.txt, apps/web/public/llms-full.txt, verndly-fixes/TASKS.md, verndly-fixes/PROGRESS.md
 - NEEDS-HUMAN: none
 - Verification: `node --test apps/web/lib/content/jumia-rates-2026.test.mjs` passed (3/3: GH₵ 2,500 phone & GH₵ 200 fashion exact match); `git grep` confirmed 0 stale 5–20% rates; `pnpm --filter @vendly/web type-check` passed with 0 errors.
-- Commit: pending (see git log for `fix(t07): ... [sl-01, bl-01]`)
+- Commit: c35d9fb
+
+### 2026-11-24 — T08 Delivery and coverage claims — status: [x]
+
+- Items closed: HM-02, SW-04, SL-02, AB-03, SH-01
+- Items open / blocked: none
+- Files changed: apps/web/lib/copy/coverage.ts, apps/web/components/home/HomeView.tsx, apps/web/components/layout/Footer.tsx, apps/web/app/sell/page.tsx, apps/web/app/about/page.tsx, apps/web/app/shipping/page.tsx, apps/web/components/legal/LegalPage.tsx, apps/web/app/categories/[slug]/page.tsx, apps/web/components/editorial/VisualDiagrams.tsx, apps/web/lib/content/categories.ts, apps/web/lib/content/blog-posts-core.ts, apps/web/lib/content/blog-posts-extended.ts, apps/web/app/privacy/page.tsx, apps/web/public/llms.txt, apps/web/public/llms-full.txt, verndly-fixes/TASKS.md, verndly-fixes/PROGRESS.md
+- NEEDS-HUMAN: none
+- Verification: `git grep -niE "16 Regions|All 16|Nationwide Dispatch|Tamale|West Africa|International Orders" apps/web/` confirmed zero overclaimed copy in visible UI (only preserved URL slug `nationwide-delivery-ghana-accra-kumasi-takoradi-tamale` to avoid breaking links); `pnpm --filter @vendly/web type-check` passed with 0 errors.
+- Commit: pending (see git log for `fix(t08): ... [hm-02, sw-04, sl-02, ab-03, sh-01]`)

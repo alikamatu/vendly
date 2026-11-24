@@ -36,7 +36,7 @@ export const CATEGORY_PROFILES: CategorySeoProfile[] = [
     subheadline:
       'Discover streetwear, tailored pieces, footwear, bags, and curated thrift from vetted local designers and boutiques — every order protected by 7-day Paystack escrow.',
     editorialCopy: [
-      "Ghana's most exciting fashion rarely lives in massive corporate warehouses — it comes from independent designers, campus labels, thrift curators, and small boutiques in Accra, Kumasi, Takoradi, and Tamale. Until now, buying from independent fashion sellers meant paying Mobile Money up front in an Instagram DM and hoping the right size or fabric showed up.",
+      "Ghana's most exciting fashion rarely lives in massive corporate warehouses — it comes from independent designers, campus labels, thrift curators, and small boutiques in Greater Accra and across Ghana. Until now, buying from independent fashion sellers meant paying Mobile Money up front in an Instagram DM and hoping the right size or fabric showed up.",
       'Every fashion store on Verndly is identity-verified before listing a single item. Your payment via MTN MoMo, Telecel Cash, AirtelTigo Money, or card is held safely in Paystack escrow until your order arrives and passes your 7-day inspection window. If a piece arrives damaged, stained, or completely different from the listing photos, you are protected for a free return or full refund.',
       'For fashion founders, Verndly charges a flat 4% fee (including Paystack processing) instead of the 20% fashion commission plus shipping deductions charged by legacy marketplaces — letting independent Ghanaian brands offer fairer prices directly to shoppers.',
     ],
@@ -212,7 +212,7 @@ export const CATEGORY_PROFILES: CategorySeoProfile[] = [
       {
         question: 'Can Verndly merchants deliver home appliances outside Accra?',
         answer:
-          'Yes. Verified merchants dispatch inter-regionally to Kumasi, Takoradi, Tamale, Cape Coast, Sunyani, and district capitals across all 16 regions.',
+          'Delivery reach is configured per merchant. Sellers based in Greater Accra today offer local courier delivery, free store pickup where enabled, and regional dispatch where their courier options support it.',
       },
     ],
     keywords: [
@@ -284,9 +284,9 @@ export const CATEGORY_PROFILES: CategorySeoProfile[] = [
         detail: 'Discover curated titles from local booksellers and student-run stationery brands.',
       },
       {
-        title: 'Campus & nationwide delivery',
+        title: 'Accra & inter-regional delivery',
         detail:
-          'Reliable parcel delivery to Legon, KNUST, UCC, UDS, and addresses across all 16 regions.',
+          'Same-day and next-day delivery in Accra (including Legon), plus inter-regional parcel dispatch arranged directly with participating sellers.',
       },
       {
         title: 'Escrow-protected orders',
@@ -297,7 +297,7 @@ export const CATEGORY_PROFILES: CategorySeoProfile[] = [
       {
         question: 'Do sellers deliver books to university campuses across Ghana?',
         answer:
-          'Yes. Merchants offer same-city courier delivery and inter-regional parcel shipping to major university towns including Accra, Kumasi, Cape Coast, Winneba, and Tamale.',
+          'Yes. Each merchant sets their delivery coverage on their storefront — including Accra campus drop-offs, free store pickup where offered, and inter-regional parcel dispatch where supported.',
       },
     ],
     keywords: ['buy books online ghana', 'stationery shop accra', 'textbooks ghana online'],
@@ -398,7 +398,8 @@ export const CATEGORY_PROFILES: CategorySeoProfile[] = [
       },
       {
         title: 'Discreet tracked courier delivery',
-        detail: 'Fast doorstep delivery across Accra, Kumasi, Takoradi, Tamale, and beyond.',
+        detail:
+          'Seller-configured doorstep delivery in Greater Accra and regional dispatch where offered.',
       },
     ],
     faqs: [

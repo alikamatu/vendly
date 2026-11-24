@@ -539,69 +539,68 @@ export const EXTENDED_BLOG_POSTS: BlogPost[] = [
   {
     slug: 'nationwide-delivery-ghana-accra-kumasi-takoradi-tamale',
     rank: 17,
-    title:
-      'Nationwide delivery: how Verndly orders reach Kumasi, Takoradi, Tamale and all 16 regions',
-    shortTitle: 'Nationwide delivery: Accra, Kumasi, Takoradi & Tamale',
-    metaTitle: 'Nationwide Online Shopping Delivery in Ghana: Accra, Kumasi, Takoradi & Tamale',
+    title: 'How delivery and store pickup work on Verndly in Ghana',
+    shortTitle: 'How delivery & store pickup work on Verndly',
+    metaTitle: 'How Delivery & Store Pickup Work on Verndly Ghana',
     metaDescription:
-      'How Verndly delivers online orders across all 16 regions of Ghana — same-day express in Accra & Kumasi, 24–48h inter-regional transit, zero hidden rider fees, and lost-parcel escrow refunds.',
-    eyebrow: 'Logistics & Delivery · Nationwide',
+      'How seller-configured delivery works on Verndly Ghana — Greater Accra courier dispatch today, regional shipping where offered by the seller, zero hidden rider fees, and lost-parcel escrow refunds.',
+    eyebrow: 'Logistics & Delivery · Guide',
     audience: 'Buyers',
     readingTime: '5 min read',
     publishedAt: '2026-11-11',
-    updatedAt: '2026-11-18',
+    updatedAt: '2026-11-23',
     summary:
-      "Online shopping in Ghana shouldn't stop at East Legon and Osu. Here is how Verndly's verified merchants and courier network deliver door-to-door across Accra, Kumasi, Takoradi, Tamale, and all 16 regions — with zero surprise rider fees.",
+      'Live verified stores on Verndly are based in Greater Accra today, with delivery zones, dispatch windows, and free store pickup configured directly by each merchant. Here is how shipping rates, courier timelines, and lost-parcel protection work.',
     keyTakeaways: [
-      'Same-city express orders (Accra-Tema, Kumasi Metro, Takoradi) arrive in 2–6 hours after courier handover.',
-      'Inter-regional deliveries between Accra, Kumasi, Takoradi, Cape Coast, Sunyani, and Ho take 24–48 hours; Tamale and remote districts take 2–4 business days.',
+      'Live stores on Verndly today operate in Greater Accra, with each merchant setting their own delivery zones and dispatch windows.',
+      'Same-city courier orders typically arrive in 2–6 hours after courier handover; inter-regional targets (24–48 hours or 2–4 business days) apply where a seller enables regional dispatch.',
       'Zero checkout surcharges: the delivery fee displayed at checkout is final — riders are prohibited from demanding extra gate or fuel fees.',
-      'Every parcel is insured by Paystack escrow: confirmed lost parcels receive a 100% full refund including shipping fees.',
+      'Every parcel is protected by Paystack escrow: confirmed lost parcels receive a 100% full refund including shipping fees.',
     ],
     keywords: [
-      'online shopping delivery kumasi',
-      'delivery to tamale ghana',
-      'nationwide delivery ghana',
-      'accra to kumasi delivery',
+      'online shopping delivery accra',
+      'courier delivery ghana',
+      'verndly delivery and pickup',
+      'ghana store pickup',
     ],
     heroVisual: 'delivery-network',
     sections: [
       {
         id: 'delivery-timelines-by-city',
-        heading: 'Realistic delivery windows across Ghana',
+        heading: 'Typical delivery windows (configured per seller)',
         paragraphs: [
-          'Every merchant on Verndly displays their dispatch SLA (Same-Day, Next-Day 24h, or 2–3 business days for custom pieces) right on their product listings. Once handed to the courier, transit times follow clear regional bands:',
+          'Delivery is arranged by the selling merchant using their courier options. Every merchant publishes their dispatch window (Same-Day, Next-Day 24h, or 2–3 business days for custom pieces) on their storefront. Typical transit targets after courier handover:',
         ],
         table: {
-          caption: 'Verndly Delivery Timelines by Zone',
+          caption: 'Typical Verndly Delivery Targets (Where Offered by the Seller)',
           headers: [
-            'Delivery Zone',
-            'Coverage Examples',
-            'Typical Transit After Dispatch',
+            'Delivery Option',
+            'Availability',
+            'Typical Target After Dispatch',
             'Fulfillment Method',
           ],
           rows: [
             [
-              'Intra-Metropolitan Express',
-              'Accra–Tema, Kumasi Metro, Takoradi',
+              'Greater Accra Express',
+              'Accra–Tema Metropolis (active today)',
               '2 – 6 hours',
-              'Dedicated express dispatch riders',
+              'Merchant express dispatch riders',
             ],
             [
-              'Inter-Regional Major Cities',
-              'Accra ↔ Kumasi, Takoradi, Cape Coast, Koforidua, Ho, Sunyani',
+              'Inter-Regional Courier',
+              'Where enabled by the selling merchant',
               '24 – 48 hours',
               'Regional parcel logistics partners',
             ],
             [
-              'Northern & Remote Districts',
-              'Tamale, Bolgatanga, Wa & all 16 regional districts',
+              'Extended Regional Delivery',
+              'Where enabled by the selling merchant',
               '2 – 4 business days',
-              'Intercity express parcel hubs',
+              'Intercity parcel hubs',
             ],
             [
               'Direct Store Pickup',
-              'Merchant boutiques & showrooms',
+              'Merchant shops offering collection',
               'Ready same day / 24h',
               'GH₵ 0 (100% free collection)',
             ],
@@ -626,12 +625,12 @@ export const EXTENDED_BLOG_POSTS: BlogPost[] = [
       {
         question: 'Can I order online on Verndly and get delivery outside Accra?',
         answer:
-          'Yes. Verndly merchants deliver nationwide across all 16 regions of Ghana, including Kumasi, Takoradi, Cape Coast, Sunyani, Ho, Koforidua, Tamale, Bolgatanga, and Wa.',
+          'Live verified stores are based in Greater Accra today, and delivery coverage is set by each seller. Check the delivery area shown on a storefront or product page — merchants who enable inter-regional couriers ship outside Accra.',
       },
       {
-        question: 'How long does delivery from Accra to Kumasi or Tamale take?',
+        question: 'How long does courier delivery typically take?',
         answer:
-          'After merchant dispatch, Accra to Kumasi or Takoradi typically takes 24 to 48 hours, while deliveries to Tamale and northern districts generally arrive in 2 to 4 business days.',
+          'Within Greater Accra, express courier drop-offs typically take 2 to 6 hours after dispatch. Where a merchant supports inter-regional shipping, typical targets are 24–48 hours for major cities or 2–4 business days for extended routes.',
       },
       {
         question: 'Can I avoid shipping fees by picking up my order myself?',
@@ -640,10 +639,10 @@ export const EXTENDED_BLOG_POSTS: BlogPost[] = [
       },
     ],
     cta: {
-      eyebrow: 'All 16 regions covered',
-      heading: 'Order from verified stores with tracked delivery.',
+      eyebrow: 'Transparent delivery & pickup',
+      heading: 'Order from verified stores with clear checkout delivery fees.',
       description:
-        'Filter products by delivery speed and service area, backed by 7-day escrow protection.',
+        'See each store’s delivery options before you pay, backed by 7-day escrow protection.',
       primaryLabel: 'Shop products now',
       primaryHref: '/products',
       secondaryLabel: 'Full Shipping Policy',

@@ -77,7 +77,7 @@ export default async function CategoryDetailPage({
 
   const editorialCopy = profile?.editorialCopy || [
     `Every ${displayName.toLowerCase()} merchant on Verndly passes manual verification before listing products. When you pay with MTN Mobile Money, Telecel Cash, AirtelTigo Money, or card, Paystack holds your funds safely in escrow until delivery is confirmed and your 7-day inspection window passes.`,
-    `Explore verified storefronts across Accra, Kumasi, Takoradi, Tamale, and all 16 regions with transparent checkout shipping rates and zero hidden rider fees.`,
+    `Explore verified storefronts based in Greater Accra and across Ghana with seller-configured delivery rates, store pickup where offered, and zero hidden rider fees.`,
   ];
 
   const highlights = profile?.buyerHighlights || [
