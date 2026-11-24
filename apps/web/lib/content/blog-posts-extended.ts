@@ -96,12 +96,12 @@ export const EXTENDED_BLOG_POSTS: BlogPost[] = [
       description: 'No fake MoMo alerts, no unpaid doorstep rejections, and a flat 4% fee all-in.',
       primaryLabel: 'Sell on Verndly',
       primaryHref: '/sell',
-      secondaryLabel: 'Compare fees with Jumia',
-      secondaryHref: '/blog/jumia-seller-fees-ghana-2026-vs-verndly',
+      secondaryLabel: 'Compare marketplace fees',
+      secondaryHref: '/blog/ghana-marketplace-seller-fees-vs-verndly',
     },
     relatedSlugs: [
       'pay-on-delivery-vs-escrow-ghana',
-      'jumia-seller-fees-ghana-2026-vs-verndly',
+      'ghana-marketplace-seller-fees-vs-verndly',
       'selling-on-instagram-whatsapp-vs-marketplace-ghana',
     ],
   },
@@ -210,29 +210,29 @@ export const EXTENDED_BLOG_POSTS: BlogPost[] = [
     slug: 'safest-online-shopping-sites-ghana',
     rank: 9,
     title:
-      'Safest online shopping sites in Ghana compared: Jumia, Jiji/Tonaton, Instagram shops, Verndly',
-    shortTitle: 'Safest online shopping sites in Ghana compared',
-    metaTitle: 'Safest Online Shopping Sites in Ghana Compared (2026): Jumia vs Jiji vs Verndly',
+      'Safest ways to shop online in Ghana compared: legacy marketplaces, classifieds, Instagram shops, Verndly',
+    shortTitle: 'Safest online shopping options in Ghana compared',
+    metaTitle: 'Safest Online Shopping Options in Ghana Compared (2026): Escrow vs Classifieds',
     metaDescription:
-      "An honest comparison of Ghana's online shopping options — Jumia, Jiji/Tonaton, Instagram shops, and Verndly — ranked on payment protection, seller vetting, and returns.",
+      "An honest comparison of Ghana's online shopping options — traditional marketplaces, Jiji/Tonaton classifieds, Instagram shops, and Verndly — ranked on payment protection, seller vetting, and returns.",
     eyebrow: 'Buyer Comparison · Marketplaces',
     audience: 'Buyers',
     readingTime: '6 min read',
     publishedAt: '2026-11-08',
-    updatedAt: '2026-11-18',
+    updatedAt: '2026-11-24',
     summary:
-      "Shoppers on r/ghana ask every week whether Jumia or Jiji is safe. The truth depends on how each platform handles money and merchant vetting. Here is a fair, side-by-side comparison across Ghana's four main ways to shop online.",
+      "Shoppers in Ghana ask every week which online shopping channel is actually safe. The answer depends on how each platform handles money and merchant vetting. Here is a fair, side-by-side comparison across Ghana's four main ways to shop online.",
     keyTakeaways: [
       'Jiji and Tonaton are classifieds boards, not escrow marketplaces — their own FAQs state they cannot vouch for every seller or protect payments.',
       "Instagram and WhatsApp host Ghana's most creative independent brands, but offer zero built-in checkout protection or dispute arbitration.",
-      'Jumia offers broad warehouse inventory and pickup stations, though shoppers cite mixed refund speed and high seller fees (up to 20%) push independent brands away.',
+      'Traditional large marketplaces offer broad warehouse inventory and pickup stations, though shoppers cite slower refund tickets and high seller fees (up to 20%) push independent brands away.',
       'Verndly combines independent Ghanaian brands with mandatory merchant verification and 7-day Paystack escrow protection.',
     ],
     keywords: [
       'best online shopping sites in ghana',
-      'is jumia safe ghana',
+      'safe online shopping ghana',
       'is jiji safe ghana',
-      'jumia vs jiji ghana',
+      'escrow marketplace ghana',
       'tonaton safe',
     ],
     sections: [
@@ -247,7 +247,7 @@ export const EXTENDED_BLOG_POSTS: BlogPost[] = [
           headers: [
             'Criterion',
             'Verndly',
-            'Jumia Ghana',
+            'Legacy Marketplaces',
             'Jiji / Tonaton',
             'Instagram / WhatsApp',
           ],
@@ -262,7 +262,7 @@ export const EXTENDED_BLOG_POSTS: BlogPost[] = [
             [
               'Seller Verification',
               'Manual ID / store vetting',
-              'VendorHub onboarding',
+              'Standard seller onboarding',
               'Open classifieds',
               'Self-created profile',
             ],
@@ -295,16 +295,16 @@ export const EXTENDED_BLOG_POSTS: BlogPost[] = [
         heading: 'When each platform makes sense',
         paragraphs: [
           'Being objective helps you shop smarter. If you are buying a used car or inspecting an apartment in person, classifieds like Jiji or Tonaton make sense — as long as you meet in a public place and never pay a deposit before seeing the asset.',
-          'If you want mass-market imported gadgets with physical pickup stations, Jumia has deep breadth — just check seller ratings carefully and inspect parcels promptly.',
+          'If you want mass-market imported gadgets with physical pickup stations, large general marketplaces offer wide breadth — just check seller ratings carefully and inspect parcels promptly.',
           'If you want authentic clothing, skincare, electronics, gifts, or everyday goods from independent Ghanaian entrepreneurs and modern local brands — with verified merchants and guaranteed Paystack escrow refunds — Verndly is built specifically for that experience.',
         ],
       },
     ],
     faqs: [
       {
-        question: 'Is buying from Jumia Ghana safe?',
+        question: 'Are large traditional marketplaces in Ghana safe to buy from?',
         answer:
-          'Jumia is a legitimate large marketplace with pickup stations and return policies, though buyers should check individual vendor ratings and inspect orders quickly, as return disputes can take time to resolve.',
+          'Large general marketplaces offer structured checkout and return policies, though buyers should still check individual vendor ratings and inspect orders quickly, as ticket-based return disputes can take time to resolve.',
       },
       {
         question: 'Is Jiji Ghana safe to shop from?',
@@ -437,7 +437,7 @@ export const EXTENDED_BLOG_POSTS: BlogPost[] = [
     },
     relatedSlugs: [
       'sell-clothes-online-ghana',
-      'jumia-seller-fees-ghana-2026-vs-verndly',
+      'ghana-marketplace-seller-fees-vs-verndly',
       'get-paid-safely-online-seller-ghana',
     ],
   },
@@ -457,7 +457,7 @@ export const EXTENDED_BLOG_POSTS: BlogPost[] = [
     summary:
       "Fashion is Ghana's fastest-growing online category — and also the category punished hardest by legacy 20% marketplace commissions. Here is how independent clothing and thrift brands are launching profitably in 2026.",
     keyTakeaways: [
-      'Instagram Shopping Checkout is unavailable in Ghana, and Jumia charges 20% commission + shipping deductions on fashion — wiping out 25–30% of every sale.',
+      'Instagram Shopping Checkout is unavailable in Ghana, and legacy marketplaces charge up to 20% commission + shipping deductions on fashion — wiping out 25–30% of every sale.',
       'On Verndly, fashion sellers pay a flat 4% all-in fee (keeping 96%), support size/color SKU variants natively, and convert cold shoppers with 7-day escrow.',
       'Clear natural-light photography, exact size measurements, and transparent dispatch SLAs cut size-related returns dramatically.',
     ],
@@ -531,7 +531,7 @@ export const EXTENDED_BLOG_POSTS: BlogPost[] = [
       secondaryHref: '/categories/fashion',
     },
     relatedSlugs: [
-      'jumia-seller-fees-ghana-2026-vs-verndly',
+      'ghana-marketplace-seller-fees-vs-verndly',
       'selling-on-instagram-whatsapp-vs-marketplace-ghana',
       'register-business-sell-online-ghana',
     ],
@@ -748,7 +748,7 @@ export const EXTENDED_BLOG_POSTS: BlogPost[] = [
       secondaryHref: '/seller-verification',
     },
     relatedSlugs: [
-      'jumia-seller-fees-ghana-2026-vs-verndly',
+      'ghana-marketplace-seller-fees-vs-verndly',
       'sell-clothes-online-ghana',
       'selling-on-instagram-whatsapp-vs-marketplace-ghana',
     ],

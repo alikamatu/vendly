@@ -42,8 +42,8 @@ const SECTIONS = [
       { label: 'Sell on Verndly (4% fee)', href: '/sell' },
       { label: 'Apply for verification', href: '/seller-verification' },
       {
-        label: 'Jumia vs Verndly fee calculator',
-        href: '/blog/jumia-seller-fees-ghana-2026-vs-verndly',
+        label: 'Seller fee calculator (4% flat)',
+        href: '/blog/ghana-marketplace-seller-fees-vs-verndly',
       },
       { label: 'How verification works', href: '/faq#seller-verification' },
     ],

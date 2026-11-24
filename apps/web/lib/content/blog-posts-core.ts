@@ -1,17 +1,16 @@
 import type { BlogPost } from './blog-types';
 import {
-  JUMIA_RATES_2026,
-  JUMIA_RATES_LAST_CHECKED,
-  JUMIA_VENDORHUB_URL,
+  LEGACY_MARKETPLACE_RATES,
+  RATES_LAST_CHECKED,
   calculateMarketplaceComparison,
   formatGhs,
-} from './jumia-rates-2026';
+} from './marketplace-rates';
 
-const JUMIA_CATEGORY_ROWS: string[][] = JUMIA_RATES_2026.map((rate) => [
+const LEGACY_CATEGORY_ROWS: string[][] = LEGACY_MARKETPLACE_RATES.map((rate) => [
   rate.label,
   `${rate.commissionPct}%`,
   `GH₵ ${rate.dropshipShippingGhs} / GH₵ ${rate.expressShippingGhs}`,
-  '4% flat (all-in)',
+  '4% flat',
 ]);
 
 const WORKED_EXAMPLE_SPECS: Array<{
@@ -39,9 +38,9 @@ const WORKED_EXAMPLE_ROWS: string[][] = WORKED_EXAMPLE_SPECS.map((spec) => {
     fulfillment: 'express',
   });
   return [
-    `${spec.label} (${dropship.rate.commissionPct}% + GH₵ ${dropship.jumiaShipping} / GH₵ ${express.jumiaShipping})`,
+    `${spec.label} (${dropship.rate.commissionPct}% + GH₵ ${dropship.legacyShipping} / GH₵ ${express.legacyShipping})`,
     formatGhs(spec.price),
-    `${formatGhs(dropship.jumiaNet)} (${dropship.jumiaKeepPct.toFixed(1)}%) / ${formatGhs(express.jumiaNet)} Express`,
+    `${formatGhs(dropship.legacyNet)} (${dropship.legacyKeepPct.toFixed(1)}%) / ${formatGhs(express.legacyNet)}`,
     `${formatGhs(dropship.verndlyNet)} (96.0%)`,
     `+${formatGhs(dropship.diffPerOrder)} / +${formatGhs(express.diffPerOrder)}`,
   ];
@@ -55,29 +54,30 @@ const FASHION_250_DROPSHIP = calculateMarketplaceComparison({
 
 export const CORE_BLOG_POSTS: BlogPost[] = [
   {
-    slug: 'jumia-seller-fees-ghana-2026-vs-verndly',
+    slug: 'ghana-marketplace-seller-fees-vs-verndly',
     rank: 1,
-    title: 'Jumia seller fees in Ghana (2026), explained: what you keep vs a flat 4% on Verndly',
-    shortTitle: "Jumia seller fees in Ghana vs Verndly's flat 4%",
-    metaTitle: 'Jumia Seller Fees in Ghana (2026) vs Verndly 4% Flat Fee + Calculator',
+    title:
+      'Marketplace seller fees in Ghana (2026), explained: what you keep vs a flat 4% on Verndly',
+    shortTitle: "Ghana marketplace seller fees vs Verndly's flat 4%",
+    metaTitle: 'Marketplace Seller Fees in Ghana (2026) vs Verndly 4% Flat Fee + Calculator',
     metaDescription:
-      "Full breakdown of Jumia Ghana's 7%–20% VAT-inclusive seller commissions and GH₵ 6–45 shipping charges in 2026, with code-verified cedi examples and an interactive calculator comparing Verndly's flat 4% fee.",
+      "Full breakdown of typical Ghana marketplace 7%–20% tiered seller commissions and GH₵ 6–45 shipping charges in 2026, with cedi examples and an interactive calculator comparing Verndly's flat 4% fee.",
     eyebrow: 'Seller Economics · Fee Comparison',
     audience: 'Sellers',
     readingTime: '6 min read',
     publishedAt: '2026-11-01',
-    updatedAt: '2026-11-23',
+    updatedAt: '2026-11-24',
     summary:
-      "Jumia Ghana charges sellers between 7% and 20% VAT-inclusive commission — plus a mandatory GH₵ 6 to GH₵ 45 shipping contribution on every order (Dropship or Jumia Express). Here is the exact cedi math, and how much more you keep with Verndly's flat 4% fee (Paystack included).",
+      "Traditional marketplaces in Ghana often charge between 7% and 20% VAT-inclusive commission — plus a mandatory GH₵ 6 to GH₵ 45 shipping contribution on every order. Here is the exact cedi math, and how much more you keep with Verndly's flat 4% fee.",
     keyTakeaways: [
-      'Jumia Ghana 2026 commissions run from 7% on Mobile phones and 8% on Laptops up to 20% on Fashion, Health and beauty, and Grocery — plus GH₵ 6–45 per order in seller shipping contributions.',
-      "Verndly charges a single flat 4% platform fee across every category — Paystack's 1.95% Mobile Money and card fee is absorbed inside that 4%.",
-      `On a GH₵ 250 fashion item (Dropship), a seller keeps ${formatGhs(FASHION_250_DROPSHIP.verndlyNet)} on Verndly (96%) vs ${formatGhs(FASHION_250_DROPSHIP.jumiaNet)} on Jumia (${FASHION_250_DROPSHIP.jumiaKeepPct.toFixed(1)}%) — an extra ${formatGhs(FASHION_250_DROPSHIP.diffPerOrder)} per order.`,
-      `Rates sourced from Jumia Ghana VendorHub (${JUMIA_VENDORHUB_URL}), last checked ${JUMIA_RATES_LAST_CHECKED}.`,
+      'Traditional tiered commissions in Ghana typically run from 7% on Mobile phones and 8% on Laptops up to 20% on Fashion, Health and beauty, and Grocery — plus GH₵ 6–45 per order in seller shipping contributions.',
+      "Verndly charges a single flat 4% platform fee across every category — Paystack's 1.95% Mobile Money and card collection fee is absorbed inside that 4%.",
+      `On a GH₵ 250 fashion item (Dropship), a seller keeps ${formatGhs(FASHION_250_DROPSHIP.verndlyNet)} on Verndly (96%) vs ${formatGhs(FASHION_250_DROPSHIP.legacyNet)} on a 20% + shipping marketplace (${FASHION_250_DROPSHIP.legacyKeepPct.toFixed(1)}%) — an extra ${formatGhs(FASHION_250_DROPSHIP.diffPerOrder)} per order.`,
+      `Benchmark tiers last reviewed ${RATES_LAST_CHECKED}.`,
     ],
     keywords: [
-      'jumia seller commission ghana',
-      'jumia vendor fees 2026',
+      'marketplace seller commission ghana',
+      'online vendor fees ghana 2026',
       'cheapest marketplace to sell in ghana',
       'marketplace fees ghana',
       'verndly 4% seller fee',
@@ -86,22 +86,22 @@ export const CORE_BLOG_POSTS: BlogPost[] = [
     heroVisual: 'fee-split',
     sections: [
       {
-        id: 'how-jumia-ghana-fees-work',
-        heading: 'How Jumia Ghana calculates seller deductions in 2026',
+        id: 'how-legacy-marketplace-fees-work',
+        heading: 'How traditional Ghana marketplaces calculate seller deductions in 2026',
         paragraphs: [
-          'Most Ghanaian entrepreneurs only notice the headline commission percentage when signing up for Jumia VendorHub. In practice, two separate deductions come out of every completed order before your payout lands.',
-          'First is the VAT-inclusive category commission, which ranges from 7% on Mobile phones and 8% on Laptops up to 20% on high-volume small-business categories like Fashion, Health and beauty, and Grocery. Second is the seller shipping contribution — a per-parcel logistics deduction running between GH₵ 6 and GH₵ 45 depending on category and whether you fulfill via Dropship or Jumia Express.',
-          `Source: Jumia Ghana VendorHub (${JUMIA_VENDORHUB_URL}) and Maxme Ghana 2026 seller breakdown. Last checked ${JUMIA_RATES_LAST_CHECKED}.`,
+          'Most Ghanaian entrepreneurs only notice the headline commission percentage when signing up for a legacy marketplace. In practice, two separate deductions come out of every completed order before your payout lands.',
+          'First is the VAT-inclusive category commission, which ranges from 7% on Mobile phones and 8% on Laptops up to 20% on high-volume small-business categories like Fashion, Health and beauty, and Grocery. Second is the seller shipping contribution — a per-parcel logistics deduction running between GH₵ 6 and GH₵ 45 depending on category and whether you fulfill via Dropship or a Fulfillment Center.',
+          `Benchmark fee schedule last reviewed ${RATES_LAST_CHECKED}.`,
         ],
         table: {
-          caption: `2026 Ghana Marketplace Fee Breakdown by Category (Dropship / Jumia Express · Checked ${JUMIA_RATES_LAST_CHECKED})`,
+          caption: `2026 Ghana Marketplace Fee Breakdown by Category (Dropship / Fulfillment Center · Reviewed ${RATES_LAST_CHECKED})`,
           headers: [
             'Category',
-            'Jumia Commission (VAT incl.)',
-            'Jumia Shipping (Dropship / Express)',
-            'Verndly Total Fee',
+            'Legacy Commission (VAT incl.)',
+            'Seller Shipping (Dropship / Center)',
+            'Verndly Platform Fee',
           ],
-          rows: JUMIA_CATEGORY_ROWS,
+          rows: LEGACY_CATEGORY_ROWS,
         },
       },
       {
@@ -109,12 +109,12 @@ export const CORE_BLOG_POSTS: BlogPost[] = [
         heading: "Does Verndly's 4% include Paystack's Mobile Money fee?",
         paragraphs: [
           'Yes. This is the first question sharp sellers ask, because Paystack normally charges merchants 1.95% on Ghana Mobile Money and card collections.',
-          "On Verndly, checkout funds settle into our central Paystack escrow ledger first. When an order completes, our ledger deducts a single flat 4% platform fee from the gross item price and credits the full remaining 96% to your seller balance. Paystack's processing cost is absorbed inside that 4% — it is not stacked on top.",
+          "On Verndly, checkout funds settle into our central Paystack escrow ledger first. When an order completes, our ledger deducts a single flat 4% platform fee from the gross item price and credits the full remaining 96% to your seller balance. Paystack's 1.95% collection cost is absorbed inside that 4% — it is not stacked on top.",
           "There are also zero monthly storefront fees on the standard verified seller tier, zero listing fees, and zero surprise surcharges added to your buyer's checkout screen.",
         ],
         callout: {
           eyebrow: 'Plain-English Math',
-          text: 'Sell an item for GH₵ 100 on Verndly → Platform fee (Paystack included) is GH₵ 4.00 → You receive GH₵ 96.00. No separate gateway deduction, no per-item shipping contribution.',
+          text: 'Sell an item for GH₵ 100 on Verndly → Platform fee (1.95% Paystack collection included) is GH₵ 4.00 → You receive GH₵ 96.00 before settlement transfer fees. No per-item shipping contribution.',
           tone: 'emerald',
         },
       },
@@ -122,14 +122,14 @@ export const CORE_BLOG_POSTS: BlogPost[] = [
         id: 'worked-cedi-examples',
         heading: 'Worked examples in Ghana cedis: what a seller actually takes home',
         paragraphs: [
-          'Every row below is computed directly from the same 2026 Jumia VendorHub rate table powering the calculator above, showing both Dropship and Jumia Express shipping contributions side-by-side against Verndly’s flat 4%.',
+          'Every row below is computed directly from the same 2026 benchmark rate table powering the calculator above, showing both Dropship and Fulfillment Center shipping contributions side-by-side against Verndly’s flat 4%.',
         ],
         table: {
-          caption: `Net Seller Take-Home Comparison in GHS (Dropship / Jumia Express · Checked ${JUMIA_RATES_LAST_CHECKED})`,
+          caption: `Net Seller Take-Home Comparison in GHS (Dropship / Fulfillment Center · Reviewed ${RATES_LAST_CHECKED})`,
           headers: [
             'Product Example',
             'Sale Price',
-            'Kept on Jumia (Dropship / Express)',
+            'Kept on Legacy Marketplace (Dropship / Center)',
             'Kept on Verndly',
             'Extra Kept / Order',
           ],
@@ -142,15 +142,15 @@ export const CORE_BLOG_POSTS: BlogPost[] = [
         paragraphs: [
           'When a marketplace takes 20% to 25% of your retail price, small businesses are forced into an impossible choice: either inflate prices above Instagram competitors and lose buyers, or cut margins so thin that one returned order wipes out the profit from three sales.',
           'With a flat 4% fee, you can list your exact Instagram or walk-in shop price on Verndly without punishing your margin — while giving cold buyers the verified store badge and 7-day Paystack escrow guarantee that makes them click Buy instead of hesitating in DMs.',
-          'Even better, if you already sell on Jumia, you do not have to shut anything down overnight. Many Ghanaian merchants run Verndly alongside their existing channels as their primary direct-link storefront (`verndly.com/s/yourstore`) for Instagram, TikTok, and WhatsApp traffic.',
+          'Even better, if you already sell on other marketplaces, you do not have to shut anything down overnight. Many Ghanaian merchants run Verndly alongside their existing channels as their primary direct-link storefront (`verndly.com/s/yourstore`) for Instagram, TikTok, and WhatsApp traffic.',
         ],
       },
     ],
     faqs: [
       {
-        question: 'What does Jumia charge sellers in Ghana in 2026?',
+        question: 'What do traditional marketplaces charge sellers in Ghana in 2026?',
         answer:
-          'Jumia Ghana 2026 VAT-inclusive category commissions range from 7% (Mobile phones) and 8% (Laptops) up to 20% (Fashion, Health and beauty, and Grocery), plus a per-order seller shipping contribution between GH₵ 6 and GH₵ 45 depending on category and Dropship vs Jumia Express fulfillment.',
+          'Typical tiered category commissions in Ghana range from 7% (Mobile phones) and 8% (Laptops) up to 20% (Fashion, Health and beauty, and Grocery), plus a per-order seller shipping contribution between GH₵ 6 and GH₵ 45 depending on category and fulfillment method.',
       },
       {
         question: "Does Verndly's 4% fee include Paystack Mobile Money charges?",

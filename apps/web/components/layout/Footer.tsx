@@ -44,7 +44,7 @@ const SHOP_LINKS: FooterLink[] = [
 
 const SELL_LINKS: FooterLink[] = [
   { label: 'Sell on Verndly', href: '/sell' },
-  { label: 'Jumia vs Verndly Fees', href: '/blog/jumia-seller-fees-ghana-2026-vs-verndly' },
+  { label: 'Seller Fee Comparison', href: '/blog/ghana-marketplace-seller-fees-vs-verndly' },
   { label: 'Seller Verification', href: '/seller-verification' },
 ];
 

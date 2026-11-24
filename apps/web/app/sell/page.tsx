@@ -110,37 +110,37 @@ const COMPARISON_ROWS = [
   {
     metric: 'Commission on Fashion, Beauty & Groceries',
     verndly: '4% flat',
-    jumia: '20%',
+    legacy: 'Up to 20%',
     social: '0% (manual DMs)',
   },
   {
     metric: 'Paystack / MoMo processing fee',
     verndly: 'Included in 4%',
-    jumia: 'Varies / bundled',
+    legacy: 'Varies / bundled',
     social: '1.95% extra or risky direct MoMo',
   },
   {
     metric: 'Seller shipping contribution per order',
     verndly: 'GH₵ 0',
-    jumia: 'GH₵ 6 – GH₵ 45',
+    legacy: 'GH₵ 6 – GH₵ 45',
     social: 'Lost on POD rejections',
   },
   {
     metric: 'Protection against fake screenshots & no-shows',
     verndly: 'Built-in Paystack Escrow',
-    jumia: 'Platform managed',
+    legacy: 'Platform managed',
     social: 'None',
   },
   {
     metric: 'Cold buyer trust (Verified Badge)',
     verndly: 'Verified Merchant + 7-day guarantee',
-    jumia: 'Marketplace trust',
+    legacy: 'Marketplace trust',
     social: 'Low — buyers fear MoMo scams',
   },
   {
     metric: 'Setup / monthly storefront fee',
     verndly: 'GH₵ 0',
-    jumia: 'Training & account setup',
+    legacy: 'Training & account setup',
     social: 'GH₵ 0',
   },
 ];
@@ -238,10 +238,10 @@ export default function SellPage() {
               <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
-              href="/blog/jumia-seller-fees-ghana-2026-vs-verndly"
+              href="/blog/ghana-marketplace-seller-fees-vs-verndly"
               className="bg-surface text-foreground hover:bg-foreground/[0.06] inline-flex items-center justify-center gap-2 rounded-full px-7 py-4 text-sm font-medium transition-colors"
             >
-              Compare vs Jumia fees
+              Compare marketplace fees
             </Link>
           </div>
         </section>
@@ -305,7 +305,7 @@ export default function SellPage() {
               Side-by-Side
             </p>
             <h2 className="text-3xl font-medium tracking-tight md:text-4xl">
-              Verndly vs Jumia vs Instagram DMs.
+              Verndly vs Legacy Marketplaces vs Instagram DMs.
             </h2>
             <p className="text-muted text-sm leading-relaxed md:text-base">
               Keep your margins intact without sacrificing buyer confidence.
@@ -318,7 +318,7 @@ export default function SellPage() {
                 <tr className="text-muted text-[11px] uppercase tracking-wider">
                   <th className="px-5 py-4 font-medium">What matters to sellers</th>
                   <th className="text-foreground px-5 py-4 font-medium">Verndly</th>
-                  <th className="px-5 py-4 font-medium">Jumia Ghana</th>
+                  <th className="px-5 py-4 font-medium">Legacy Marketplaces</th>
                   <th className="px-5 py-4 font-medium">Instagram / WhatsApp</th>
                 </tr>
               </thead>
@@ -334,7 +334,7 @@ export default function SellPage() {
                         {row.verndly}
                       </span>
                     </td>
-                    <td className="text-muted px-5 py-4">{row.jumia}</td>
+                    <td className="text-muted px-5 py-4">{row.legacy}</td>
                     <td className="text-muted rounded-r-2xl px-5 py-4">{row.social}</td>
                   </tr>
                 ))}

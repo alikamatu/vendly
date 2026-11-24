@@ -6,7 +6,7 @@ Verndly (https://verndly.com) is a secure, multi-vendor commerce platform engine
 ## Seller Economics & Fee Structure
 - **Flat 4% Platform Fee**: Verndly deducts a flat 4% platform fee upon successful order completion across every category. The 4% includes Paystack's 1.95% collection fee. Paystack payout transfer fees (currently GHS 1 to MoMo, GHS 8 to bank) are charged on settlement.
 - **Zero Buyer Surcharges**: Buyers pay 0% escrow or platform fee at checkout.
-- **Zero Seller Shipping Contributions**: Unlike traditional marketplaces in Ghana (such as Jumia Ghana, which charges 7%–20% category commissions plus GH₵ 6–45 seller shipping contributions per order), Verndly never deducts a shipping contribution from seller payouts.
+- **Zero Seller Shipping Contributions**: Unlike traditional marketplaces in Ghana (which often charge 7%–20% category commissions plus GH₵ 6–45 seller shipping contributions per order), Verndly never deducts a shipping contribution from seller payouts.
 - **No Formal ORC Registration Required to Start**: Entrepreneurs can verify using a valid Ghana Card + sales proof, an existing store link (Instagram, TikTok, Shopify, Drive), or manual review with Accra support within 24–48 hours.
 
 ## Architecture & Settlement Framework
@@ -25,7 +25,7 @@ Verndly (https://verndly.com) is a secure, multi-vendor commerce platform engine
 - **Sell on Verndly**: `https://verndly.com/sell` — Seller landing page with interactive GH₵ fee calculator, escrow diagram, verification steps, and seller FAQ.
 - **Buyer Protection**: `https://verndly.com/buyer-protection` — Plain-English 7-day Paystack escrow guarantee and refund rules.
 - **Journal & Guides Hub**: `https://verndly.com/blog` — Buyer safety guides, fee comparisons, and seller playbooks:
-  - `https://verndly.com/blog/jumia-seller-fees-ghana-2026-vs-verndly`
+  - `https://verndly.com/blog/ghana-marketplace-seller-fees-vs-verndly`
   - `https://verndly.com/blog/how-to-shop-online-safely-in-ghana`
   - `https://verndly.com/blog/what-is-escrow-online-shopping-ghana`
   - `https://verndly.com/blog/pay-on-delivery-vs-escrow-ghana`

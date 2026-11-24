@@ -4,16 +4,15 @@ import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import {
-  JUMIA_RATES_2026,
-  JUMIA_RATES_LAST_CHECKED,
-  JUMIA_VENDORHUB_URL,
+  LEGACY_MARKETPLACE_RATES,
+  RATES_LAST_CHECKED,
   calculateMarketplaceComparison,
   formatGhs,
-  getJumiaRateById,
+  getCategoryRateById,
   getShippingContribution,
   type FulfillmentMode,
-  type JumiaCategoryRate,
-} from '@/lib/content/jumia-rates-2026';
+  type MarketplaceCategoryRate,
+} from '@/lib/content/marketplace-rates';
 import { ESCROW_AND_FEE_COPY } from '@/lib/copy/escrow-and-fees';
 
 export default function FeeCalculator({
@@ -27,19 +26,19 @@ export default function FeeCalculator({
   const [fulfillment, setFulfillment] = useState<FulfillmentMode>('dropship');
   const [price, setPrice] = useState<number>(250);
   const [monthlyOrders, setMonthlyOrders] = useState<number>(40);
-  const [jumiaShipping, setJumiaShipping] = useState<number>(8);
+  const [legacyShipping, setLegacyShipping] = useState<number>(8);
 
-  const preset = useMemo(() => getJumiaRateById(selectedId), [selectedId]);
+  const preset = useMemo(() => getCategoryRateById(selectedId), [selectedId]);
 
-  const handleCategoryChange = (item: JumiaCategoryRate) => {
+  const handleCategoryChange = (item: MarketplaceCategoryRate) => {
     setSelectedId(item.id);
     setPrice(item.examplePriceGhs);
-    setJumiaShipping(getShippingContribution(item, fulfillment));
+    setLegacyShipping(getShippingContribution(item, fulfillment));
   };
 
   const handleFulfillmentChange = (mode: FulfillmentMode) => {
     setFulfillment(mode);
-    setJumiaShipping(getShippingContribution(preset, mode));
+    setLegacyShipping(getShippingContribution(preset, mode));
   };
 
   const calc = useMemo(
@@ -48,10 +47,10 @@ export default function FeeCalculator({
         categoryId: selectedId,
         price,
         fulfillment,
-        shippingOverride: jumiaShipping,
+        shippingOverride: legacyShipping,
         monthlyOrders,
       }),
-    [selectedId, price, fulfillment, jumiaShipping, monthlyOrders],
+    [selectedId, price, fulfillment, legacyShipping, monthlyOrders],
   );
 
   return (
@@ -67,20 +66,20 @@ export default function FeeCalculator({
           See exactly what you keep per order.
         </h2>
         <p className="text-muted max-w-2xl text-sm leading-relaxed">
-          Compare Verndly&apos;s flat 4% fee (Paystack Mobile Money &amp; card processing included)
-          against Jumia Ghana&apos;s 7–20% category commission plus per-order shipping contribution
-          (GH₵ 6–45).
+          Compare Verndly&apos;s flat 4% fee (Paystack Mobile Money &amp; card collection included)
+          against traditional marketplace 7–20% category commissions plus per-order shipping
+          contributions (GH₵ 6–45).
         </p>
       </div>
 
       {/* Fulfillment mode toggle */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <span className="text-muted text-xs">Jumia fulfillment tier</span>
+        <span className="text-muted text-xs">Legacy marketplace fulfillment tier</span>
         <div className="bg-background inline-flex rounded-full p-1">
           {(
             [
               { id: 'dropship', label: 'Dropship' },
-              { id: 'express', label: 'Jumia Express' },
+              { id: 'express', label: 'Fulfillment Center' },
             ] as const
           ).map((opt) => {
             const active = fulfillment === opt.id;
@@ -104,7 +103,7 @@ export default function FeeCalculator({
       <div className="space-y-2.5">
         <span className="text-muted block text-xs">Choose your product category</span>
         <div className="flex flex-wrap gap-2">
-          {JUMIA_RATES_2026.map((item) => {
+          {LEGACY_MARKETPLACE_RATES.map((item) => {
             const active = item.id === selectedId;
             return (
               <button
@@ -159,15 +158,16 @@ export default function FeeCalculator({
 
         <label className="bg-background block space-y-2 rounded-2xl p-4">
           <span className="text-muted block text-[11px] uppercase tracking-wider">
-            Jumia shipping ({fulfillment === 'express' ? 'Express' : 'Dropship'} · GH₵ 6–45)
+            Seller shipping fee ({fulfillment === 'express' ? 'Fulfillment' : 'Dropship'} · GH₵
+            6–45)
           </span>
           <input
             type="number"
             min={0}
             max={200}
             step={1}
-            value={jumiaShipping}
-            onChange={(e) => setJumiaShipping(Number(e.target.value))}
+            value={legacyShipping}
+            onChange={(e) => setLegacyShipping(Number(e.target.value))}
             className="text-foreground w-full bg-transparent text-2xl font-medium tabular-nums outline-none"
           />
         </label>
@@ -216,43 +216,45 @@ export default function FeeCalculator({
           </dl>
         </div>
 
-        {/* Jumia card */}
+        {/* Traditional marketplace card */}
         <div className="bg-background space-y-5 rounded-2xl p-6">
           <div className="flex items-center justify-between">
             <span className="text-muted text-xs font-medium uppercase tracking-wider">
-              On Jumia Ghana
+              Traditional Marketplaces
             </span>
             <span className="bg-surface text-muted rounded-full px-3 py-1 font-mono text-[11px]">
-              {preset.commissionPct}% + GH₵ {calc.jumiaShipping}
+              {preset.commissionPct}% + GH₵ {calc.legacyShipping}
             </span>
           </div>
 
           <div>
             <p className="text-muted text-xs">You keep per order</p>
             <p className="text-foreground mt-1 text-3xl font-medium tabular-nums tracking-tight md:text-4xl">
-              {formatGhs(calc.jumiaNet)}
+              {formatGhs(calc.legacyNet)}
             </p>
           </div>
 
           <div className="bg-surface h-2 w-full overflow-hidden rounded-full">
             <div
               className="bg-foreground/30 h-full rounded-full transition-all duration-300"
-              style={{ width: `${Math.min(100, calc.jumiaKeepPct)}%` }}
+              style={{ width: `${Math.min(100, calc.legacyKeepPct)}%` }}
             />
           </div>
 
           <dl className="text-muted space-y-2 pt-1 text-xs">
             <div className="flex justify-between">
               <dt>Category commission ({preset.commissionPct}%)</dt>
-              <dd className="font-mono tabular-nums">-{formatGhs(calc.jumiaCommission)}</dd>
+              <dd className="font-mono tabular-nums">-{formatGhs(calc.legacyCommission)}</dd>
             </div>
             <div className="flex justify-between">
-              <dt>Seller shipping ({fulfillment === 'express' ? 'Jumia Express' : 'Dropship'})</dt>
-              <dd className="font-mono tabular-nums">-{formatGhs(calc.jumiaShipping)}</dd>
+              <dt>
+                Seller shipping ({fulfillment === 'express' ? 'Fulfillment Center' : 'Dropship'})
+              </dt>
+              <dd className="font-mono tabular-nums">-{formatGhs(calc.legacyShipping)}</dd>
             </div>
             <div className="text-foreground flex justify-between pt-2 font-medium">
               <dt>Share you keep</dt>
-              <dd className="font-mono tabular-nums">{calc.jumiaKeepPct.toFixed(1)}%</dd>
+              <dd className="font-mono tabular-nums">{calc.legacyKeepPct.toFixed(1)}%</dd>
             </div>
           </dl>
         </div>
@@ -301,18 +303,9 @@ export default function FeeCalculator({
       </div>
 
       <p className="text-muted text-[11px] leading-relaxed">
-        Methodology: Jumia Ghana 2026{' '}
-        <a
-          href={JUMIA_VENDORHUB_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-foreground underline underline-offset-2"
-        >
-          VendorHub
-        </a>{' '}
-        commissions (VAT inclusive) plus the published seller shipping contribution for Dropship or
-        Jumia Express. Last checked {JUMIA_RATES_LAST_CHECKED}.{' '}
-        {ESCROW_AND_FEE_COPY.feeSettlementDisclosure}
+        Methodology: compares Verndly&apos;s flat 4% fee against typical Ghana tiered marketplace
+        commissions (7%–20% VAT inclusive) plus per-order seller shipping contributions (GH₵ 6–45).
+        Last checked {RATES_LAST_CHECKED}. {ESCROW_AND_FEE_COPY.feeSettlementDisclosure}
       </p>
     </section>
   );

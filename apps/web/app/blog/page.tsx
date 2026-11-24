@@ -11,7 +11,7 @@ import BlogIndexClient from '@/components/editorial/BlogIndexClient';
 export const metadata = buildMetadata({
   title: 'Verndly Journal — Ghana Marketplace Guides, Fee Comparisons & Escrow Safety',
   description:
-    'Clear, research-backed guides for Ghanaian online buyers and independent sellers: Jumia vs Verndly fee math, avoiding MoMo scams, how Paystack escrow works, and growing a verified store.',
+    'Clear, research-backed guides for Ghanaian online buyers and independent sellers: marketplace fee math, avoiding MoMo scams, how Paystack escrow works, and growing a verified store.',
   path: '/blog',
   keywords: [
     'verndly blog',

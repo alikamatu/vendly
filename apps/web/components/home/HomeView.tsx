@@ -47,7 +47,7 @@ const MARKETPLACE_PILLARS = [
     title: 'Flat 4% Seller Fee',
     description:
       'Keep 96% of every sale with Paystack included — compared to up to 20% commission plus shipping deductions elsewhere.',
-    href: '/blog/jumia-seller-fees-ghana-2026-vs-verndly',
+    href: '/blog/ghana-marketplace-seller-fees-vs-verndly',
     cta: 'Compare fees',
   },
   {
