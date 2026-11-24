@@ -50,4 +50,13 @@ Append one entry per loop. Newest at the bottom.
 - Files changed: apps/api/src/product/product-visibility.ts, apps/api/src/product/product-visibility.spec.ts, apps/api/src/product/product.service.ts, apps/api/src/product/product.controller.ts, apps/web/lib/product-visibility.ts, apps/web/app/product/[id]/page.tsx, apps/web/app/product/[id]/layout.tsx, apps/web/app/s/[slug]/page.tsx, apps/web/app/s/[slug]/layout.tsx, apps/web/components/store/StorefrontClient.tsx, apps/web/app/sitemap.ts, verndly-fixes/TASKS.md, verndly-fixes/PROGRESS.md
 - NEEDS-HUMAN: Sobolo (`/product/c3661485-6244-4db1-8fae-3c7713e1f52d`) was left untouched (`status: rejected`); if the owner wants it sold, approve it, add a description, and restock it.
 - Verification: Jest `product-visibility.spec.ts` passed (4/4 tests: rejected product → 404 when logged out, owner/admin preview allowed, store listing excludes rejected); `pnpm --filter @vendly/api run build` and `pnpm --filter @vendly/web type-check` passed with 0 errors.
-- Commit: pending (see git log for `fix(t04): ... [st-03]`)
+- Commit: 09f8382
+
+### 2026-11-24 — T05 About page — status: [x]
+
+- Items closed: AB-01, AB-02
+- Items open / blocked: none
+- Files changed: apps/web/app/about/page.tsx, verndly-fixes/TASKS.md, verndly-fixes/PROGRESS.md
+- NEEDS-HUMAN: AB-01 — confirm if named team members actually shipped software at Anthropic, Paystack, or Flutterwave; safe fallback copy is live by default.
+- Verification: `grep -iE "Legally Binding|Document Version|Anthropic|Flutterwave" apps/web/app/about/page.tsx` returned 0 matches; `pnpm --filter @vendly/web type-check` passed with 0 errors.
+- Commit: pending (see git log for `fix(t05): ... [ab-01, ab-02]`)
