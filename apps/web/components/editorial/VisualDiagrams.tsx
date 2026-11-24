@@ -1,4 +1,5 @@
 import React from 'react';
+import { calculateMarketplaceComparison, formatGhs } from '@/lib/content/jumia-rates-2026';
 
 /**
  * Minimal, geometric, Linear/Apple/Google-inspired inline SVG diagrams.
@@ -207,13 +208,24 @@ export function EscrowFlowSvg({ className = 'w-full h-auto' }: { className?: str
 }
 
 export function FeeSplitSvg({ className = 'w-full h-auto' }: { className?: string }) {
+  const sample = calculateMarketplaceComparison({
+    categoryId: 'fashion',
+    price: 250,
+    fulfillment: 'dropship',
+  });
+  const trackWidth = 696;
+  const verndlyBarWidth = Math.round((sample.verndlyKeepPct / 100) * trackWidth);
+  const jumiaKeepWidth = Math.round((sample.jumiaKeepPct / 100) * trackWidth);
+  const jumiaCommWidth = Math.round((sample.jumiaCommission / sample.safePrice) * trackWidth);
+  const jumiaShipWidth = Math.max(8, trackWidth - jumiaKeepWidth - jumiaCommWidth - 8);
+
   return (
     <svg
       viewBox="0 0 760 220"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       role="img"
-      aria-label="Fee comparison visual on a GHS 250 fashion item: Verndly seller keeps GHS 240 (96%), while Jumia seller keeps GHS 185 (74%) after 20% commission and GHS 15 shipping contribution."
+      aria-label={`Fee comparison visual on a GH₵ 250 fashion item: Verndly seller keeps ${formatGhs(sample.verndlyNet)} (${sample.verndlyKeepPct.toFixed(0)}%), while Jumia Dropship seller keeps ${formatGhs(sample.jumiaNet)} (${sample.jumiaKeepPct.toFixed(1)}%) after 20% commission and GH₵ ${sample.jumiaShipping} shipping contribution.`}
       className={className}
     >
       <rect width="760" height="220" rx="24" fill="var(--color-surface)" />
@@ -227,7 +239,7 @@ export function FeeSplitSvg({ className = 'w-full h-auto' }: { className?: strin
         fontFamily="var(--font-mono)"
         letterSpacing="0.08em"
       >
-        WORKED EXAMPLE · GH₵ 250 FASHION ITEM
+        WORKED EXAMPLE · GH₵ 250 FASHION ITEM (DROPSHIP)
       </text>
 
       {/* Row 1: Verndly */}
@@ -243,23 +255,37 @@ export function FeeSplitSvg({ className = 'w-full h-auto' }: { className?: strin
         fontWeight="600"
         fontFamily="var(--font-mono)"
       >
-        You keep GH₵ 240.00 (96%)
+        You keep {formatGhs(sample.verndlyNet)} ({sample.verndlyKeepPct.toFixed(0)}%)
       </text>
       <rect
         x="32"
         y="94"
-        width="696"
+        width={trackWidth}
         height="22"
         rx="11"
         fill="var(--color-foreground)"
         fillOpacity="0.06"
       />
-      <rect x="32" y="94" width="668" height="22" rx="11" fill="var(--color-foreground)" />
-      <rect x="704" y="94" width="24" height="22" rx="11" fill="var(--color-accent)" />
+      <rect
+        x="32"
+        y="94"
+        width={verndlyBarWidth}
+        height="22"
+        rx="11"
+        fill="var(--color-foreground)"
+      />
+      <rect
+        x={32 + verndlyBarWidth + 4}
+        y="94"
+        width={Math.max(12, trackWidth - verndlyBarWidth - 4)}
+        height="22"
+        rx="11"
+        fill="var(--color-accent)"
+      />
 
       {/* Row 2: Jumia */}
       <text x="32" y="154" fill="var(--color-foreground)" fontSize="14" fontWeight="500">
-        Jumia Ghana (20% fashion fee + GH₵ 15 shipping)
+        Jumia Ghana (20% fashion fee + GH₵ {sample.jumiaShipping} Dropship shipping)
       </text>
       <text
         x="728"
@@ -270,12 +296,12 @@ export function FeeSplitSvg({ className = 'w-full h-auto' }: { className?: strin
         fontWeight="500"
         fontFamily="var(--font-mono)"
       >
-        You keep GH₵ 185.00 (74%)
+        You keep {formatGhs(sample.jumiaNet)} ({sample.jumiaKeepPct.toFixed(1)}%)
       </text>
       <rect
         x="32"
         y="166"
-        width="696"
+        width={trackWidth}
         height="22"
         rx="11"
         fill="var(--color-foreground)"
@@ -284,25 +310,25 @@ export function FeeSplitSvg({ className = 'w-full h-auto' }: { className?: strin
       <rect
         x="32"
         y="166"
-        width="515"
+        width={jumiaKeepWidth}
         height="22"
         rx="11"
         fill="var(--color-foreground)"
         fillOpacity="0.32"
       />
       <rect
-        x="551"
+        x={32 + jumiaKeepWidth + 4}
         y="166"
-        width="136"
+        width={jumiaCommWidth}
         height="22"
         rx="11"
         fill="var(--color-accent)"
         fillOpacity="0.75"
       />
       <rect
-        x="691"
+        x={32 + jumiaKeepWidth + jumiaCommWidth + 8}
         y="166"
-        width="37"
+        width={jumiaShipWidth}
         height="22"
         rx="11"
         fill="var(--color-accent)"

@@ -473,7 +473,7 @@ export const EXTENDED_BLOG_POSTS: BlogPost[] = [
         id: 'why-fashion-margins-get-squeezed',
         heading: 'Why fashion sellers lose the most money on traditional marketplaces',
         paragraphs: [
-          'Whether you curate Kantamanto thrift drops, tailor linen sets in Osu, or import streetwear sneakers, apparel runs on tight unit economics. Once you account for fabric or sourcing cost, pressing, packaging bags, and social ads, handing 20% commission plus GH₵ 15 shipping contribution to a legacy marketplace can erase almost your entire net profit.',
+          'Whether you curate Kantamanto thrift drops, tailor linen sets in Osu, or import streetwear sneakers, apparel runs on tight unit economics. Once you account for fabric or sourcing cost, pressing, packaging bags, and social ads, handing 20% commission plus GH₵ 8 Dropship shipping contribution to a legacy marketplace can erase almost your entire net profit.',
           "Selling exclusively in Instagram DMs saves commission, but forces you to answer 'price?' and 'is size M available?' fifty times a day while losing out-of-town shoppers who hesitate to transfer MoMo to a stranger.",
         ],
       },
@@ -498,7 +498,7 @@ export const EXTENDED_BLOG_POSTS: BlogPost[] = [
           },
           {
             label: '4. Price cleanly around 4% flat',
-            text: "Because Verndly's 4% includes Paystack processing, you keep GH₵ 240 on every GH₵ 250 piece instead of GH₵ 185 on a 20% + shipping marketplace.",
+            text: 'Because Verndly’s 4% includes Paystack processing, you keep GH₵ 240 on every GH₵ 250 piece instead of GH₵ 192 (Dropship) on a 20% + GH₵ 8 shipping marketplace.',
           },
           {
             label: '5. Share your direct storefront link everywhere',

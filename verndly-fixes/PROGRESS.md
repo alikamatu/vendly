@@ -68,4 +68,13 @@ Append one entry per loop. Newest at the bottom.
 - Files changed: apps/web/lib/content/faq.ts, apps/web/app/faq/layout.tsx, apps/web/app/faq/page.tsx, verndly-fixes/TASKS.md, verndly-fixes/PROGRESS.md
 - NEEDS-HUMAN: FQ-02 — confirm if any sellers are permitted to offer Cash on Delivery; default prepaid-only wording is applied to match `/sell`.
 - Verification: `grep -nE "Cash on Delivery|Vodafone/|business registration documents" apps/web/app/faq/* apps/web/lib/content/faq.ts` returned 0 matches; visible FAQ and FAQPage JSON-LD render from the single `SITE_FAQ_ITEMS` array; `pnpm --filter @vendly/web type-check` passed with 0 errors.
-- Commit: pending (see git log for `fix(t06): ... [fq-01, fq-02]`)
+- Commit: 7cba055
+
+### 2026-11-24 — T07 Jumia calculator and fee blog — status: [x]
+
+- Items closed: SL-01, BL-01
+- Items open / blocked: none
+- Files changed: apps/web/lib/content/jumia-rates-2026.ts, apps/web/lib/content/jumia-rates-2026.test.mjs, apps/web/components/editorial/FeeCalculator.tsx, apps/web/components/editorial/VisualDiagrams.tsx, apps/web/lib/content/blog-posts-core.ts, apps/web/lib/content/blog-posts-extended.ts, apps/web/public/llms.txt, apps/web/public/llms-full.txt, verndly-fixes/TASKS.md, verndly-fixes/PROGRESS.md
+- NEEDS-HUMAN: none
+- Verification: `node --test apps/web/lib/content/jumia-rates-2026.test.mjs` passed (3/3: GH₵ 2,500 phone & GH₵ 200 fashion exact match); `git grep` confirmed 0 stale 5–20% rates; `pnpm --filter @vendly/web type-check` passed with 0 errors.
+- Commit: pending (see git log for `fix(t07): ... [sl-01, bl-01]`)

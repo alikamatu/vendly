@@ -6,7 +6,7 @@ Verndly (https://verndly.com) is a secure, multi-vendor commerce platform engine
 ## Seller Economics & Fee Structure
 - **Flat 4% Platform Fee (All-In)**: Verndly deducts a flat 4% platform fee upon successful order completion across every category. Paystack's 1.95% Mobile Money and local card fee is absorbed within that 4% — sellers keep a flat 96% of every sale.
 - **Zero Buyer Surcharges**: Buyers pay 0% escrow or platform fee at checkout.
-- **Zero Seller Shipping Contributions**: Unlike traditional marketplaces in Ghana (such as Jumia Ghana, which charges 5%–20% category commissions plus GH₵ 6–45 seller shipping contributions per order), Verndly never deducts a shipping contribution from seller payouts.
+- **Zero Seller Shipping Contributions**: Unlike traditional marketplaces in Ghana (such as Jumia Ghana, which charges 7%–20% category commissions plus GH₵ 6–45 seller shipping contributions per order), Verndly never deducts a shipping contribution from seller payouts.
 - **No Formal ORC Registration Required to Start**: Entrepreneurs can verify using a valid Ghana Card + sales proof, an existing store link (Instagram, TikTok, Shopify, Drive), or manual review with Accra support within 24–48 hours.
 
 ## Architecture & Settlement Framework

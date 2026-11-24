@@ -11,7 +11,7 @@ Order is the execution order. Take the first `[ ]` row.
 | T04 | [x]    | tasks/T04-rejected-listing-moderation.md | P0               | ST-03                             |
 | T05 | [x]    | tasks/T05-about-page.md                  | P0               | AB-01, AB-02                      |
 | T06 | [x]    | tasks/T06-faq-schema.md                  | P0               | FQ-01, FQ-02                      |
-| T07 | [ ]    | tasks/T07-jumia-calculator-and-blog.md   | P0               | SL-01, BL-01                      |
+| T07 | [x]    | tasks/T07-jumia-calculator-and-blog.md   | P0               | SL-01, BL-01                      |
 | T08 | [ ]    | tasks/T08-coverage-claims.md             | P0               | HM-02, SW-04, SL-02, AB-03, SH-01 |
 | T09 | [ ]    | tasks/T09-homepage-rails.md              | P1               | HM-03, HM-04, PD-04               |
 | T10 | [ ]    | tasks/T10-escrow-and-fee-copy.md         | P1               | SW-03, SL-03                      |

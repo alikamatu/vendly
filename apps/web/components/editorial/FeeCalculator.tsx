@@ -3,72 +3,17 @@
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
-
-interface JumiaCategoryPreset {
-  id: string;
-  label: string;
-  jumiaCommissionPct: number;
-  defaultShippingContribution: number;
-  examplePrice: number;
-}
-
-/**
- * Based on Jumia Ghana VendorHub published commission bands (5%–20%)
- * plus seller shipping contribution bands (GHS 6–45 depending on parcel weight/tier).
- */
-const CATEGORY_PRESETS: JumiaCategoryPreset[] = [
-  {
-    id: 'fashion',
-    label: 'Fashion & Shoes',
-    jumiaCommissionPct: 20,
-    defaultShippingContribution: 15,
-    examplePrice: 250,
-  },
-  {
-    id: 'beauty',
-    label: 'Beauty & Skincare',
-    jumiaCommissionPct: 20,
-    defaultShippingContribution: 12,
-    examplePrice: 180,
-  },
-  {
-    id: 'groceries',
-    label: 'Food & Groceries',
-    jumiaCommissionPct: 20,
-    defaultShippingContribution: 10,
-    examplePrice: 120,
-  },
-  {
-    id: 'home',
-    label: 'Home & Kitchen',
-    jumiaCommissionPct: 12,
-    defaultShippingContribution: 25,
-    examplePrice: 650,
-  },
-  {
-    id: 'accessories',
-    label: 'Phone & Tech Accessories',
-    jumiaCommissionPct: 12,
-    defaultShippingContribution: 10,
-    examplePrice: 200,
-  },
-  {
-    id: 'electronics',
-    label: 'Phones & Laptops',
-    jumiaCommissionPct: 5,
-    defaultShippingContribution: 35,
-    examplePrice: 2500,
-  },
-];
-
-const VERNDLY_FEE_PCT = 4;
-
-function formatGhs(amount: number): string {
-  return `GH₵ ${amount.toLocaleString('en-GH', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
-}
+import {
+  JUMIA_RATES_2026,
+  JUMIA_RATES_LAST_CHECKED,
+  JUMIA_VENDORHUB_URL,
+  calculateMarketplaceComparison,
+  formatGhs,
+  getJumiaRateById,
+  getShippingContribution,
+  type FulfillmentMode,
+  type JumiaCategoryRate,
+} from '@/lib/content/jumia-rates-2026';
 
 export default function FeeCalculator({
   compact = false,
@@ -78,55 +23,35 @@ export default function FeeCalculator({
   showCta?: boolean;
 }) {
   const [selectedId, setSelectedId] = useState<string>('fashion');
+  const [fulfillment, setFulfillment] = useState<FulfillmentMode>('dropship');
   const [price, setPrice] = useState<number>(250);
   const [monthlyOrders, setMonthlyOrders] = useState<number>(40);
-  const [jumiaShipping, setJumiaShipping] = useState<number>(15);
+  const [jumiaShipping, setJumiaShipping] = useState<number>(8);
 
-  const preset = useMemo(
-    () => CATEGORY_PRESETS.find((c) => c.id === selectedId) ?? CATEGORY_PRESETS[0],
-    [selectedId],
-  );
+  const preset = useMemo(() => getJumiaRateById(selectedId), [selectedId]);
 
-  const handleCategoryChange = (item: JumiaCategoryPreset) => {
+  const handleCategoryChange = (item: JumiaCategoryRate) => {
     setSelectedId(item.id);
-    setPrice(item.examplePrice);
-    setJumiaShipping(item.defaultShippingContribution);
+    setPrice(item.examplePriceGhs);
+    setJumiaShipping(getShippingContribution(item, fulfillment));
   };
 
-  const calc = useMemo(() => {
-    const safePrice = Math.max(0, Number.isFinite(price) ? price : 0);
-    const safeOrders = Math.max(1, Number.isFinite(monthlyOrders) ? monthlyOrders : 1);
-    const safeShip = Math.max(0, Number.isFinite(jumiaShipping) ? jumiaShipping : 0);
+  const handleFulfillmentChange = (mode: FulfillmentMode) => {
+    setFulfillment(mode);
+    setJumiaShipping(getShippingContribution(preset, mode));
+  };
 
-    const verndlyFee = safePrice * (VERNDLY_FEE_PCT / 100);
-    const verndlyNet = Math.max(0, safePrice - verndlyFee);
-
-    const jumiaCommission = safePrice * (preset.jumiaCommissionPct / 100);
-    const jumiaTotalFee = jumiaCommission + safeShip;
-    const jumiaNet = Math.max(0, safePrice - jumiaTotalFee);
-
-    const diffPerOrder = verndlyNet - jumiaNet;
-    const monthlySavings = diffPerOrder * safeOrders;
-    const annualSavings = monthlySavings * 12;
-
-    const verndlyKeepPct = safePrice > 0 ? (verndlyNet / safePrice) * 100 : 96;
-    const jumiaKeepPct = safePrice > 0 ? Math.max(0, (jumiaNet / safePrice) * 100) : 0;
-
-    return {
-      safePrice,
-      safeOrders,
-      verndlyFee,
-      verndlyNet,
-      jumiaCommission,
-      jumiaTotalFee,
-      jumiaNet,
-      diffPerOrder,
-      monthlySavings,
-      annualSavings,
-      verndlyKeepPct,
-      jumiaKeepPct,
-    };
-  }, [price, monthlyOrders, jumiaShipping, preset]);
+  const calc = useMemo(
+    () =>
+      calculateMarketplaceComparison({
+        categoryId: selectedId,
+        price,
+        fulfillment,
+        shippingOverride: jumiaShipping,
+        monthlyOrders,
+      }),
+    [selectedId, price, fulfillment, jumiaShipping, monthlyOrders],
+  );
 
   return (
     <section
@@ -142,15 +67,43 @@ export default function FeeCalculator({
         </h2>
         <p className="text-muted max-w-2xl text-sm leading-relaxed">
           Compare Verndly&apos;s flat 4% fee (Paystack Mobile Money &amp; card processing included)
-          against Jumia Ghana&apos;s 5–20% category commission plus per-order shipping contribution.
+          against Jumia Ghana&apos;s 7–20% category commission plus per-order shipping contribution
+          (GH₵ 6–45).
         </p>
+      </div>
+
+      {/* Fulfillment mode toggle */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <span className="text-muted text-xs">Jumia fulfillment tier</span>
+        <div className="bg-background inline-flex rounded-full p-1">
+          {(
+            [
+              { id: 'dropship', label: 'Dropship' },
+              { id: 'express', label: 'Jumia Express' },
+            ] as const
+          ).map((opt) => {
+            const active = fulfillment === opt.id;
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => handleFulfillmentChange(opt.id)}
+                className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-medium transition-colors ${
+                  active ? 'bg-foreground text-background' : 'text-muted hover:text-foreground'
+                }`}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Category pills */}
       <div className="space-y-2.5">
         <span className="text-muted block text-xs">Choose your product category</span>
         <div className="flex flex-wrap gap-2">
-          {CATEGORY_PRESETS.map((item) => {
+          {JUMIA_RATES_2026.map((item) => {
             const active = item.id === selectedId;
             return (
               <button
@@ -164,7 +117,7 @@ export default function FeeCalculator({
                 }`}
               >
                 {item.label}
-                <span className="ml-1.5 font-mono opacity-60">{item.jumiaCommissionPct}%</span>
+                <span className="ml-1.5 font-mono opacity-60">{item.commissionPct}%</span>
               </button>
             );
           })}
@@ -205,7 +158,7 @@ export default function FeeCalculator({
 
         <label className="bg-background block space-y-2 rounded-2xl p-4">
           <span className="text-muted block text-[11px] uppercase tracking-wider">
-            Jumia shipping charge (GH₵ 6–45)
+            Jumia shipping ({fulfillment === 'express' ? 'Express' : 'Dropship'} · GH₵ 6–45)
           </span>
           <input
             type="number"
@@ -269,7 +222,7 @@ export default function FeeCalculator({
               On Jumia Ghana
             </span>
             <span className="bg-surface text-muted rounded-full px-3 py-1 font-mono text-[11px]">
-              {preset.jumiaCommissionPct}% + shipping
+              {preset.commissionPct}% + GH₵ {calc.jumiaShipping}
             </span>
           </div>
 
@@ -289,12 +242,12 @@ export default function FeeCalculator({
 
           <dl className="text-muted space-y-2 pt-1 text-xs">
             <div className="flex justify-between">
-              <dt>Category commission ({preset.jumiaCommissionPct}%)</dt>
+              <dt>Category commission ({preset.commissionPct}%)</dt>
               <dd className="font-mono tabular-nums">-{formatGhs(calc.jumiaCommission)}</dd>
             </div>
             <div className="flex justify-between">
-              <dt>Seller shipping contribution</dt>
-              <dd className="font-mono tabular-nums">-{formatGhs(jumiaShipping)}</dd>
+              <dt>Seller shipping ({fulfillment === 'express' ? 'Jumia Express' : 'Dropship'})</dt>
+              <dd className="font-mono tabular-nums">-{formatGhs(calc.jumiaShipping)}</dd>
             </div>
             <div className="text-foreground flex justify-between pt-2 font-medium">
               <dt>Share you keep</dt>
@@ -347,10 +300,17 @@ export default function FeeCalculator({
       </div>
 
       <p className="text-muted text-[11px] leading-relaxed">
-        Methodology: Jumia Ghana rates reflect published VendorHub category commissions (5%–20%)
-        plus standard per-order seller shipping contributions (GH₵ 6–45). Verndly deducts a flat 4%
-        platform fee on completed orders; Paystack processing is absorbed within that 4%, and buyers
-        pay standard delivery directly at checkout with zero platform surcharge.
+        Methodology: Jumia Ghana 2026{' '}
+        <a
+          href={JUMIA_VENDORHUB_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-foreground underline underline-offset-2"
+        >
+          VendorHub
+        </a>{' '}
+        commissions (VAT inclusive) plus the published seller shipping contribution for Dropship or
+        Jumia Express. Last checked {JUMIA_RATES_LAST_CHECKED}.
       </p>
     </section>
   );
