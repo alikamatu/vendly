@@ -428,6 +428,11 @@ export default function ProductForm({
       return;
     }
 
+    if (formData.status !== 'draft' && formData.description.trim().length < 20) {
+      toast.error('Please add a factual description (at least 20 characters) before publishing.');
+      return;
+    }
+
     const baseNum = parseFloat(basePrice);
     if (!Number.isFinite(baseNum) || baseNum <= 0) {
       toast.error('Please enter a valid price greater than 0.');

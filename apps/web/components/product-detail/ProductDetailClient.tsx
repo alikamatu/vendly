@@ -496,20 +496,22 @@ export default function ProductDetailClient({
             </motion.div>
           )}
 
-          {/* Tabs / Description */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="space-y-4"
-          >
-            <div className="text-muted flex items-center gap-2 text-[10px] font-normal uppercase tracking-wider">
-              <Info className="h-4 w-4" /> Description
-            </div>
-            <p className="text-muted text-sm font-medium leading-relaxed">
-              {product.description || 'No description provided for this item.'}
-            </p>
-          </motion.div>
+          {/* Tabs / Description — never show placeholder copy when empty */}
+          {product.description?.trim() && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="space-y-4"
+            >
+              <div className="text-muted flex items-center gap-2 text-[10px] font-normal uppercase tracking-wider">
+                <Info className="h-4 w-4" /> Description
+              </div>
+              <p className="text-muted text-sm font-medium leading-relaxed">
+                {product.description.trim()}
+              </p>
+            </motion.div>
+          )}
 
           {/* Specifications / Attributes (size, model, etc.) */}
           {attributeEntries.length > 0 && (

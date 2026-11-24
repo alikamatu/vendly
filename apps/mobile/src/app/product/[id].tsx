@@ -432,15 +432,17 @@ export default function ProductDetailScreen() {
             </Pressable>
           ) : null}
 
-          {/* Description */}
-          <View className="border-border dark:border-border-dark gap-2 border-t pt-4">
-            <Text className="text-sm font-semibold uppercase tracking-wide text-neutral-900 dark:text-neutral-100">
-              Product Description
-            </Text>
-            <Text className="text-sm leading-6 text-neutral-700 dark:text-neutral-300">
-              {product.description || 'No description provided for this item.'}
-            </Text>
-          </View>
+          {/* Description — omit block when seller has not provided one */}
+          {product.description?.trim() ? (
+            <View className="border-border dark:border-border-dark gap-2 border-t pt-4">
+              <Text className="text-sm font-semibold uppercase tracking-wide text-neutral-900 dark:text-neutral-100">
+                Product Description
+              </Text>
+              <Text className="text-sm leading-6 text-neutral-700 dark:text-neutral-300">
+                {product.description.trim()}
+              </Text>
+            </View>
+          ) : null}
 
           {/* Customer Reviews Section */}
           <View className="border-border dark:border-border-dark gap-3 border-t pt-4">
