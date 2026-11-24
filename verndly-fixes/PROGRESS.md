@@ -59,4 +59,13 @@ Append one entry per loop. Newest at the bottom.
 - Files changed: apps/web/app/about/page.tsx, verndly-fixes/TASKS.md, verndly-fixes/PROGRESS.md
 - NEEDS-HUMAN: AB-01 — confirm if named team members actually shipped software at Anthropic, Paystack, or Flutterwave; safe fallback copy is live by default.
 - Verification: `grep -iE "Legally Binding|Document Version|Anthropic|Flutterwave" apps/web/app/about/page.tsx` returned 0 matches; `pnpm --filter @vendly/web type-check` passed with 0 errors.
-- Commit: pending (see git log for `fix(t05): ... [ab-01, ab-02]`)
+- Commit: 5e963b8
+
+### 2026-11-24 — T06 FAQ schema contradicts the product — status: [x]
+
+- Items closed: FQ-01, FQ-02
+- Items open / blocked: none
+- Files changed: apps/web/lib/content/faq.ts, apps/web/app/faq/layout.tsx, apps/web/app/faq/page.tsx, verndly-fixes/TASKS.md, verndly-fixes/PROGRESS.md
+- NEEDS-HUMAN: FQ-02 — confirm if any sellers are permitted to offer Cash on Delivery; default prepaid-only wording is applied to match `/sell`.
+- Verification: `grep -nE "Cash on Delivery|Vodafone/|business registration documents" apps/web/app/faq/* apps/web/lib/content/faq.ts` returned 0 matches; visible FAQ and FAQPage JSON-LD render from the single `SITE_FAQ_ITEMS` array; `pnpm --filter @vendly/web type-check` passed with 0 errors.
+- Commit: pending (see git log for `fix(t06): ... [fq-01, fq-02]`)

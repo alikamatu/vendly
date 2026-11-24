@@ -1,117 +1,20 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ChevronDown, Search } from 'lucide-react';
+import Link from 'next/link';
+import { ChevronDown, Search, ArrowRight } from 'lucide-react';
 import Header from '@/components/layout/Header';
-import { SUPPORT_CONTACT } from '@/lib/contact';
-
-interface QA {
-  q: string;
-  a: React.ReactNode;
-  tags?: string[];
-}
-
-const QA_LIST: QA[] = [
-  {
-    q: 'How do I create an account?',
-    a: 'Tap Sign up in the top-right, fill in your name, phone, and email, then verify your inbox. You can shop right away.',
-    tags: ['account'],
-  },
-  {
-    q: 'How do I become a seller?',
-    a: (
-      <>
-        Visit{' '}
-        <a className="text-primary underline" href="/seller-verification">
-          Start selling
-        </a>{' '}
-        and upload your business verification document. Approvals usually take 24–48 hours.
-      </>
-    ),
-    tags: ['seller'],
-  },
-  {
-    q: 'What payment methods do you accept?',
-    a: 'Card, mobile money, and bank transfer via Paystack. Some sellers also accept cash on delivery.',
-    tags: ['payment'],
-  },
-  {
-    q: 'How does Verndly Pro work?',
-    a: (
-      <>
-        Pro membership is GH₵57/month, billed via Paystack. Pro sellers get featured placement, a
-        downloadable storefront QR code, and advanced stock alerts. Manage your subscription from{' '}
-        <a className="text-primary underline" href="/dashboard/settings">
-          Dashboard → Settings
-        </a>
-        .
-      </>
-    ),
-    tags: ['seller', 'pro'],
-  },
-  {
-    q: 'How long does delivery take?',
-    a: "Each seller publishes their dispatch window — typically same-day, next-day, or 2–3 days. See the seller's storefront for their exact policy.",
-    tags: ['delivery'],
-  },
-  {
-    q: 'Can I return an item?',
-    a: (
-      <>
-        Yes — see{' '}
-        <a className="text-primary underline" href="/returns">
-          Returns &amp; Refunds
-        </a>
-        . You have 7 days from delivery to request a return.
-      </>
-    ),
-    tags: ['returns'],
-  },
-  {
-    q: 'Is my data safe?',
-    a: (
-      <>
-        Yes. Payments are handled by Paystack — Verndly never sees your full card details. Read our{' '}
-        <a className="text-primary underline" href="/privacy">
-          privacy policy
-        </a>
-        .
-      </>
-    ),
-    tags: ['privacy'],
-  },
-  {
-    q: 'How do I contact support?',
-    a: (
-      <>
-        Email{' '}
-        <a className="text-primary underline" href={SUPPORT_CONTACT.emailHref}>
-          {SUPPORT_CONTACT.email}
-        </a>
-        , WhatsApp{' '}
-        <a className="text-primary underline" href={SUPPORT_CONTACT.whatsappHref}>
-          {SUPPORT_CONTACT.phoneDisplay}
-        </a>
-        , or use the{' '}
-        <a className="text-primary underline" href="/contact">
-          contact form
-        </a>
-        .
-      </>
-    ),
-    tags: ['support'],
-  },
-];
+import { SITE_FAQ_ITEMS, type SiteFaqEntry } from '@/lib/content/faq';
 
 export default function FAQPage() {
   const [query, setQuery] = useState('');
-  const filtered = QA_LIST.filter((item) => {
+  const filtered = SITE_FAQ_ITEMS.filter((item) => {
     const q = query.trim().toLowerCase();
     if (!q) return true;
     return (
-      item.q.toLowerCase().includes(q) ||
-      String(item.a).toLowerCase().includes(q) ||
-      (item.tags || []).some((t) => t.includes(q))
+      item.question.toLowerCase().includes(q) ||
+      item.answer.toLowerCase().includes(q) ||
+      item.tags.some((t) => t.toLowerCase().includes(q))
     );
   });
 
@@ -125,10 +28,10 @@ export default function FAQPage() {
             Frequently asked questions
           </h1>
           <p className="text-muted text-sm leading-relaxed">
-            Quick answers to the questions we hear most. Can't find what you need?{' '}
-            <a className="text-primary underline" href="/contact">
+            Quick answers to the questions we hear most. Can&apos;t find what you need?{' '}
+            <Link className="text-primary underline" href="/contact">
               Contact us
-            </a>
+            </Link>
             .
           </p>
         </header>
@@ -146,12 +49,12 @@ export default function FAQPage() {
 
         {filtered.length === 0 ? (
           <p className="text-muted py-12 text-center text-[12px]">
-            No results for "{query}". Try different keywords or contact us.
+            No results for &ldquo;{query}&rdquo;. Try different keywords or contact us.
           </p>
         ) : (
           <ul className="space-y-2">
             {filtered.map((item) => (
-              <FaqItem key={item.q} item={item} />
+              <FaqItem key={item.question} item={item} />
             ))}
           </ul>
         )}
@@ -160,8 +63,8 @@ export default function FAQPage() {
   );
 }
 
-function FaqItem({ item }: { item: QA }) {
-  const [open, setOpen] = useState(false);
+function FaqItem({ item }: { item: SiteFaqEntry }) {
+  const [open, setOpen] = useState(true);
   return (
     <li className="border-border bg-surface/30 overflow-hidden rounded-2xl border">
       <button
@@ -170,7 +73,7 @@ function FaqItem({ item }: { item: QA }) {
         aria-expanded={open}
         className="hover:bg-surface/50 flex w-full items-center justify-between gap-4 px-4 py-4 text-left transition-colors md:px-5"
       >
-        <span className="text-foreground text-sm font-normal">{item.q}</span>
+        <span className="text-foreground text-sm font-normal">{item.question}</span>
         <ChevronDown
           className={`text-muted h-4 w-4 flex-shrink-0 transition-transform ${
             open ? 'rotate-180' : ''
@@ -178,8 +81,17 @@ function FaqItem({ item }: { item: QA }) {
         />
       </button>
       {open && (
-        <div className="text-foreground/85 px-4 pb-4 text-[13px] leading-relaxed md:px-5">
-          {item.a}
+        <div className="text-foreground/85 space-y-2.5 px-4 pb-4 text-[13px] leading-relaxed md:px-5">
+          <p>{item.answer}</p>
+          {item.link && (
+            <Link
+              href={item.link.href}
+              className="text-primary inline-flex items-center gap-1 text-xs font-medium hover:underline"
+            >
+              {item.link.label}
+              <ArrowRight className="h-3 w-3" />
+            </Link>
+          )}
         </div>
       )}
     </li>
