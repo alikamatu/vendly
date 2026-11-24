@@ -66,6 +66,7 @@ export default function CategoriesGalleryClient({
         return {
           ...cat,
           slug,
+          productsHref: `/products?category=${encodeURIComponent(cat.name)}`,
           displayName: profile?.name || cat.name,
           description: safeDescription,
           brands: catBrands,
@@ -181,7 +182,7 @@ export default function CategoriesGalleryClient({
                 {filteredCategories.map((cat) => (
                   <li key={cat.id || cat.name}>
                     <Link
-                      href={`/categories/${cat.slug}`}
+                      href={cat.productsHref}
                       className="bg-surface hover:bg-foreground/[0.05] group flex flex-col justify-between gap-4 rounded-3xl p-6 transition-colors sm:flex-row sm:items-center"
                     >
                       <div className="space-y-1.5">
@@ -201,7 +202,7 @@ export default function CategoriesGalleryClient({
                         )}
                       </div>
                       <span className="text-foreground inline-flex shrink-0 items-center gap-1.5 text-xs font-medium">
-                        Explore
+                        View products
                         <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                       </span>
                     </Link>
@@ -224,7 +225,7 @@ export default function CategoriesGalleryClient({
               {filteredCategories.map((cat) => (
                 <article
                   key={cat.id || cat.name}
-                  className="bg-surface hover:bg-foreground/[0.05] group flex flex-col justify-between gap-6 rounded-3xl p-7 transition-colors"
+                  className="bg-surface hover:bg-foreground/[0.05] group relative flex cursor-pointer flex-col justify-between gap-6 rounded-3xl p-7 transition-colors"
                 >
                   <div className="space-y-4">
                     <div className="flex items-center justify-between gap-3">
@@ -233,20 +234,19 @@ export default function CategoriesGalleryClient({
                         {cat.productCount} listing{cat.productCount === 1 ? '' : 's'}
                       </span>
 
-                      <Link
-                        href={`/categories/${cat.slug}`}
-                        aria-label={`Explore ${cat.displayName}`}
+                      <span
+                        aria-hidden="true"
                         className="bg-foreground text-background inline-flex h-8 w-8 items-center justify-center rounded-full transition-transform group-hover:translate-x-0.5"
                       >
                         <ArrowRight className="h-3.5 w-3.5" />
-                      </Link>
+                      </span>
                     </div>
 
                     <div className="space-y-2">
                       <h2 className="text-foreground text-xl font-medium tracking-tight">
                         <Link
-                          href={`/categories/${cat.slug}`}
-                          className="transition-colors hover:text-[var(--color-accent)]"
+                          href={cat.productsHref}
+                          className="transition-colors after:absolute after:inset-0 group-hover:text-[var(--color-accent)]"
                         >
                           {cat.displayName}
                         </Link>
@@ -261,7 +261,7 @@ export default function CategoriesGalleryClient({
 
                   <div className="space-y-3">
                     {cat.brands.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5">
+                      <div className="relative z-10 flex flex-wrap gap-1.5">
                         {cat.brands.slice(0, 5).map((b: any) => (
                           <Link
                             key={b.id || b.name}
@@ -275,18 +275,10 @@ export default function CategoriesGalleryClient({
                     )}
 
                     <div className="flex items-center justify-between pt-1 text-xs font-medium">
-                      <Link
-                        href={`/categories/${cat.slug}`}
-                        className="text-foreground transition-colors hover:text-[var(--color-accent)]"
-                      >
-                        Explore {cat.displayName}
-                      </Link>
-                      <Link
-                        href={`/products?category=${encodeURIComponent(cat.name)}`}
-                        className="text-muted hover:text-foreground transition-colors"
-                      >
-                        Filter catalog
-                      </Link>
+                      <span className="text-foreground inline-flex items-center gap-1.5 transition-colors group-hover:text-[var(--color-accent)]">
+                        View {cat.displayName} products
+                        <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                      </span>
                     </div>
                   </div>
                 </article>
