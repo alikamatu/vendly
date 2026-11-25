@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Resend } from 'resend';
+import * as Sentry from '@sentry/nestjs';
 import {
   getVerificationEmail,
   getPasswordResetEmail,
@@ -28,32 +29,82 @@ import {
   getSellerVerificationAdminAlertEmail,
 } from './email-templates';
 
+export interface EmailDeliveryStatus {
+  ok: boolean;
+  context: string;
+  from: string;
+  at: string;
+  id?: string | null;
+  error?: string | null;
+}
+
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
-  private resend: Resend;
+  private readonly apiKey: string;
+  private resend: Resend | null = null;
+  private lastDelivery: EmailDeliveryStatus | null = null;
 
   constructor(private configService: ConfigService) {
-    this.resend = new Resend(this.configService.get('RESEND_API_KEY'));
+    this.apiKey = (
+      this.configService.get<string>('RESEND_API_KEY') || ''
+    ).trim();
+    if (!this.apiKey) {
+      this.logger.error(
+        'RESEND_API_KEY is missing! Transactional emails (verification, receipts, resets) will NOT be delivered.',
+      );
+    } else {
+      this.resend = new Resend(this.apiKey);
+      this.logger.log(
+        `EmailService initialised (from="${this.fromAddress}", frontendUrl="${this.links.baseUrl}")`,
+      );
+    }
   }
 
   private get links(): EmailLinks {
+    const raw =
+      this.configService.get<string>('FRONTEND_URL') || 'https://verndly.com';
     return {
-      baseUrl:
-        this.configService.get<string>('FRONTEND_URL') || 'https://verndly.com',
+      baseUrl: raw.trim().replace(/\/+$/, ''),
     };
   }
 
   private get fromAddress(): string {
+    const configured = (
+      this.configService.get<string>('RESEND_FROM_EMAIL') || ''
+    ).trim();
+    const raw =
+      configured ||
+      (process.env.NODE_ENV === 'production'
+        ? 'noreply@verndly.com'
+        : 'onboarding@resend.dev');
+    // Include a clear brand display name if only a bare address was provided.
+    return raw.includes('<') ? raw : `Verndly <${raw}>`;
+  }
+
+  private get replyToAddress(): string {
     return (
-      this.configService.get<string>('RESEND_FROM_EMAIL') ||
-      'onboarding@resend.dev'
-    );
+      this.configService.get<string>('SUPPORT_EMAIL') || 'support@verndly.com'
+    ).trim();
+  }
+
+  /** Safe runtime status for /debug-email/status (never exposes secrets or recipient PII). */
+  getStatus() {
+    return {
+      provider: 'resend',
+      configured: Boolean(this.apiKey),
+      apiKeyPrefix: this.apiKey ? `${this.apiKey.slice(0, 6)}…` : null,
+      fromAddress: this.fromAddress,
+      replyTo: this.replyToAddress,
+      frontendUrl: this.links.baseUrl,
+      nodeEnv: process.env.NODE_ENV || 'development',
+      lastDelivery: this.lastDelivery,
+    };
   }
 
   /**
-   * Internal helper: send via Resend with a fallback to the Resend onboarding
-   * sender if the configured domain is rejected (common in dev).
+   * Internal helper: send via Resend with full error inspection, Sentry
+   * reporting, and dev-only fallback to onboarding@resend.dev.
    */
   private async deliver(
     to: string,
@@ -62,33 +113,120 @@ export class EmailService {
     context = 'email',
   ) {
     const from = this.fromAddress;
+    const recipient = (to || '').trim();
+
+    if (!this.resend || !this.apiKey) {
+      const msg = 'RESEND_API_KEY is not configured on the API server';
+      this.logger.error(`[${context}] Cannot send email: ${msg}`);
+      this.lastDelivery = {
+        ok: false,
+        context,
+        from,
+        at: new Date().toISOString(),
+        error: msg,
+      };
+      Sentry.captureMessage(`[EmailService:${context}] ${msg}`, 'error');
+      return null;
+    }
+
     try {
       const response = await this.resend.emails.send({
         from,
-        to,
+        to: recipient,
+        replyTo: this.replyToAddress,
         subject,
         html,
       });
-      if ((response as any)?.error) {
+
+      const primaryError = (response as any)?.error;
+      if (primaryError) {
+        const errorDetail = JSON.stringify(primaryError);
         this.logger.error(
-          `[${context}] Resend error sending to ${to}: ${JSON.stringify((response as any).error)}`,
+          `[${context}] Resend rejected email (from="${from}"): ${errorDetail}`,
         );
-        if (from !== 'onboarding@resend.dev') {
+
+        // Only fall back to Resend's sandbox sender in non-production environments;
+        // in production, onboarding@resend.dev can only deliver to the account owner.
+        if (
+          process.env.NODE_ENV !== 'production' &&
+          !from.includes('onboarding@resend.dev')
+        ) {
           this.logger.warn(
-            `[${context}] Falling back to onboarding@resend.dev`,
+            `[${context}] Dev fallback to onboarding@resend.dev`,
           );
-          return this.resend.emails.send({
+          const fallbackRes = await this.resend.emails.send({
             from: 'onboarding@resend.dev',
-            to,
+            to: recipient,
             subject,
             html,
           });
+          const fallbackError = (fallbackRes as any)?.error;
+          if (fallbackError) {
+            const fbDetail = JSON.stringify(fallbackError);
+            this.logger.error(
+              `[${context}] Fallback send also failed: ${fbDetail}`,
+            );
+            this.lastDelivery = {
+              ok: false,
+              context,
+              from: 'onboarding@resend.dev',
+              at: new Date().toISOString(),
+              error: fbDetail,
+            };
+            return null;
+          }
+          const fbId =
+            (fallbackRes as any)?.data?.id ?? (fallbackRes as any)?.id ?? null;
+          this.lastDelivery = {
+            ok: true,
+            context,
+            from: 'onboarding@resend.dev',
+            at: new Date().toISOString(),
+            id: fbId,
+          };
+          return fallbackRes;
         }
+
+        this.lastDelivery = {
+          ok: false,
+          context,
+          from,
+          at: new Date().toISOString(),
+          error: errorDetail,
+        };
+        Sentry.captureMessage(
+          `[EmailService:${context}] Resend error (from=${from}): ${errorDetail}`,
+          'error',
+        );
+        return null;
       }
-      this.logger.log(`[${context}] Sent to ${to}`);
+
+      const id = (response as any)?.data?.id ?? (response as any)?.id ?? null;
+      this.lastDelivery = {
+        ok: true,
+        context,
+        from,
+        at: new Date().toISOString(),
+        id,
+      };
+      this.logger.log(
+        `[${context}] Sent to ${recipient}${id ? ` (id=${id})` : ''}`,
+      );
       return response;
-    } catch (err) {
-      this.logger.error(`[${context}] Failed to send to ${to}`, err);
+    } catch (err: any) {
+      const errMsg = err?.message || String(err);
+      this.logger.error(
+        `[${context}] Failed to send to ${recipient}: ${errMsg}`,
+        err,
+      );
+      this.lastDelivery = {
+        ok: false,
+        context,
+        from,
+        at: new Date().toISOString(),
+        error: errMsg,
+      };
+      Sentry.captureException(err, { tags: { email_context: context } });
       // Swallow — transactional emails shouldn't break a request path.
       return null;
     }
@@ -356,7 +494,7 @@ export class EmailService {
     matches: Array<{ id: string; email: string; created_at: Date }>;
   }) {
     const supportInbox =
-      this.configService.get<string>('SUPPORT_EMAIL') || 'support@verndly.app';
+      this.configService.get<string>('SUPPORT_EMAIL') || 'support@verndly.com';
 
     const matchesHtml = args.matches.length
       ? `<ul>${args.matches

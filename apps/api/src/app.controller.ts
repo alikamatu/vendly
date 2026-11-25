@@ -1,14 +1,32 @@
 import { Controller, Get } from '@nestjs/common';
 import * as Sentry from '@sentry/nestjs';
 import { AppService } from './app.service';
+import { EmailService } from './email/email.service';
+import { LoopsService } from './loops/loops.service';
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(
+    private readonly appService: AppService,
+    private readonly emailService: EmailService,
+    private readonly loopsService: LoopsService,
+  ) {}
 
   @Get()
   getHello(): string {
     return this.appService.getHello();
+  }
+
+  /**
+   * Safe email pipeline status check (zero secrets or PII exposed).
+   *   GET /debug-email/status
+   */
+  @Get('/debug-email/status')
+  emailStatus() {
+    return {
+      ...this.emailService.getStatus(),
+      loopsConfigured: this.loopsService.isConfigured(),
+    };
   }
 
   /**

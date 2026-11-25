@@ -4,7 +4,7 @@ import Constants from 'expo-constants';
  * Live production Verndly API on Render (same host whitelisted in apps/web/next.config.ts).
  * Can be overridden via EXPO_PUBLIC_API_URL in apps/mobile/.env.
  */
-const PRODUCTION_API_URL = 'https://vendly-lfr6.onrender.com';
+const PRODUCTION_API_URL = 'https://api.verndly.com';
 
 function resolveApiUrl(): string {
   const envUrl = process.env.EXPO_PUBLIC_API_URL?.trim();

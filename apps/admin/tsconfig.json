@@ -1,5 +1,5 @@
 {
-  "extends": "@vendly/typescript-config/nextjs",
+  "extends": "../../packages/typescript-config/nextjs.json",
   "compilerOptions": {
     "paths": {
       "@/*": ["./*"]

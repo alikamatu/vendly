@@ -10,7 +10,7 @@ export const BRAND = {
   logo: 'https://res.cloudinary.com/du30sqscy/image/upload/w_112,h_112,c_limit,q_auto,f_png/logos/verndly-logo.png',
   supportEmail: 'support@verndly.com',
   securityEmail: 'security@verndly.com',
-  whatsapp: '+233 24 000 0000',
+  whatsapp: '+233 53 406 5652',
   primary: '#0f172a',
   accent: '#ef4444',
   text: '#0f172a',
@@ -24,15 +24,25 @@ export interface EmailLinks {
   baseUrl: string;
 }
 
-export const escapeHtml = (s: unknown): string =>
-  String(s ?? '')
+export const escapeHtml = (s: unknown): string => {
+  const str =
+    typeof s === 'string'
+      ? s
+      : typeof s === 'number' || typeof s === 'boolean'
+        ? String(s)
+        : '';
+  return str
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+};
 
-export const formatMoney = (amount: number | string, currency = 'GHS'): string => {
+export const formatMoney = (
+  amount: number | string,
+  currency = 'GHS',
+): string => {
   const n = typeof amount === 'string' ? parseFloat(amount) : amount;
   if (!Number.isFinite(n)) return `${currency} 0.00`;
   const symbol = currency === 'GHS' ? 'GH₵ ' : currency + ' ';

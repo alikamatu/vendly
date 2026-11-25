@@ -46,9 +46,13 @@ services:
       - key: RESEND_API_KEY
         sync: false
       - key: RESEND_FROM_EMAIL
+        value: noreply@verndly.com
+      - key: LOOPS_API_KEY
         sync: false
       - key: FRONTEND_URL
-        sync: false
+        value: https://verndly.com
+      - key: BACKEND_URL
+        value: https://api.verndly.com
       - key: CRON_SECRET
         sync: false
       # Arkesel SMS (Ghana) — powers seller-verification admin alerts and SMS 2FA.

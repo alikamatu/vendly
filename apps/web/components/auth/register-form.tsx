@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRegisterForm } from '@/hooks/useAuth';
+import { authApi } from '@/lib/api/auth';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
@@ -21,6 +22,8 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFor
   const { form, onSubmit, isLoading, error, clearError } = useRegisterForm();
   const [step, setStep] = useState<'details' | 'password'>('details');
   const [success, setSuccess] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendFeedback, setResendFeedback] = useState<string | null>(null);
   const {
     register,
     watch,
@@ -63,6 +66,22 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFor
     }
   };
 
+  const handleResend = async () => {
+    if (!emailValue || resending) return;
+    setResending(true);
+    setResendFeedback(null);
+    try {
+      await authApi.resendVerification(emailValue);
+      setResendFeedback(
+        'A fresh verification link has been sent. Please check your inbox and spam folder.',
+      );
+    } catch (err: any) {
+      setResendFeedback(err?.message || 'Could not resend right now. Please try again shortly.');
+    } finally {
+      setResending(false);
+    }
+  };
+
   if (success) {
     return (
       <div className="flex flex-col items-center gap-5 py-6 text-center">
@@ -70,16 +89,24 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFor
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ type: 'spring', stiffness: 220, delay: 0.1 }}
-          className="flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-50 text-emerald-500 shadow-sm dark:bg-emerald-900/20 dark:text-emerald-400"
+          className="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
         >
           <CheckCircle size={32} />
         </motion.div>
         <div>
           <h3 className="text-foreground text-xl font-semibold tracking-tight">Check your email</h3>
           <p className="text-foreground/60 mx-auto mt-1.5 max-w-sm text-xs leading-relaxed">
-            We&apos;ve sent a verification link to your email address. Tap the link in your inbox to
-            activate your account and sign in.
+            We&apos;ve sent a verification link to{' '}
+            <span className="text-foreground font-medium">
+              {emailValue || 'your email address'}
+            </span>
+            . Tap the link in your inbox (or spam folder) to activate your account.
           </p>
+          {resendFeedback && (
+            <p className="mt-2.5 text-xs text-emerald-600 dark:text-emerald-400">
+              {resendFeedback}
+            </p>
+          )}
         </div>
         <div className="w-full space-y-3 pt-2">
           <Button
@@ -90,6 +117,16 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFor
           >
             Got it, sign in
           </Button>
+          {emailValue && (
+            <button
+              type="button"
+              onClick={handleResend}
+              disabled={resending}
+              className="text-foreground/75 hover:text-foreground block w-full py-1.5 text-xs font-medium transition-colors disabled:opacity-50"
+            >
+              {resending ? 'Sending another link…' : "Didn't receive it? Resend verification email"}
+            </button>
+          )}
           <button
             type="button"
             onClick={() =>
