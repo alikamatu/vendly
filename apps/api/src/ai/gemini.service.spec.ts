@@ -167,7 +167,7 @@ describe('GeminiService & normalizers', () => {
       expect(service.getStatus()).toEqual({
         configured: false,
         provider: 'gemini',
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.6-flash',
       });
 
       await expect(
@@ -241,6 +241,163 @@ describe('GeminiService & normalizers', () => {
       expect(res.products).toHaveLength(1);
       expect(res.products[0].photo_indices).toEqual([0, 1]);
       expect(res.products[0].title).toBe('Minimalist Desk Lamp');
+    });
+
+    it('automatically fails over to fallback model when primary returns 503 high demand and ignores thought parts', async () => {
+      const mockFetch = jest
+        .fn()
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 503,
+          text: () =>
+            Promise.resolve(
+              '{"error":{"code":503,"message":"This model is currently experiencing high demand."}}',
+            ),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              candidates: [
+                {
+                  content: {
+                    parts: [
+                      { thought: true, text: 'Let me inspect these photos...' },
+                      {
+                        text: JSON.stringify({
+                          products: [
+                            {
+                              photo_indices: [0],
+                              title: 'Canvas Sneaker',
+                              description:
+                                'Low-top white canvas sneaker with rubber toe cap and flat laces.',
+                              category: 'Fashion',
+                              condition: 'new',
+                              brand: '',
+                              tags: ['sneaker', 'canvas', 'shoes'],
+                              suggested_price_ghs: 180,
+                              confidence: 'high',
+                            },
+                          ],
+                        }),
+                      },
+                    ],
+                  },
+                },
+              ],
+            }),
+        });
+      global.fetch = mockFetch;
+
+      const service = createService({
+        GEMINI_API_KEY: 'AQ.Ab8RN6ExampleKey1234567890',
+        GEMINI_MODEL: 'gemini-4-hydrogen',
+      });
+
+      const res = await service.analyzeBulkProductPhotos(
+        [makeFile('shoe.jpg')],
+        ['Fashion', 'Electronics'],
+      );
+
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      expect(mockFetch.mock.calls[0][0]).toContain(
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-4-hydrogen:generateContent',
+      );
+      expect(mockFetch.mock.calls[1][0]).toContain(
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent',
+      );
+      expect(res.products).toHaveLength(1);
+      expect(res.products[0].title).toBe('Canvas Sneaker');
+    });
+
+    it('polishes an existing product listing with clean title, description, tags, and improvements', async () => {
+      const mockFetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            candidates: [
+              {
+                content: {
+                  parts: [
+                    {
+                      text: JSON.stringify({
+                        title: 'Black Leather Crossbody Bag',
+                        description:
+                          'Compact black leather crossbody bag with an adjustable strap, ideal for daily essentials.',
+                        category: 'fashion',
+                        tags: ['Crossbody Bag', 'Leather', 'Fashion'],
+                        improvements: [
+                          'Cleaned ALL CAPS title for readability',
+                          'Expanded description for buyer clarity',
+                        ],
+                      }),
+                    },
+                  ],
+                },
+              },
+            ],
+          }),
+      });
+      global.fetch = mockFetch;
+
+      const service = createService({ GEMINI_API_KEY: 'test-key' });
+      const res = await service.polishProductListing(
+        {
+          title: 'BLACK LEATHER BAG DM TO ORDER',
+          description: 'nice bag',
+          category: 'Fashion',
+          price: 180,
+        },
+        ['Electronics', 'Fashion'],
+      );
+
+      expect(res).toMatchObject({
+        title: 'Black Leather Crossbody Bag',
+        category: 'Fashion',
+        tags: ['crossbody bag', 'leather', 'fashion'],
+      });
+      expect(res.improvements).toHaveLength(2);
+    });
+
+    it('drafts storefront bio, delivery policies, hours, and enums cleanly', async () => {
+      const mockFetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            candidates: [
+              {
+                content: {
+                  parts: [
+                    {
+                      text: JSON.stringify({
+                        bio: 'Accra Craft Studio makes handcrafted leather sandals and woven bags in East Legon.',
+                        delivery_policies:
+                          'Same-day courier delivery across Accra and nationwide dispatch within 2 days. All orders are protected by Verndly 7-day escrow.',
+                        business_hours: 'Mon–Sat: 9:00 AM – 6:00 PM',
+                        service_area: 'NATIONWIDE',
+                        avg_delivery_time: 'SAME_DAY',
+                      }),
+                    },
+                  ],
+                },
+              },
+            ],
+          }),
+      });
+      global.fetch = mockFetch;
+
+      const service = createService({ GEMINI_API_KEY: 'test-key' });
+      const res = await service.draftStorefrontSetup({
+        store_name: 'Accra Craft Studio',
+        what_you_sell: 'Handmade leather sandals and woven bags in East Legon',
+      });
+
+      expect(res).toMatchObject({
+        service_area: 'NATIONWIDE',
+        avg_delivery_time: 'SAME_DAY',
+        business_hours: 'Mon–Sat: 9:00 AM – 6:00 PM',
+      });
+      expect(res.bio).toContain('Accra Craft Studio');
     });
   });
 });

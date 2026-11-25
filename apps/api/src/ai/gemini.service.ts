@@ -8,9 +8,17 @@ import {
 import { ConfigService } from '@nestjs/config';
 import {
   AiBulkPhotoAnalysisResult,
+  AiBuyerSearchPlan,
+  AiBuyerSearchSort,
   AiConfidence,
+  AiDeliveryTime,
+  AiDraftStorefrontInput,
+  AiDraftStorefrontResult,
+  AiPolishListingInput,
+  AiPolishListingResult,
   AiProductCondition,
   AiProductGroupDraft,
+  AiServiceArea,
   AiSinglePhotoAnalysisResult,
   AiSingleProductDraft,
   AiStatusResult,
@@ -18,11 +26,20 @@ import {
   AiWhatsAppScreenshotsResult,
 } from './gemini.types';
 
-const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
-const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
+const DEFAULT_GEMINI_MODEL = 'gemini-3.6-flash';
+const FALLBACK_GEMINI_MODELS = [
+  'gemini-3.6-flash',
+  'gemini-3.5-flash',
+  'gemini-3.5-flash-lite',
+  'gemini-3.8-flash',
+] as const;
+const AI_STUDIO_API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
+const VERTEX_EXPRESS_API_BASE =
+  'https://aiplatform.googleapis.com/v1/publishers/google';
 const MAX_PHOTOS_PER_PRODUCT = 3;
 const MAX_BULK_PHOTOS = 20;
-const REQUEST_TIMEOUT_MS = 55_000;
+const PER_MODEL_TIMEOUT_MS = 28_000;
+const HEALTHY_MODEL_TTL_MS = 5 * 60 * 1000;
 
 interface GeminiPart {
   text?: string;
@@ -46,6 +63,81 @@ const VALID_CONDITIONS: readonly AiProductCondition[] = [
 ];
 
 const VALID_CONFIDENCES: readonly AiConfidence[] = ['high', 'medium', 'low'];
+
+const VALID_BUYER_SORTS: readonly AiBuyerSearchSort[] = [
+  'newest',
+  'price_asc',
+  'price_desc',
+  'popular',
+  'discount_desc',
+];
+
+function normalizeOptionalCondition(value: unknown): AiProductCondition | null {
+  const lower = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if ((VALID_CONDITIONS as readonly string[]).includes(lower)) {
+    return lower as AiProductCondition;
+  }
+  return null;
+}
+
+function normalizeBuyerSort(value: unknown): AiBuyerSearchSort {
+  const lower = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if ((VALID_BUYER_SORTS as readonly string[]).includes(lower)) {
+    return lower as AiBuyerSearchSort;
+  }
+  return 'newest';
+}
+
+function resolveOptionalCategory(
+  rawCategory: unknown,
+  availableCategories: string[],
+): string | null {
+  if (typeof rawCategory !== 'string' || !rawCategory.trim()) return null;
+  const needle = rawCategory.trim().toLowerCase();
+  const exact = availableCategories.find(
+    (c) => c.trim().toLowerCase() === needle,
+  );
+  if (exact) return exact;
+  const partial = availableCategories.find(
+    (c) =>
+      c.trim().toLowerCase().includes(needle) ||
+      needle.includes(c.trim().toLowerCase()),
+  );
+  return partial || null;
+}
+
+export function normalizeBuyerSearchPlan(
+  raw: unknown,
+  availableCategories: string[],
+): AiBuyerSearchPlan {
+  const obj =
+    raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
+
+  const keywords = normalizeTags(obj.keywords);
+  const category = resolveOptionalCategory(obj.category, availableCategories);
+  let min_price = normalizePrice(obj.min_price);
+  let max_price = normalizePrice(obj.max_price);
+  if (min_price !== null && max_price !== null && min_price > max_price) {
+    [min_price, max_price] = [max_price, min_price];
+  }
+
+  const summary =
+    cleanText(obj.summary, 180) ||
+    'Showing Verndly listings matching your search.';
+
+  return {
+    summary,
+    filters: {
+      keywords,
+      category,
+      min_price,
+      max_price,
+      condition: normalizeOptionalCondition(obj.condition),
+      sort: normalizeBuyerSort(obj.sort),
+      in_stock_only: obj.in_stock_only !== false,
+    },
+  };
+}
 
 function normalizeCondition(value: unknown): AiProductCondition {
   const lower = typeof value === 'string' ? value.trim().toLowerCase() : '';
@@ -234,6 +326,8 @@ export function normalizeSingleAnalysis(
 @Injectable()
 export class GeminiService {
   private readonly logger = new Logger(GeminiService.name);
+  private stickyFallbackModel: { model: string; expiresAt: number } | null =
+    null;
 
   constructor(private readonly configService: ConfigService) {}
 
@@ -246,6 +340,36 @@ export class GeminiService {
       (this.configService.get<string>('GEMINI_MODEL') || '').trim() ||
       DEFAULT_GEMINI_MODEL
     );
+  }
+
+  /**
+   * Ordered list of models to attempt. If the primary model recently hit a 503
+   * capacity spike, promote the last known-healthy fallback model first so
+   * subsequent requests succeed immediately without waiting on an overloaded model.
+   */
+  getCandidateModels(): string[] {
+    const primary = this.getModel();
+    const extraRaw = (
+      this.configService.get<string>('GEMINI_FALLBACK_MODELS') || ''
+    )
+      .split(',')
+      .map((m) => m.trim())
+      .filter(Boolean);
+
+    const sticky =
+      this.stickyFallbackModel &&
+      this.stickyFallbackModel.expiresAt > Date.now()
+        ? this.stickyFallbackModel.model
+        : null;
+
+    const ordered = [
+      ...(sticky ? [sticky] : []),
+      primary,
+      ...extraRaw,
+      ...FALLBACK_GEMINI_MODELS,
+    ];
+
+    return Array.from(new Set(ordered.filter(Boolean)));
   }
 
   isConfigured(): boolean {
@@ -261,7 +385,59 @@ export class GeminiService {
   }
 
   /**
+   * Builds the Gemini REST endpoint:
+   * - Defaults to `generativelanguage.googleapis.com/v1beta` (works with both
+   *   `AIza...` and `AQ....` keys without needing Vertex Agent Platform API enabled).
+   * - Uses `aiplatform.googleapis.com` only when `GEMINI_USE_VERTEX=true`.
+   * - Custom `GEMINI_API_BASE` overrides either.
+   */
+  resolveEndpoint(model: string, apiKey: string): string {
+    const customBase = (this.configService.get<string>('GEMINI_API_BASE') || '')
+      .trim()
+      .replace(/\/+$/, '');
+    const forceVertex =
+      (this.configService.get<string>('GEMINI_USE_VERTEX') || '')
+        .trim()
+        .toLowerCase() === 'true';
+
+    const base =
+      customBase ||
+      (forceVertex ? VERTEX_EXPRESS_API_BASE : AI_STUDIO_API_BASE);
+    return `${base}/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+  }
+
+  private parseCandidateJson<T>(payload: {
+    candidates?: Array<{
+      content?: {
+        parts?: Array<{ text?: string; thought?: boolean }>;
+      };
+    }>;
+  }): T {
+    const rawText = payload?.candidates?.[0]?.content?.parts
+      ?.filter((p) => !p.thought && typeof p.text === 'string')
+      .map((p) => p.text || '')
+      .join('')
+      .trim();
+
+    if (!rawText) {
+      throw new Error('EMPTY_MODEL_RESPONSE');
+    }
+
+    try {
+      return JSON.parse(rawText) as T;
+    } catch {
+      const cleaned = rawText
+        .replace(/^```(?:json)?\s*/i, '')
+        .replace(/\s*```$/, '')
+        .trim();
+      return JSON.parse(cleaned) as T;
+    }
+  }
+
+  /**
    * Reusable Gemini Vision/Text structured-JSON primitive for all Verndly AI features.
+   * Automatically fails over across healthy Flash models if the primary model
+   * returns 503 (high demand), 429 (quota/rate spike), 404 (deprecated), or times out.
    */
   async generateStructuredJson<T>(options: GeminiGenerateOptions): Promise<T> {
     const apiKey = this.getApiKey();
@@ -273,108 +449,126 @@ export class GeminiService {
       });
     }
 
-    const model = this.getModel();
-    const endpoint = `${GEMINI_API_BASE}/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+    const candidates = this.getCandidateModels();
+    const primaryModel = this.getModel();
+    const requestBody = JSON.stringify({
+      systemInstruction: {
+        parts: [{ text: options.systemInstruction }],
+      },
+      contents: [
+        {
+          role: 'user',
+          parts: options.parts,
+        },
+      ],
+      generationConfig: {
+        ...(options.temperature !== undefined
+          ? { temperature: options.temperature }
+          : {}),
+        responseMimeType: 'application/json',
+        responseSchema: options.responseSchema,
+      },
+    });
 
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    let sawRateOrCapacitySpike = false;
 
-    try {
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        signal: controller.signal,
-        body: JSON.stringify({
-          systemInstruction: {
-            parts: [{ text: options.systemInstruction }],
-          },
-          contents: [
-            {
-              role: 'user',
-              parts: options.parts,
-            },
-          ],
-          generationConfig: {
-            temperature: options.temperature ?? 0.2,
-            responseMimeType: 'application/json',
-            responseSchema: options.responseSchema,
-          },
-        }),
-      });
-
-      if (!response.ok) {
-        const errorBody = await response.text().catch(() => '');
-        this.logger.error(
-          `Gemini API error (${response.status}): ${errorBody.slice(0, 500)}`,
-        );
-        if (response.status === 429) {
-          throw new ServiceUnavailableException(
-            'Verndly AI is temporarily busy. Please try again in a moment.',
-          );
-        }
-        if (response.status === 401 || response.status === 403) {
-          throw new ServiceUnavailableException({
-            message:
-              'Verndly AI is temporarily unavailable. Please try again shortly.',
-            code: 'AI_AUTH_ERROR',
-          });
-        }
-        throw new InternalServerErrorException(
-          'Verndly AI could not analyze these photos right now. Please try again.',
-        );
-      }
-
-      const payload = (await response.json()) as {
-        candidates?: Array<{
-          content?: { parts?: Array<{ text?: string }> };
-          finishReason?: string;
-        }>;
-      };
-
-      const rawText = payload?.candidates?.[0]?.content?.parts
-        ?.map((p) => p.text || '')
-        .join('')
-        .trim();
-
-      if (!rawText) {
-        this.logger.warn('Verndly AI returned an empty response payload');
-        throw new InternalServerErrorException(
-          'Verndly AI returned an empty response. Please try again.',
-        );
-      }
+    for (let i = 0; i < candidates.length; i++) {
+      const model = candidates[i];
+      const endpoint = this.resolveEndpoint(model, apiKey);
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), PER_MODEL_TIMEOUT_MS);
 
       try {
-        return JSON.parse(rawText) as T;
-      } catch {
-        // Fallback: strip accidental markdown fences if present
-        const cleaned = rawText
-          .replace(/^```(?:json)?\s*/i, '')
-          .replace(/\s*```$/, '')
-          .trim();
-        return JSON.parse(cleaned) as T;
-      }
-    } catch (error) {
-      if (
-        error instanceof ServiceUnavailableException ||
-        error instanceof BadRequestException ||
-        error instanceof InternalServerErrorException
-      ) {
-        throw error;
-      }
-      if ((error as { name?: string })?.name === 'AbortError') {
-        throw new ServiceUnavailableException(
-          'Verndly AI timed out while analyzing your photos. Try uploading fewer photos at once.',
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
+          body: requestBody,
+        });
+
+        if (!response.ok) {
+          const errorBody = await response.text().catch(() => '');
+          this.logger.warn(
+            `Verndly AI model "${model}" returned HTTP ${response.status}: ${errorBody.slice(0, 280)}`,
+          );
+
+          // Invalid API key / permission error affects all models on this endpoint — fail fast
+          if (response.status === 401 || response.status === 403) {
+            throw new ServiceUnavailableException({
+              message:
+                'Verndly AI is temporarily unavailable. Please check your API key configuration.',
+              code: 'AI_AUTH_ERROR',
+            });
+          }
+
+          // Transient overload (503/500/502/504), rate spike (429), or retired model (404): try next fallback model
+          if (
+            response.status === 429 ||
+            response.status === 404 ||
+            response.status >= 500
+          ) {
+            if (response.status === 429 || response.status === 503) {
+              sawRateOrCapacitySpike = true;
+            }
+            continue;
+          }
+
+          throw new InternalServerErrorException(
+            'Verndly AI could not analyze these photos right now. Please try again.',
+          );
+        }
+
+        const payload = (await response.json()) as {
+          candidates?: Array<{
+            content?: {
+              parts?: Array<{ text?: string; thought?: boolean }>;
+            };
+          }>;
+        };
+
+        const parsed = this.parseCandidateJson<T>(payload);
+
+        // Cache fallback model briefly if primary was overloaded so next call is instant
+        if (model !== primaryModel) {
+          this.stickyFallbackModel = {
+            model,
+            expiresAt: Date.now() + HEALTHY_MODEL_TTL_MS,
+          };
+          this.logger.log(
+            `Verndly AI succeeded using fallback model "${model}"`,
+          );
+        }
+
+        return parsed;
+      } catch (error) {
+        if (
+          error instanceof ServiceUnavailableException ||
+          error instanceof BadRequestException ||
+          error instanceof InternalServerErrorException
+        ) {
+          throw error;
+        }
+
+        const isAbort = (error as { name?: string })?.name === 'AbortError';
+        this.logger.warn(
+          `Verndly AI attempt on "${model}" failed (${isAbort ? 'timeout' : (error as Error)?.message}) — trying next model if available`,
         );
+        sawRateOrCapacitySpike = sawRateOrCapacitySpike || isAbort;
+        continue;
+      } finally {
+        clearTimeout(timer);
       }
-      this.logger.error(
-        `Unexpected Verndly AI request error: ${(error as Error)?.message || error}`,
-      );
-      throw new InternalServerErrorException(
-        'Unable to reach Verndly AI right now. Please try again.',
-      );
-    } finally {
-      clearTimeout(timer);
     }
+
+    if (sawRateOrCapacitySpike) {
+      throw new ServiceUnavailableException(
+        'Verndly AI is experiencing high demand right now. Please try again in a moment.',
+      );
+    }
+
+    throw new InternalServerErrorException(
+      'Unable to reach Verndly AI right now. Please try again.',
+    );
   }
 
   private validateImageFiles(
@@ -726,5 +920,392 @@ export class GeminiService {
       model: this.getModel(),
       totalScreenshots: files.length,
     };
+  }
+
+  async parseBuyerSearchQuery(
+    query: string,
+    availableCategories: string[],
+  ): Promise<AiBuyerSearchPlan> {
+    const cleanQuery = cleanText(query, 240);
+    if (!cleanQuery) {
+      throw new BadRequestException('Please enter what you are looking for.');
+    }
+
+    const categories =
+      availableCategories.length > 0 ? availableCategories : ['General'];
+
+    const systemInstruction = [
+      'You are Verndly AI, the shopping search assistant for Verndly, Ghana’s escrow-protected online marketplace.',
+      'Convert the buyer’s natural-language shopping request into structured catalog search filters.',
+      'Strict rules:',
+      '1. Extract 1 to 6 concise, high-signal product keywords (singular nouns, colors, styles, or close shopping synonyms — e.g. for "gift for my girlfriend under 200 cedis", use keywords like ["bag", "perfume", "jewelry", "watch", "gift"]).',
+      `2. Set category ONLY if the request clearly maps to one of these exact Verndly categories: ${categories.join(', ')}. If the request could span multiple categories (e.g. a gift), set category to null.`,
+      '3. Extract min_price and max_price in Ghana Cedis (GHS) when mentioned (e.g. "under 200 cedis" -> max_price: 200; "between 100 and 300" -> min_price: 100, max_price: 300). Otherwise null.',
+      '4. Set condition to "new", "used", or "refurbished" ONLY if the buyer explicitly mentions condition; otherwise null.',
+      '5. Choose sort: "price_asc" for cheap/affordable/budget queries, "price_desc" for premium/luxury, "discount_desc" for deals/sales/discounts, "popular" for trending/best-selling, otherwise "newest".',
+      '6. Write a friendly, concise 1-sentence summary (under 140 chars) describing what you are searching for, using GH₵ for prices.',
+    ].join('\n');
+
+    const responseSchema = {
+      type: 'OBJECT',
+      required: ['summary', 'keywords', 'sort', 'in_stock_only'],
+      properties: {
+        summary: { type: 'STRING' },
+        keywords: { type: 'ARRAY', items: { type: 'STRING' } },
+        category: { type: 'STRING', nullable: true },
+        min_price: { type: 'NUMBER', nullable: true },
+        max_price: { type: 'NUMBER', nullable: true },
+        condition: {
+          type: 'STRING',
+          enum: ['new', 'used', 'refurbished'],
+          nullable: true,
+        },
+        sort: {
+          type: 'STRING',
+          enum: [
+            'newest',
+            'price_asc',
+            'price_desc',
+            'popular',
+            'discount_desc',
+          ],
+        },
+        in_stock_only: { type: 'BOOLEAN' },
+      },
+    };
+
+    const raw = await this.generateStructuredJson<unknown>({
+      systemInstruction,
+      parts: [{ text: `Buyer request: "${cleanQuery}"` }],
+      responseSchema,
+      temperature: 0.1,
+    });
+
+    return normalizeBuyerSearchPlan(raw, categories);
+  }
+
+  async polishProductListing(
+    input: AiPolishListingInput,
+    availableCategories: string[],
+  ): Promise<AiPolishListingResult> {
+    const rawTitle = cleanText(input?.title, 160);
+    const rawDesc = cleanText(input?.description, 1500);
+    if (!rawTitle && !rawDesc) {
+      throw new BadRequestException(
+        'Enter a product title or description before polishing with Verndly AI.',
+      );
+    }
+
+    const categories =
+      availableCategories.length > 0 ? availableCategories : ['General'];
+
+    const systemInstruction = [
+      'You are Verndly AI, a conversion-focused e-commerce copy editor for Verndly, Ghana’s escrow-protected online marketplace.',
+      'Improve the seller’s product listing so it reads clearly, builds buyer trust, and ranks cleanly in search.',
+      'Strict honesty rules:',
+      '1. Polish title to clean, natural Title Case (3–10 words). Remove ALL CAPS, emoji spam, phone numbers, and hype words like "best/cheap/DM to order". Keep all factual attributes (color, size, model).',
+      '2. Rewrite description into 2–4 concise, scannable sentences (60–360 characters) describing what the buyer gets. NEVER invent unstated specs, warranties, materials, or brand names.',
+      `3. Pick the closest matching category from this exact list: ${categories.join(', ')}.`,
+      '4. Provide 4 to 6 clean lowercase search tags shoppers in Ghana would type.',
+      '5. Provide 2 to 4 short, practical improvement notes (each under 90 chars) explaining what was polished or one real detail the seller could add.',
+    ].join('\n');
+
+    const listingSnapshot = [
+      `Current title: ${rawTitle || '(empty)'}`,
+      `Current description: ${rawDesc || '(empty)'}`,
+      input?.category ? `Current category: ${input.category}` : '',
+      input?.condition ? `Condition: ${input.condition}` : '',
+      input?.brand ? `Brand: ${input.brand}` : '',
+      input?.price ? `Price: GH₵ ${input.price}` : '',
+      Array.isArray(input?.tags) && input.tags.length > 0
+        ? `Current tags: ${input.tags.join(', ')}`
+        : '',
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    const responseSchema = {
+      type: 'OBJECT',
+      required: ['title', 'description', 'category', 'tags', 'improvements'],
+      properties: {
+        title: { type: 'STRING' },
+        description: { type: 'STRING' },
+        category: { type: 'STRING' },
+        tags: { type: 'ARRAY', items: { type: 'STRING' } },
+        improvements: { type: 'ARRAY', items: { type: 'STRING' } },
+      },
+    };
+
+    const raw = await this.generateStructuredJson<unknown>({
+      systemInstruction,
+      parts: [
+        { text: `Polish this Verndly product listing:\n${listingSnapshot}` },
+      ],
+      responseSchema,
+      temperature: 0.25,
+    });
+
+    const obj =
+      raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
+    const improvements = Array.isArray(obj.improvements)
+      ? obj.improvements
+          .map((item) => cleanText(item, 110))
+          .filter(Boolean)
+          .slice(0, 4)
+      : [];
+
+    return {
+      title: cleanText(obj.title, 120) || rawTitle,
+      description: cleanText(obj.description, 1000) || rawDesc,
+      category: resolveCategory(obj.category || input?.category, categories),
+      tags: normalizeTags(obj.tags),
+      improvements,
+      model: this.getModel(),
+    };
+  }
+
+  async draftStorefrontSetup(
+    input: AiDraftStorefrontInput,
+  ): Promise<AiDraftStorefrontResult> {
+    const storeName = cleanText(input?.store_name, 100);
+    const whatYouSell = cleanText(input?.what_you_sell, 500);
+    if (!storeName && !whatYouSell) {
+      throw new BadRequestException(
+        'Tell Verndly AI your store name or what you sell first.',
+      );
+    }
+
+    const systemInstruction = [
+      'You are Verndly AI, helping independent sellers in Ghana set up a trustworthy, high-converting storefront on Verndly (Ghana’s escrow-protected online marketplace).',
+      'Draft clean, natural, honest storefront copy from the seller’s notes.',
+      'Strict rules:',
+      '1. bio: 2–3 clear, friendly sentences (80–300 chars) explaining what the store offers, where it operates (if provided), and why buyers can shop with confidence. No buzzword fluff or ALL CAPS.',
+      '2. delivery_policies: 2–3 concise sentences (80–360 chars) covering dispatch timing, coverage area, and reassuring buyers that orders are protected by Verndly’s 7-day escrow.',
+      '3. business_hours: clean formatted operating hours (e.g. "Mon–Sat: 9:00 AM – 6:00 PM"). Use what the seller mentioned, or a sensible standard Ghana retail schedule if not specified.',
+      '4. service_area: choose ONE of SAME_CITY, NEARBY_STATES, NATIONWIDE only if clearly implied; otherwise null.',
+      '5. avg_delivery_time: choose ONE of SAME_DAY, NEXT_DAY, TWO_TO_THREE_DAYS, FOUR_TO_SEVEN_DAYS, MORE_THAN_ONE_WEEK only if clearly implied; otherwise null.',
+    ].join('\n');
+
+    const contextLines = [
+      storeName ? `Store name: ${storeName}` : '',
+      whatYouSell ? `Seller description: ${whatYouSell}` : '',
+      input?.location ? `Location: ${cleanText(input.location, 120)}` : '',
+      input?.service_area ? `Current service area: ${input.service_area}` : '',
+      input?.avg_delivery_time
+        ? `Current avg delivery time: ${input.avg_delivery_time}`
+        : '',
+      input?.business_hours
+        ? `Current business hours: ${cleanText(input.business_hours, 120)}`
+        : '',
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    const responseSchema = {
+      type: 'OBJECT',
+      required: ['bio', 'delivery_policies', 'business_hours'],
+      properties: {
+        bio: { type: 'STRING' },
+        delivery_policies: { type: 'STRING' },
+        business_hours: { type: 'STRING' },
+        service_area: {
+          type: 'STRING',
+          enum: ['SAME_CITY', 'NEARBY_STATES', 'NATIONWIDE'],
+          nullable: true,
+        },
+        avg_delivery_time: {
+          type: 'STRING',
+          enum: [
+            'SAME_DAY',
+            'NEXT_DAY',
+            'TWO_TO_THREE_DAYS',
+            'FOUR_TO_SEVEN_DAYS',
+            'MORE_THAN_ONE_WEEK',
+          ],
+          nullable: true,
+        },
+      },
+    };
+
+    const raw = await this.generateStructuredJson<unknown>({
+      systemInstruction,
+      parts: [{ text: `Draft storefront settings for:\n${contextLines}` }],
+      responseSchema,
+      temperature: 0.3,
+    });
+
+    const obj =
+      raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
+
+    const validAreas: readonly AiServiceArea[] = [
+      'SAME_CITY',
+      'NEARBY_STATES',
+      'NATIONWIDE',
+    ];
+    const validTimes: readonly AiDeliveryTime[] = [
+      'SAME_DAY',
+      'NEXT_DAY',
+      'TWO_TO_THREE_DAYS',
+      'FOUR_TO_SEVEN_DAYS',
+      'MORE_THAN_ONE_WEEK',
+    ];
+
+    const rawArea =
+      typeof obj.service_area === 'string' ? obj.service_area : '';
+    const rawTime =
+      typeof obj.avg_delivery_time === 'string' ? obj.avg_delivery_time : '';
+
+    return {
+      bio: cleanText(obj.bio, 500),
+      delivery_policies: cleanText(obj.delivery_policies, 600),
+      business_hours: cleanText(obj.business_hours, 140),
+      service_area: (validAreas as readonly string[]).includes(rawArea)
+        ? (rawArea as AiServiceArea)
+        : null,
+      avg_delivery_time: (validTimes as readonly string[]).includes(rawTime)
+        ? (rawTime as AiDeliveryTime)
+        : null,
+      model: this.getModel(),
+    };
+  }
+
+  async extractProductsFromWebpage(
+    pageText: string,
+    candidateImageUrls: string[],
+    sourceUrl: string,
+    availableCategories: string[],
+  ): Promise<
+    Array<{
+      title: string;
+      description: string;
+      price: number | null;
+      original_price: number | null;
+      currency: string;
+      category: string;
+      condition: AiProductCondition;
+      brand: string;
+      tags: string[];
+      image_urls: string[];
+    }>
+  > {
+    const snippet = cleanText(pageText, 9000);
+    if (!snippet) return [];
+    const categories =
+      availableCategories.length > 0 ? availableCategories : ['General'];
+    const imagesList = candidateImageUrls.slice(0, 25);
+
+    const systemInstruction = [
+      'You are Verndly AI, extracting product listing data from a seller’s own webpage so they can import their catalog onto Verndly.',
+      'Extract up to 15 real products found in the page text. Never invent products, prices, or image URLs that do not appear in the input.',
+      'Strict rules:',
+      '1. title: clean product name (3–12 words).',
+      '2. description: concise 2–3 sentence factual description from the page text (40–280 chars).',
+      '3. price and original_price: numeric amounts only (or null if not present). currency: 3-letter ISO code (default GHS).',
+      `4. category: closest match from: ${categories.join(', ')}.`,
+      '5. image_urls: pick 0 to 3 matching HTTPS URLs ONLY from the provided candidate image list.',
+      '6. tags: 3 to 5 lowercase search keywords.',
+    ].join('\n');
+
+    const responseSchema = {
+      type: 'OBJECT',
+      required: ['products'],
+      properties: {
+        products: {
+          type: 'ARRAY',
+          items: {
+            type: 'OBJECT',
+            required: ['title', 'description', 'category', 'condition', 'tags'],
+            properties: {
+              title: { type: 'STRING' },
+              description: { type: 'STRING' },
+              price: { type: 'NUMBER', nullable: true },
+              original_price: { type: 'NUMBER', nullable: true },
+              currency: { type: 'STRING' },
+              category: { type: 'STRING' },
+              condition: {
+                type: 'STRING',
+                enum: ['new', 'used', 'refurbished'],
+              },
+              brand: { type: 'STRING' },
+              tags: { type: 'ARRAY', items: { type: 'STRING' } },
+              image_urls: { type: 'ARRAY', items: { type: 'STRING' } },
+            },
+          },
+        },
+      },
+    };
+
+    const raw = await this.generateStructuredJson<unknown>({
+      systemInstruction,
+      parts: [
+        {
+          text: [
+            `Source URL: ${sourceUrl}`,
+            imagesList.length > 0
+              ? `Candidate image URLs:\n${imagesList.map((u, i) => `[${i}] ${u}`).join('\n')}`
+              : 'Candidate image URLs: (none)',
+            `Webpage text:\n${snippet}`,
+          ].join('\n\n'),
+        },
+      ],
+      responseSchema,
+      temperature: 0.1,
+    });
+
+    const rawProducts =
+      raw &&
+      typeof raw === 'object' &&
+      Array.isArray((raw as { products?: unknown }).products)
+        ? ((raw as { products: Record<string, unknown>[] }).products ?? [])
+        : [];
+
+    const allowedImageSet = new Set(imagesList);
+    const out: Array<{
+      title: string;
+      description: string;
+      price: number | null;
+      original_price: number | null;
+      currency: string;
+      category: string;
+      condition: AiProductCondition;
+      brand: string;
+      tags: string[];
+      image_urls: string[];
+    }> = [];
+
+    for (const item of rawProducts.slice(0, 15)) {
+      if (!item || typeof item !== 'object') continue;
+      const title = cleanText(item.title, 120);
+      if (!title) continue;
+      const price = normalizePrice(item.price);
+      const rawOrig = normalizePrice(item.original_price);
+      const original_price =
+        rawOrig !== null && price !== null && rawOrig > price ? rawOrig : null;
+      const image_urls = Array.isArray(item.image_urls)
+        ? item.image_urls
+            .filter(
+              (u): u is string =>
+                typeof u === 'string' &&
+                u.startsWith('https://') &&
+                (allowedImageSet.size === 0 || allowedImageSet.has(u)),
+            )
+            .slice(0, 3)
+        : [];
+
+      out.push({
+        title,
+        description: cleanText(item.description, 1000),
+        price,
+        original_price,
+        currency: cleanText(item.currency, 8).toUpperCase() || 'GHS',
+        category: resolveCategory(item.category, categories),
+        condition: normalizeCondition(item.condition),
+        brand: cleanText(item.brand, 60),
+        tags: normalizeTags(item.tags),
+        image_urls,
+      });
+    }
+
+    return out;
   }
 }

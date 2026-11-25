@@ -35,8 +35,11 @@ import Spinner from '@/components/ui/Spinner';
 import Select from '@/components/ui/Select';
 import { useAuth } from '@/lib/contexts/auth-context';
 import { storeApi } from '@/lib/api/store';
+import { aiApi, AiDraftStorefrontResult } from '@/lib/api/ai';
 import { onboardingApi, LocationCity } from '@/lib/api/onboarding';
 import { toast } from 'sonner';
+import VerndlyAiIcon from '@/components/ai/VerndlyAiIcon';
+import VerndlyAiOverlay from '@/components/ai/VerndlyAiOverlay';
 
 /* ─── iOS-style toggle ──────────────────────────────────────────────── */
 function IOSToggle({ enabled, onChange }: { enabled: boolean; onChange: (v: boolean) => void }) {
@@ -166,7 +169,14 @@ export default function StoreSettingsPage() {
     delivery_policies: seller?.delivery_policies || '',
     business_hours: seller?.business_hours || '',
     whatsapp_number: seller?.whatsapp_number || '',
-    social_links: seller?.social_links || { instagram: '', twitter: '', facebook: '', tiktok: '', youtube: '', website: '' },
+    social_links: seller?.social_links || {
+      instagram: '',
+      twitter: '',
+      facebook: '',
+      tiktok: '',
+      youtube: '',
+      website: '',
+    },
     accepted_payment_methods: seller?.accepted_payment_methods || [],
     payment_timing: seller?.payment_timing || '',
     service_area: seller?.service_area || '',
@@ -186,6 +196,56 @@ export default function StoreSettingsPage() {
   const [loadingRegions, setLoadingRegions] = useState(true);
   const [loadingCities, setLoadingCities] = useState(false);
 
+  // Verndly AI Storefront Setup state
+  const [aiStorePrompt, setAiStorePrompt] = useState('');
+  const [isDraftingStore, setIsDraftingStore] = useState(false);
+  const [storeDraft, setStoreDraft] = useState<AiDraftStorefrontResult | null>(null);
+
+  const handleDraftStorefrontWithAi = async () => {
+    if (!token) {
+      toast.error('Please sign in to use Verndly AI');
+      return;
+    }
+    if (!formData.store_name.trim() && !aiStorePrompt.trim()) {
+      toast.info('Enter your store name or describe what you sell first');
+      return;
+    }
+
+    setIsDraftingStore(true);
+    try {
+      const draft = await aiApi.draftStorefront(token, {
+        store_name: formData.store_name,
+        what_you_sell: aiStorePrompt || formData.bio,
+        location: [formData.area, selectedRegion].filter(Boolean).join(', ') || formData.location,
+        service_area: formData.service_area,
+        avg_delivery_time: formData.avg_delivery_time,
+        business_hours: formData.business_hours,
+      });
+      setStoreDraft(draft);
+      toast.success('Verndly AI drafted your storefront details — review below');
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error ? err.message : 'Verndly AI could not draft your storefront right now';
+      toast.error(msg);
+    } finally {
+      setIsDraftingStore(false);
+    }
+  };
+
+  const handleApplyStoreDraft = () => {
+    if (!storeDraft) return;
+    setFormData((prev) => ({
+      ...prev,
+      bio: storeDraft.bio || prev.bio,
+      delivery_policies: storeDraft.delivery_policies || prev.delivery_policies,
+      business_hours: storeDraft.business_hours || prev.business_hours,
+      service_area: storeDraft.service_area || prev.service_area,
+      avg_delivery_time: storeDraft.avg_delivery_time || prev.avg_delivery_time,
+    }));
+    setStoreDraft(null);
+    toast.success('Applied Verndly AI storefront draft — click Save Changes when ready');
+  };
+
   // Sync form when seller_profile data loads asynchronously
   useEffect(() => {
     if (!seller) return;
@@ -200,7 +260,14 @@ export default function StoreSettingsPage() {
       delivery_policies: seller.delivery_policies || '',
       business_hours: seller.business_hours || '',
       whatsapp_number: seller.whatsapp_number || '',
-      social_links: seller.social_links || { instagram: '', twitter: '', facebook: '', tiktok: '', youtube: '', website: '' },
+      social_links: seller.social_links || {
+        instagram: '',
+        twitter: '',
+        facebook: '',
+        tiktok: '',
+        youtube: '',
+        website: '',
+      },
       accepted_payment_methods: seller.accepted_payment_methods || [],
       payment_timing: seller.payment_timing || '',
       service_area: seller.service_area || '',
@@ -360,6 +427,112 @@ export default function StoreSettingsPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <VerndlyAiOverlay
+        isOpen={isDraftingStore}
+        messages={[
+          'Reading your store details and niche…',
+          'Writing a warm, buyer-friendly store bio…',
+          'Drafting clear delivery, pickup, and escrow policies…',
+        ]}
+        subtitle="Review every field before saving to your public storefront."
+      />
+
+      {/* Verndly AI Storefront Setup — flat tonal, borderless */}
+      <div className="bg-surface mb-6 space-y-4 rounded-3xl p-5 sm:p-6">
+        <div className="flex items-start gap-3">
+          <VerndlyAiIcon size={36} mood={isDraftingStore ? 'working' : 'idle'} />
+          <div className="min-w-0 flex-1 space-y-1">
+            <h2 className="text-foreground text-sm font-semibold sm:text-base">
+              Set up your storefront with Verndly AI
+            </h2>
+            <p className="text-muted text-xs leading-relaxed">
+              Describe what you sell and how you deliver in one sentence — Verndly AI drafts your
+              bio, delivery &amp; escrow policies, and operating hours.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2.5 sm:flex-row">
+          <input
+            type="text"
+            value={aiStorePrompt}
+            onChange={(e) => setAiStorePrompt(e.target.value)}
+            placeholder="e.g. Handmade leather sandals in East Legon, same-day Accra delivery, Mon–Sat 9–6"
+            className="bg-background text-foreground placeholder:text-muted/60 h-11 flex-1 rounded-2xl px-4 text-xs outline-none sm:text-sm"
+          />
+          <button
+            type="button"
+            disabled={isDraftingStore}
+            onClick={handleDraftStorefrontWithAi}
+            className="bg-foreground text-background inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-2xl px-4 text-xs font-semibold transition-opacity hover:opacity-90 disabled:opacity-40"
+          >
+            <VerndlyAiIcon size={16} mood={isDraftingStore ? 'working' : 'idle'} />
+            <span>Draft with Verndly AI</span>
+          </button>
+        </div>
+
+        {storeDraft && (
+          <div className="bg-background space-y-3 rounded-2xl p-4 text-xs">
+            <VerndlyAiIcon
+              size={16}
+              mood="happy"
+              showName
+              nameClassName="text-xs text-foreground"
+            />
+            <div className="space-y-2.5">
+              <div>
+                <span className="text-muted block text-[10px] font-semibold uppercase tracking-wider">
+                  Store Bio
+                </span>
+                <p className="text-foreground mt-0.5 leading-relaxed">{storeDraft.bio}</p>
+              </div>
+              <div>
+                <span className="text-muted block text-[10px] font-semibold uppercase tracking-wider">
+                  Delivery &amp; Escrow Policy
+                </span>
+                <p className="text-foreground mt-0.5 leading-relaxed">
+                  {storeDraft.delivery_policies}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2 pt-0.5">
+                {storeDraft.business_hours && (
+                  <span className="bg-surface text-foreground rounded-full px-3 py-1 text-[11px] font-medium">
+                    Hours: {storeDraft.business_hours}
+                  </span>
+                )}
+                {storeDraft.service_area && (
+                  <span className="bg-surface text-foreground rounded-full px-3 py-1 text-[11px] font-medium">
+                    Area: {storeDraft.service_area.replace(/_/g, ' ')}
+                  </span>
+                )}
+                {storeDraft.avg_delivery_time && (
+                  <span className="bg-surface text-foreground rounded-full px-3 py-1 text-[11px] font-medium">
+                    Speed: {storeDraft.avg_delivery_time.replace(/_/g, ' ')}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setStoreDraft(null)}
+                className="bg-surface text-muted hover:text-foreground h-9 rounded-xl px-3.5 text-xs font-semibold transition-colors"
+              >
+                Dismiss
+              </button>
+              <button
+                type="button"
+                onClick={handleApplyStoreDraft}
+                className="bg-foreground text-background h-9 rounded-xl px-4 text-xs font-semibold transition-opacity hover:opacity-90"
+              >
+                Apply to storefront
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* ────────────────── Branding ────────────────── */}
@@ -863,8 +1036,16 @@ export default function StoreSettingsPage() {
                       }
                       options={[
                         { value: '', label: 'Select Provider' },
-                        ...GHANA_BANKS.map((b) => ({ value: b.code, label: b.name, badge: 'Bank' })),
-                        ...MOMO_PROVIDERS.map((p) => ({ value: p.code, label: p.name, badge: 'MoMo' })),
+                        ...GHANA_BANKS.map((b) => ({
+                          value: b.code,
+                          label: b.name,
+                          badge: 'Bank',
+                        })),
+                        ...MOMO_PROVIDERS.map((p) => ({
+                          value: p.code,
+                          label: p.name,
+                          badge: 'MoMo',
+                        })),
                       ]}
                       size="sm"
                     />
@@ -990,8 +1171,9 @@ export default function StoreSettingsPage() {
               >
                 Social Channels & Customer DM
               </h3>
-              <p className="text-[11px] text-[var(--color-muted)] mt-0.5">
-                Connect your direct WhatsApp number and public profiles. Storefront &quot;Message&quot; clicks route directly to your WhatsApp DM.
+              <p className="mt-0.5 text-[11px] text-[var(--color-muted)]">
+                Connect your direct WhatsApp number and public profiles. Storefront
+                &quot;Message&quot; clicks route directly to your WhatsApp DM.
               </p>
             </div>
           </div>
@@ -999,13 +1181,13 @@ export default function StoreSettingsPage() {
           <div className="space-y-6">
             {/* WhatsApp Direct DM Box */}
             <div
-              className="rounded-2xl border p-4 space-y-3"
+              className="space-y-3 rounded-2xl border p-4"
               style={{
                 borderColor: 'color-mix(in srgb, var(--color-border) 60%, transparent)',
                 backgroundColor: 'color-mix(in srgb, var(--color-background) 60%, transparent)',
               }}
             >
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
                 <div className="flex items-center gap-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600">
                     <MessageCircle className="h-4 w-4" />
@@ -1020,24 +1202,26 @@ export default function StoreSettingsPage() {
                     type="button"
                     onClick={() => {
                       let clean = formData.whatsapp_number.replace(/[^\d]/g, '');
-                      if (clean.startsWith('0') && clean.length === 10) clean = '233' + clean.slice(1);
+                      if (clean.startsWith('0') && clean.length === 10)
+                        clean = '233' + clean.slice(1);
                       window.open(
                         `https://wa.me/${clean}?text=${encodeURIComponent(
-                          `Test inquiry to ${formData.store_name || 'store'} on Verndly`
+                          `Test inquiry to ${formData.store_name || 'store'} on Verndly`,
                         )}`,
                         '_blank',
-                        'noopener,noreferrer'
+                        'noopener,noreferrer',
                       );
                     }}
-                    className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 hover:text-emerald-500 transition-colors"
+                    className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 transition-colors hover:text-emerald-500"
                   >
                     <ExternalLink className="h-3 w-3" /> Test WhatsApp DM Link
                   </button>
                 )}
               </div>
 
-              <p className="text-[11px] text-[var(--color-muted)] leading-relaxed">
-                When buyers tap &quot;Message&quot; or &quot;Contact&quot; on your public storefront or products, it immediately opens a direct WhatsApp chat with your store.
+              <p className="text-[11px] leading-relaxed text-[var(--color-muted)]">
+                When buyers tap &quot;Message&quot; or &quot;Contact&quot; on your public storefront
+                or products, it immediately opens a direct WhatsApp chat with your store.
               </p>
 
               <div className="relative">
@@ -1068,16 +1252,15 @@ export default function StoreSettingsPage() {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {/* Instagram */}
                 <div className="relative">
-                  <Instagram
-                    className="absolute left-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-pink-500"
-                  />
+                  <Instagram className="absolute left-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-pink-500" />
                   <Input
                     value={(formData.social_links as any)?.instagram || ''}
                     onChange={(e) => updateSocialLink('instagram', e.target.value)}
                     placeholder="Instagram username or URL"
                     className="h-11 rounded-xl pl-12 text-[11px] font-normal"
                     style={{
-                      backgroundColor: 'color-mix(in srgb, var(--color-background) 50%, transparent)',
+                      backgroundColor:
+                        'color-mix(in srgb, var(--color-background) 50%, transparent)',
                     }}
                   />
                 </div>
@@ -1095,7 +1278,8 @@ export default function StoreSettingsPage() {
                     placeholder="TikTok username or URL"
                     className="h-11 rounded-xl pl-12 text-[11px] font-normal"
                     style={{
-                      backgroundColor: 'color-mix(in srgb, var(--color-background) 50%, transparent)',
+                      backgroundColor:
+                        'color-mix(in srgb, var(--color-background) 50%, transparent)',
                     }}
                   />
                 </div>
@@ -1112,7 +1296,8 @@ export default function StoreSettingsPage() {
                     placeholder="X / Twitter handle or URL"
                     className="h-11 rounded-xl pl-12 text-[11px] font-normal"
                     style={{
-                      backgroundColor: 'color-mix(in srgb, var(--color-background) 50%, transparent)',
+                      backgroundColor:
+                        'color-mix(in srgb, var(--color-background) 50%, transparent)',
                     }}
                   />
                 </div>
@@ -1130,39 +1315,38 @@ export default function StoreSettingsPage() {
                     placeholder="Facebook page name or URL"
                     className="h-11 rounded-xl pl-12 text-[11px] font-normal"
                     style={{
-                      backgroundColor: 'color-mix(in srgb, var(--color-background) 50%, transparent)',
+                      backgroundColor:
+                        'color-mix(in srgb, var(--color-background) 50%, transparent)',
                     }}
                   />
                 </div>
 
                 {/* YouTube */}
                 <div className="relative">
-                  <Youtube
-                    className="absolute left-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-red-500"
-                  />
+                  <Youtube className="absolute left-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-red-500" />
                   <Input
                     value={(formData.social_links as any)?.youtube || ''}
                     onChange={(e) => updateSocialLink('youtube', e.target.value)}
                     placeholder="YouTube channel or handle"
                     className="h-11 rounded-xl pl-12 text-[11px] font-normal"
                     style={{
-                      backgroundColor: 'color-mix(in srgb, var(--color-background) 50%, transparent)',
+                      backgroundColor:
+                        'color-mix(in srgb, var(--color-background) 50%, transparent)',
                     }}
                   />
                 </div>
 
                 {/* External Website */}
                 <div className="relative">
-                  <Globe
-                    className="absolute left-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-emerald-500"
-                  />
+                  <Globe className="absolute left-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-emerald-500" />
                   <Input
                     value={(formData.social_links as any)?.website || ''}
                     onChange={(e) => updateSocialLink('website', e.target.value)}
                     placeholder="Website or portfolio URL"
                     className="h-11 rounded-xl pl-12 text-[11px] font-normal"
                     style={{
-                      backgroundColor: 'color-mix(in srgb, var(--color-background) 50%, transparent)',
+                      backgroundColor:
+                        'color-mix(in srgb, var(--color-background) 50%, transparent)',
                     }}
                   />
                 </div>
@@ -1188,7 +1372,7 @@ export default function StoreSettingsPage() {
             }}
           >
             <span className="flex items-center gap-2">
-              Deploy Changes
+              Save Changes
               <ExternalLink className="h-3 w-3" />
             </span>
           </Button>

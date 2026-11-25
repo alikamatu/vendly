@@ -12,6 +12,8 @@ import { PaymentsModule } from '../payments/payments.module';
 import { AiModule } from '../ai/ai.module';
 import { WhatsAppCatalogService } from './whatsapp-catalog.service';
 import { WhatsAppCatalogController } from './whatsapp-catalog.controller';
+import { WebsiteImportService } from './website-import.service';
+import { WebsiteImportController } from './website-import.controller';
 
 @Module({
   imports: [
@@ -26,12 +28,14 @@ import { WhatsAppCatalogController } from './whatsapp-catalog.controller';
     AdminProductService,
     VariantService,
     WhatsAppCatalogService,
+    WebsiteImportService,
   ],
   controllers: [
     ProductController,
     AdminProductController,
     VariantController,
     WhatsAppCatalogController,
+    WebsiteImportController,
   ],
 })
 export class ProductModule {}

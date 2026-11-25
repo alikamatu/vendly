@@ -14,13 +14,13 @@ import {
   Percent,
   Wallet,
   ArrowUpRight,
-  Sparkles,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/auth-context';
 import { storeApi } from '@/lib/api/store';
 import { adminApi } from '@/lib/api/admin';
 import ProFeaturesSection from '@/components/dashboard/ProFeaturesSection';
+import VerndlyAiIcon from '@/components/ai/VerndlyAiIcon';
 
 const IconMap: Record<string, React.ElementType> = {
   ShoppingBag,
@@ -316,9 +316,7 @@ export default function DashboardPage() {
                 href="/dashboard/products/add"
                 className="bg-surface hover:bg-foreground/[0.05] group flex flex-col justify-between gap-6 rounded-3xl p-6 transition-colors"
               >
-                <div className="bg-foreground text-background flex h-11 w-11 items-center justify-center rounded-2xl">
-                  <Sparkles className="h-5 w-5" />
-                </div>
+                <VerndlyAiIcon size={44} />
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between gap-2">
                     <h4 className="text-foreground text-base font-semibold">

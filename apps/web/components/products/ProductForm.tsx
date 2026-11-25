@@ -29,9 +29,13 @@ import Select, { SelectOption } from '@/components/ui/Select';
 import Alert from '@/components/ui/Alert';
 import imageCompression from 'browser-image-compression';
 import { productApi } from '@/lib/api/product';
+import { aiApi, AiPolishListingResult } from '@/lib/api/ai';
+import { useAuth } from '@/lib/contexts/auth-context';
 import VariantEditor from '@/components/dashboard/VariantEditor';
 import { resolveSizeFieldOptions } from '@/lib/shoe-sizing';
 import { toast } from 'sonner';
+import VerndlyAiIcon from '@/components/ai/VerndlyAiIcon';
+import VerndlyAiOverlay from '@/components/ai/VerndlyAiOverlay';
 
 export interface CategoryField {
   name?: string;
@@ -146,9 +150,57 @@ export default function ProductForm({
   const [existingVideo, setExistingVideo] = useState<string | null>(initialExistingVideo);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
+  const { token } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryBrands, setCategoryBrands] = useState<{ id: string; name: string }[]>([]);
   const [isCompressing, setIsCompressing] = useState(false);
+  const [isPolishing, setIsPolishing] = useState(false);
+  const [polishSuggestion, setPolishSuggestion] = useState<AiPolishListingResult | null>(null);
+
+  const handlePolishWithAi = async () => {
+    if (!token) {
+      toast.error('Please sign in to use Verndly AI');
+      return;
+    }
+    if (!formData.title.trim() && !formData.description.trim()) {
+      toast.info('Add a title or short description first so Verndly AI can polish it');
+      return;
+    }
+
+    setIsPolishing(true);
+    try {
+      const suggestion = await aiApi.polishListing(token, {
+        title: formData.title,
+        description: formData.description,
+        category: formData.category,
+        condition: formData.condition,
+        brand: formData.brand,
+        tags: formData.tags,
+        price: formData.price,
+      });
+      setPolishSuggestion(suggestion);
+      toast.success('Verndly AI prepared listing improvements — review below');
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error ? err.message : 'Verndly AI could not polish this listing right now';
+      toast.error(msg);
+    } finally {
+      setIsPolishing(false);
+    }
+  };
+
+  const handleApplyPolish = () => {
+    if (!polishSuggestion) return;
+    setFormData((prev) => ({
+      ...prev,
+      title: polishSuggestion.title || prev.title,
+      description: polishSuggestion.description || prev.description,
+      category: polishSuggestion.category || prev.category,
+      tags: polishSuggestion.tags.length > 0 ? polishSuggestion.tags : prev.tags,
+    }));
+    setPolishSuggestion(null);
+    toast.success('Applied Verndly AI polish — click Save to publish');
+  };
 
   useEffect(() => {
     if (initialData) {
@@ -291,7 +343,7 @@ export default function ProductForm({
           const compressed = await imageCompression(src, {
             maxSizeMB: 1,
             maxWidthOrHeight: 1920,
-            useWebWorker: true,
+            useWebWorker: false,
             fileType: 'image/webp',
           });
 
@@ -489,6 +541,116 @@ export default function ProductForm({
           message="Compressing images in the background for fast customer browsing..."
         />
       )}
+
+      <VerndlyAiOverlay
+        isOpen={isPolishing}
+        messages={[
+          'Reading your current product listing…',
+          'Polishing your title and writing clearer buyer-friendly copy…',
+          'Generating high-signal Ghana search tags and tips…',
+        ]}
+        subtitle="You’ll be able to review every suggestion before applying."
+      />
+
+      {/* Verndly AI Listing Polish Bar — flat tonal, borderless */}
+      <div className="bg-surface space-y-4 rounded-3xl p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <VerndlyAiIcon size={34} mood={isPolishing ? 'working' : 'idle'} />
+            <div>
+              <p className="text-foreground text-sm font-semibold">Polish with Verndly AI</p>
+              <p className="text-muted text-xs">
+                Sharpen your title, expand your description, and generate buyer search tags.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            disabled={isPolishing}
+            onClick={handlePolishWithAi}
+            className="bg-foreground text-background inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl px-4 text-xs font-semibold transition-opacity hover:opacity-90 disabled:opacity-40"
+          >
+            <VerndlyAiIcon size={16} mood={isPolishing ? 'working' : 'idle'} />
+            <span>{polishSuggestion ? 'Polish again' : 'Polish with Verndly AI'}</span>
+          </button>
+        </div>
+
+        {polishSuggestion && (
+          <div className="bg-background space-y-3 rounded-2xl p-4">
+            <div className="flex items-center justify-between gap-2">
+              <VerndlyAiIcon
+                size={16}
+                mood="happy"
+                showName
+                nameClassName="text-xs text-foreground"
+              />
+              <button
+                type="button"
+                onClick={() => setPolishSuggestion(null)}
+                aria-label="Dismiss suggestions"
+                className="text-muted hover:text-foreground rounded-lg p-1"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+
+            <div className="space-y-2 text-xs">
+              <div>
+                <span className="text-muted block text-[10px] font-semibold uppercase tracking-wider">
+                  Suggested title
+                </span>
+                <p className="text-foreground mt-0.5 text-sm font-semibold">
+                  {polishSuggestion.title}
+                </p>
+              </div>
+              <div>
+                <span className="text-muted block text-[10px] font-semibold uppercase tracking-wider">
+                  Suggested description
+                </span>
+                <p className="text-foreground/90 mt-0.5 leading-relaxed">
+                  {polishSuggestion.description}
+                </p>
+              </div>
+              {polishSuggestion.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {polishSuggestion.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="bg-surface text-foreground rounded-full px-2.5 py-0.5 text-[11px] font-medium"
+                    >
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {polishSuggestion.improvements.length > 0 && (
+                <ul className="text-muted space-y-1 pt-1 text-[11px]">
+                  {polishSuggestion.improvements.map((tip, i) => (
+                    <li key={i}>• {tip}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setPolishSuggestion(null)}
+                className="bg-surface text-muted hover:text-foreground h-9 rounded-xl px-3.5 text-xs font-semibold transition-colors"
+              >
+                Dismiss
+              </button>
+              <button
+                type="button"
+                onClick={handleApplyPolish}
+                className="bg-foreground text-background h-9 rounded-xl px-4 text-xs font-semibold transition-opacity hover:opacity-90"
+              >
+                Apply all changes
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
 
       <Card
         className="space-y-6 rounded-2xl border border-[var(--color-border)] p-6 md:p-8"

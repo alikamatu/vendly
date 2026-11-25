@@ -15,18 +15,18 @@ import {
   X,
   ArrowLeft,
   ChevronDown,
-  Sparkles,
   UploadCloud,
   ExternalLink,
   Loader2,
   RefreshCw,
-  Wand2,
 } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 import { productApi } from '@/lib/api/product';
 import { aiApi, AiConfidence } from '@/lib/api/ai';
 import { useAuth } from '@/lib/contexts/auth-context';
 import { toast } from 'sonner';
+import VerndlyAiIcon from '@/components/ai/VerndlyAiIcon';
+import VerndlyAiOverlay from '@/components/ai/VerndlyAiOverlay';
 
 export interface CategoryField {
   name?: string;
@@ -370,7 +370,7 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
       const compressed = await imageCompression(file, {
         maxSizeMB: 0.45,
         maxWidthOrHeight: 1024,
-        useWebWorker: true,
+        useWebWorker: false,
       });
       return new File([compressed], file.name, {
         type: compressed.type || file.type || 'image/jpeg',
@@ -642,7 +642,7 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
               const compressed = await imageCompression(img, {
                 maxSizeMB: 1,
                 maxWidthOrHeight: 1600,
-                useWebWorker: true,
+                useWebWorker: false,
               });
               return new File([compressed], img.name, {
                 type: compressed.type || img.type,
@@ -795,42 +795,37 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
           </div>
         </div>
 
-        {/* Primary AI bulk entry */}
+        {/* Primary Verndly AI bulk entry */}
         <button
           type="button"
-          disabled={isBulkAnalyzing}
+          disabled={isBulkAnalyzing || isSingleAnalyzing}
           onClick={() => setBulkModalOpen(true)}
           className="bg-foreground text-background inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-50 sm:w-auto sm:py-2.5"
         >
-          {isBulkAnalyzing ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Verndly AI analyzing {bulkAnalyzingCount} photos…</span>
-            </>
-          ) : (
-            <>
-              <Sparkles className="h-4 w-4" />
-              <span>Verndly AI Bulk Add</span>
-            </>
-          )}
+          <VerndlyAiIcon size={20} mood={isBulkAnalyzing ? 'working' : 'idle'} />
+          <span>Verndly AI Bulk Add</span>
         </button>
       </div>
 
-      {/* Live Verndly AI bulk analysis banner */}
-      {isBulkAnalyzing && (
-        <div className="bg-[var(--color-accent)]/10 flex items-center gap-3 rounded-2xl px-4 py-3.5 sm:px-5">
-          <Loader2 className="h-5 w-5 shrink-0 animate-spin text-[var(--color-accent)]" />
-          <div className="min-w-0 flex-1">
-            <p className="text-foreground text-sm font-semibold">
-              Verndly AI is sorting {bulkAnalyzingCount} photos into separate products
-            </p>
-            <p className="text-muted text-xs">
-              Matching angles of the same item, picking cover shots, and writing titles, categories,
-              and descriptions…
-            </p>
-          </div>
-        </div>
-      )}
+      {/* Full-screen centered Verndly AI working state */}
+      <VerndlyAiOverlay
+        isOpen={isBulkAnalyzing || isSingleAnalyzing}
+        messages={
+          isBulkAnalyzing
+            ? [
+                `Inspecting your ${bulkAnalyzingCount} product photo${bulkAnalyzingCount === 1 ? '' : 's'}…`,
+                'Grouping multiple angles of the same item together…',
+                'Picking the sharpest cover photo for each product…',
+                'Drafting titles, descriptions, categories, and tags…',
+              ]
+            : [
+                'Looking closely at your product photo…',
+                'Identifying item details, category, and condition…',
+                'Writing a clean title, description, and search tags…',
+              ]
+        }
+        subtitle="Verndly AI is preparing your drafts — you can review everything before publishing."
+      />
 
       {/* Item Count Tabs Strip — shows thumbnail, product name, price & readiness */}
       <section aria-label="Products in this batch" className="w-full space-y-2.5">
@@ -924,13 +919,7 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
                       >
                         {formattedPrice || 'Set price'}
                       </span>
-                      {item.aiGenerated && (
-                        <Sparkles
-                          className={`h-3 w-3 shrink-0 ${
-                            isActive ? 'text-background/75' : 'text-[var(--color-accent)]'
-                          }`}
-                        />
-                      )}
+                      {item.aiGenerated && <VerndlyAiIcon size={14} animated={false} />}
                     </div>
                   </div>
                 </button>
@@ -983,21 +972,12 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
             {activeNote.images.length > 0 && (
               <button
                 type="button"
-                disabled={isSingleAnalyzing}
+                disabled={isSingleAnalyzing || isBulkAnalyzing}
                 onClick={handleAnalyzeActiveProduct}
-                className="bg-[var(--color-accent)]/12 hover:bg-[var(--color-accent)]/20 inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold text-[var(--color-accent)] transition-colors disabled:opacity-50"
+                className="bg-background text-foreground hover:bg-foreground/[0.06] inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold transition-colors disabled:opacity-50"
               >
-                {isSingleAnalyzing ? (
-                  <>
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    <span>Analyzing…</span>
-                  </>
-                ) : (
-                  <>
-                    <Wand2 className="h-3.5 w-3.5" />
-                    <span>Fill with Verndly AI</span>
-                  </>
-                )}
+                <VerndlyAiIcon size={18} mood={isSingleAnalyzing ? 'working' : 'idle'} />
+                <span>Fill with Verndly AI</span>
               </button>
             )}
           </div>
@@ -1108,9 +1088,7 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
           {activeNote.images.length === 0 && (
             <div className="bg-background rounded-2xl p-4">
               <div className="flex items-start gap-3">
-                <div className="bg-[var(--color-accent)]/12 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[var(--color-accent)]">
-                  <Sparkles className="h-4 w-4" />
-                </div>
+                <VerndlyAiIcon size={36} />
                 <div className="min-w-0 flex-1 space-y-1.5">
                   <p className="text-foreground text-sm font-semibold">
                     Listing multiple items at once?
@@ -1141,9 +1119,9 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
                 Item {activeNoteIndex + 1} Details
               </span>
               {activeNote.aiGenerated && (
-                <span className="bg-[var(--color-accent)]/12 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold text-[var(--color-accent)]">
-                  <Sparkles className="h-3 w-3" />
-                  Verndly AI
+                <span className="bg-background text-foreground inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold">
+                  <VerndlyAiIcon size={15} />
+                  <span>Verndly AI</span>
                 </span>
               )}
             </div>
@@ -1241,14 +1219,14 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
                 />
               </div>
 
-              {/* Optional Gemini price estimate pill (never auto-applied) */}
+              {/* Optional Verndly AI price estimate pill (never auto-applied) */}
               {activeNote.aiSuggestedPrice && !activeNote.price && (
                 <button
                   type="button"
                   onClick={() => updateActiveNote({ price: String(activeNote.aiSuggestedPrice) })}
-                  className="bg-[var(--color-accent)]/10 hover:bg-[var(--color-accent)]/20 mt-1.5 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold text-[var(--color-accent)] transition-colors"
+                  className="bg-background text-foreground hover:bg-foreground/[0.06] mt-1.5 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors"
                 >
-                  <Sparkles className="h-3 w-3" />
+                  <VerndlyAiIcon size={15} />
                   <span>
                     Verndly AI estimate: {formatGhs(activeNote.aiSuggestedPrice)} · Tap to apply
                   </span>
@@ -1544,12 +1522,10 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
           <div className="bg-background w-full max-w-lg rounded-t-3xl p-6 sm:rounded-3xl">
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="bg-[var(--color-accent)]/12 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-[var(--color-accent)]">
-                  <Sparkles className="h-5 w-5" />
-                </div>
+                <VerndlyAiIcon size={44} />
                 <div>
                   <h3 className="text-foreground text-lg font-bold">Bulk Add with Verndly AI</h3>
-                  <p className="text-muted text-xs">Powered by Verndly AI</p>
+                  <p className="text-muted text-xs">Verndly AI</p>
                 </div>
               </div>
               <button

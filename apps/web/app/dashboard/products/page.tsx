@@ -25,6 +25,7 @@ import {
   MoreHorizontal,
   Trash2,
   MessageCircle,
+  Globe,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -322,7 +323,14 @@ export default function SellerProductsPage() {
               <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
             </button>
             <Link
-              href="/dashboard/products/whatsapp-import"
+              href="/dashboard/products/add?source=website"
+              className="hover:bg-foreground/[0.06] inline-flex h-9 items-center gap-1.5 rounded-xl bg-[var(--color-surface)] px-3.5 text-xs font-semibold text-[var(--color-foreground)] transition"
+            >
+              <Globe className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Website</span>
+            </Link>
+            <Link
+              href="/dashboard/products/add?source=whatsapp"
               className="bg-emerald-500/12 inline-flex h-9 items-center gap-1.5 rounded-xl px-3.5 text-xs font-semibold text-emerald-600 transition hover:bg-emerald-500/20 dark:text-emerald-400"
             >
               <MessageCircle className="h-3.5 w-3.5" />

@@ -7,7 +7,7 @@ const isProd = process.env.NODE_ENV === 'production';
 // Hosts the app legitimately talks to. Adjust here when adding a new third-
 // party (analytics, payment widget, etc.) — every other entry below derives
 // from these so we don't drift.
-const API_HOST = process.env.NEXT_PUBLIC_API_URL || 'https://api.verndly.market';
+const API_HOST = process.env.NEXT_PUBLIC_API_URL || 'https://api.verndly.com';
 const PAYSTACK = 'https://js.paystack.co https://checkout.paystack.com';
 const CLOUDINARY = 'https://res.cloudinary.com https://*.cloudinary.com https://cloudinary.com';
 // Sentry's ingest endpoint is hostname-specific per project (e.g.
@@ -32,6 +32,10 @@ const csp = [
   // ("'script-src-elem' was not explicitly set, so 'script-src' is used")
   // goes away and behaviour stays identical across browsers.
   `script-src-elem 'self' 'unsafe-inline' ${PAYSTACK} ${VERCEL_LIVE}`,
+  // Allow blob: Web Workers used by browser-image-compression for client-side
+  // photo resizing without blocking the main thread.
+  "worker-src 'self' blob:",
+  "child-src 'self' blob:",
   `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com ${VERCEL_LIVE}`,
   "font-src 'self' data: https://fonts.gstatic.com",
   `img-src 'self' data: blob: ${CLOUDINARY} https://lh3.googleusercontent.com https://verndly.com https://verndly.market ${VERCEL_LIVE}`,
@@ -39,7 +43,7 @@ const csp = [
   // video URLs silently fall back to `default-src 'self'` and the browser
   // blocks them with no visible UI — videos just don't play.
   `media-src 'self' data: blob: ${CLOUDINARY}`,
-  `connect-src 'self' ${API_HOST} https://vendly-lfr6.onrender.com ${CLOUDINARY} ${PAYSTACK} ${SENTRY_INGEST} ${VERCEL_LIVE} ${VERCEL_LIVE_WS}${isProd ? '' : ' ws: http://localhost:* https://localhost:*'}`,
+  `connect-src 'self' ${API_HOST} https://api.verndly.com https://www.api.verndly.com https://vendly-lfr6.onrender.com ${CLOUDINARY} ${PAYSTACK} ${SENTRY_INGEST} ${VERCEL_LIVE} ${VERCEL_LIVE_WS}${isProd ? '' : ' ws: http://localhost:* https://localhost:*'}`,
   `frame-src 'self' ${PAYSTACK} ${VERCEL_LIVE}`,
   "object-src 'none'",
   "base-uri 'self'",
