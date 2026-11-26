@@ -7,6 +7,7 @@ import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
 import { authApi } from '@/lib/api/auth';
+import { guardPhoneKeyDown, sanitizePhoneNumber } from '@/lib/utils/phone';
 
 /**
  * Public "I can't remember which email I used" page. Submits to the API,
@@ -112,8 +113,10 @@ export default function FindAccountPage() {
           <Input
             label="Phone number"
             value={form.phone}
-            onChange={onChange('phone')}
-            placeholder="+233 24 123 4567"
+            onChange={(e) => setForm((f) => ({ ...f, phone: sanitizePhoneNumber(e.target.value) }))}
+            onKeyDown={(e) => guardPhoneKeyDown(e)}
+            inputMode="numeric"
+            placeholder="0244123456"
             autoComplete="tel"
           />
           <Input

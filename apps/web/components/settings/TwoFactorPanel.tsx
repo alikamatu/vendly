@@ -18,6 +18,8 @@ import Spinner from '@/components/ui/Spinner';
 import Alert from '@/components/ui/Alert';
 import { authApi } from '@/lib/api/auth';
 import { useAuth } from '@/lib/contexts/auth-context';
+import { guardPhoneKeyDown, sanitizePhoneNumber } from '@/lib/utils/phone';
+import { normalizeGhanaPhone } from '@/lib/validations/auth';
 
 type Stage =
   | 'loading'
@@ -103,7 +105,12 @@ export default function TwoFactorPanel() {
     setBusy(true);
     setError(null);
     try {
-      const res = await authApi.twoFactorSmsSetup(token, phoneInput);
+      const phone = normalizeGhanaPhone(phoneInput);
+      if (!phone) {
+        setError('Enter a 10-digit Ghana number, e.g. 0244123456.');
+        return;
+      }
+      const res = await authApi.twoFactorSmsSetup(token, phone);
       setPhoneHintForSetup(res.phone_hint);
       setStage('sms-verify');
     } catch (e: any) {
@@ -309,16 +316,19 @@ export default function TwoFactorPanel() {
             <div>
               <p className="text-sm font-medium">Phone number</p>
               <p className="text-muted mt-1 text-[11px]">
-                In international (E.164) format, e.g. <code>+233201234567</code>. We&apos;ll text a
-                6-digit code to verify.
+                A 10-digit Ghana number, e.g. 0244123456. We&apos;ll text a 6-digit code to verify.
               </p>
             </div>
             <Input
               label="Phone"
               type="tel"
+              inputMode="numeric"
               value={phoneInput}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPhoneInput(e.target.value)}
-              placeholder="+233201234567"
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setPhoneInput(sanitizePhoneNumber(e.target.value))
+              }
+              onKeyDown={(e) => guardPhoneKeyDown(e)}
+              placeholder="0244123456"
             />
             <div className="flex justify-end gap-2">
               <Button type="button" variant="ghost" onClick={() => setStage('choose-method')}>

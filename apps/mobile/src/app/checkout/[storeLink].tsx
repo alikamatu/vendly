@@ -8,7 +8,7 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } fro
 import { RequireAuth } from '@/components/require-auth';
 import { Button, EmptyState, TextField, useThemeColors } from '@/components/ui';
 import { addressApi, orderApi, storeApi } from '@/lib/api';
-import { formatPrice, normalizeGhanaPhone } from '@/lib/format';
+import { formatPrice, normalizeGhanaPhone, sanitizePhoneInput } from '@/lib/format';
 import { useAuth } from '@/providers/auth-provider';
 import { useCart } from '@/providers/cart-provider';
 
@@ -20,7 +20,7 @@ function CheckoutForm({ storeLink }: { storeLink: string }) {
   const group = groups.find((g) => g.storeLink === storeLink);
 
   const [customerName, setCustomerName] = useState(user?.full_name || '');
-  const [customerPhone, setCustomerPhone] = useState(user?.phone_e164 || '');
+  const [customerPhone, setCustomerPhone] = useState(sanitizePhoneInput(user?.phone_e164 || ''));
   const [deliveryMethod, setDeliveryMethod] = useState<'PICKUP' | 'DELIVERY'>('PICKUP');
   const [deliveryLocation, setDeliveryLocation] = useState('Store Pickup');
   const [deliveryNotes, setDeliveryNotes] = useState('');
@@ -58,7 +58,7 @@ function CheckoutForm({ storeLink }: { storeLink: string }) {
       if (defaultAddr) {
         setDeliveryLocation(`${defaultAddr.street}, ${defaultAddr.city}`);
         if (!customerName) setCustomerName(defaultAddr.name);
-        if (!customerPhone) setCustomerPhone(defaultAddr.phone);
+        if (!customerPhone) setCustomerPhone(sanitizePhoneInput(defaultAddr.phone));
       } else {
         setDeliveryLocation('');
       }
@@ -207,8 +207,9 @@ function CheckoutForm({ storeLink }: { storeLink: string }) {
           <TextField
             label="Phone Number"
             value={customerPhone}
-            onChangeText={setCustomerPhone}
-            placeholder="024 123 4567"
+            onChangeText={(value) => setCustomerPhone(sanitizePhoneInput(value))}
+            placeholder="0241234567"
+            maxLength={10}
             keyboardType="phone-pad"
             hint="For pickup/delivery coordination"
           />

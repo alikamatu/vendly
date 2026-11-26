@@ -17,6 +17,7 @@ import { RequireAuth } from '@/components/require-auth';
 import { ListSkeleton } from '@/components/skeleton';
 import { Badge, Button, EmptyState, ErrorState, TextField, useThemeColors } from '@/components/ui';
 import { addressApi, type Address } from '@/lib/api';
+import { sanitizePhoneInput } from '@/lib/format';
 
 function AddressesManager() {
   const colors = useThemeColors();
@@ -175,8 +176,9 @@ function AddressesManager() {
             <TextField
               label="Phone number"
               value={phone}
-              onChangeText={setPhone}
-              placeholder="+233 XX XXX XXXX"
+              onChangeText={(value) => setPhone(sanitizePhoneInput(value))}
+              placeholder="0241234567"
+              maxLength={10}
               keyboardType="phone-pad"
             />
             <TextField

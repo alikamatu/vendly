@@ -132,9 +132,6 @@ export default function RootLayout({
             <link rel="dns-prefetch" href={process.env.NEXT_PUBLIC_API_URL} />
           </>
         )}
-        {/* Hero image — biggest paint on the home page. Preload so it lands
-            before React mounts. */}
-        <link rel="preload" as="image" href="/images/423323.jpeg" fetchPriority="high" />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
         <OrganizationJsonLd />

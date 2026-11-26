@@ -40,6 +40,14 @@ export function humanizeStatus(status: string) {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+/** Digits only, at most 10. +233 / 233 prefixes fold into the local 0XXXXXXXXX form. */
+export function sanitizePhoneInput(raw: string): string {
+  let cleaned = raw.trim();
+  if (cleaned.startsWith('+233')) cleaned = `0${cleaned.slice(4)}`;
+  else if (cleaned.startsWith('233')) cleaned = `0${cleaned.slice(3)}`;
+  return cleaned.replace(/\D/g, '').slice(0, 10);
+}
+
 /** Ghana numbers: accepts 024..., +233..., 233...; returns local 0XXXXXXXXX or null. */
 export function normalizeGhanaPhone(input: string): string | null {
   const digits = input.replace(/[^\d+]/g, '');

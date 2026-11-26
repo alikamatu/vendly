@@ -5,12 +5,13 @@ import { Alert, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-n
 import { RequireAuth } from '@/components/require-auth';
 import { Button, TextField } from '@/components/ui';
 import { authApi } from '@/lib/api';
+import { sanitizePhoneInput } from '@/lib/format';
 import { useAuth } from '@/providers/auth-provider';
 
 function ProfileForm() {
   const { user, refreshUser } = useAuth();
   const [fullName, setFullName] = useState(user?.full_name ?? '');
-  const [phone, setPhone] = useState(user?.phone_e164 ?? '');
+  const [phone, setPhone] = useState(sanitizePhoneInput(user?.phone_e164 ?? ''));
   const [school, setSchool] = useState(user?.school ?? '');
   const [saving, setSaving] = useState(false);
 
@@ -59,8 +60,9 @@ function ProfileForm() {
         <TextField
           label="Phone number"
           value={phone}
-          onChangeText={setPhone}
-          placeholder="+233 XX XXX XXXX"
+          onChangeText={(value) => setPhone(sanitizePhoneInput(value))}
+          placeholder="0241234567"
+          maxLength={10}
           keyboardType="phone-pad"
         />
         <TextField

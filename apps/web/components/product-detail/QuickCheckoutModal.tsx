@@ -22,7 +22,7 @@ import { launchPaystackInline } from '@/lib/paystack';
 import Spinner from '@/components/ui/Spinner';
 import Select from '@/components/ui/Select';
 import PaymentProcessingModal from '@/components/orders/PaymentProcessingModal';
-import { sanitizePhoneNumber, validatePhoneNumber } from '@/lib/utils/phone';
+import { guardPhoneKeyDown, sanitizePhoneNumber, validatePhoneNumber } from '@/lib/utils/phone';
 import { toast } from 'sonner';
 import Alert from '@/components/ui/Alert';
 import { isOwnStore } from '@/lib/utils/ownership';
@@ -441,7 +441,7 @@ export default function QuickCheckoutModal({
                     <input
                       type="tel"
                       inputMode="numeric"
-                      maxLength={17}
+                      onKeyDown={(e) => guardPhoneKeyDown(e)}
                       value={customerPhone}
                       onChange={(e) => setCustomerPhone(sanitizePhoneNumber(e.target.value))}
                       placeholder="e.g. 0244123456"

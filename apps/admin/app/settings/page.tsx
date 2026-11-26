@@ -21,6 +21,13 @@ import type { PlatformSettings } from '@/types/operations';
 import { useToast } from '@/contexts/ToastContext';
 import { useConfirm } from '@/contexts/ConfirmContext';
 
+function digitsOnlyPhone(raw: string): string {
+  let cleaned = raw.trim();
+  if (cleaned.startsWith('+233')) cleaned = `0${cleaned.slice(4)}`;
+  else if (cleaned.startsWith('233')) cleaned = `0${cleaned.slice(3)}`;
+  return cleaned.replace(/\D/g, '').slice(0, 10);
+}
+
 export default function SettingsPage() {
   const [settings, setSettings] = useState<PlatformSettings>({
     platform_fee_percent: 4.0,
@@ -208,11 +215,12 @@ export default function SettingsPage() {
                   <label className="text-foreground font-medium">Support Phone / WhatsApp</label>
                   <Input
                     type="tel"
+                    inputMode="numeric"
                     value={settings.support_phone || ''}
                     onChange={(e) =>
                       setSettings((prev) => ({
                         ...prev,
-                        support_phone: e.target.value,
+                        support_phone: digitsOnlyPhone(e.target.value),
                       }))
                     }
                     className="text-xs"

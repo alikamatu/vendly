@@ -127,6 +127,38 @@ export interface AiDraftStorefrontResult {
   model: string;
 }
 
+export interface AiOnboardingAssistantInput {
+  prompt?: string;
+  website_url?: string;
+  store_name?: string;
+}
+
+export interface AiOnboardingAssistantResult {
+  store_name: string;
+  store_slug: string;
+  bio: string;
+  business_hours: string;
+  delivery_policies: string;
+  whatsapp_number: string | null;
+  matched_location: {
+    id: string;
+    region: string;
+    city: string;
+  } | null;
+  area: string;
+  service_area: 'SAME_CITY' | 'NEARBY_STATES' | 'NATIONWIDE';
+  avg_delivery_time:
+    | 'SAME_DAY'
+    | 'NEXT_DAY'
+    | 'TWO_TO_THREE_DAYS'
+    | 'FOUR_TO_SEVEN_DAYS'
+    | 'MORE_THAN_ONE_WEEK';
+  recommended_payment_timing: 'UPFRONT_ONLY' | 'BOTH';
+  onboarding_tip: string;
+  source_website_url: string | null;
+  model: string;
+}
+
 export const aiApi = {
   async buyerSearch(query: string, limit = 12): Promise<AiBuyerSearchResponse> {
     const res = await api.post<AiBuyerSearchResponse>('/ai/buyer-search', {
@@ -148,6 +180,16 @@ export const aiApi = {
     input: AiDraftStorefrontInput,
   ): Promise<AiDraftStorefrontResult> {
     const res = await api.post<AiDraftStorefrontResult>('/ai/draft-storefront', input, {
+      token,
+    });
+    return res.data;
+  },
+
+  async onboardingAssistant(
+    token: string,
+    input: AiOnboardingAssistantInput,
+  ): Promise<AiOnboardingAssistantResult> {
+    const res = await api.post<AiOnboardingAssistantResult>('/ai/onboarding-assistant', input, {
       token,
     });
     return res.data;

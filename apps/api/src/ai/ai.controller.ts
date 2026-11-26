@@ -15,7 +15,11 @@ import { Roles } from '../auth/guards/roles.decorator';
 import { PrismaService } from '../prisma/prisma.service';
 import { GeminiService } from './gemini.service';
 import { BuyerSearchService } from './buyer-search.service';
-import { AiDraftStorefrontInput, AiPolishListingInput } from './gemini.types';
+import {
+  AiDraftStorefrontInput,
+  AiOnboardingAssistantInput,
+  AiPolishListingInput,
+} from './gemini.types';
 
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024; // 8 MB per uploaded image
 
@@ -99,5 +103,26 @@ export class AiController {
   @Roles('SELLER', 'ADMIN')
   async draftStorefront(@Body() body: AiDraftStorefrontInput) {
     return this.geminiService.draftStorefrontSetup(body);
+  }
+
+  /**
+   * AI Onboarding Copilot — available to any authenticated user setting up their store.
+   * Drafts brand identity, bio, hours, policies, and matches their Ghana city/region.
+   */
+  @Post('onboarding-assistant')
+  @UseGuards(JwtAuthGuard)
+  async onboardingAssistant(@Body() body: AiOnboardingAssistantInput) {
+    const locations = await this.prisma.location.findMany({
+      select: { id: true, region: true, city: true },
+      orderBy: [{ region: 'asc' }, { city: 'asc' }],
+    });
+    return this.geminiService.assistSellerOnboarding(
+      body,
+      locations.map((l) => ({
+        id: l.id.toString(),
+        region: l.region,
+        city: l.city,
+      })),
+    );
   }
 }

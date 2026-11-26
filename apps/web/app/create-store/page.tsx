@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -20,20 +21,28 @@ import {
   Clock,
   ShieldCheck,
   ExternalLink,
+  Copy,
+  Globe,
+  MessageCircle,
+  ArrowRight,
 } from 'lucide-react';
 import { useAuth } from '@/lib/contexts/auth-context';
 import { storeApi } from '@/lib/api/store';
-import { onboardingApi, OnboardingStatus, ServiceArea, DeliveryTime } from '@/lib/api/onboarding';
+import { onboardingApi, ServiceArea, DeliveryTime } from '@/lib/api/onboarding';
+import { aiApi, type AiOnboardingAssistantResult } from '@/lib/api/ai';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import Select from '@/components/ui/Select';
 import Spinner from '@/components/ui/Spinner';
-import AmbientBackground from '@/components/ui/AmbientBackground';
+import VerndlyAiIcon from '@/components/ai/VerndlyAiIcon';
+import VerndlyAiOverlay from '@/components/ai/VerndlyAiOverlay';
+import VerndlyAiOnboardingBar from '@/components/onboarding/VerndlyAiOnboardingBar';
 import RegionCityPicker from '@/components/onboarding/RegionCityPicker';
 import ServiceAreaSelect from '@/components/onboarding/ServiceAreaSelect';
 import DeliveryTimeSelect from '@/components/onboarding/DeliveryTimeSelect';
 import { toast } from 'sonner';
+import { guardPhoneKeyDown, sanitizePhoneNumber } from '@/lib/utils/phone';
 
 // ───────── Helpers ─────────
 
@@ -167,10 +176,10 @@ function Stepper({
                 <div
                   className={`flex h-11 w-11 items-center justify-center rounded-2xl transition-all duration-300 ${
                     isDone
-                      ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/25 ring-2 ring-emerald-500/20'
+                      ? 'bg-emerald-500 text-white'
                       : isCurrent
-                        ? 'bg-foreground text-background ring-secondary/20 scale-105 shadow-lg shadow-black/10 ring-4'
-                        : 'bg-surface border-border text-foreground/40 border'
+                        ? 'bg-foreground text-background scale-105'
+                        : 'bg-surface text-muted'
                   } `}
                 >
                   {isDone ? (
@@ -212,67 +221,134 @@ function Stepper({
   );
 }
 
-// ───────── Success Screen ─────────
+// ───────── AI-Native Launchpad Celebration Screen ─────────
 
 function CelebrationScreen({ storeName, storeSlug }: { storeName: string; storeSlug: string }) {
-  const router = useRouter();
+  const [copied, setCopied] = useState(false);
+  const fullLink = `https://verndly.com/s/${storeSlug}`;
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      router.push('/dashboard');
-    }, 2800);
-    return () => clearTimeout(timer);
-  }, [router]);
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(fullLink);
+      setCopied(true);
+      toast.success('Storefront link copied!');
+      window.setTimeout(() => setCopied(false), 2200);
+    } catch {
+      toast.info(fullLink);
+    }
+  };
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.94 }}
-      animate={{ opacity: 1, scale: 1 }}
+      initial={{ opacity: 0, scale: 0.96, y: 12 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
       transition={{ duration: 0.4, ease: 'easeOut' }}
-      className="mx-auto max-w-md space-y-7 py-12 text-center"
+      className="mx-auto max-w-xl space-y-8 py-8 text-center"
     >
-      <motion.div
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ type: 'spring', damping: 12, stiffness: 200, delay: 0.1 }}
-        className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-emerald-500 text-white shadow-xl shadow-emerald-500/30 ring-8 ring-emerald-500/10"
-      >
-        <Check className="h-10 w-10" strokeWidth={3} />
-      </motion.div>
+      <div className="space-y-4">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-emerald-500 text-white">
+          <Check className="h-8 w-8" strokeWidth={2.8} />
+        </div>
 
-      <div className="space-y-2">
-        <h2 className="text-foreground text-2xl font-semibold tracking-tight sm:text-3xl">
-          You&apos;re Ready to Sell! 🎉
-        </h2>
-        <p className="text-foreground/60 mx-auto max-w-sm text-xs leading-relaxed sm:text-sm">
-          <strong className="text-foreground font-semibold">{storeName || 'Your store'}</strong> is
-          live on Verndly. Start adding products and receiving orders!
-        </p>
-      </div>
-
-      <div className="bg-surface border-border space-y-1 rounded-2xl border p-4 text-left">
-        <p className="text-foreground/40 text-[10px] font-semibold uppercase tracking-wider">
-          Your Public Storefront
-        </p>
-        <p className="text-secondary flex items-center gap-1.5 truncate font-mono text-sm font-medium">
-          <span>verndly.com/s/{storeSlug}</span>
-          <ExternalLink className="h-3.5 w-3.5 opacity-60" />
-        </p>
-      </div>
-
-      <div className="flex flex-col items-center gap-3 pt-2">
-        <Button
-          onClick={() => router.push('/dashboard')}
-          variant="primary"
-          className="h-12 w-full rounded-xl text-sm font-medium"
-        >
-          Go to Dashboard Now
-        </Button>
-        <div className="text-foreground/50 flex items-center gap-2 text-xs">
-          <Spinner size="xs" />
-          <span>Redirecting to your dashboard...</span>
+        <div className="space-y-2">
+          <h2 className="text-foreground text-2xl font-semibold tracking-tight sm:text-3xl">
+            {storeName || 'Your store'} is live!
+          </h2>
+          <p className="text-muted mx-auto max-w-md text-xs leading-relaxed sm:text-sm">
+            Your verified storefront and Paystack escrow payouts are ready. Stock your first
+            products in seconds with Verndly AI below.
+          </p>
         </div>
       </div>
+
+      {/* Storefront URL Pill */}
+      <div className="bg-surface flex items-center justify-between gap-3 rounded-2xl px-4 py-3.5 text-left">
+        <div className="min-w-0">
+          <p className="text-muted text-[10px] font-semibold uppercase tracking-wider">
+            Your Public Storefront
+          </p>
+          <p className="text-foreground mt-0.5 truncate font-mono text-sm font-semibold">
+            verndly.com/s/{storeSlug}
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <button
+            type="button"
+            onClick={handleCopyLink}
+            className="bg-background text-foreground hover:bg-foreground hover:text-background inline-flex h-9 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold transition-colors"
+          >
+            {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+            <span>{copied ? 'Copied' : 'Copy'}</span>
+          </button>
+          <Link
+            href={`/s/${storeSlug}`}
+            target="_blank"
+            aria-label="Open storefront"
+            className="bg-background text-foreground hover:bg-foreground hover:text-background flex h-9 w-9 items-center justify-center rounded-xl transition-colors"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+      </div>
+
+      {/* Instant Verndly AI Stocking Launchpad */}
+      <div className="bg-surface space-y-3 rounded-3xl p-5 text-left">
+        <div className="flex items-center gap-2">
+          <VerndlyAiIcon size={20} />
+          <p className="text-foreground text-xs font-semibold sm:text-sm">
+            Stock your store now with Verndly AI
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+          <Link
+            href="/dashboard/products/add?source=upload"
+            className="bg-background hover:bg-foreground hover:text-background group flex flex-col justify-between gap-3 rounded-2xl p-4 transition-colors"
+          >
+            <Camera className="h-5 w-5 text-red-600 transition-colors group-hover:text-current" />
+            <div>
+              <p className="text-xs font-semibold">Upload Photos</p>
+              <p className="text-muted mt-0.5 text-[11px] group-hover:opacity-80">
+                Drop up to 20 photos at once
+              </p>
+            </div>
+          </Link>
+
+          <Link
+            href="/dashboard/products/add?source=website"
+            className="bg-background hover:bg-foreground hover:text-background group flex flex-col justify-between gap-3 rounded-2xl p-4 transition-colors"
+          >
+            <Globe className="h-5 w-5 text-red-600 transition-colors group-hover:text-current" />
+            <div>
+              <p className="text-xs font-semibold">From Website</p>
+              <p className="text-muted mt-0.5 text-[11px] group-hover:opacity-80">
+                Pull your online store links
+              </p>
+            </div>
+          </Link>
+
+          <Link
+            href="/dashboard/products/add?source=whatsapp"
+            className="bg-background hover:bg-foreground hover:text-background group flex flex-col justify-between gap-3 rounded-2xl p-4 transition-colors"
+          >
+            <MessageCircle className="h-5 w-5 text-red-600 transition-colors group-hover:text-current" />
+            <div>
+              <p className="text-xs font-semibold">WhatsApp Catalog</p>
+              <p className="text-muted mt-0.5 text-[11px] group-hover:opacity-80">
+                Screenshots or wa.me links
+              </p>
+            </div>
+          </Link>
+        </div>
+      </div>
+
+      <Link
+        href="/dashboard"
+        className="bg-foreground text-background inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-sm font-semibold transition-opacity hover:opacity-90"
+      >
+        <span>Go to Seller Dashboard</span>
+        <ArrowRight className="h-4 w-4" />
+      </Link>
     </motion.div>
   );
 }
@@ -318,6 +394,74 @@ export default function CreateStorePage() {
   const [bankCode, setBankCode] = useState<string>('');
   const [bankName, setBankName] = useState<string>('');
   const [bankAccountNumber, setBankAccountNumber] = useState<string>('');
+
+  // ───────── Verndly AI Onboarding State ─────────
+  const [locationPickerKey, setLocationPickerKey] = useState(0);
+  const [aiMatchedCityLabel, setAiMatchedCityLabel] = useState<string | null>(null);
+  const [aiOnboardingTip, setAiOnboardingTip] = useState<string | null>(null);
+  const [isDraftingBio, setIsDraftingBio] = useState(false);
+
+  const handleApplyAiOnboarding = (draft: AiOnboardingAssistantResult) => {
+    if (draft.store_name) {
+      setStoreName(draft.store_name);
+      if (!isCustomSlug) {
+        setStoreSlug(draft.store_slug || slugify(draft.store_name));
+      }
+    }
+    if (draft.bio) setBio(draft.bio);
+    if (draft.business_hours) setBusinessHours(draft.business_hours);
+    if (draft.delivery_policies) setDeliveryPolicies(draft.delivery_policies);
+    if (draft.whatsapp_number && !whatsapp.trim()) {
+      setWhatsapp(sanitizePhoneNumber(draft.whatsapp_number));
+      if (!momoNumber.trim()) setMomoNumber(sanitizePhoneNumber(draft.whatsapp_number));
+    }
+    if (draft.matched_location) {
+      setRegion(draft.matched_location.region);
+      setLocationId(draft.matched_location.id);
+      setAiMatchedCityLabel(`${draft.matched_location.city}, ${draft.matched_location.region}`);
+      setLocationPickerKey((k) => k + 1);
+    }
+    if (draft.area) setArea(draft.area);
+    if (draft.service_area) setServiceArea(draft.service_area);
+    if (draft.avg_delivery_time) setDeliveryTime(draft.avg_delivery_time);
+    if (draft.recommended_payment_timing) {
+      setPaymentTiming(draft.recommended_payment_timing);
+    }
+    if (draft.onboarding_tip) {
+      setAiOnboardingTip(draft.onboarding_tip);
+    }
+  };
+
+  const handleQuickDraftBio = async () => {
+    if (!token) return;
+    if (!storeName.trim() && !bio.trim()) {
+      toast.info('Enter your store name or a few words about what you sell first.');
+      return;
+    }
+    setIsDraftingBio(true);
+    try {
+      const res = await aiApi.draftStorefront(token, {
+        store_name: storeName.trim(),
+        what_you_sell: bio.trim() || storeName.trim(),
+        location: region || area || undefined,
+        service_area: serviceArea || undefined,
+        avg_delivery_time: deliveryTime || undefined,
+        business_hours: businessHours || undefined,
+      });
+      if (res.bio) setBio(res.bio);
+      if (res.business_hours) setBusinessHours(res.business_hours);
+      if (res.delivery_policies) setDeliveryPolicies(res.delivery_policies);
+      if (res.service_area) setServiceArea(res.service_area);
+      if (res.avg_delivery_time) setDeliveryTime(res.avg_delivery_time);
+      toast.success('Verndly AI drafted your bio, hours & delivery note!');
+    } catch (err: unknown) {
+      toast.error(
+        err instanceof Error ? err.message : 'Verndly AI could not draft your bio right now.',
+      );
+    } finally {
+      setIsDraftingBio(false);
+    }
+  };
 
   // Memoized select options for custom Select components
   const momoOptions = useMemo(
@@ -372,9 +516,9 @@ export default function CreateStorePage() {
     }
 
     if (authPhone && !whatsapp) {
-      setWhatsapp(authPhone);
+      setWhatsapp(sanitizePhoneNumber(authPhone));
       if (!momoNumber) {
-        setMomoNumber(authPhone);
+        setMomoNumber(sanitizePhoneNumber(authPhone));
       }
     }
 
@@ -396,8 +540,9 @@ export default function CreateStorePage() {
         if (cd) {
           if (cd.bio) setBio(cd.bio);
           if (cd.whatsapp_number) {
-            setWhatsapp(cd.whatsapp_number);
-            setMomoNumber((prev) => prev || cd.whatsapp_number || '');
+            const phone = sanitizePhoneNumber(cd.whatsapp_number);
+            setWhatsapp(phone);
+            setMomoNumber((prev) => prev || phone);
           }
           if (cd.business_hours) setBusinessHours(cd.business_hours);
           if (cd.delivery_policies) setDeliveryPolicies(cd.delivery_policies);
@@ -627,7 +772,6 @@ export default function CreateStorePage() {
   if (isInitializing || authLoading || !isSellerVerified) {
     return (
       <div className="bg-background text-foreground relative flex min-h-screen flex-col items-center justify-center">
-        <AmbientBackground />
         <div className="relative z-10 flex flex-col items-center gap-4 px-4 text-center">
           <Image
             src="/logos/verndly.png"
@@ -637,7 +781,7 @@ export default function CreateStorePage() {
             className="h-9 w-9 object-contain"
             priority
           />
-          <div className="text-foreground/60 flex items-center gap-2 text-xs font-medium">
+          <div className="text-muted flex items-center gap-2 text-xs font-medium">
             <Spinner size="sm" />
             <span>
               {!isSellerVerified && !authLoading
@@ -652,10 +796,17 @@ export default function CreateStorePage() {
 
   return (
     <div className="bg-background text-foreground selection:bg-secondary/15 relative flex min-h-screen flex-col">
-      <AmbientBackground />
+      <VerndlyAiOverlay
+        isOpen={isDraftingBio}
+        messages={[
+          'Crafting your storefront bio & brand tone…',
+          'Formatting your business hours & delivery note…',
+        ]}
+        subtitle="Verndly AI Storefront Writer"
+      />
 
       {/* Top Header */}
-      <header className="border-border/40 bg-background sticky top-0 z-30 w-full border-b">
+      <header className="bg-background sticky top-0 z-30 w-full">
         <div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-4">
           <div className="flex items-center gap-2.5">
             <Image
@@ -667,14 +818,15 @@ export default function CreateStorePage() {
               priority
             />
             <span className="text-foreground text-lg font-bold tracking-tight">Verndly</span>
-            <span className="bg-secondary/10 text-secondary ml-1 hidden rounded-full px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide sm:inline-block">
-              Seller Setup
+            <span className="bg-surface text-foreground ml-1 hidden items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold sm:inline-flex">
+              <VerndlyAiIcon size={13} animated={false} />
+              <span>AI Seller Setup</span>
             </span>
           </div>
 
-          <div className="text-foreground/50 flex items-center gap-2 text-xs">
+          <div className="text-muted flex items-center gap-2 text-xs">
             <Clock className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Takes ~2 minutes</span>
+            <span className="hidden sm:inline">~30s with Verndly AI</span>
           </div>
         </div>
       </header>
@@ -722,193 +874,220 @@ export default function CreateStorePage() {
               <AnimatePresence mode="wait">
                 {/* ───────── STEP 1: BRAND IDENTITY ───────── */}
                 {currentStep === 0 && (
-                  <form onSubmit={handleStep1Submit}>
-                    <motion.div
-                      key="step-identity"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      transition={{ duration: 0.25 }}
-                      className="space-y-6"
-                    >
-                      {/* Logo Picker */}
-                      <div className="flex flex-col items-center">
-                        <div
-                          onClick={() => document.getElementById('logo-file-input')?.click()}
-                          className="group relative cursor-pointer"
-                          role="button"
-                          tabIndex={0}
-                          aria-label="Upload store logo"
-                        >
-                          <div className="border-border group-hover:border-secondary/60 bg-input-bg flex h-24 w-24 items-center justify-center overflow-hidden rounded-3xl border-2 border-dashed shadow-sm transition-all duration-200 sm:h-28 sm:w-28">
-                            {logoPreview ? (
-                              <img
-                                src={logoPreview}
-                                alt="Store logo preview"
-                                className="h-full w-full object-cover"
-                              />
+                  <div className="space-y-6">
+                    {token && (
+                      <VerndlyAiOnboardingBar
+                        token={token}
+                        currentStoreName={storeName}
+                        onApply={handleApplyAiOnboarding}
+                      />
+                    )}
+
+                    <form onSubmit={handleStep1Submit}>
+                      <motion.div
+                        key="step-identity"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ duration: 0.25 }}
+                        className="space-y-6"
+                      >
+                        {/* Logo Picker */}
+                        <div className="flex flex-col items-center">
+                          <div
+                            onClick={() => document.getElementById('logo-file-input')?.click()}
+                            className="group relative cursor-pointer"
+                            role="button"
+                            tabIndex={0}
+                            aria-label="Upload store logo"
+                          >
+                            <div className="bg-surface flex h-24 w-24 items-center justify-center overflow-hidden rounded-3xl transition-transform duration-200 group-hover:scale-[1.02] sm:h-28 sm:w-28">
+                              {logoPreview ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={logoPreview}
+                                  alt="Store logo preview"
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <div className="text-muted group-hover:text-foreground flex flex-col items-center gap-1.5 transition-colors">
+                                  <Camera className="h-7 w-7" />
+                                  <span className="text-[10px] font-medium uppercase tracking-wider">
+                                    Logo
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="bg-foreground text-background absolute -bottom-1 -right-1 rounded-xl p-2 transition-transform group-hover:scale-105">
+                              <Camera className="h-3.5 w-3.5" />
+                            </div>
+                            <input
+                              id="logo-file-input"
+                              type="file"
+                              accept="image/png,image/jpeg,image/webp"
+                              className="hidden"
+                              onChange={handleLogoChange}
+                            />
+                          </div>
+                          <p className="text-muted mt-2 text-[11px]">PNG or JPG • Max 5MB</p>
+                        </div>
+
+                        {/* Brand Name Input */}
+                        <div className="space-y-1.5">
+                          <Input
+                            label="Store / Brand Name"
+                            placeholder="e.g. Accra Kicks & Apparel"
+                            value={storeName}
+                            onChange={(e) => handleBrandNameChange(e.target.value)}
+                            icon={<Building2 size={16} />}
+                            required
+                            hint={
+                              user?.school && storeName === user.school
+                                ? '✨ Automatically picked from your registration'
+                                : 'This is the name your buyers will see.'
+                            }
+                          />
+                        </div>
+
+                        {/* Auto Slug Generator with Live Preview */}
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <label className="text-foreground/80 text-xs font-medium tracking-tight">
+                              Store Handle (URL Slug)
+                            </label>
+                            {isCustomSlug ? (
+                              <button
+                                type="button"
+                                onClick={handleResetSlug}
+                                className="text-secondary inline-flex items-center gap-1 text-[11px] font-medium hover:underline"
+                              >
+                                <RotateCcw className="h-3 w-3" />
+                                Sync with name
+                              </button>
                             ) : (
-                              <div className="text-foreground/40 group-hover:text-secondary flex flex-col items-center gap-1.5 transition-colors">
-                                <Camera className="h-7 w-7" />
-                                <span className="text-[10px] font-medium uppercase tracking-wider">
-                                  Logo
-                                </span>
-                              </div>
+                              <span className="flex items-center gap-1 text-[11px] font-medium text-emerald-500">
+                                <Sparkles className="h-3 w-3" />
+                                Auto-generated
+                              </span>
                             )}
                           </div>
-                          <div className="bg-secondary absolute -bottom-1 -right-1 rounded-xl p-2 text-white shadow-md transition-transform group-hover:scale-105">
-                            <Camera className="h-3.5 w-3.5" />
+
+                          <div className="relative">
+                            <Input
+                              placeholder="accra-kicks"
+                              value={storeSlug}
+                              onChange={(e) => handleCustomSlugChange(e.target.value)}
+                              required
+                            />
                           </div>
-                          <input
-                            id="logo-file-input"
-                            type="file"
-                            accept="image/png,image/jpeg,image/webp"
-                            className="hidden"
-                            onChange={handleLogoChange}
+
+                          {/* Live Storefront Link Preview */}
+                          <div className="bg-surface flex items-center justify-between rounded-xl px-3.5 py-2.5 text-xs">
+                            <div className="flex items-center gap-1.5 truncate">
+                              <span className="text-muted">Store Link:</span>
+                              <span className="text-foreground/80 font-mono font-medium">
+                                verndly.com/s/
+                              </span>
+                              <span className="text-secondary truncate font-mono font-semibold">
+                                {storeSlug || 'your-brand'}
+                              </span>
+                            </div>
+                            <span className="hidden rounded-md bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-emerald-500 sm:inline-block">
+                              Live URL
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* WhatsApp / Phone Number */}
+                        <div className="space-y-1.5">
+                          <Input
+                            label="WhatsApp / Contact Number"
+                            placeholder="0244123456"
+                            value={whatsapp}
+                            inputMode="numeric"
+                            onKeyDown={(e) => guardPhoneKeyDown(e)}
+                            onChange={(e) => setWhatsapp(sanitizePhoneNumber(e.target.value))}
+                            icon={<Phone size={16} />}
+                            hint={
+                              whatsapp &&
+                              (whatsapp === sanitizePhoneNumber(user?.phone_e164 || '') ||
+                                whatsapp === sanitizePhoneNumber((user as any)?.phone || ''))
+                                ? '✨ Automatically picked from your verified phone'
+                                : 'Used for direct customer chats and instant payout notices.'
+                            }
                           />
                         </div>
-                        <p className="text-foreground/50 mt-2 text-[11px]">PNG or JPG • Max 5MB</p>
-                      </div>
 
-                      {/* Brand Name Input */}
-                      <div className="space-y-1.5">
-                        <Input
-                          label="Store / Brand Name"
-                          placeholder="e.g. Accra Kicks & Apparel"
-                          value={storeName}
-                          onChange={(e) => handleBrandNameChange(e.target.value)}
-                          icon={<Building2 size={16} />}
-                          required
-                          hint={
-                            user?.school && storeName === user.school
-                              ? '✨ Automatically picked from your registration'
-                              : 'This is the name your buyers will see.'
-                          }
-                        />
-                      </div>
-
-                      {/* Auto Slug Generator with Live Preview */}
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <label className="text-foreground/80 text-xs font-medium tracking-tight">
-                            Store Handle (URL Slug)
-                          </label>
-                          {isCustomSlug ? (
+                        {/* Store Description with inline Verndly AI writer */}
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-foreground/80 text-xs font-medium tracking-tight">
+                              Store Bio / Tagline (Optional)
+                            </span>
                             <button
                               type="button"
-                              onClick={handleResetSlug}
-                              className="text-secondary inline-flex items-center gap-1 text-[11px] font-medium hover:underline"
+                              onClick={() => void handleQuickDraftBio()}
+                              disabled={isDraftingBio}
+                              className="bg-surface text-foreground hover:bg-foreground/[0.08] inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold transition-colors disabled:opacity-40"
                             >
-                              <RotateCcw className="h-3 w-3" />
-                              Sync with name
+                              <VerndlyAiIcon size={14} animated={false} />
+                              <span>{bio.trim() ? 'Polish with AI' : 'Write with AI'}</span>
                             </button>
-                          ) : (
-                            <span className="flex items-center gap-1 text-[11px] font-medium text-emerald-500">
-                              <Sparkles className="h-3 w-3" />
-                              Auto-generated
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="relative">
-                          <Input
-                            placeholder="accra-kicks"
-                            value={storeSlug}
-                            onChange={(e) => handleCustomSlugChange(e.target.value)}
-                            required
-                          />
-                        </div>
-
-                        {/* Live Storefront Link Preview */}
-                        <div className="bg-surface border-border/70 flex items-center justify-between rounded-xl border px-3.5 py-2.5 text-xs">
-                          <div className="flex items-center gap-1.5 truncate">
-                            <span className="text-foreground/50">Store Link:</span>
-                            <span className="text-foreground/80 font-mono font-medium">
-                              verndly.com/s/
-                            </span>
-                            <span className="text-secondary truncate font-mono font-semibold">
-                              {storeSlug || 'your-brand'}
-                            </span>
                           </div>
-                          <span className="hidden rounded-md bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-emerald-500 sm:inline-block">
-                            Live URL
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* WhatsApp / Phone Number */}
-                      <div className="space-y-1.5">
-                        <Input
-                          label="WhatsApp / Contact Number"
-                          placeholder="+233 24 123 4567"
-                          value={whatsapp}
-                          onChange={(e) => setWhatsapp(e.target.value)}
-                          icon={<Phone size={16} />}
-                          hint={
-                            whatsapp &&
-                            (whatsapp === user?.phone_e164 || whatsapp === (user as any)?.phone)
-                              ? '✨ Automatically picked from your verified phone'
-                              : 'Used for direct customer chats and instant payout notices.'
-                          }
-                        />
-                      </div>
-
-                      {/* Store Description */}
-                      <div className="space-y-1.5">
-                        <Textarea
-                          label="Store Bio / Tagline (Optional)"
-                          placeholder="Tell buyers what you sell and why they should choose your products..."
-                          value={bio}
-                          onChange={(e) => setBio(e.target.value)}
-                          rows={3}
-                        />
-                      </div>
-
-                      {/* Policies & Hours Compact Section */}
-                      <div className="grid grid-cols-1 gap-4 pt-1 sm:grid-cols-2">
-                        <div className="space-y-1">
-                          <label className="text-foreground/70 text-[11px] font-medium uppercase tracking-wider">
-                            Business Hours
-                          </label>
-                          <input
-                            type="text"
-                            value={businessHours}
-                            onChange={(e) => setBusinessHours(e.target.value)}
-                            placeholder="e.g. Mon–Sat: 8am–6pm"
-                            className="border-input-border bg-input-bg text-foreground focus:border-secondary w-full rounded-xl border px-3.5 py-2.5 text-xs outline-none transition-all"
+                          <Textarea
+                            placeholder="Tell buyers what you sell and why they should choose your products..."
+                            value={bio}
+                            onChange={(e) => setBio(e.target.value)}
+                            rows={3}
                           />
                         </div>
 
-                        <div className="space-y-1">
-                          <label className="text-foreground/70 text-[11px] font-medium uppercase tracking-wider">
-                            Delivery Note
-                          </label>
-                          <input
-                            type="text"
-                            value={deliveryPolicies}
-                            onChange={(e) => setDeliveryPolicies(e.target.value)}
-                            placeholder="e.g. Dispatched in 24–48 hrs"
-                            className="border-input-border bg-input-bg text-foreground focus:border-secondary w-full rounded-xl border px-3.5 py-2.5 text-xs outline-none transition-all"
-                          />
-                        </div>
-                      </div>
+                        {/* Policies & Hours Compact Section */}
+                        <div className="grid grid-cols-1 gap-4 pt-1 sm:grid-cols-2">
+                          <div className="space-y-1">
+                            <label className="text-muted text-[11px] font-medium uppercase tracking-wider">
+                              Business Hours
+                            </label>
+                            <input
+                              type="text"
+                              value={businessHours}
+                              onChange={(e) => setBusinessHours(e.target.value)}
+                              placeholder="e.g. Mon–Sat: 8am–6pm"
+                              className="bg-surface text-foreground w-full rounded-xl px-3.5 py-2.5 text-xs outline-none transition-colors"
+                            />
+                          </div>
 
-                      {/* Step 1 Actions */}
-                      <div className="pt-3">
-                        <Button
-                          type="submit"
-                          variant="primary"
-                          size="lg"
-                          className="h-12 w-full rounded-xl text-sm font-medium"
-                          isLoading={isSaving}
-                          loadingText="Saving brand identity..."
-                        >
-                          <span>Continue to Location</span>
-                          <ChevronRight className="h-4 w-4 shrink-0" />
-                        </Button>
-                      </div>
-                    </motion.div>
-                  </form>
+                          <div className="space-y-1">
+                            <label className="text-muted text-[11px] font-medium uppercase tracking-wider">
+                              Delivery Note
+                            </label>
+                            <input
+                              type="text"
+                              value={deliveryPolicies}
+                              onChange={(e) => setDeliveryPolicies(e.target.value)}
+                              placeholder="e.g. Dispatched in 24–48 hrs"
+                              className="bg-surface text-foreground w-full rounded-xl px-3.5 py-2.5 text-xs outline-none transition-colors"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Step 1 Actions */}
+                        <div className="pt-3">
+                          <Button
+                            type="submit"
+                            variant="primary"
+                            size="lg"
+                            className="h-12 w-full rounded-xl border-none text-sm font-medium shadow-none"
+                            isLoading={isSaving}
+                            loadingText="Saving brand identity..."
+                          >
+                            <span>Continue to Location</span>
+                            <ChevronRight className="h-4 w-4 shrink-0" />
+                          </Button>
+                        </div>
+                      </motion.div>
+                    </form>
+                  </div>
                 )}
 
                 {/* ───────── STEP 2: LOCATION & SHIPPING ───────── */}
@@ -922,7 +1101,18 @@ export default function CreateStorePage() {
                       transition={{ duration: 0.25 }}
                       className="space-y-6"
                     >
+                      {aiMatchedCityLabel && (
+                        <div className="bg-surface flex items-center gap-2.5 rounded-2xl px-4 py-3 text-xs">
+                          <VerndlyAiIcon size={18} mood="happy" animated={false} />
+                          <span className="text-foreground">
+                            Verndly AI matched <strong>{aiMatchedCityLabel}</strong> and your
+                            shipping speed — confirm or adjust below.
+                          </span>
+                        </div>
+                      )}
+
                       <RegionCityPicker
+                        key={locationPickerKey}
                         initialRegion={region}
                         initialCityId={locationId}
                         onChange={({ region: r, cityId: c }) => {
@@ -993,11 +1183,25 @@ export default function CreateStorePage() {
                       transition={{ duration: 0.25 }}
                       className="space-y-6"
                     >
+                      {aiOnboardingTip && (
+                        <div className="bg-surface flex items-start gap-2.5 rounded-2xl px-4 py-3 text-xs leading-relaxed">
+                          <div className="mt-0.5 shrink-0">
+                            <VerndlyAiIcon size={17} animated={false} />
+                          </div>
+                          <span className="text-muted">
+                            <strong className="text-foreground font-semibold">
+                              Verndly AI Tip:
+                            </strong>{' '}
+                            {aiOnboardingTip}
+                          </span>
+                        </div>
+                      )}
+
                       {/* Accepted Payment Methods */}
                       <div className="space-y-3">
                         <label className="text-foreground/80 flex items-center justify-between text-xs font-medium tracking-tight">
                           <span>Accepted Payment Channels</span>
-                          <span className="text-foreground/40 text-[11px] font-normal">
+                          <span className="text-muted text-[11px] font-normal">
                             Select all that apply
                           </span>
                         </label>
@@ -1010,29 +1214,31 @@ export default function CreateStorePage() {
                                 key={method.id}
                                 type="button"
                                 onClick={() => toggleMethod(method.id)}
-                                className={`flex items-center gap-3.5 rounded-2xl border p-3.5 text-left outline-none transition-all duration-200 ${
+                                className={`flex items-center gap-3.5 rounded-2xl p-4 text-left outline-none transition-colors ${
                                   isSelected
-                                    ? 'border-secondary bg-secondary/[0.04] shadow-sm'
-                                    : 'border-border bg-surface/40 hover:border-foreground/20 hover:bg-surface'
+                                    ? 'bg-foreground text-background'
+                                    : 'bg-surface hover:bg-foreground/[0.06] text-foreground'
                                 } `}
                               >
                                 <span className="text-2xl">{method.icon}</span>
                                 <div className="min-w-0 flex-1">
-                                  <p className="text-foreground text-sm font-medium">
-                                    {method.label}
-                                  </p>
-                                  <p className="text-foreground/55 mt-0.5 text-[11px] leading-tight">
+                                  <p className="text-sm font-semibold">{method.label}</p>
+                                  <p
+                                    className={`mt-0.5 text-[11px] leading-tight ${
+                                      isSelected ? 'opacity-80' : 'text-muted'
+                                    }`}
+                                  >
                                     {method.desc}
                                   </p>
                                 </div>
                                 <div
-                                  className={`flex h-5 w-5 items-center justify-center rounded-lg border transition-all ${
+                                  className={`flex h-5 w-5 items-center justify-center rounded-lg transition-colors ${
                                     isSelected
-                                      ? 'bg-secondary border-secondary text-white'
-                                      : 'border-input-border bg-input-bg'
+                                      ? 'bg-background text-foreground'
+                                      : 'bg-background text-transparent'
                                   }`}
                                 >
-                                  {isSelected && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
+                                  <Check className="h-3.5 w-3.5" strokeWidth={3} />
                                 </div>
                               </button>
                             );
@@ -1040,15 +1246,15 @@ export default function CreateStorePage() {
                         </div>
                       </div>
 
-                      {/* MoMo Provider Details (Cardless Section) */}
+                      {/* MoMo Provider Details */}
                       {paymentMethods.includes('mobile_money') && (
-                        <div className="border-border/80 space-y-4 border-b border-t py-4">
+                        <div className="bg-surface space-y-4 rounded-3xl p-5">
                           <div className="flex items-center justify-between">
-                            <p className="text-secondary flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider">
+                            <p className="text-foreground flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider">
                               <span>📱 Mobile Money Settlement</span>
                             </p>
-                            <span className="rounded-md bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-500">
-                              Zero fees on payout
+                            <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-500">
+                              Instant payout support
                             </span>
                           </div>
 
@@ -1067,24 +1273,26 @@ export default function CreateStorePage() {
                                 label="MoMo Wallet Number"
                                 type="tel"
                                 value={momoNumber}
-                                onChange={(e) => setMomoNumber(e.target.value)}
+                                inputMode="numeric"
+                                onKeyDown={(e) => guardPhoneKeyDown(e)}
+                                onChange={(e) => setMomoNumber(sanitizePhoneNumber(e.target.value))}
                                 placeholder="e.g. 0244123456"
                               />
                             </div>
                           </div>
 
                           {whatsapp && momoNumber === whatsapp && (
-                            <p className="text-foreground/50 text-[11px]">
+                            <p className="text-muted text-[11px]">
                               ✨ Pre-filled with your contact number for convenience.
                             </p>
                           )}
                         </div>
                       )}
 
-                      {/* Bank Transfer Details (Cardless Section) */}
+                      {/* Bank Transfer Details */}
                       {paymentMethods.includes('bank_transfer') && (
-                        <div className="space-y-4 py-4">
-                          <p className="text-secondary flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider">
+                        <div className="bg-surface space-y-4 rounded-3xl p-5">
+                          <p className="text-foreground flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider">
                             <span>🏦 Commercial Bank Account</span>
                           </p>
 
@@ -1130,34 +1338,38 @@ export default function CreateStorePage() {
                                 key={timing.id}
                                 type="button"
                                 onClick={() => setPaymentTiming(timing.id)}
-                                className={`flex items-center gap-3.5 rounded-2xl border p-3 text-left outline-none transition-all ${
+                                className={`flex items-center gap-3.5 rounded-2xl p-3.5 text-left outline-none transition-colors ${
                                   isSelected
-                                    ? 'border-secondary bg-secondary/[0.04]'
-                                    : 'border-border bg-surface/30 hover:border-foreground/20 hover:bg-surface'
+                                    ? 'bg-foreground text-background'
+                                    : 'bg-surface hover:bg-foreground/[0.06] text-foreground'
                                 } `}
                               >
                                 <div
                                   className={`rounded-xl p-2 ${
                                     isSelected
-                                      ? 'bg-secondary/15 text-secondary'
-                                      : 'bg-surface text-foreground/50'
+                                      ? 'bg-background/15 text-background'
+                                      : 'bg-background text-muted'
                                   }`}
                                 >
                                   <Icon className="h-4 w-4" />
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                  <p className="text-foreground text-xs font-medium">
-                                    {timing.label}
+                                  <p className="text-xs font-semibold">{timing.label}</p>
+                                  <p
+                                    className={`text-[10px] ${
+                                      isSelected ? 'opacity-80' : 'text-muted'
+                                    }`}
+                                  >
+                                    {timing.desc}
                                   </p>
-                                  <p className="text-foreground/50 text-[10px]">{timing.desc}</p>
                                 </div>
                                 <div
-                                  className={`flex h-4 w-4 items-center justify-center rounded-full border ${
-                                    isSelected ? 'border-secondary' : 'border-input-border'
+                                  className={`flex h-4 w-4 items-center justify-center rounded-full ${
+                                    isSelected ? 'bg-background' : 'bg-background/60'
                                   }`}
                                 >
                                   {isSelected && (
-                                    <div className="bg-secondary h-2 w-2 rounded-full" />
+                                    <div className="bg-foreground h-2 w-2 rounded-full" />
                                   )}
                                 </div>
                               </button>
@@ -1172,7 +1384,7 @@ export default function CreateStorePage() {
                           type="button"
                           onClick={() => setCurrentStep(1)}
                           variant="secondary"
-                          className="h-12 flex-1 rounded-xl text-sm font-medium"
+                          className="h-12 flex-1 rounded-xl border-none text-sm font-medium shadow-none"
                         >
                           <ChevronLeft className="h-4 w-4 shrink-0" />
                           <span>Back</span>
@@ -1181,7 +1393,7 @@ export default function CreateStorePage() {
                         <Button
                           type="submit"
                           variant="primary"
-                          className="bg-secondary hover:bg-secondary/90 shadow-secondary/20 h-12 flex-[2] rounded-xl text-sm font-medium text-white shadow-lg"
+                          className="bg-secondary hover:bg-secondary/90 h-12 flex-[2] rounded-xl border-none text-sm font-medium text-white shadow-none"
                           isLoading={isSaving}
                           loadingText="Launching store..."
                         >

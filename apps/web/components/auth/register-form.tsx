@@ -11,6 +11,7 @@ import PasswordStrength from '@/components/auth/PasswordStrength';
 import GoogleSignInButton from '@/components/auth/GoogleSignInButton';
 import { AuthDivider } from '@/components/auth/AuthPageShell';
 import { ArrowLeft, CheckCircle } from 'lucide-react';
+import { guardPhoneKeyDown, PHONE_DIGIT_LIMIT, sanitizeSubscriberNumber } from '@/lib/utils/phone';
 import { AnimatePresence, motion } from 'framer-motion';
 
 interface RegisterFormProps {
@@ -238,16 +239,15 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFor
                     id="register-phone"
                     {...register('phone', {
                       onChange: (e) => {
-                        const v = e.target.value.replace(/\D/g, '').replace(/^0+/, '');
-                        if (v !== e.target.value) {
-                          e.target.value = v;
-                        }
+                        e.target.value = sanitizeSubscriberNumber(e.target.value);
                       },
                     })}
                     type="tel"
                     inputMode="numeric"
                     autoComplete="tel-national"
-                    placeholder="24 412 3456"
+                    maxLength={PHONE_DIGIT_LIMIT - 1}
+                    onKeyDown={(e) => guardPhoneKeyDown(e, PHONE_DIGIT_LIMIT - 1)}
+                    placeholder="244 123 456"
                     aria-label="Phone number without leading zero"
                     className="text-foreground selection:bg-secondary/20 placeholder:text-foreground/40 h-full flex-1 bg-transparent pr-3.5 text-sm font-normal outline-none"
                   />

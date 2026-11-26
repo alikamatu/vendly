@@ -57,77 +57,50 @@ export default function SellerVerificationPage() {
 
       <Header />
 
-      <main className="mx-auto max-w-5xl space-y-16 px-4 pb-28 pt-14 md:space-y-20 md:px-8 md:pt-20">
-        {/* Server-rendered Hero */}
-        <section className="max-w-3xl space-y-6">
+      <main className="mx-auto flex max-w-3xl flex-col items-center space-y-12 px-4 pb-24 pt-10 sm:px-6 md:space-y-16 md:pt-16">
+        {/* Centered Hero */}
+        <section className="mx-auto max-w-2xl space-y-5 text-center">
           <div className="bg-surface text-muted inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-[11px] font-medium uppercase tracking-[0.14em]">
             <Clock className="h-3.5 w-3.5 text-[var(--color-accent)]" />
-            24–48 hour review · Accra team
+            <span>24–48 hour review · Accra team</span>
           </div>
 
-          <h1 className="text-foreground text-3xl font-medium leading-[1.08] tracking-tight sm:text-4xl md:text-5xl">
+          <h1 className="text-foreground text-3xl font-semibold leading-[1.08] tracking-tight sm:text-4xl md:text-5xl">
             Get verified to sell on Verndly.
           </h1>
 
-          <p className="text-muted text-sm leading-relaxed md:text-base">
-            Every seller on Verndly is identity-checked before publishing so shoppers in Accra and
-            across Ghana know they are buying from a real business. Choose whichever verification
-            track fits your stage — no business registration certificate required to get started.
+          <p className="text-muted text-sm leading-relaxed sm:text-base">
+            Every seller on Verndly is identity-checked before publishing so shoppers across Ghana
+            know they are buying from a real business. Choose whichever track fits your stage — no
+            business registration certificate required to start.
           </p>
         </section>
 
-        {/* Three Verification Tracks — Server-rendered HTML */}
-        <section aria-label="Three verification tracks" className="space-y-6">
-          <div className="space-y-1">
-            <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--color-accent)]">
-              Three Ways to Verify
-            </p>
-            <h2 className="text-foreground text-2xl font-medium tracking-tight">
-              Pick the track that fits your store.
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            {VERIFICATION_TRACKS.map(({ step, Icon, title, description }) => (
-              <article key={step} className="bg-surface space-y-4 rounded-3xl p-7">
-                <div className="flex items-center justify-between">
-                  <div className="bg-background text-foreground flex h-10 w-10 items-center justify-center rounded-2xl">
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <span className="text-muted font-mono text-xs">{step}</span>
-                </div>
-                <h3 className="text-foreground text-base font-medium tracking-tight">{title}</h3>
-                <p className="text-muted text-xs leading-relaxed">{description}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        {/* Auth-gated interactive submission panel */}
-        <section aria-label="Submit seller verification">
+        {/* Centered Interactive Submission Card */}
+        <section aria-label="Submit seller verification" className="w-full max-w-xl">
           <Suspense
             fallback={
-              <div className="bg-surface space-y-4 rounded-3xl p-8 md:p-10">
-                <h2 className="text-foreground text-2xl font-medium tracking-tight">
+              <div className="bg-surface space-y-5 rounded-3xl p-6 text-center sm:p-8">
+                <h2 className="text-foreground text-xl font-semibold tracking-tight sm:text-2xl">
                   Sign in to submit your verification
                 </h2>
-                <p className="text-muted max-w-xl text-sm leading-relaxed">
+                <p className="text-muted mx-auto max-w-md text-xs leading-relaxed sm:text-sm">
                   Create a free Verndly account or sign in to submit your store link, upload your
                   Ghana Card and sales proof, or request a manual review.
                 </p>
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-col justify-center gap-2.5 sm:flex-row">
                   <Link
                     href="/register?redirect=/seller-verification"
-                    className="bg-foreground text-background inline-flex items-center gap-2 rounded-full px-6 py-3.5 text-xs font-medium"
+                    className="bg-foreground text-background inline-flex h-11 items-center justify-center gap-2 rounded-full px-6 text-xs font-semibold"
                   >
-                    Create seller account
+                    <span>Create seller account</span>
                     <ArrowRight className="h-3.5 w-3.5" />
                   </Link>
                   <Link
                     href="/login?redirect=/seller-verification"
-                    className="bg-background text-foreground inline-flex items-center gap-2 rounded-full px-6 py-3.5 text-xs font-medium"
+                    className="bg-background text-foreground inline-flex h-11 items-center justify-center gap-2 rounded-full px-6 text-xs font-semibold"
                   >
-                    Sign in to continue
+                    <span>Sign in to continue</span>
                   </Link>
                 </div>
               </div>
@@ -137,11 +110,40 @@ export default function SellerVerificationPage() {
           </Suspense>
         </section>
 
-        {/* Helpful link back to seller overview */}
-        <div className="text-muted flex flex-wrap items-center justify-between gap-4 text-xs">
+        {/* Three Verification Tracks — Centered Responsive Grid */}
+        <section aria-label="Three verification tracks" className="w-full space-y-6">
+          <div className="space-y-1 text-center">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-accent)]">
+              How Verification Works
+            </p>
+            <h2 className="text-foreground text-xl font-semibold tracking-tight sm:text-2xl">
+              Three flexible ways to verify.
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+            {VERIFICATION_TRACKS.map(({ step, Icon, title, description }) => (
+              <article key={step} className="bg-surface space-y-3.5 rounded-3xl p-5 sm:p-6">
+                <div className="flex items-center justify-between">
+                  <div className="bg-background text-foreground flex h-10 w-10 items-center justify-center rounded-2xl">
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <span className="text-muted font-mono text-xs">{step}</span>
+                </div>
+                <h3 className="text-foreground text-sm font-semibold tracking-tight sm:text-base">
+                  {title}
+                </h3>
+                <p className="text-muted text-xs leading-relaxed">{description}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        {/* Centered Footer Note */}
+        <div className="text-muted space-y-1.5 text-center text-xs">
           <p>
             Want to learn more about selling on Verndly before applying?{' '}
-            <Link href="/sell" className="text-foreground underline underline-offset-2">
+            <Link href="/sell" className="text-foreground font-medium underline underline-offset-2">
               See full seller overview
             </Link>
             .

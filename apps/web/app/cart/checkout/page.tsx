@@ -25,7 +25,7 @@ import { orderApi } from '@/lib/api/order';
 import { addressApi, Address } from '@/lib/api/address';
 import { launchPaystackInline } from '@/lib/paystack';
 import PaymentProcessingModal from '@/components/orders/PaymentProcessingModal';
-import { sanitizePhoneNumber, validatePhoneNumber } from '@/lib/utils/phone';
+import { guardPhoneKeyDown, sanitizePhoneNumber, validatePhoneNumber } from '@/lib/utils/phone';
 import clsx from '@/utils/clsx';
 
 // ─── Input sanitizers ────────────────────────────────────────────────────────
@@ -553,7 +553,7 @@ export default function CheckoutPage() {
                 placeholder="e.g. 0244123456"
                 type="tel"
                 inputMode="numeric"
-                maxLength={17}
+                onKeyDown={(e) => guardPhoneKeyDown(e)}
                 value={formData.customerPhone}
                 onChange={(e) =>
                   setFormData((prev) => ({

@@ -38,6 +38,7 @@ import { storeApi } from '@/lib/api/store';
 import { aiApi, AiDraftStorefrontResult } from '@/lib/api/ai';
 import { onboardingApi, LocationCity } from '@/lib/api/onboarding';
 import { toast } from 'sonner';
+import { guardPhoneKeyDown, sanitizePhoneNumber } from '@/lib/utils/phone';
 import VerndlyAiIcon from '@/components/ai/VerndlyAiIcon';
 import VerndlyAiOverlay from '@/components/ai/VerndlyAiOverlay';
 import Alert from '@/components/ui/Alert';
@@ -169,7 +170,7 @@ export default function StoreSettingsPage() {
     area: seller?.area || '',
     delivery_policies: seller?.delivery_policies || '',
     business_hours: seller?.business_hours || '',
-    whatsapp_number: seller?.whatsapp_number || '',
+    whatsapp_number: sanitizePhoneNumber(seller?.whatsapp_number || ''),
     social_links: seller?.social_links || {
       instagram: '',
       twitter: '',
@@ -260,7 +261,7 @@ export default function StoreSettingsPage() {
       area: seller.area || '',
       delivery_policies: seller.delivery_policies || '',
       business_hours: seller.business_hours || '',
-      whatsapp_number: seller.whatsapp_number || '',
+      whatsapp_number: sanitizePhoneNumber(seller.whatsapp_number || ''),
       social_links: seller.social_links || {
         instagram: '',
         twitter: '',
@@ -1190,17 +1191,18 @@ export default function StoreSettingsPage() {
               </p>
 
               <div className="relative">
-                <div
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-[11px] font-medium"
-                  style={{ color: 'var(--color-muted)' }}
-                >
-                  +
-                </div>
                 <Input
                   value={formData.whatsapp_number}
-                  onChange={(e) => setFormData({ ...formData, whatsapp_number: e.target.value })}
-                  placeholder="233540000000 or 0540000000"
-                  className="h-11 rounded-xl pl-8 text-[11px] font-normal"
+                  inputMode="numeric"
+                  onKeyDown={(e) => guardPhoneKeyDown(e)}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      whatsapp_number: sanitizePhoneNumber(e.target.value),
+                    })
+                  }
+                  placeholder="0540000000"
+                  className="h-11 rounded-xl text-[11px] font-normal"
                   style={{
                     backgroundColor: 'color-mix(in srgb, var(--color-background) 50%, transparent)',
                   }}

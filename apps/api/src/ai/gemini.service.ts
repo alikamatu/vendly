@@ -14,6 +14,9 @@ import {
   AiDeliveryTime,
   AiDraftStorefrontInput,
   AiDraftStorefrontResult,
+  AiOnboardingAssistantInput,
+  AiOnboardingAssistantResult,
+  AiOnboardingLocationOption,
   AiPolishListingInput,
   AiPolishListingResult,
   AiProductCondition,
@@ -314,6 +317,122 @@ export function normalizeBulkAnalysis(
   }
 
   return normalized;
+}
+
+function slugifyHandle(input: string): string {
+  return input
+    .toLowerCase()
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 35);
+}
+
+function isSafePublicHostname(hostname: string): boolean {
+  const host = hostname.trim().toLowerCase();
+  if (
+    !host ||
+    host === 'localhost' ||
+    host.endsWith('.local') ||
+    host.endsWith('.internal') ||
+    host.includes(':')
+  ) {
+    return false;
+  }
+  const ipv4 = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (ipv4) {
+    const [a, b] = [Number(ipv4[1]), Number(ipv4[2])];
+    if (
+      a === 0 ||
+      a === 10 ||
+      a === 127 ||
+      (a === 169 && b === 254) ||
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && b === 168)
+    ) {
+      return false;
+    }
+  }
+  return host.includes('.');
+}
+
+function extractSimpleMeta(html: string, key: string): string {
+  const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const a = new RegExp(
+    `<meta[^>]+(?:property|name)=["']${escaped}["'][^>]+content=["']([^"']+)["']`,
+    'i',
+  );
+  const b = new RegExp(
+    `<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']${escaped}["']`,
+    'i',
+  );
+  const m = html.match(a) || html.match(b);
+  return m?.[1]
+    ? m[1]
+        .replace(/&amp;/g, '&')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;|&apos;/g, "'")
+        .trim()
+    : '';
+}
+
+export function matchOnboardingLocation(
+  cityHint: string,
+  regionHint: string,
+  rawContext: string,
+  locations: AiOnboardingLocationOption[],
+): AiOnboardingLocationOption | null {
+  if (!locations.length) return null;
+  const cleanCity = cityHint.trim().toLowerCase();
+  const cleanRegion = regionHint.trim().toLowerCase();
+  const lowerCtx = rawContext.toLowerCase();
+
+  if (cleanCity) {
+    const exactCity = locations.find(
+      (l) => l.city.trim().toLowerCase() === cleanCity,
+    );
+    if (exactCity) return exactCity;
+    const partialCity = locations.find(
+      (l) =>
+        l.city.trim().toLowerCase().includes(cleanCity) ||
+        cleanCity.includes(l.city.trim().toLowerCase()),
+    );
+    if (partialCity) return partialCity;
+  }
+
+  for (const loc of locations) {
+    const c = loc.city.trim().toLowerCase();
+    if (c.length >= 3 && new RegExp(`\\b${c}\\b`, 'i').test(lowerCtx)) {
+      return loc;
+    }
+  }
+
+  // Common Accra / Kumasi neighborhood-to-city aliases
+  if (
+    /\b(east\s*legon|osu|cantonments|labone|spintex|madina|airport|dzorwulu|adenta|achimota|lapaz|dansoman|circle|kaneshie|kasoa)\b/i.test(
+      lowerCtx,
+    )
+  ) {
+    const accra = locations.find((l) => l.city.toLowerCase() === 'accra');
+    if (accra) return accra;
+  }
+  if (/\b(knust|adum|ahodwo|asokwa|bantama|suame|ayeduase)\b/i.test(lowerCtx)) {
+    const kumasi = locations.find((l) => l.city.toLowerCase() === 'kumasi');
+    if (kumasi) return kumasi;
+  }
+
+  if (cleanRegion) {
+    const byRegion = locations.find((l) =>
+      l.region.toLowerCase().includes(cleanRegion),
+    );
+    if (byRegion) return byRegion;
+  }
+
+  return null;
 }
 
 export function normalizeImageBox2d(
@@ -1210,6 +1329,308 @@ export class GeminiService {
       avg_delivery_time: (validTimes as readonly string[]).includes(rawTime)
         ? (rawTime as AiDeliveryTime)
         : null,
+      model: this.getModel(),
+    };
+  }
+
+  private async fetchWebsiteOnboardingSignals(rawUrl: string): Promise<{
+    normalizedUrl: string;
+    siteName: string;
+    description: string;
+    whatsappOrPhone: string | null;
+    domainLabel: string;
+  }> {
+    const candidate = /^https?:\/\//i.test(rawUrl.trim())
+      ? rawUrl.trim()
+      : `https://${rawUrl.trim()}`;
+    let parsed: URL;
+    try {
+      parsed = new URL(candidate);
+    } catch {
+      throw new BadRequestException('Please enter a valid website URL.');
+    }
+    if (!isSafePublicHostname(parsed.hostname)) {
+      throw new BadRequestException('Please enter a public website domain.');
+    }
+    parsed.protocol = 'https:';
+
+    const domainLabel = parsed.hostname
+      .replace(/^www\./i, '')
+      .split('.')[0]
+      .replace(/[-_]+/g, ' ');
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 7_500);
+    try {
+      const res = await fetch(parsed.toString(), {
+        signal: controller.signal,
+        redirect: 'follow',
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+          Accept: 'text/html,application/xhtml+xml,*/*;q=0.8',
+        },
+      });
+      if (!res.ok) {
+        return {
+          normalizedUrl: parsed.origin,
+          siteName: domainLabel,
+          description: '',
+          whatsappOrPhone: null,
+          domainLabel,
+        };
+      }
+      const html = (await res.text()).slice(0, 120_000);
+      const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+      const rawTitle = titleMatch?.[1]
+        ? titleMatch[1]
+            .replace(/<[^>]+>/g, '')
+            .replace(/\s*[|\-–—•]\s*.*$/, '')
+            .trim()
+        : '';
+      const siteName =
+        extractSimpleMeta(html, 'og:site_name') ||
+        rawTitle ||
+        extractSimpleMeta(html, 'og:title') ||
+        domainLabel;
+      const description =
+        extractSimpleMeta(html, 'og:description') ||
+        extractSimpleMeta(html, 'description');
+
+      const waMatch =
+        html.match(/wa\.me\/(\+?\d{9,15})/i) ||
+        html.match(/tel:(\+?233[\d\s-]{8,13}|0[235][\d\s-]{8,11})/i);
+      const whatsappOrPhone = waMatch?.[1]
+        ? waMatch[1].replace(/[^\d+]/g, '')
+        : null;
+
+      return {
+        normalizedUrl: parsed.origin,
+        siteName: cleanText(siteName, 80),
+        description: cleanText(description, 400),
+        whatsappOrPhone,
+        domainLabel,
+      };
+    } catch {
+      return {
+        normalizedUrl: parsed.origin,
+        siteName: domainLabel,
+        description: '',
+        whatsappOrPhone: null,
+        domainLabel,
+      };
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  async assistSellerOnboarding(
+    input: AiOnboardingAssistantInput,
+    availableLocations: AiOnboardingLocationOption[] = [],
+  ): Promise<AiOnboardingAssistantResult> {
+    const prompt = cleanText(input?.prompt, 600);
+    const rawWebUrl = cleanText(input?.website_url, 260);
+    const explicitStoreName = cleanText(input?.store_name, 80);
+
+    if (!prompt && !rawWebUrl && !explicitStoreName) {
+      throw new BadRequestException(
+        'Describe what you sell or paste your website URL so Verndly AI can set up your store.',
+      );
+    }
+
+    const webSignals = rawWebUrl
+      ? await this.fetchWebsiteOnboardingSignals(rawWebUrl)
+      : null;
+
+    const sampleCities = Array.from(
+      new Set(availableLocations.map((l) => l.city).filter(Boolean)),
+    )
+      .slice(0, 40)
+      .join(', ');
+
+    const systemInstruction = [
+      'You are Verndly AI, onboarding an entrepreneur onto Verndly (Ghana’s AI-native escrow-protected online marketplace).',
+      'Turn the seller’s short note and/or website metadata into a complete, trustworthy 3-step storefront configuration.',
+      'Strict rules:',
+      '1. store_name: If the seller already gave a store_name or clear website brand name, preserve/clean it in Title Case (2–5 words). Otherwise invent a natural, credible brand name fitting what they sell.',
+      '2. bio: 2–3 friendly, specific sentences (90–280 chars) describing what they sell, where they operate, and quality buyers can expect. Never use ALL CAPS or buzzwords.',
+      '3. business_hours: Clean operating schedule (e.g. "Mon – Sat: 8:30 AM – 6:00 PM").',
+      '4. delivery_policies: 1–2 concise sentences (60–220 chars) covering dispatch speed, pickup/courier options, and noting 7-day Paystack escrow protection.',
+      `5. inferred_city: Pick the matching Ghana city if mentioned or implied (prefer one of: ${sampleCities || 'Accra, Kumasi, Tema, Takoradi, Tamale, Cape Coast'}), otherwise "".`,
+      '6. inferred_region: Matching Ghana region if known (e.g. "Greater Accra", "Ashanti"), otherwise "".',
+      '7. area: Specific neighborhood/campus/landmark if mentioned (e.g. "East Legon", "Osu", "KNUST"), otherwise "".',
+      '8. service_area: SAME_CITY (local city only), NEARBY_STATES (regional), or NATIONWIDE (ships across Ghana). Default SAME_CITY if unsure, or NATIONWIDE if nationwide/VIP/courier shipping is mentioned.',
+      '9. avg_delivery_time: SAME_DAY, NEXT_DAY, TWO_TO_THREE_DAYS, FOUR_TO_SEVEN_DAYS, or MORE_THAN_ONE_WEEK.',
+      '10. recommended_payment_timing: UPFRONT_ONLY (recommended for escrow protection against no-shows) or BOTH.',
+      '11. onboarding_tip: 1 short, practical tip (under 140 chars) tailored to their product category on Verndly.',
+    ].join('\n');
+
+    const contextBlock = [
+      explicitStoreName ? `Provided store name: ${explicitStoreName}` : '',
+      prompt ? `Seller description: ${prompt}` : '',
+      webSignals
+        ? `Website URL: ${webSignals.normalizedUrl}\nWebsite brand/title: ${webSignals.siteName}\nWebsite description: ${webSignals.description}`
+        : '',
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    const responseSchema = {
+      type: 'OBJECT',
+      required: [
+        'store_name',
+        'bio',
+        'business_hours',
+        'delivery_policies',
+        'inferred_city',
+        'inferred_region',
+        'area',
+        'service_area',
+        'avg_delivery_time',
+        'recommended_payment_timing',
+        'onboarding_tip',
+      ],
+      properties: {
+        store_name: { type: 'STRING' },
+        bio: { type: 'STRING' },
+        business_hours: { type: 'STRING' },
+        delivery_policies: { type: 'STRING' },
+        whatsapp_number: { type: 'STRING', nullable: true },
+        inferred_city: { type: 'STRING' },
+        inferred_region: { type: 'STRING' },
+        area: { type: 'STRING' },
+        service_area: {
+          type: 'STRING',
+          enum: ['SAME_CITY', 'NEARBY_STATES', 'NATIONWIDE'],
+        },
+        avg_delivery_time: {
+          type: 'STRING',
+          enum: [
+            'SAME_DAY',
+            'NEXT_DAY',
+            'TWO_TO_THREE_DAYS',
+            'FOUR_TO_SEVEN_DAYS',
+            'MORE_THAN_ONE_WEEK',
+          ],
+        },
+        recommended_payment_timing: {
+          type: 'STRING',
+          enum: ['UPFRONT_ONLY', 'BOTH'],
+        },
+        onboarding_tip: { type: 'STRING' },
+      },
+    };
+
+    let obj: Record<string, unknown> = {};
+    if (this.isConfigured()) {
+      try {
+        const raw = await this.generateStructuredJson<unknown>({
+          systemInstruction,
+          parts: [{ text: contextBlock }],
+          responseSchema,
+          temperature: 0.25,
+          fast: true,
+          timeoutMs: 8_000,
+        });
+        if (raw && typeof raw === 'object') {
+          obj = raw as Record<string, unknown>;
+        }
+      } catch (err) {
+        this.logger.warn(
+          `Onboarding AI fallback triggered: ${(err as Error)?.message}`,
+        );
+      }
+    }
+
+    const fallbackName =
+      explicitStoreName ||
+      webSignals?.siteName ||
+      prompt
+        .split(/[,.|-]/)[0]
+        .trim()
+        .slice(0, 40) ||
+      'My Verndly Store';
+
+    const finalStoreName = cleanText(obj.store_name, 80) || fallbackName;
+    const finalSlug = slugifyHandle(finalStoreName) || 'my-verndly-store';
+
+    const validAreas: readonly AiServiceArea[] = [
+      'SAME_CITY',
+      'NEARBY_STATES',
+      'NATIONWIDE',
+    ];
+    const validTimes: readonly AiDeliveryTime[] = [
+      'SAME_DAY',
+      'NEXT_DAY',
+      'TWO_TO_THREE_DAYS',
+      'FOUR_TO_SEVEN_DAYS',
+      'MORE_THAN_ONE_WEEK',
+    ];
+
+    const rawArea =
+      typeof obj.service_area === 'string' ? obj.service_area : '';
+    const rawTime =
+      typeof obj.avg_delivery_time === 'string' ? obj.avg_delivery_time : '';
+
+    const inferredNationwide =
+      /\b(nationwide|across\s*ghana|all\s*regions|vip\s*bus)\b/i.test(prompt);
+    const service_area: AiServiceArea = (
+      validAreas as readonly string[]
+    ).includes(rawArea)
+      ? (rawArea as AiServiceArea)
+      : inferredNationwide
+        ? 'NATIONWIDE'
+        : 'SAME_CITY';
+
+    const avg_delivery_time: AiDeliveryTime = (
+      validTimes as readonly string[]
+    ).includes(rawTime)
+      ? (rawTime as AiDeliveryTime)
+      : /\b(next\s*day|24\s*h)/i.test(prompt)
+        ? 'NEXT_DAY'
+        : 'SAME_DAY';
+
+    const matched_location = matchOnboardingLocation(
+      cleanText(obj.inferred_city, 60),
+      cleanText(obj.inferred_region, 60),
+      `${prompt} ${webSignals?.description || ''}`,
+      availableLocations,
+    );
+
+    const promptPhoneMatch = prompt.match(
+      /(\+?233[\d\s-]{8,13}|\b0[235][\d\s-]{8,11}\b)/,
+    );
+    const whatsapp_number =
+      cleanText(obj.whatsapp_number, 20) ||
+      webSignals?.whatsappOrPhone ||
+      (promptPhoneMatch?.[1]
+        ? promptPhoneMatch[1].replace(/[^\d+]/g, '')
+        : null) ||
+      null;
+
+    return {
+      store_name: finalStoreName,
+      store_slug: finalSlug,
+      bio:
+        cleanText(obj.bio, 500) ||
+        webSignals?.description ||
+        `${finalStoreName} offers quality verified products on Verndly with fast dispatch and responsive customer care.`,
+      business_hours:
+        cleanText(obj.business_hours, 140) || 'Mon – Sat: 8:30 AM – 6:00 PM',
+      delivery_policies:
+        cleanText(obj.delivery_policies, 400) ||
+        'Orders dispatch promptly via courier or store pickup, protected by Verndly 7-day Paystack escrow.',
+      whatsapp_number,
+      matched_location,
+      area: cleanText(obj.area, 80),
+      service_area,
+      avg_delivery_time,
+      recommended_payment_timing:
+        obj.recommended_payment_timing === 'BOTH' ? 'BOTH' : 'UPFRONT_ONLY',
+      onboarding_tip:
+        cleanText(obj.onboarding_tip, 180) ||
+        'Right after launch, upload product photos or paste your website/WhatsApp catalog so Verndly AI lists your inventory in seconds.',
+      source_website_url: webSignals?.normalizedUrl || null,
       model: this.getModel(),
     };
   }

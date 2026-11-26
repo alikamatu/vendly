@@ -1,13 +1,11 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowRight, ArrowUp, ShieldCheck, Percent, Store, Truck } from 'lucide-react';
+import { ArrowRight, ShieldCheck, Percent, Store, Truck } from 'lucide-react';
 import Header from '@/components/layout/Header';
-import ModernHero from '@/components/common/ModernHero';
-import VerndlyAiIcon from '@/components/ai/VerndlyAiIcon';
-import { openVerndlyAi } from '@/lib/ai/open-verndly-ai';
+import AiNativeHero from '@/components/homepage/AiNativeHero';
 import Loading from '@/app/loading';
 import { useHomeData, type InitialHomeData } from '@/hooks/useHomeData';
 import { COVERAGE_COPY } from '@/lib/copy/coverage';
@@ -78,16 +76,8 @@ const FEATURED_CATEGORIES_LINKS = [
   { label: 'Books & Stationery', href: '/categories/books-stationery' },
 ];
 
-const HOME_AI_PROMPTS = [
-  'Gift ideas under GH₵ 200',
-  'Best deals right now',
-  'Headphones under GH₵ 350',
-  'Affordable fashion in stock',
-];
-
 export default function HomeView({ initialData }: { initialData?: InitialHomeData }) {
   const router = useRouter();
-  const [aiQuery, setAiQuery] = useState('');
   const { products, categories, brands, topProVendors, isLoading } = useHomeData(initialData);
 
   const railProducts = useMemo(() => filterRailProducts(products), [products]);
@@ -140,54 +130,7 @@ export default function HomeView({ initialData }: { initialData?: InitialHomeDat
   return (
     <div className="bg-background min-h-screen">
       <Header />
-      <ModernHero />
-
-      {/* Minimal Homepage Verndly AI Assistant Entry Bar */}
-      <section aria-label="Ask Verndly AI" className="mx-auto max-w-7xl px-4 pb-6 pt-2 md:px-8">
-        <div className="bg-surface rounded-3xl p-4 sm:p-5">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const clean = aiQuery.trim();
-              setAiQuery('');
-              openVerndlyAi(clean || undefined);
-            }}
-            className="flex items-center gap-2.5 sm:gap-3"
-          >
-            <div className="shrink-0">
-              <VerndlyAiIcon size={28} />
-            </div>
-            <input
-              type="text"
-              value={aiQuery}
-              onChange={(e) => setAiQuery(e.target.value)}
-              placeholder="Ask Verndly AI to find anything — e.g. perfume under GH₵ 250, sneakers in stock…"
-              className="text-foreground placeholder:text-muted/70 min-w-0 flex-1 bg-transparent text-xs outline-none sm:text-sm"
-            />
-            <button
-              type="submit"
-              className="bg-foreground text-background inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full px-4 text-xs font-semibold transition-opacity hover:opacity-90"
-            >
-              <span className="hidden sm:inline">Ask Verndly</span>
-              <ArrowUp className="h-3.5 w-3.5" />
-            </button>
-          </form>
-
-          <div className="mt-3 flex flex-wrap items-center gap-1.5">
-            <span className="text-muted mr-1 text-[11px] font-medium">Verndly AI:</span>
-            {HOME_AI_PROMPTS.map((prompt) => (
-              <button
-                key={prompt}
-                type="button"
-                onClick={() => openVerndlyAi(prompt)}
-                className="bg-background text-foreground hover:bg-foreground hover:text-background rounded-full px-3 py-1 text-[11px] font-medium transition-colors"
-              >
-                {prompt}
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
+      <AiNativeHero compactBottom />
 
       <CategoryShowcase
         categories={categories}

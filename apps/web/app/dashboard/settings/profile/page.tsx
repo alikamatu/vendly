@@ -24,6 +24,7 @@ import Button from '@/components/ui/Button';
 import { useAuth } from '@/lib/contexts/auth-context';
 import { authApi } from '@/lib/api/auth';
 import { sanitizeText } from '@/lib/utils/sanitize';
+import { guardPhoneKeyDown, PHONE_DIGIT_LIMIT, sanitizeSubscriberNumber } from '@/lib/utils/phone';
 
 // ─── Avatar ──────────────────────────────────────────────────────────────────
 
@@ -224,7 +225,9 @@ export default function ProfileSettingsPage() {
       // Convert the stored E.164 (+233244123456) back to local digits
       // for editing. If anything else is stored, fall back to raw.
       const stored = user.phone_e164 || '';
-      const local = stored.startsWith('+233') ? stored.slice(4) : stored.replace(/^\+/, '');
+      const local = sanitizeSubscriberNumber(
+        stored.startsWith('+233') ? stored.slice(4) : stored.replace(/^\+/, ''),
+      );
       setFormData({
         full_name: user.full_name ?? '',
         school: user.school ?? '',
@@ -393,13 +396,13 @@ export default function ProfileSettingsPage() {
                 inputMode="numeric"
                 autoComplete="tel-national"
                 value={formData.phone}
-                onChange={(e) => {
-                  const v = e.target.value.replace(/\D/g, '').replace(/^0+/, '');
-                  setFormData((p) => ({ ...p, phone: v }));
-                }}
+                onChange={(e) =>
+                  setFormData((p) => ({ ...p, phone: sanitizeSubscriberNumber(e.target.value) }))
+                }
+                onKeyDown={(e) => guardPhoneKeyDown(e, PHONE_DIGIT_LIMIT - 1)}
                 placeholder="244 123 456"
                 className="flex-1 bg-transparent text-sm focus:outline-none"
-                maxLength={15}
+                maxLength={PHONE_DIGIT_LIMIT - 1}
               />
             </div>
           </Field>

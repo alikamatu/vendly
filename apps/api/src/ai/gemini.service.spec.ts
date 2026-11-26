@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import {
   GeminiService,
+  matchOnboardingLocation,
   normalizeBulkAnalysis,
   normalizeSingleAnalysis,
 } from './gemini.service';
@@ -398,6 +399,80 @@ describe('GeminiService & normalizers', () => {
         business_hours: 'Mon–Sat: 9:00 AM – 6:00 PM',
       });
       expect(res.bio).toContain('Accra Craft Studio');
+    });
+
+    it('assists seller onboarding across all 3 steps and matches Ghana cities & neighborhoods', async () => {
+      const ghanaLocations = [
+        { id: '1', region: 'Greater Accra', city: 'Accra' },
+        { id: '2', region: 'Ashanti', city: 'Kumasi' },
+      ];
+
+      expect(
+        matchOnboardingLocation(
+          '',
+          '',
+          'Sneakers in East Legon',
+          ghanaLocations,
+        ),
+      ).toEqual({
+        id: '1',
+        region: 'Greater Accra',
+        city: 'Accra',
+      });
+
+      const mockFetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            candidates: [
+              {
+                content: {
+                  parts: [
+                    {
+                      text: JSON.stringify({
+                        store_name: 'Legon Kicks Hub',
+                        bio: 'Verified sneakers and streetwear based in East Legon, Accra with fast campus and citywide delivery.',
+                        business_hours: 'Mon – Sat: 9:00 AM – 7:00 PM',
+                        delivery_policies:
+                          'Same-day rider dispatch in Accra and nationwide VIP bus delivery. Protected by Verndly 7-day escrow.',
+                        whatsapp_number: '0244112233',
+                        inferred_city: 'Accra',
+                        inferred_region: 'Greater Accra',
+                        area: 'East Legon',
+                        service_area: 'NATIONWIDE',
+                        avg_delivery_time: 'SAME_DAY',
+                        recommended_payment_timing: 'UPFRONT_ONLY',
+                        onboarding_tip:
+                          'Upfront escrow eliminates no-show sneaker deliveries; drop your shoe photos right after launch.',
+                      }),
+                    },
+                  ],
+                },
+              },
+            ],
+          }),
+      });
+      global.fetch = mockFetch;
+
+      const service = createService({ GEMINI_API_KEY: 'test-key' });
+      const res = await service.assistSellerOnboarding(
+        {
+          prompt:
+            'I sell sneakers and hoodies in East Legon Accra, 0244112233, same day in Accra and nationwide delivery',
+        },
+        ghanaLocations,
+      );
+
+      expect(res).toMatchObject({
+        store_name: 'Legon Kicks Hub',
+        store_slug: 'legon-kicks-hub',
+        area: 'East Legon',
+        service_area: 'NATIONWIDE',
+        avg_delivery_time: 'SAME_DAY',
+        recommended_payment_timing: 'UPFRONT_ONLY',
+        whatsapp_number: '0244112233',
+        matched_location: { id: '1', region: 'Greater Accra', city: 'Accra' },
+      });
     });
   });
 });

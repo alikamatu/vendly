@@ -22,6 +22,7 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/auth-context';
 import { authApi } from '@/lib/api/auth';
 import { sanitizeText } from '@/lib/utils/sanitize';
+import { guardPhoneKeyDown, PHONE_DIGIT_LIMIT, sanitizeSubscriberNumber } from '@/lib/utils/phone';
 
 // ─── Gradient helper ──────────────────────────────────────────────────────────
 
@@ -108,10 +109,8 @@ export default function AccountProfilePage() {
 
       setSchool(user.school ?? '');
       const stored = user.phone_e164 || '';
-      const local = stored.startsWith('+233')
-        ? stored.slice(4)
-        : stored.replace(/^\+/, '');
-      setPhone(local);
+      const local = stored.startsWith('+233') ? stored.slice(4) : stored.replace(/^\+/, '');
+      setPhone(sanitizeSubscriberNumber(local));
     }
   }, [user]);
 
@@ -184,9 +183,7 @@ export default function AccountProfilePage() {
       {/* Avatar card */}
       <div className="border-[var(--color-border)]/80 shadow-xs flex items-center gap-5 rounded-3xl border bg-[var(--color-surface)] p-5 transition-all duration-300 hover:border-[var(--color-border)] hover:shadow-sm">
         <div className="group/avatar relative flex-shrink-0">
-          <div
-            className="h-16 w-16 rounded-2xl bg-primary flex items-center justify-center shadow-sm transition-transform duration-300 group-hover/avatar:scale-[1.03]"
-          >
+          <div className="bg-primary flex h-16 w-16 items-center justify-center rounded-2xl shadow-sm transition-transform duration-300 group-hover/avatar:scale-[1.03]">
             <span className="select-none text-xl font-medium text-white">{inits}</span>
           </div>
           <div className="pointer-events-none absolute inset-0 rounded-2xl border-2 border-white/20" />
@@ -260,7 +257,7 @@ export default function AccountProfilePage() {
               </span>
             </FieldLabel>
             <div className="flex items-center gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2.5">
-              <span className="text-xs font-medium text-[var(--color-muted)] select-none">
+              <span className="select-none text-xs font-medium text-[var(--color-muted)]">
                 +233
               </span>
               <input
@@ -268,14 +265,10 @@ export default function AccountProfilePage() {
                 inputMode="numeric"
                 autoComplete="tel-national"
                 value={phone}
-                onChange={(e) => {
-                  const v = e.target.value
-                    .replace(/\D/g, '')
-                    .replace(/^0+/, '');
-                  setPhone(v);
-                }}
+                onChange={(e) => setPhone(sanitizeSubscriberNumber(e.target.value))}
+                onKeyDown={(e) => guardPhoneKeyDown(e, PHONE_DIGIT_LIMIT - 1)}
                 placeholder="244 123 456"
-                maxLength={15}
+                maxLength={PHONE_DIGIT_LIMIT - 1}
                 className="flex-1 bg-transparent text-sm focus:outline-none"
               />
             </div>

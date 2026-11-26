@@ -16,7 +16,7 @@ import { AuthHeader, AuthTrustFooter } from '@/components/auth-header';
 import { PasswordStrength } from '@/components/password-strength';
 import { Button, TextField } from '@/components/ui';
 import { authApi } from '@/lib/api';
-import { normalizeGhanaPhone, PASSWORD_RULE } from '@/lib/format';
+import { normalizeGhanaPhone, PASSWORD_RULE, sanitizePhoneInput } from '@/lib/format';
 
 export default function RegisterScreen() {
   const [step, setStep] = useState<'details' | 'password'>('details');
@@ -153,8 +153,9 @@ export default function RegisterScreen() {
                   <TextField
                     label="Ghana Phone Number"
                     value={phone}
-                    onChangeText={setPhone}
-                    placeholder="024 123 4567"
+                    onChangeText={(value) => setPhone(sanitizePhoneInput(value))}
+                    placeholder="0241234567"
+                    maxLength={10}
                     keyboardType="phone-pad"
                     leftIcon="call-outline"
                     prefix="GH +233"

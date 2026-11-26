@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { motion } from 'framer-motion';
 import { ArrowRight, ArrowUp, RotateCcw, ShoppingBag, X } from 'lucide-react';
 import Portal from '@/components/common/Portal';
 import VerndlyAiIcon from '@/components/ai/VerndlyAiIcon';
@@ -10,6 +11,8 @@ import Alert from '@/components/ui/Alert';
 import { aiApi, type AiBuyerSearchResponse } from '@/lib/api/ai';
 import { getProductPath } from '@/lib/product-slug';
 import { OPEN_VERNDLY_AI_EVENT, type OpenVerndlyAiDetail } from '@/lib/ai/open-verndly-ai';
+
+const EASE_OUT_EXPO = [0.22, 1, 0.36, 1] as const;
 
 const STARTER_PROMPTS = [
   'Gift ideas under GH₵ 200',
@@ -28,6 +31,8 @@ const HIDDEN_LAUNCHER_PREFIXES = [
   '/reset-password',
   '/verify-email',
   '/seller-verification',
+  '/create-store',
+  '/onboarding',
 ];
 
 interface AssistantTurn {
@@ -84,17 +89,19 @@ export default function VerndlyAiAssistant() {
     pathname.startsWith(prefix),
   );
 
-  const openDrawer = useCallback(() => {
+  const openModal = useCallback(() => {
     setMounted(true);
     requestAnimationFrame(() => {
-      setIsOpen(true);
-      window.setTimeout(() => inputRef.current?.focus(), 140);
+      requestAnimationFrame(() => {
+        setIsOpen(true);
+        window.setTimeout(() => inputRef.current?.focus(), 180);
+      });
     });
   }, []);
 
-  const closeDrawer = useCallback(() => {
+  const closeModal = useCallback(() => {
     setIsOpen(false);
-    window.setTimeout(() => setMounted(false), 240);
+    window.setTimeout(() => setMounted(false), 300);
   }, []);
 
   const submitPrompt = useCallback(async (rawPrompt: string) => {
@@ -125,14 +132,14 @@ export default function VerndlyAiAssistant() {
   useEffect(() => {
     const handleOpenEvent = (e: Event) => {
       const detail = (e as CustomEvent<OpenVerndlyAiDetail>).detail;
-      openDrawer();
+      openModal();
       if (detail?.prompt && detail.prompt.trim().length >= 2) {
         void submitPrompt(detail.prompt);
       }
     };
     window.addEventListener(OPEN_VERNDLY_AI_EVENT, handleOpenEvent);
     return () => window.removeEventListener(OPEN_VERNDLY_AI_EVENT, handleOpenEvent);
-  }, [openDrawer, submitPrompt]);
+  }, [openModal, submitPrompt]);
 
   // Body scroll lock & Escape close while open
   useEffect(() => {
@@ -140,14 +147,14 @@ export default function VerndlyAiAssistant() {
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') closeDrawer();
+      if (e.key === 'Escape') closeModal();
     };
     window.addEventListener('keydown', onKey);
     return () => {
       document.body.style.overflow = prevOverflow;
       window.removeEventListener('keydown', onKey);
     };
-  }, [isOpen, closeDrawer]);
+  }, [isOpen, closeModal]);
 
   // Auto-scroll to latest message
   useEffect(() => {
@@ -170,20 +177,20 @@ export default function VerndlyAiAssistant() {
       {!hideFloatingLauncher && !isOpen && (
         <button
           type="button"
-          onClick={openDrawer}
+          onClick={openModal}
           aria-label="Ask Verndly AI"
-          className="bg-foreground text-background fixed bottom-5 right-4 z-40 inline-flex h-12 items-center gap-2.5 rounded-full px-3.5 text-xs font-semibold transition-transform hover:scale-[1.03] active:scale-95 sm:bottom-6 sm:right-6 sm:px-4"
+          className="bg-foreground text-background fixed bottom-5 right-4 z-40 inline-flex h-12 items-center gap-2.5 rounded-full px-3.5 text-xs font-semibold transition-transform duration-200 hover:scale-[1.03] active:scale-95 sm:bottom-6 sm:right-6 sm:px-4"
         >
           <VerndlyAiIcon size={22} />
           <span className="hidden sm:inline">Ask Verndly</span>
         </button>
       )}
 
-      {/* Right-Hand Conversational Assistant Drawer */}
+      {/* Centered Conversational Assistant Modal (95dvh on mobile, sleek centered modal on sm+) */}
       {mounted && (
         <Portal>
           <div
-            className={`fixed inset-0 z-[125] flex justify-end transition-opacity duration-200 ${
+            className={`fixed inset-0 z-[125] flex items-center justify-center p-2.5 transition-opacity duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] sm:p-6 ${
               isOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
             }`}
           >
@@ -191,53 +198,55 @@ export default function VerndlyAiAssistant() {
             <button
               type="button"
               aria-label="Close Verndly AI"
-              onClick={closeDrawer}
-              className="fixed inset-0 cursor-default bg-black/55"
+              onClick={closeModal}
+              className="fixed inset-0 cursor-default bg-black/60"
             />
 
-            {/* Slide-Over Panel */}
-            <aside
+            {/* Centered Modal Surface — 95% full-screen height on mobile, spacious centered card on sm+ */}
+            <div
               role="dialog"
               aria-modal="true"
               aria-label="Verndly AI Shopping Assistant"
-              className={`bg-background relative z-10 flex h-[100dvh] w-full max-w-[440px] flex-col transition-transform duration-200 ease-out ${
-                isOpen ? 'translate-x-0' : 'translate-x-full'
+              className={`bg-background relative z-10 flex h-[95dvh] max-h-[95dvh] w-full max-w-2xl flex-col overflow-hidden rounded-[2rem] transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] sm:h-[min(82dvh,700px)] sm:rounded-[2.25rem] ${
+                isOpen
+                  ? 'translate-y-0 scale-100 opacity-100'
+                  : 'translate-y-4 scale-[0.96] opacity-0'
               }`}
             >
               {/* Header */}
-              <div className="flex shrink-0 items-center justify-between gap-3 px-5 py-4">
+              <div className="flex shrink-0 items-center justify-between gap-3 px-5 pb-3 pt-4 sm:px-6 sm:pt-5">
                 <div className="flex items-center gap-3">
                   <VerndlyAiIcon
                     size={28}
                     mood={isLoading ? 'working' : turns.length > 0 ? 'happy' : 'idle'}
                   />
                   <div>
-                    <h2 className="text-foreground text-sm font-semibold tracking-tight">
+                    <h2 className="text-foreground text-sm font-semibold tracking-tight sm:text-base">
                       Verndly AI
                     </h2>
                     <p className="text-muted text-[11px]">
-                      Personal shopping assistant · Ghana stores
+                      Personal shopping assistant · Verified Ghana stores
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1.5">
                   {turns.length > 0 && (
                     <button
                       type="button"
                       onClick={() => setTurns([])}
                       aria-label="New conversation"
                       title="Start fresh"
-                      className="text-muted hover:bg-surface hover:text-foreground flex h-8 w-8 items-center justify-center rounded-xl transition-colors"
+                      className="text-muted hover:bg-surface hover:text-foreground flex h-9 w-9 items-center justify-center rounded-full transition-colors"
                     >
                       <RotateCcw className="h-3.5 w-3.5" />
                     </button>
                   )}
                   <button
                     type="button"
-                    onClick={closeDrawer}
+                    onClick={closeModal}
                     aria-label="Close Verndly AI"
-                    className="bg-surface text-foreground hover:bg-foreground/[0.08] flex h-8 w-8 items-center justify-center rounded-xl transition-colors"
+                    className="bg-surface text-foreground hover:bg-foreground/[0.08] flex h-9 w-9 items-center justify-center rounded-full transition-colors"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -245,45 +254,54 @@ export default function VerndlyAiAssistant() {
               </div>
 
               {/* Body / Conversation Thread */}
-              <div ref={scrollRef} className="flex-1 space-y-5 overflow-y-auto px-5 pb-4 pt-2">
+              <div
+                ref={scrollRef}
+                className="flex-1 space-y-5 overflow-y-auto px-5 pb-4 pt-2 sm:px-6"
+              >
                 {turns.length === 0 ? (
-                  <div className="space-y-6 pt-6">
-                    <div className="space-y-2.5">
-                      <div className="bg-surface text-foreground inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-medium">
-                        <VerndlyAiIcon size={14} animated={false} />
-                        <span>Ask naturally in GH₵</span>
-                      </div>
-                      <h3 className="text-foreground text-xl font-semibold tracking-tight">
-                        What are you shopping for today?
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.35, ease: EASE_OUT_EXPO }}
+                    className="flex h-full flex-col items-center justify-center space-y-6 py-6 text-center"
+                  >
+                    <VerndlyAiIcon size={56} />
+
+                    <div className="max-w-md space-y-2">
+                      <h3 className="text-foreground text-2xl font-semibold tracking-tight sm:text-3xl">
+                        What can I find for you?
                       </h3>
-                      <p className="text-muted text-xs leading-relaxed">
-                        Describe an item, occasion, or budget — Verndly AI searches verified
-                        Ghanaian stores and surfaces the best matches instantly.
+                      <p className="text-muted text-xs leading-relaxed sm:text-sm">
+                        Describe an item, gift idea, or GH₵ budget in plain English — Verndly AI
+                        searches verified Ghanaian stores instantly.
                       </p>
                     </div>
 
-                    <div className="space-y-2">
-                      <p className="text-muted text-[11px] font-medium">Try asking</p>
-                      <div className="flex flex-wrap gap-2">
-                        {STARTER_PROMPTS.map((prompt) => (
-                          <button
-                            key={prompt}
-                            type="button"
-                            onClick={() => void submitPrompt(prompt)}
-                            className="bg-surface text-foreground hover:bg-foreground hover:text-background rounded-full px-3.5 py-2 text-xs font-medium transition-colors"
-                          >
-                            {prompt}
-                          </button>
-                        ))}
-                      </div>
+                    <div className="flex max-w-lg flex-wrap items-center justify-center gap-2 pt-1">
+                      {STARTER_PROMPTS.map((prompt) => (
+                        <button
+                          key={prompt}
+                          type="button"
+                          onClick={() => void submitPrompt(prompt)}
+                          className="bg-surface text-foreground hover:bg-foreground hover:text-background rounded-full px-4 py-2 text-xs font-medium transition-colors"
+                        >
+                          {prompt}
+                        </button>
+                      ))}
                     </div>
-                  </div>
+                  </motion.div>
                 ) : (
                   turns.map((turn) => (
-                    <div key={turn.id} className="space-y-3">
+                    <motion.div
+                      key={turn.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.28, ease: EASE_OUT_EXPO }}
+                      className="space-y-3.5"
+                    >
                       {/* User Prompt Bubble */}
                       <div className="flex justify-end">
-                        <div className="bg-foreground text-background max-w-[85%] rounded-2xl rounded-br-sm px-3.5 py-2.5 text-xs font-medium leading-relaxed">
+                        <div className="bg-foreground text-background max-w-[85%] rounded-2xl rounded-br-sm px-4 py-2.5 text-xs font-medium leading-relaxed sm:text-sm">
                           {turn.prompt}
                         </div>
                       </div>
@@ -318,7 +336,7 @@ export default function VerndlyAiAssistant() {
                               <VerndlyAiIcon size={20} mood="happy" animated={false} />
                             </div>
                             <div className="min-w-0 flex-1 space-y-2">
-                              <p className="text-foreground text-xs leading-relaxed">
+                              <p className="text-foreground text-xs leading-relaxed sm:text-sm">
                                 {turn.result.summary}
                               </p>
 
@@ -338,58 +356,60 @@ export default function VerndlyAiAssistant() {
                           </div>
 
                           {turn.result.products.length > 0 ? (
-                            <div className="space-y-2 pl-7">
-                              {turn.result.products.slice(0, 6).map((p) => {
-                                const thumb = p.image_urls?.[0];
-                                return (
-                                  <Link
-                                    key={p.id}
-                                    href={getProductPath(p)}
-                                    onClick={closeDrawer}
-                                    className="bg-surface hover:bg-foreground/[0.06] group flex items-center gap-3 rounded-2xl p-2.5 transition-colors"
-                                  >
-                                    <div className="bg-background relative h-14 w-14 shrink-0 overflow-hidden rounded-xl">
-                                      {thumb ? (
-                                        // eslint-disable-next-line @next/next/no-img-element
-                                        <img
-                                          src={thumb}
-                                          alt={p.title}
-                                          className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
-                                        />
-                                      ) : (
-                                        <div className="text-muted flex h-full w-full items-center justify-center">
-                                          <ShoppingBag className="h-4 w-4" />
-                                        </div>
-                                      )}
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                      <p className="text-foreground truncate text-xs font-semibold">
-                                        {p.title}
-                                      </p>
-                                      <p className="text-muted truncate text-[11px]">
-                                        {p.seller?.store_name || p.category}
-                                      </p>
-                                      <div className="mt-0.5 flex items-center gap-2">
-                                        <span className="text-foreground text-xs font-bold">
-                                          {formatGhs(p.price)}
-                                        </span>
-                                        {p.original_price &&
-                                          Number(p.original_price) > Number(p.price) && (
-                                            <span className="text-muted text-[10px] line-through">
-                                              {formatGhs(p.original_price)}
-                                            </span>
-                                          )}
+                            <div className="space-y-2.5 sm:pl-7">
+                              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                {turn.result.products.slice(0, 6).map((p) => {
+                                  const thumb = p.image_urls?.[0];
+                                  return (
+                                    <Link
+                                      key={p.id}
+                                      href={getProductPath(p)}
+                                      onClick={closeModal}
+                                      className="bg-surface hover:bg-foreground/[0.06] group flex items-center gap-3 rounded-2xl p-2.5 transition-colors"
+                                    >
+                                      <div className="bg-background relative h-14 w-14 shrink-0 overflow-hidden rounded-xl">
+                                        {thumb ? (
+                                          // eslint-disable-next-line @next/next/no-img-element
+                                          <img
+                                            src={thumb}
+                                            alt={p.title}
+                                            className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
+                                          />
+                                        ) : (
+                                          <div className="text-muted flex h-full w-full items-center justify-center">
+                                            <ShoppingBag className="h-4 w-4" />
+                                          </div>
+                                        )}
                                       </div>
-                                    </div>
-                                    <ArrowRight className="text-muted group-hover:text-foreground h-3.5 w-3.5 shrink-0 transition-transform group-hover:translate-x-0.5" />
-                                  </Link>
-                                );
-                              })}
+                                      <div className="min-w-0 flex-1">
+                                        <p className="text-foreground truncate text-xs font-semibold">
+                                          {p.title}
+                                        </p>
+                                        <p className="text-muted truncate text-[11px]">
+                                          {p.seller?.store_name || p.category}
+                                        </p>
+                                        <div className="mt-0.5 flex items-center gap-2">
+                                          <span className="text-foreground text-xs font-bold">
+                                            {formatGhs(p.price)}
+                                          </span>
+                                          {p.original_price &&
+                                            Number(p.original_price) > Number(p.price) && (
+                                              <span className="text-muted text-[10px] line-through">
+                                                {formatGhs(p.original_price)}
+                                              </span>
+                                            )}
+                                        </div>
+                                      </div>
+                                      <ArrowRight className="text-muted group-hover:text-foreground h-3.5 w-3.5 shrink-0 transition-transform group-hover:translate-x-0.5" />
+                                    </Link>
+                                  );
+                                })}
+                              </div>
 
                               <Link
                                 href={turn.result.browseUrl || '/products'}
-                                onClick={closeDrawer}
-                                className="bg-foreground text-background inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-xl text-xs font-semibold transition-opacity hover:opacity-90"
+                                onClick={closeModal}
+                                className="bg-foreground text-background inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-full text-xs font-semibold transition-opacity hover:opacity-90"
                               >
                                 <span>
                                   Browse{' '}
@@ -401,23 +421,23 @@ export default function VerndlyAiAssistant() {
                               </Link>
                             </div>
                           ) : (
-                            <div className="bg-surface text-muted ml-7 rounded-2xl p-3 text-xs">
+                            <div className="bg-surface text-muted rounded-2xl p-3.5 text-xs sm:ml-7">
                               No exact matches found right now — try broadening your budget or
                               keywords.
                             </div>
                           )}
                         </div>
                       )}
-                    </div>
+                    </motion.div>
                   ))
                 )}
               </div>
 
               {/* Footer Composer */}
-              <div className="shrink-0 space-y-2.5 px-5 pb-5 pt-2">
+              <div className="shrink-0 space-y-2.5 px-5 pb-4 pt-2 sm:px-6 sm:pb-5">
                 <form
                   onSubmit={handleFormSubmit}
-                  className="bg-surface flex items-center gap-2 rounded-2xl p-1.5 pl-3.5"
+                  className="bg-surface flex items-center gap-2 rounded-full p-1.5 pl-4"
                 >
                   <input
                     ref={inputRef}
@@ -432,24 +452,24 @@ export default function VerndlyAiAssistant() {
                     type="submit"
                     disabled={!input.trim() || isLoading}
                     aria-label="Send to Verndly AI"
-                    className="bg-foreground text-background flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-opacity hover:opacity-90 disabled:opacity-35"
+                    className="bg-foreground text-background flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-opacity hover:opacity-90 disabled:opacity-35"
                   >
                     <ArrowUp className="h-4 w-4" />
                   </button>
                 </form>
 
-                <div className="flex items-center justify-between px-1 text-[11px]">
+                <div className="flex items-center justify-between px-2 text-[11px]">
                   <span className="text-muted">Escrow-protected verified stores</span>
                   <Link
-                    href="/dashboard/products/new"
-                    onClick={closeDrawer}
+                    href="/dashboard/products/add"
+                    onClick={closeModal}
                     className="text-foreground font-medium hover:underline"
                   >
                     Sell with Verndly AI →
                   </Link>
                 </div>
               </div>
-            </aside>
+            </div>
           </div>
         </Portal>
       )}

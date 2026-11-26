@@ -11,17 +11,18 @@ import { filterRailProducts } from '@/lib/product-visibility';
 import { getProductPath } from '@/lib/product-slug';
 
 export const metadata = buildMetadata({
-  title: 'Verndly — Discover & Shop Verified Independent Stores in Ghana',
+  title: 'Verndly — Ghana’s AI-Native Marketplace for Verified Stores',
   description:
-    'Browse verified products from independent stores and young entrepreneurs across Ghana. Protected by 7-day Paystack escrow, flat 4% seller fees, and nationwide courier delivery.',
+    'Shop verified independent stores across Ghana with Verndly AI, or launch your online storefront in seconds with zero monthly rent and 7-day Paystack escrow protection.',
   path: '/',
   keywords: [
     'Ghana marketplace',
+    'Verndly AI',
+    'AI shopping Ghana',
     'online shopping Ghana',
     'buy online Accra',
     'independent stores Ghana',
     'verified sellers Ghana',
-    'electronics fashion beauty Ghana',
     'Paystack escrow shopping',
     'Verndly',
   ],

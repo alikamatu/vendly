@@ -129,3 +129,32 @@ export interface AiDraftStorefrontResult {
   avg_delivery_time: AiDeliveryTime | null;
   model: string;
 }
+
+export interface AiOnboardingLocationOption {
+  id: string;
+  region: string;
+  city: string;
+}
+
+export interface AiOnboardingAssistantInput {
+  prompt?: string;
+  website_url?: string;
+  store_name?: string;
+}
+
+export interface AiOnboardingAssistantResult {
+  store_name: string;
+  store_slug: string;
+  bio: string;
+  business_hours: string;
+  delivery_policies: string;
+  whatsapp_number: string | null;
+  matched_location: AiOnboardingLocationOption | null;
+  area: string;
+  service_area: AiServiceArea;
+  avg_delivery_time: AiDeliveryTime;
+  recommended_payment_timing: 'UPFRONT_ONLY' | 'BOTH';
+  onboarding_tip: string;
+  source_website_url: string | null;
+  model: string;
+}

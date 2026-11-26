@@ -11,6 +11,7 @@ import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
 import Spinner from '@/components/ui/Spinner';
+import VerndlyAiIcon from '@/components/ai/VerndlyAiIcon';
 import {
   Link2,
   Clock,
@@ -42,6 +43,7 @@ export default function SellerVerificationForm() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [selectedOption, setSelectedOption] = useState<VerificationOption>(null);
+  const [aiCoachHint, setAiCoachHint] = useState<string | null>(null);
   const [idFile, setIdFile] = useState<File | null>(null);
   const [salesFile, setSalesFile] = useState<File | null>(null);
 
@@ -99,33 +101,33 @@ export default function SellerVerificationForm() {
   // a clear sign-in CTA instead of a blank redirect or spinner.
   if (!token) {
     return (
-      <div className="bg-surface space-y-6 rounded-3xl p-8 md:p-10">
+      <div className="bg-surface space-y-5 rounded-3xl p-6 text-center sm:p-8">
         <div className="space-y-2">
-          <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--color-accent)]">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-accent)]">
             Ready to apply?
           </p>
-          <h2 className="text-foreground text-2xl font-medium tracking-tight">
+          <h2 className="text-foreground text-xl font-semibold tracking-tight sm:text-2xl">
             Sign in to submit your verification
           </h2>
-          <p className="text-muted max-w-xl text-sm leading-relaxed">
+          <p className="text-muted mx-auto max-w-md text-xs leading-relaxed sm:text-sm">
             Create a free Verndly account or sign in to submit your store link, upload your Ghana
             Card and sales proof, or start a manual review with our Accra team.
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-col justify-center gap-2.5 sm:flex-row">
           <Link
             href="/register?redirect=/seller-verification"
-            className="bg-foreground text-background inline-flex items-center gap-2 rounded-full px-6 py-3.5 text-xs font-medium transition-opacity hover:opacity-90"
+            className="bg-foreground text-background inline-flex h-11 items-center justify-center gap-2 rounded-full px-6 text-xs font-semibold transition-opacity hover:opacity-90"
           >
-            Create seller account
+            <span>Create seller account</span>
             <ArrowRight className="h-3.5 w-3.5" />
           </Link>
           <Link
             href="/login?redirect=/seller-verification"
-            className="bg-background text-foreground inline-flex items-center gap-2 rounded-full px-6 py-3.5 text-xs font-medium transition-opacity hover:opacity-80"
+            className="bg-background text-foreground inline-flex h-11 items-center justify-center gap-2 rounded-full px-6 text-xs font-semibold transition-opacity hover:opacity-80"
           >
-            Sign in to continue
+            <span>Sign in to continue</span>
           </Link>
         </div>
       </div>
@@ -162,7 +164,7 @@ export default function SellerVerificationForm() {
   };
 
   return (
-    <div className="bg-surface rounded-3xl p-8 md:p-10">
+    <div className="bg-surface rounded-3xl p-5 sm:p-8">
       {approvalStatus === 'APPROVED' && (
         <div className="mx-auto flex max-w-md flex-col items-center text-center">
           <div className="bg-foreground text-background mb-6 grid h-14 w-14 place-items-center rounded-full">
@@ -234,11 +236,11 @@ export default function SellerVerificationForm() {
 
       {approvalStatus !== 'APPROVED' && approvalStatus !== 'PENDING' && (
         <div className="mx-auto max-w-lg space-y-6">
-          <div className="space-y-2">
-            <h2 className="text-foreground text-2xl font-medium tracking-tight">
+          <div className="space-y-1.5 text-center">
+            <h2 className="text-foreground text-xl font-semibold tracking-tight sm:text-2xl">
               Submit your verification
             </h2>
-            <p className="text-muted text-sm">
+            <p className="text-muted text-xs sm:text-sm">
               {fromCreateStore
                 ? 'Choose a verification track below before opening your storefront.'
                 : 'Choose how you want to verify your business.'}
@@ -252,28 +254,84 @@ export default function SellerVerificationForm() {
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -6 }}
-                className="space-y-2.5"
+                className="space-y-4"
               >
-                {options.map((option) => (
-                  <button
-                    key={option.id}
-                    type="button"
-                    onClick={() => handleSelectOption(option.id)}
-                    className="bg-background hover:bg-foreground/[0.04] group flex w-full items-center gap-3.5 rounded-2xl p-4 text-left outline-none transition-colors"
-                  >
-                    <div className="bg-surface text-foreground grid h-10 w-10 shrink-0 place-items-center rounded-xl">
-                      <option.icon size={18} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <h3 className="text-foreground text-sm font-medium">{option.title}</h3>
-                      <p className="text-muted truncate text-xs">{option.description}</p>
-                    </div>
-                    <ChevronRight
-                      size={16}
-                      className="text-muted group-hover:text-foreground shrink-0 transition-colors"
-                    />
-                  </button>
-                ))}
+                {/* Verndly AI Fastest-Track Recommender */}
+                <div className="bg-background space-y-2.5 rounded-2xl p-4">
+                  <div className="flex items-center gap-2">
+                    <VerndlyAiIcon size={18} animated={false} />
+                    <span className="text-foreground text-xs font-semibold">
+                      Verndly AI · Fastest way to get verified
+                    </span>
+                  </div>
+                  <p className="text-muted text-xs leading-relaxed">
+                    Tap what you already have — Verndly AI will open your fastest approval path:
+                  </p>
+                  <div className="flex flex-wrap gap-1.5 pt-0.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAiCoachHint(
+                          'Fastest track: paste your active Instagram, TikTok, Shopify, or catalog URL so reviewers can verify your live listings in minutes.',
+                        );
+                        handleSelectOption('URL');
+                      }}
+                      className="bg-surface text-foreground hover:bg-foreground hover:text-background rounded-full px-3 py-1.5 text-[11px] font-medium transition-colors"
+                    >
+                      I have an IG / TikTok / Website
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAiCoachHint(
+                          'No social storefront needed: upload a clear photo of your Ghana Card alongside a recent MoMo receipt or stock photo.',
+                        );
+                        handleSelectOption('FILES');
+                      }}
+                      className="bg-surface text-foreground hover:bg-foreground hover:text-background rounded-full px-3 py-1.5 text-[11px] font-medium transition-colors"
+                    >
+                      I have Ghana Card + receipts
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAiCoachHint(
+                          'Starting fresh? Message our Accra onboarding team directly on WhatsApp for a quick 1-on-1 verification check.',
+                        );
+                        handleSelectOption('CONTACT');
+                      }}
+                      className="bg-surface text-foreground hover:bg-foreground hover:text-background rounded-full px-3 py-1.5 text-[11px] font-medium transition-colors"
+                    >
+                      I’m launching a new brand
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2.5">
+                  {options.map((option) => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => {
+                        setAiCoachHint(null);
+                        handleSelectOption(option.id);
+                      }}
+                      className="bg-background hover:bg-foreground/[0.04] group flex w-full items-center gap-3.5 rounded-2xl p-4 text-left outline-none transition-colors"
+                    >
+                      <div className="bg-surface text-foreground grid h-10 w-10 shrink-0 place-items-center rounded-xl">
+                        <option.icon size={18} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-foreground text-sm font-medium">{option.title}</h3>
+                        <p className="text-muted truncate text-xs">{option.description}</p>
+                      </div>
+                      <ChevronRight
+                        size={16}
+                        className="text-muted group-hover:text-foreground shrink-0 transition-colors"
+                      />
+                    </button>
+                  ))}
+                </div>
               </motion.div>
             ) : (
               <motion.div
@@ -285,12 +343,23 @@ export default function SellerVerificationForm() {
               >
                 <button
                   type="button"
-                  onClick={() => handleSelectOption(null)}
+                  onClick={() => {
+                    setAiCoachHint(null);
+                    handleSelectOption(null);
+                  }}
                   className="text-muted hover:text-foreground inline-flex items-center gap-1.5 text-xs transition-colors"
                 >
                   <ArrowLeft size={13} />
                   <span>All methods</span>
                 </button>
+
+                {aiCoachHint && (
+                  <Alert
+                    variant="info"
+                    message={aiCoachHint}
+                    onDismiss={() => setAiCoachHint(null)}
+                  />
+                )}
 
                 <form onSubmit={onSubmit} className="space-y-4">
                   {error && (

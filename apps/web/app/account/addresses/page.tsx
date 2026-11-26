@@ -6,7 +6,7 @@ import { ArrowLeft, MapPin, Plus, Trash2, Edit2, Loader2, Star } from 'lucide-re
 import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/auth-context';
 import { addressApi, Address } from '@/lib/api/address';
-import { sanitizePhoneNumber, validatePhoneNumber } from '@/lib/utils/phone';
+import { guardPhoneKeyDown, sanitizePhoneNumber, validatePhoneNumber } from '@/lib/utils/phone';
 import { toast } from 'sonner';
 
 export default function AddressesPage() {
@@ -190,10 +190,10 @@ export default function AddressesPage() {
                   <input
                     type="tel"
                     inputMode="numeric"
-                    maxLength={17}
                     required
                     placeholder="e.g. 0244123456"
                     value={formData.phone}
+                    onKeyDown={(e) => guardPhoneKeyDown(e)}
                     onChange={(e) =>
                       setFormData({ ...formData, phone: sanitizePhoneNumber(e.target.value) })
                     }
