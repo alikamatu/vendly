@@ -100,6 +100,7 @@ import { FavoriteProvider } from '../lib/contexts/favorite-context';
 import SiteFooter from '../components/layout/SiteFooter';
 import Toaster from '../components/ui/Toaster';
 import PwaInstallPrompt from '../components/pwa/PwaInstallPrompt';
+import VerndlyAiAssistant from '../components/ai/VerndlyAiAssistant';
 
 export default function RootLayout({
   children,
@@ -147,6 +148,7 @@ export default function RootLayout({
                     <SiteFooter />
                     <AuthModal />
                     <Toaster />
+                    <VerndlyAiAssistant />
                     <PwaInstallPrompt />
                   </StoreGuard>
                 </CartProvider>

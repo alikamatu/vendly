@@ -1,81 +1,115 @@
 # Verndly Architecture Overview
 
-This document provides a deep dive into the technical architecture of the Verndly platform, explaining the design decisions and data flows that power the marketplace.
+This document provides a technical overview of the Verndly platform architecture, covering the data layer, NestJS API modules, Verndly AI & multi-channel product ingestion pipelines, Next.js storefront architecture, and external integrations.
 
 ## 🏛 System Design
 
-Verndly is designed as a distributed system with a clear separation of concerns between the data layer, business logic, and presentation layers.
+Verndly is a pnpm + Turborepo monorepo with a clear separation of concerns across the data layer, backend services, and web/admin/mobile presentation layers.
 
 ### 1. Data Layer (Prisma & PostgreSQL)
-The schema is the source of truth for the application. The Prisma schema includes over 22 models. Key entities and relationships include:
--   **User ↔ SellerProfile**: A 1:1 relationship where users can elevate to seller status upon approval.
--   **SellerProfile ↔ Product**: A 1:N relationship allowing sellers to list multiple products.
--   **Product ↔ ProductVariant**: SKUs, sizes, and colors for specific listings.
--   **Order ↔ OrderItem**: A 1:N relationship for complex basket management.
--   **Transaction ↔ PaymentLog ↔ Payout ↔ PaymentLedgerEntry**: A double-entry financial ledger for managing split payments and vendor payouts.
--   **Review ↔ ReviewFlag**: Verified purchase reviews with a moderation flagging system.
--   **ReturnRequest**: Workflows for order returns and tracking statuses.
--   **AdminApproval**: Tracks the verification state of users applying for seller roles.
--   **PlatformSetting**: Key-value pairs for dynamic platform configurations.
 
-### 2. Backend Logic (NestJS)
-The API is divided into 18 feature-based modules:
--   **Auth Module**: Handles JWT issuance, password hashing (Bcrypt), OAuth (Google), and 2FA (TOTP + SMS via Arkesel). Includes token blacklisting on logout.
--   **Admin Module**: Centralized back-office functionality built into the API (approvals, user management, reconciliation).
--   **Product & Category Modules**: Manages listings, dynamic category fields, Cloudinary media uploads, SKU variants, and bulk CSV import.
--   **Store & Subscription Modules**: Handles store metadata, analytics, link slugs, and Pro seller subscription features.
--   **Order & Payments Modules**: Manages the transactional flow from checkout to fulfillment, integrating with Paystack for split payments, subaccounts, and payout handling.
--   **Notification & Email Modules**: Delivers transactional emails via Resend and handles 16 distinct in-app notification types.
+The Prisma schema (`apps/api/prisma/schema.prisma`) is the source of truth across 22+ models:
 
-**Security Architecture**: Includes CORS whitelisting, Helmet for security headers, strict validation pipes (class-validator), global exception filters for sanitized responses, and API response interceptors that wrap all responses in a `{ data, meta }` format.
-**Caching Layer**: Utilizes Redis (`@nestjs/cache-manager`) for high-performance caching (e.g., categories, top pro vendors), with a graceful fallback to in-memory caching.
-**Rate Limiting**: Configured globally with tighter limits on sensitive endpoints (e.g., login, password reset).
+- **User ↔ SellerProfile**: 1:1 relationship elevating verified users to sellers with store metadata, slugs, and payout details.
+- **SellerProfile ↔ Product**: 1:N listings with dynamic category metadata (`seed-categories.js` seeds 15 canonical Verndly categories), Cloudinary media arrays, and promotion flags.
+- **Product ↔ ProductVariant**: SKU, size, and color variants.
+- **Order ↔ OrderItem**: 1:N order and basket management with escrow status tracking.
+- **Transaction ↔ PaymentLog ↔ Payout ↔ PaymentLedgerEntry**: Double-entry financial ledger for split payments, atomic webhook deduplication (`payment_logs.event_id`), and seller payouts.
+- **Review ↔ ReviewFlag**: Verified-purchase reviews and moderation flags.
+- **ReturnRequest**: Return request lifecycle and dispute resolution states.
+- **AdminApproval**: Seller verification document tracking and review decisions.
+- **AuditLog**: Append-only audit trail for consequential admin and seller actions.
+- **PlatformSetting**: Dynamic key-value platform configuration.
 
-### 3. Frontend Architecture (Next.js)
-The Web app leverages Next.js for a performant buyer and seller experience:
--   **App Router**: For nested layouts, server-side optimization, and 23+ dynamic routes.
--   **Server Components**: Used for initial data fetching to reduce client-side bundle size.
--   **Client Components**: Used for interactive elements (Cart, Search, Profile Dropdowns, Forms with react-hook-form + zod).
--   **SEO Infrastructure**: Generates dynamic sitemaps, robots.txt, OG/Twitter images, and JSON-LD structured data for rich search engine snippets.
+### 2. Backend Logic (NestJS — `apps/api`)
 
-## 🔄 Data Flow
+The API is organized into 23 feature-based modules registered in `src/app.module.ts`:
 
-### Seller Verification Flow
-1.  **User** submits verification documents (ID, business docs) via the Web onboarding flow.
-2.  **API** creates an `AdminApproval` record and stores documents securely.
-3.  **Admin** reviews the request via Admin API endpoints.
-4.  **API** updates the user's role to `SELLER`, creates a `SellerProfile`, and triggers a notification.
+- **AI Module (`src/ai/`)**: Powers **Verndly AI** via Google's Gemini API (`GeminiService` + `BuyerSearchService`). Features automatic sticky failover across Flash / Flash-Lite models on 503/429/timeout spikes, a `fast` mode for sub-5s buyer search (with 5-minute category caching, 5-minute LRU query-plan caching, and deterministic keyword fallback), single & bulk photo-to-listing analysis, listing copy polishing, storefront setup drafting, and WhatsApp catalog screenshot vision parsing with normalized 2D bounding boxes (`image_box_2d`).
+- **Product, Category & Brand Modules (`src/product/`, `src/category/`, `src/brand/`)**: Listings CRUD, dynamic category fields, Cloudinary media uploads/mirroring, SKU variants, bulk CSV import, **Website Product Importer** (`website-import.service.ts`), **WhatsApp Catalog Importer** (`whatsapp-catalog.service.ts`), and shared semantic category resolution (`category-matcher.ts`).
+- **Auth Module (`src/auth/`)**: JWT issuance, Bcrypt hashing, Google OAuth, 2FA (TOTP + SMS via Arkesel), token blacklisting on logout, and seller verification submission.
+- **Admin Module (`src/admin/`)**: Centralized back-office endpoints for seller approvals, user moderation, returns, reviews, and financial reconciliation.
+- **Store, Analytics & Subscription Modules**: Storefront customization, URL slugs, Pro vendor rankings, store metrics, and Pro subscriptions.
+- **Order & Payments Modules (`src/order/`, `src/payments/`)**: Checkout orchestration, seller self-purchase prevention (`ForbiddenException` when `seller.user_id === userId`), Paystack split payments, subaccounts, and automated payout runs.
+- **Notification, Email, Loops & Events Modules**: Transactional emails via Resend, audience/product-update automations via Loops.so, 16 in-app notification types, and event hooks.
+- **Audit & Observability (`src/audit/`, `src/sentry/`)**: Fire-and-forget audit logging and Sentry 5xx error monitoring (`src/sentry/instrument.ts` loaded before all Nest modules).
 
-### Ordering & Payment Flow
-1.  **Buyer** adds products to the cart (managed via Zustand in the browser).
-2.  **Checkout** initiates a Paystack transaction via the API.
-3.  **Paystack** processes payment; buyer completes flow on frontend.
-4.  **Webhook** from Paystack hits the API (`/webhooks/paystack`) confirming success.
-5.  **API** creates `Order` and `OrderItem` records, records the `Transaction`, and deducts stock.
-6.  Funds are routed via split payments to the platform and the seller's subaccount, tracked in the `PaymentLedgerEntry`.
+**Security Architecture**:
 
-### 2FA Authentication Flow
-1.  **User** initiates 2FA setup (TOTP or SMS).
-2.  **API** generates a secret and provides a QR code (TOTP) or sends an OTP (SMS).
-3.  **User** verifies the code to enable 2FA. Backup codes are generated and returned (hashed in DB).
-4.  On next login, standard credentials return a temporary token; full JWT is issued only after 2FA challenge is passed.
+- CORS whitelisting, Helmet headers, strict `class-validator` DTO pipes, global exception filtering, and standardized `{ data, meta }` responses via `ApiResponseInterceptor`.
+- SSRF protection (`validatePublicWebsiteUrl`) blocking localhost, loopback, link-local metadata endpoints, and private RFC-1918 IP ranges across website imports and the authenticated preview image proxy.
+- Raster magic-byte sniffing (`JPEG`, `PNG`, `GIF`, `WebP`, `AVIF`) on both `/products/website-import/image-proxy` and `CloudinaryService.uploadImageFromUrl`.
+- **Caching Layer**: Redis via `@nestjs/cache-manager` (categories, top pro stores) with graceful in-memory fallback when `REDIS_URL` is unset or unreachable.
+- **Rate Limiting**: Global `@nestjs/throttler` guard with route-specific limits (e.g., `/ai/buyer-search` at 20 req/min, tighter limits on login and password recovery).
 
-### Return Request Flow
-1.  **Buyer** submits a return request for a fulfilled order item within the allowable window.
-2.  **API** creates a `ReturnRequest` and notifies the seller.
-3.  **Seller/Admin** reviews and updates the status (Approved, Rejected, Refunded).
+### 3. Frontend Architecture (Next.js — `apps/web`)
+
+The Web Storefront uses Next.js 16+ App Router with Tailwind CSS v4:
+
+- **Full-Bleed Product Browser (`/products`)**: Edge-to-edge responsive masonry (`columns-2` up to `2xl:columns-6`), hidden-by-default on-demand filter drawer (`MobileFilterDrawer` / `FiltersPanel`), quick category pills, and integrated **Verndly AI Shopper** (`VerndlyAiShopBar`) with 1-tap natural-language shopping prompts.
+- **Product Detail & Checkout UX**: Touch-swipeable mobile image gallery (`ProductDetailClient.tsx`) with live drag feedback and slide transitions, full-height right-hand sidebar Buy Now drawer (`QuickCheckoutModal.tsx`), and ownership guards (`lib/utils/ownership.ts`) that block self-purchase and show **Manage Product** for owners across product cards, cart, PDP, and checkout.
+- **Verndly AI Visual Surfaces**: Branded `<VerndlyAiIcon />` and `<VerndlyAiOverlay />` using deterministic CSS transitions (synchronous `pointer-events-none` on dismiss + clean unmount to prevent click-blocking layers), dim backdrop, floating orb, and white pill with character-by-character typing animation.
+- **Unified Alerts & Tonal Design System**: Site-wide `<Alert />` component and `sonner` toasts for all inline/transient feedback, plus a borderless tonal layout across the seller dashboard, navbar, and importers.
+- **SEO Infrastructure**: Dynamic sitemaps, `robots.txt`, OpenGraph/Twitter share cards (`/api/cards/product/:id`), and JSON-LD structured data.
+
+---
+
+## 🔄 Core Data Flows
+
+### 1. Verndly AI Buyer Shopping Search
+
+1. **Buyer** enters a natural-language query in `VerndlyAiShopBar` (e.g. `"gift for my girlfriend under 200 cedis"`).
+2. **`BuyerSearchService`** checks its 5-minute LRU query-plan cache; on cache miss it calls `GeminiService.parseBuyerSearchQuery` in `fast` mode (`gemini-3.5-flash-lite` first, `4.5s` per-model timeout, `5s` total budget) using cached Verndly category names.
+3. If the AI model is slow or unavailable, `BuyerSearchService` falls back immediately to deterministic keyword/price/category extraction so search never stalls.
+4. Parsed filters (`keywords`, `category`, `min_price`, `max_price`, `condition`, `sort`, `in_stock_only`) execute against PostgreSQL via Prisma and return matched products alongside a 1-sentence Verndly AI summary.
+
+### 2. Website Product Import Flow (`/products/website-import`)
+
+1. **Seller** pastes a store homepage, collection URL, or one or more individual product URLs (`Auto-detect`, `Single item`, or `Owned website`).
+2. **`WebsiteImportService`** validates public HTTPS URLs (`validatePublicWebsiteUrl`) and runs an ordered extraction cascade:
+   - **Shopify JSON** (`/products/<handle>.json`, `/collections/<handle>/products.json`, `/products.json`) and **WooCommerce Store API** (`/wp-json/wc/store/v1/products`).
+   - **Structured HTML**: Schema.org JSON-LD (`Product`, `ProductGroup`, `ItemList`, `BreadcrumbList`, Yoast/RankMath `@graph` `@id` dereferencing, and recursive `ImageObject.contentUrl` array unwrapping for marketplaces like Jumia), `__NEXT_DATA__`, strict product-only OpenGraph/meta fallback, and high-res gallery enrichment (`extractBestImageFromTag`, `srcset`, `/_next/image` unwrapping).
+   - **Client-Rendered SPA Discovery**: Inspects up to 18 same-origin Next.js/React/Vite script chunks (prioritizing route and shared app chunks), extracts backend API origins & `/api` prefixes, probes JSON endpoints in parallel, and maps `priceCents`/`GHC -> GHS` payloads.
+   - **Verndly AI DOM Reader**: Product-focused DOM digest fallback preserving inline `[IMG: ...]` anchors.
+3. **Semantic Category Resolution (`category-matcher.ts`)**: Scores raw category, breadcrumbs (ignoring generic root `"Home"`), tags, title, brand, URL slug, and description across all 15 Verndly categories.
+4. **Preview & Permanent Commit**: `RemoteProductThumb` previews remote images via authenticated `GET /products/website-import/image-proxy` (bypassing merchant hotlink blocks and strict CSP). On commit, `CloudinaryService.uploadImageFromUrl` mirrors up to 3 photos per item permanently to Cloudinary (with direct Cloudinary remote-fetch fallback on `401/403/406/429`).
+
+### 3. WhatsApp Catalog Import Flow (`/products/whatsapp-import`)
+
+- **Screenshots (Verndly AI)**: Seller uploads up to 10 WhatsApp Business catalog screenshots. `GeminiService.parseWhatsAppCatalogScreenshots` extracts deduplicated items along with `source_screenshot_index` and normalized `[ymin, xmin, ymax, xmax]` (`0..1000`) `image_box_2d` coordinates. `WhatsAppImportPanel` crops each product photo from the original uploaded screenshot via offscreen `<canvas>`, attaches it to the review queue, and uploads it to Cloudinary on commit.
+- **WhatsApp Links (`wa.me/p/...`, `wa.me/c/...`, phone numbers)**: `WhatsAppCatalogService.fetchWhatsAppPageHtml` resolves `wa.me/p/...` directly to `www.whatsapp.com/product/.../?app_absent=0` using official link-preview user agents (`WhatsApp/2.24.6.77`, fallback `facebookexternalhit/1.1`), cleans `<Title> from <Shop> on WhatsApp.`, decodes numeric/hex HTML entities (`&#xb7;`), extracts currency-anchored prices, resolves the Verndly category via `category-matcher.ts`, and mirrors `fbcdn.net` images to Cloudinary on commit.
+- **Meta Commerce CSV & Graph API**: Supports bulk CSV uploads and direct Meta Commerce Catalog Graph API sync (`v21.0`).
+
+### 4. Ordering, Self-Purchase Guard & Payment Flow
+
+1. **Buyer** adds products to cart or opens the right-sidebar Buy Now drawer (`QuickCheckoutModal`).
+2. **Ownership Check**: Both the web UI (`lib/utils/ownership.ts`) and backend (`OrderService.createOrder`) reject attempts by a seller to purchase their own listings (`403 Forbidden`).
+3. **Checkout** initializes a Paystack transaction via `/payments/initialize` or `/orders`.
+4. **Paystack Webhook** (`/webhooks/paystack`) verifies the raw-body HMAC-SHA512 signature with `crypto.timingSafeEqual`, atomically dedupes on `payment_logs.event_id`, records the `Transaction` & `PaymentLedgerEntry`, updates order state, and deducts stock.
+
+### 5. Seller Verification, 2FA & Return Flows
+
+- **Seller Verification**: User submits documents (`POST /auth/submit-verification`) → API creates `AdminApproval` and fires Resend email + Arkesel SMS admin alerts → Admin approves via `/admin/approve/:id` → role elevated to `SELLER` and `SellerProfile` created.
+- **2FA**: Supports TOTP (QR secret + hashed backup codes) and SMS OTP via Arkesel; login issues a temporary challenge token until 2FA succeeds.
+- **Returns**: Buyer submits a `ReturnRequest` within the escrow window; seller/admin reviews and transitions status (`Approved`, `Rejected`, `Refunded`).
+
+---
 
 ## 🛠 External Integrations
 
--   **Cloudinary**: Used for optimized delivery, transformation, and storage of product images and videos.
--   **Resend**: Powers all transactional emails with template-based rendering.
--   **Paystack**: Handles all payment processing, merchant subaccounts, and automated transfers.
--   **Arkesel**: SMS gateway for sending OTPs for 2FA.
--   **Prisma Client**: Ensures type-safe database interactions across the entire backend.
+- **Google Gemini API (Verndly AI)**: Vision & structured-JSON model chain (`gemini-3.6-flash`, `gemini-3.5-flash`, `gemini-3.5-flash-lite`) powering buyer search, photo-to-listing, listing polish, storefront drafting, and catalog extraction.
+- **Cloudinary**: Permanent media storage, remote URL mirroring, and optimized delivery for product photos and videos.
+- **Paystack**: Checkout payments, split subaccounts, webhooks, and automated seller payouts.
+- **Resend**: Template-based transactional emails.
+- **Loops.so**: Newsletter, product updates, and audience automations.
+- **Arkesel**: SMS OTP delivery for 2FA and admin verification alerts.
+- **Sentry**: Production error tracking across API (`@sentry/nestjs`) and Web (`@sentry/nextjs` client/server/edge with `/monitoring/*` tunnel).
+
+---
 
 ## 🚀 Performance Optimizations
 
--   **Image/Video Previews**: Videos are muted and auto-played for high engagement without blocking main thread interactions. Images use Next.js optimization.
--   **Optimistic UI**: Framer Motion and Zustand provide immediate feedback for actions like "Favoriting".
--   **Database Indexing**: Critical fields like `product.category` and `store_link` are indexed for sub-millisecond lookups.
--   **Tree-shaking**: Frontend dependencies like `lucide-react` and `framer-motion` are optimized to reduce bundle sizes.
+- **AI Search Caching & Fast Failover**: 5-minute category cache, 5-minute LRU query-plan cache, sticky healthy-model promotion, and 5s search budget with deterministic fallback.
+- **Multi-Layer Data Caching**: Redis caching (with automatic in-memory fallback) for categories and top Pro stores.
+- **Client-Side Image Compression & Cropping**: `browser-image-compression` shrinks seller uploads before network transfer; WhatsApp screenshot crops happen locally on `<canvas>` with zero wasted CDN uploads for discarded items.
+- **Database Indexing**: Critical lookup columns (`product.category`, `store_link`, `payment_logs.event_id`) are indexed for fast queries.

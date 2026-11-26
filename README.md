@@ -1,6 +1,6 @@
 # Verndly — The Marketplace for Verified Entrepreneurs
 
-Verndly is a comprehensive marketplace platform designed specifically for verified entrepreneurs to manage their sales, showcase products, and scale their businesses professionally. By shifting away from informal DM-based commerce, Verndly provides a premium, trust-driven ecosystem for both sellers and buyers.
+Verndly is an escrow-protected marketplace platform built for verified entrepreneurs to list products, manage sales, and scale their businesses professionally. By shifting away from informal DM-based commerce, Verndly delivers a fast, AI-assisted, trust-driven shopping and selling ecosystem.
 
 ![Node](https://img.shields.io/badge/Node.js-v20+-green)
 ![pnpm](https://img.shields.io/badge/pnpm-v9+-orange)
@@ -11,13 +11,14 @@ Verndly is a comprehensive marketplace platform designed specifically for verifi
 
 ## 🚀 Project Overview
 
-The project is structured as a monorepo (powered by Turborepo and pnpm workspaces) containing three core applications and several shared packages:
+The project is structured as a monorepo (powered by Turborepo and pnpm workspaces) containing four applications and shared configuration packages:
 
 ### Applications
 
-- **API** (`apps/api`): A robust NestJS backend powering the entire platform. Admin functionality is built directly into this API.
-- **Web Storefront** (`apps/web`): A modern Next.js application for buyers and entrepreneur profiles.
-- **Admin Dashboard** (`apps/admin`): Next.js management dashboard for platform administrators to operate the system, monitor activities, transactions, and manage users.
+- **API** (`apps/api`): NestJS backend powering the entire platform, including Verndly AI, multi-channel catalog importers, payments, and built-in admin APIs.
+- **Web Storefront** (`apps/web`): Next.js 16+ App Router application for buyers and verified seller storefronts/dashboards.
+- **Admin Dashboard** (`apps/admin`): Next.js management dashboard for platform administrators to review seller verifications, monitor transactions, and moderate users/content.
+- **Mobile App** (`apps/mobile`): Expo / React Native mobile companion app.
 
 ### Shared Packages
 
@@ -28,34 +29,38 @@ The project is structured as a monorepo (powered by Turborepo and pnpm workspace
 
 ## ✨ Core Features
 
-- **Authentication & Security**: Role-based access control (Admin, Seller, User), Google OAuth, and robust 2FA (TOTP + SMS).
-- **Store Management**: Entrepreneurs can create and customize their own store presence, including subscription/Pro features.
-- **Product Discovery**: Advanced search with category filtering, video previews, and SKU-based variants. Bulk CSV import is supported.
-- **Order Lifecycle**: Real-time order tracking, status updates, and a complete return request workflow.
-- **Payment Integration**: Full Paystack integration with split payments, subaccounts, and a double-entry financial ledger for payouts.
-- **Review & Notification**: Verified purchase reviews with a flagging system, plus 16 distinct in-app notification types.
-- **Verification System**: A dedicated approval workflow for new sellers to maintain platform trust.
-- **SEO**: Dynamic sitemaps, robots.txt generation, OG images, and JSON-LD for rich snippets.
+- **Verndly AI (Buyer & Seller Intelligence)**: Natural-language buyer shopping search with fast-mode caching, photo-to-listing & bulk photo grouping (up to 20 images), AI listing copy polish, storefront setup drafting, and kinetic typing AI status overlays.
+- **Multi-Channel Catalog Import**:
+  - **From Website**: Import single product links or full catalogs from Shopify, WooCommerce, Jumia, custom HTML stores, and client-rendered Next.js/React SPAs with automatic semantic category matching, proxied previews, and permanent Cloudinary image mirroring.
+  - **From WhatsApp Business**: Import via WhatsApp catalog screenshots (with Verndly AI product photo auto-cropping), `wa.me/p/...` product links, Meta Commerce CSV exports, or Meta Graph API sync.
+  - **Bulk CSV**: Standard spreadsheet product upload.
+- **Modern Shopping & Checkout UX**: Full-bleed masonry product browser with an on-demand hideable filter drawer, mobile touch-swipeable product galleries, right-sidebar Buy Now drawer, seller self-purchase protection (frontend + backend), and unified alert/toast UI.
+- **Authentication & Security**: Role-based access control (`ADMIN`, `SELLER`, `USER`), Google OAuth, 2FA (TOTP + SMS via Arkesel), SSRF-hardened importers, and HMAC-verified webhooks.
+- **Store Management & Payments**: Custom store slugs, Pro subscriptions, Paystack split payments & subaccounts, double-entry financial ledger, and automated payouts.
+- **Trust, Reviews & Verification**: Dedicated seller verification approval workflow, verified-purchase reviews with moderation flags, return requests, audit logs, and 16 in-app notification types.
+- **SEO & Social Sharing**: Dynamic sitemaps, `robots.txt`, JSON-LD structured data, and retina 4:5 Pro share cards.
 
 ## 🛠 Tech Stack
 
 ### Backend (API)
 
-- **Framework**: [NestJS](https://nestjs.com/)
-- **Database**: [PostgreSQL](https://www.postgresql.org/)
-- **ORM**: [Prisma](https://www.prisma.io/)
+- **Framework**: [NestJS](https://nestjs.com/) (v11)
+- **Database & ORM**: [PostgreSQL](https://www.postgresql.org/) + [Prisma](https://www.prisma.io/) (v7)
+- **AI**: Google Gemini API powering **Verndly AI**
 - **Media Storage**: [Cloudinary](https://cloudinary.com/) (Images & Videos)
-- **Email**: [Resend](https://resend.com/)
-- **Caching**: Redis
+- **Email & Automations**: [Resend](https://resend.com/) & [Loops.so](https://loops.so/)
+- **SMS / 2FA**: Arkesel
+- **Caching**: Redis (with in-memory fallback)
 - **Payments**: [Paystack](https://paystack.com/)
+- **Monitoring**: [Sentry](https://sentry.io/)
 
-### Frontend (Web)
+### Frontend (Web & Admin)
 
 - **Framework**: [Next.js 16+](https://nextjs.org/) (App Router)
 - **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
 - **Animations**: [Framer Motion](https://www.framer.com/motion/)
 - **State Management**: [Zustand](https://github.com/pmndrs/zustand)
-- **UI Components**: [Lucide React](https://lucide.dev/)
+- **UI & Feedback**: [Lucide React](https://lucide.dev/), `sonner`, unified `<Alert />`
 
 ## 🚦 Getting Started
 
@@ -65,60 +70,59 @@ The project is structured as a monorepo (powered by Turborepo and pnpm workspace
 - pnpm (v9+)
 - PostgreSQL instance
 - Redis instance (optional, falls back to in-memory)
-- Paystack Account
+- Paystack, Cloudinary, Resend, and Gemini API credentials
 
 ### Installation
 
-1.  **Clone the repository**:
+1. **Clone the repository**:
 
-    ```bash
-    git clone https://github.com/alikamatu/vendly.git
-    cd vendly
-    ```
+   ```bash
+   git clone https://github.com/alikamatu/vendly.git
+   cd vendly
+   ```
 
-2.  **Install dependencies**:
-    From the root of the monorepo, install all dependencies:
+2. **Install dependencies**:
 
-    ```bash
-    pnpm install
-    ```
+   ```bash
+   pnpm install
+   ```
 
-3.  **Environment Setup**:
-    Copy the `.env.example` to `.env` in both `apps/api` and `apps/web` (or `.env.local` for web), and fill in your credentials.
+3. **Environment Setup**:
+   Copy `.env.example` to `.env` in `apps/api` and `.env.local` in `apps/web`, then fill in your credentials.
 
-    ```bash
-    cp apps/api/.env.example apps/api/.env
-    cp apps/web/.env.example apps/web/.env.local
-    ```
+   ```bash
+   cp apps/api/.env.example apps/api/.env
+   cp apps/web/.env.example apps/web/.env.local
+   ```
 
-4.  **Database Migration & Seeding** (Run from root):
+4. **Database Migration & Seeding** (Run from root):
 
-    ```bash
-    pnpm --filter @vendly/api exec prisma generate
-    pnpm --filter @vendly/api exec prisma migrate dev
-    pnpm --filter @vendly/api run db:seed
-    ```
+   ```bash
+   pnpm --filter @vendly/api exec prisma generate
+   pnpm --filter @vendly/api exec prisma migrate dev
+   pnpm --filter @vendly/api run db:seed
+   ```
 
-5.  **Running Locally**:
-    Start the development servers for all apps using Turborepo:
+5. **Running Locally**:
+   Start all development servers using Turborepo:
 
-    ```bash
-    pnpm dev
-    ```
+   ```bash
+   pnpm dev
+   ```
 
-    - API: runs on port 1000 (`nest start --watch`)
-    - Web: runs on port 3000 (`next dev`)
-    - Admin: runs on port 3002 (`next dev --port 3002`)
-    - Mobile: Expo dev server (`expo start`)
+   - API: runs on port 1000 (`nest start --watch`)
+   - Web: runs on port 3000 (`next dev`)
+   - Admin: runs on port 3002 (`next dev --port 3002`)
+   - Mobile: Expo dev server (`expo start`)
 
 ## 📖 Documentation
 
-Detailed documentation for each component can be found in their respective directories:
-
+- [Architecture Deep Dive](ARCHITECTURE.md)
 - [API Reference](API_REFERENCE.md)
 - [API Documentation](apps/api/README.md)
 - [Web Storefront Documentation](apps/web/README.md)
-- [Architecture Deep Dive](ARCHITECTURE.md)
+- [Payment Implementation](PAYMENT_IMPLEMENTATION.md)
+- [Loops Integration](docs/LOOPS_INTEGRATION.md)
 - [Contribution Guidelines](CONTRIBUTING.md)
 - [AWS Setup Guide](AWS_SETUP.md)
 

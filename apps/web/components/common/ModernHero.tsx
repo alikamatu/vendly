@@ -5,6 +5,8 @@ import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import Button from '../ui/Button';
 import { useAuth } from '@/lib/contexts/auth-context';
+import VerndlyAiIcon from '@/components/ai/VerndlyAiIcon';
+import { openVerndlyAi } from '@/lib/ai/open-verndly-ai';
 import Container from './Container';
 
 export default function ModernHero() {
@@ -47,7 +49,7 @@ export default function ModernHero() {
                 </p>
               </div>
 
-              <div className="flex flex-col justify-center gap-3 pt-1 sm:flex-row lg:justify-start">
+              <div className="flex flex-col flex-wrap justify-center gap-3 pt-1 sm:flex-row lg:justify-start">
                 <Link href="/sell">
                   <Button
                     variant="primary"
@@ -67,6 +69,16 @@ export default function ModernHero() {
                     Browse market
                   </Button>
                 </Link>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="lg"
+                  onClick={() => openVerndlyAi()}
+                  className="w-full gap-2 rounded-xl border-none bg-white text-black hover:bg-white/90 sm:w-auto"
+                >
+                  <VerndlyAiIcon size={18} />
+                  <span>Ask Verndly AI</span>
+                </Button>
               </div>
             </div>
           </div>

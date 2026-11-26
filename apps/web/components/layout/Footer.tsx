@@ -27,14 +27,18 @@ import { SUPPORT_CONTACT } from '@/lib/contact';
 import { COVERAGE_COPY } from '@/lib/copy/coverage';
 import { ESCROW_AND_FEE_COPY } from '@/lib/copy/escrow-and-fees';
 import Spinner from '@/components/ui/Spinner';
+import VerndlyAiIcon from '@/components/ai/VerndlyAiIcon';
+import { openVerndlyAi } from '@/lib/ai/open-verndly-ai';
 
 interface FooterLink {
   label: string;
   href: string;
   external?: boolean;
+  onClick?: () => void;
 }
 
 const SHOP_LINKS: FooterLink[] = [
+  { label: 'Ask Verndly AI', href: '#verndly-ai', onClick: () => openVerndlyAi() },
   { label: 'All Products', href: '/products' },
   { label: 'Categories', href: '/categories' },
   { label: 'Verified Stores', href: '/stores' },
@@ -151,6 +155,15 @@ export default function Footer() {
               <p className="text-muted-foreground max-w-md text-xs leading-relaxed">
                 {COVERAGE_COPY.footerBrandSummary}
               </p>
+              <button
+                type="button"
+                onClick={() => openVerndlyAi()}
+                className="bg-surface text-foreground hover:bg-foreground hover:text-background inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-xs font-semibold transition-colors"
+              >
+                <VerndlyAiIcon size={17} />
+                <span>Ask Verndly AI</span>
+                <ArrowUpRight className="h-3.5 w-3.5 opacity-70" />
+              </button>
             </div>
 
             <div className="border-border/70 bg-surface/50 space-y-4 rounded-2xl border p-5">
@@ -326,13 +339,24 @@ function LinkColumn({ title, links }: { title: string; links: FooterLink[] }) {
       <ul className="space-y-2.5">
         {links.map((link) => (
           <li key={link.href + link.label}>
-            <Link
-              href={link.href}
-              className="text-muted-foreground hover:text-primary inline-flex items-center gap-1 text-xs transition-colors"
-            >
-              <span>{link.label}</span>
-              {link.external && <ArrowUpRight className="h-3 w-3 opacity-60" />}
-            </Link>
+            {link.onClick ? (
+              <button
+                type="button"
+                onClick={link.onClick}
+                className="text-muted-foreground hover:text-primary inline-flex cursor-pointer items-center gap-1.5 text-xs transition-colors"
+              >
+                <VerndlyAiIcon size={14} animated={false} />
+                <span>{link.label}</span>
+              </button>
+            ) : (
+              <Link
+                href={link.href}
+                className="text-muted-foreground hover:text-primary inline-flex items-center gap-1 text-xs transition-colors"
+              >
+                <span>{link.label}</span>
+                {link.external && <ArrowUpRight className="h-3 w-3 opacity-60" />}
+              </Link>
+            )}
           </li>
         ))}
       </ul>

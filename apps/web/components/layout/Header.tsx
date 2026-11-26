@@ -22,6 +22,8 @@ import Container from '../common/Container';
 import GlobalSearch from './GlobalSearch';
 import UserMenu from './UserMenu';
 import NotificationBell from './NotificationBell';
+import VerndlyAiIcon from '@/components/ai/VerndlyAiIcon';
+import { openVerndlyAi } from '@/lib/ai/open-verndly-ai';
 import { useTheme } from '../../lib/contexts/theme';
 import { useAuth } from '../../lib/contexts/auth-context';
 import { useCart } from '@/lib/contexts/cart-context';
@@ -145,6 +147,17 @@ export default function Header() {
 
             {/* Right: Uncluttered Utilities & Auth */}
             <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
+              {/* Ask Verndly AI Entry */}
+              <button
+                type="button"
+                onClick={() => openVerndlyAi()}
+                aria-label="Ask Verndly AI"
+                className="bg-surface text-foreground hover:bg-foreground/[0.08] inline-flex h-9 items-center gap-1.5 rounded-xl px-2.5 text-xs font-semibold transition-colors sm:rounded-full sm:px-3"
+              >
+                <VerndlyAiIcon size={18} />
+                <span className="hidden md:inline">Ask Verndly</span>
+              </button>
+
               {/* Search: Pill on xl+, clean icon button on mobile/tablet/lg so bar never cramps */}
               <button
                 type="button"
@@ -245,18 +258,35 @@ export default function Header() {
               className="bg-background overflow-hidden lg:hidden"
             >
               <Container className="space-y-4 pb-5 pt-2">
-                {/* Mobile Search Shortcut */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMenuOpenPath(null);
-                    setIsSearchOpen(true);
-                  }}
-                  className="bg-surface text-muted hover:text-foreground flex w-full items-center gap-2.5 rounded-2xl px-4 py-3 text-left text-xs transition-colors"
-                >
-                  <Search className="h-4 w-4 shrink-0" />
-                  <span>Search products, stores, brands…</span>
-                </button>
+                {/* Mobile Search & Verndly AI Shortcuts */}
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpenPath(null);
+                      openVerndlyAi();
+                    }}
+                    className="bg-foreground text-background flex w-full items-center justify-between gap-2.5 rounded-2xl px-4 py-3 text-left text-xs font-semibold transition-opacity hover:opacity-90"
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <VerndlyAiIcon size={18} />
+                      <span>Ask Verndly AI</span>
+                    </span>
+                    <span className="text-[10px] opacity-75">Shop with AI</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpenPath(null);
+                      setIsSearchOpen(true);
+                    }}
+                    className="bg-surface text-muted hover:text-foreground flex w-full items-center gap-2.5 rounded-2xl px-4 py-3 text-left text-xs transition-colors"
+                  >
+                    <Search className="h-4 w-4 shrink-0" />
+                    <span>Search products, stores, brands…</span>
+                  </button>
+                </div>
 
                 {/* Mobile Navigation Grid */}
                 <nav aria-label="Mobile navigation" className="grid grid-cols-2 gap-2">
