@@ -4,7 +4,7 @@
  */
 export const ESCROW_AND_FEE_COPY = {
   escrowTrustBarDesc:
-    'Payments held in Paystack escrow until delivery and the 7-day inspection window',
+    'Payments held in Paystack escrow until delivery and the 3-day inspection window',
   feeSettlementDisclosure:
     "The 4% includes Paystack's 1.95% collection fee. Paystack payout transfer fees (currently GHS 1 to MoMo, GHS 8 to bank) are charged on settlement.",
 } as const;

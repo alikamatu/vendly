@@ -16,6 +16,7 @@ import {
   Play,
   Ruler,
   Zap,
+  Flag,
 } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation';
 import { productApi } from '@/lib/api/product';
@@ -38,6 +39,7 @@ import VariantPicker, {
 } from '@/components/product-detail/VariantPicker';
 import QuickCheckoutModal from '@/components/product-detail/QuickCheckoutModal';
 import ShareProductModal from '@/components/product-detail/ShareProductModal';
+import ReportModal from '@/components/report/ReportModal';
 import { isProductTrending } from '@/lib/product-badges';
 import { getProductPath } from '@/lib/product-slug';
 import { toast } from 'sonner';
@@ -69,6 +71,7 @@ export default function ProductDetailClient({
   const [selectedVariantAttrs, setSelectedVariantAttrs] = useState<Record<string, string>>({});
   const [isQuickCheckoutOpen, setIsQuickCheckoutOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -759,6 +762,19 @@ export default function ProductDetailClient({
               </Button>
             </motion.div>
           )}
+
+          {!isOwner && (
+            <div className="flex items-center justify-end pt-1">
+              <button
+                type="button"
+                onClick={() => setIsReportModalOpen(true)}
+                className="text-muted hover:text-foreground inline-flex items-center gap-1.5 text-[11px] font-medium transition-colors"
+              >
+                <Flag className="h-3.5 w-3.5" />
+                Report this listing
+              </button>
+            </div>
+          )}
         </div>
       </main>
 
@@ -798,6 +814,17 @@ export default function ProductDetailClient({
           isOpen={isShareModalOpen}
           onClose={() => setIsShareModalOpen(false)}
           product={product}
+        />
+      )}
+
+      {/* Report Product Modal */}
+      {product && !isOwner && (
+        <ReportModal
+          isOpen={isReportModalOpen}
+          onClose={() => setIsReportModalOpen(false)}
+          targetType="PRODUCT"
+          targetId={String(product.id)}
+          targetName={product.title ?? 'Product listing'}
         />
       )}
 

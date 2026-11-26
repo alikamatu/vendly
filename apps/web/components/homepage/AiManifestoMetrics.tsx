@@ -16,7 +16,7 @@ const MANIFESTO_STATS = [
     detail: 'Upload raw photos, paste a store URL, or drop WhatsApp screenshots.',
   },
   {
-    stat: '7 Days',
+    stat: '3 Days',
     label: 'Paystack escrow window',
     detail: 'Mobile Money & card funds stay protected until delivery & inspection.',
   },
@@ -46,7 +46,7 @@ export default function AiManifestoMetrics() {
         <h2 className="text-3xl font-semibold leading-[1.06] tracking-[-0.035em] sm:text-5xl md:text-6xl">
           No endless DMs. No fake MoMo alerts. No hours typing product descriptions.{' '}
           <span className="text-muted font-normal">
-            Verndly pairs conversational intelligence with 7-day Paystack escrow so Ghanaian
+            Verndly pairs conversational intelligence with 3-day Paystack escrow so Ghanaian
             commerce moves at the speed of trust.
           </span>
         </h2>

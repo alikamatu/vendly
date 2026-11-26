@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 /**
@@ -108,45 +112,44 @@ export class AnalyticsService {
 
     // Aggregations are all expressed as Prisma calls so we don't hand-write
     // SQL — slower in absolute terms but safe across Postgres/Supabase.
-    const [
-      productCount,
-      viewsAgg,
-      currentOrderItems,
-      previousOrderItems,
-    ] = await Promise.all([
-      this.prisma.product.count({ where: { seller_id: sellerId } }),
-      this.prisma.product.aggregate({
-        where: { seller_id: sellerId },
-        _sum: { views_count: true },
-      }),
-      this.prisma.orderItem.findMany({
-        where: {
-          product: { seller_id: sellerId },
-          order: {
-            ...paidWhere(),
-            created_at: { gte: from },
+    const [productCount, viewsAgg, currentOrderItems, previousOrderItems] =
+      await Promise.all([
+        this.prisma.product.count({ where: { seller_id: sellerId } }),
+        this.prisma.product.aggregate({
+          where: { seller_id: sellerId },
+          _sum: { views_count: true },
+        }),
+        this.prisma.orderItem.findMany({
+          where: {
+            product: { seller_id: sellerId },
+            order: {
+              ...paidWhere(),
+              created_at: { gte: from },
+            },
           },
-        },
-        select: {
-          quantity: true,
-          price: true,
-          order_id: true,
-          order: { select: { buyer_id: true, created_at: true } },
-        },
-      }),
-      this.prisma.orderItem.findMany({
-        where: {
-          product: { seller_id: sellerId },
-          order: {
-            ...paidWhere(),
-            created_at: { gte: prevFrom, lt: prevTo },
+          select: {
+            quantity: true,
+            price: true,
+            order_id: true,
+            order: { select: { buyer_id: true, created_at: true } },
           },
-        },
-        select: { quantity: true, price: true, order_id: true },
-      }),
-    ]);
+        }),
+        this.prisma.orderItem.findMany({
+          where: {
+            product: { seller_id: sellerId },
+            order: {
+              ...paidWhere(),
+              created_at: { gte: prevFrom, lt: prevTo },
+            },
+          },
+          select: { quantity: true, price: true, order_id: true },
+        }),
+      ]);
 
-    type ItemLike = { quantity: number; price: { toString(): string } | number };
+    type ItemLike = {
+      quantity: number;
+      price: { toString(): string } | number;
+    };
     const revenue = (items: ItemLike[]) =>
       items.reduce((acc, it) => acc + Number(it.price) * it.quantity, 0);
     const unitsSold = (items: ItemLike[]) =>
@@ -156,8 +159,10 @@ export class AnalyticsService {
     const previousRevenue = revenue(previousOrderItems);
     const currentUnits = unitsSold(currentOrderItems);
     const previousUnits = unitsSold(previousOrderItems);
-    const currentOrders = new Set(currentOrderItems.map((i) => i.order_id)).size;
-    const previousOrders = new Set(previousOrderItems.map((i) => i.order_id)).size;
+    const currentOrders = new Set(currentOrderItems.map((i) => i.order_id))
+      .size;
+    const previousOrders = new Set(previousOrderItems.map((i) => i.order_id))
+      .size;
     const currentBuyers = new Set(
       currentOrderItems.map((i) => i.order.buyer_id),
     ).size;
@@ -175,9 +180,18 @@ export class AnalyticsService {
       range,
       from: from.toISOString(),
       kpis: {
-        revenue: { value: currentRevenue, deltaPct: pctDelta(currentRevenue, previousRevenue) },
-        orders: { value: currentOrders, deltaPct: pctDelta(currentOrders, previousOrders) },
-        units: { value: currentUnits, deltaPct: pctDelta(currentUnits, previousUnits) },
+        revenue: {
+          value: currentRevenue,
+          deltaPct: pctDelta(currentRevenue, previousRevenue),
+        },
+        orders: {
+          value: currentOrders,
+          deltaPct: pctDelta(currentOrders, previousOrders),
+        },
+        units: {
+          value: currentUnits,
+          deltaPct: pctDelta(currentUnits, previousUnits),
+        },
         averageOrderValue: { value: aov },
         uniqueBuyers: { value: currentBuyers },
         totalProducts: { value: productCount },
@@ -290,6 +304,7 @@ export class AnalyticsService {
 
     const agg = new Map<string, { units: number; revenue: number }>();
     for (const it of items) {
+      if (!it.product_id) continue;
       const cur = agg.get(it.product_id) || { units: 0, revenue: 0 };
       cur.units += it.quantity;
       cur.revenue += Number(it.price) * it.quantity;

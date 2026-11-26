@@ -14,11 +14,17 @@ import {
   Delete,
   UseInterceptors,
   UploadedFiles,
+  Headers,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { AuthService } from './auth.service';
 import { OAuthService } from './oauth.service';
+import {
+  AccountLifecycleService,
+  type LifecycleActionDto,
+} from './account-lifecycle.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -35,6 +41,7 @@ export class AuthController {
   constructor(
     private authService: AuthService,
     private oauthService: OAuthService,
+    private lifecycleService: AccountLifecycleService,
   ) {}
 
   @Post('register')
@@ -46,7 +53,10 @@ export class AuthController {
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   async login(@Body() dto: LoginDto, @Req() req: any) {
-    return this.authService.login(dto, req?.ip || req?.headers?.['x-forwarded-for'] || 'unknown');
+    return this.authService.login(
+      dto,
+      req?.ip || req?.headers?.['x-forwarded-for'] || 'unknown',
+    );
   }
 
   @Get('me')
@@ -82,7 +92,10 @@ export class AuthController {
   // ───────────────── OAuth (Google) ─────────────────
 
   @Get('oauth/google/start')
-  startGoogleOAuth(@Query('next') next: string | undefined, @Res() res: Response) {
+  startGoogleOAuth(
+    @Query('next') next: string | undefined,
+    @Res() res: Response,
+  ) {
     const { url } = this.oauthService.getAuthorizationUrl({ next });
     res.redirect(url);
   }
@@ -174,17 +187,69 @@ export class AuthController {
     return this.authService.exportData(req.user.id);
   }
 
-  @Delete('account')
+  @Get('account/lifecycle-status')
+  @UseGuards(JwtAuthGuard)
+  async getAccountLifecycleStatus(@Req() req) {
+    return this.lifecycleService.getLifecycleStatus(req.user.id);
+  }
+
+  @Post('account/disable')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
-  async deleteAccount(@Req() req) {
-    // Optionally we could invalidate the token here as well
+  async disableAccount(@Req() req, @Body() dto: LifecycleActionDto) {
+    const result = await this.lifecycleService.disableAccount(req.user.id, dto);
     const authHeader = req.headers.authorization;
     const token = authHeader?.split(' ')[1];
     if (token) {
       await this.authService.logout(token);
     }
-    return this.authService.deleteAccount(req.user.id);
+    return result;
+  }
+
+  @Post('account/reactivate')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async reactivateAccount(@Req() req) {
+    return this.lifecycleService.reactivateAccount(req.user.id);
+  }
+
+  @Post('account/cancel-deletion')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async cancelScheduledDeletion(@Req() req) {
+    return this.lifecycleService.cancelScheduledDeletion(req.user.id);
+  }
+
+  @Post('account/delete')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async deleteAccountPost(@Req() req, @Body() dto?: LifecycleActionDto) {
+    const result = await this.lifecycleService.requestAccountDeletion(
+      req.user.id,
+      dto,
+    );
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.split(' ')[1];
+    if (token) {
+      await this.authService.logout(token);
+    }
+    return result;
+  }
+
+  @Delete('account')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async deleteAccount(@Req() req, @Body() dto?: LifecycleActionDto) {
+    const result = await this.lifecycleService.requestAccountDeletion(
+      req.user.id,
+      dto,
+    );
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.split(' ')[1];
+    if (token) {
+      await this.authService.logout(token);
+    }
+    return result;
   }
 
   // ───────────────── 2FA ─────────────────
@@ -214,7 +279,8 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async twoFactorDisable(
     @Req() req,
-    @Body() body: { password: string; totp_code?: string; backup_code?: string },
+    @Body()
+    body: { password: string; totp_code?: string; backup_code?: string },
   ) {
     return this.authService.disable2fa(req.user.id, body);
   }
@@ -249,9 +315,32 @@ export class AuthController {
   @Post('2fa/sms/resend')
   @Throttle({ default: { limit: 3, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
-  async twoFactorSmsResend(
-    @Body() body: { email: string; password: string },
-  ) {
+  async twoFactorSmsResend(@Body() body: { email: string; password: string }) {
     return this.authService.resendSmsLoginCode(body.email, body.password);
+  }
+}
+
+@Controller('cron')
+export class AccountLifecycleCronController {
+  constructor(
+    private readonly lifecycleService: AccountLifecycleService,
+    private readonly configService: ConfigService,
+  ) {}
+
+  @Post('account-deletions/process')
+  @HttpCode(HttpStatus.OK)
+  async processScheduledDeletions(
+    @Headers('x-cron-token') token: string | undefined,
+  ) {
+    const expected = this.configService.get<string>('CRON_SECRET');
+    if (!expected) {
+      throw new UnauthorizedException(
+        'CRON_SECRET is not configured on this environment',
+      );
+    }
+    if (!token || token !== expected) {
+      throw new UnauthorizedException('Invalid cron token');
+    }
+    return this.lifecycleService.processScheduledDeletions();
   }
 }

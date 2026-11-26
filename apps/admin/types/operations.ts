@@ -12,6 +12,9 @@ export interface VendlyUser {
   role: UserRole;
   is_verified: boolean;
   is_suspended: boolean;
+  disabled_at?: string | null;
+  deletion_requested_at?: string | null;
+  deletion_scheduled_for?: string | null;
   warnings: number;
   created_at: string;
   updated_at?: string;
@@ -192,7 +195,7 @@ export interface CreateCategoryInput {
   fields?: CategoryField[];
 }
 
-export interface UpdateCategoryInput extends Partial<CreateCategoryInput> {}
+export type UpdateCategoryInput = Partial<CreateCategoryInput>;
 
 export interface Brand {
   id: string;
@@ -215,7 +218,7 @@ export interface CreateBrandInput {
   image_url?: string;
 }
 
-export interface UpdateBrandInput extends Partial<CreateBrandInput> {}
+export type UpdateBrandInput = Partial<CreateBrandInput>;
 
 export interface NewsletterSubscriber {
   id: string;
@@ -426,12 +429,116 @@ export interface GlobalOverviewStats {
   pendingApprovalsCount?: number;
   pendingReturnsCount?: number;
   flaggedReviewsCount?: number;
+  openReportsCount?: number;
   users?: {
     total?: number;
     user?: number;
     seller?: number;
     admin?: number;
   };
+}
+
+export type ReportTargetType = 'PRODUCT' | 'SELLER';
+
+export type ReportReason =
+  | 'COUNTERFEIT'
+  | 'MISLEADING'
+  | 'PROHIBITED_ITEM'
+  | 'SCAM_FRAUD'
+  | 'HARASSMENT'
+  | 'SPAM'
+  | 'OFFENSIVE_CONTENT'
+  | 'INACCURATE_PRICING'
+  | 'OTHER';
+
+export type ReportStatus = 'OPEN' | 'UNDER_REVIEW' | 'RESOLVED' | 'DISMISSED';
+
+export type ReportResolutionAction =
+  | 'NONE'
+  | 'WARNING_ISSUED'
+  | 'PRODUCT_REJECTED'
+  | 'PRODUCT_ARCHIVED'
+  | 'SELLER_SUSPENDED'
+  | 'DISMISSED';
+
+export interface AdminReport {
+  id: string;
+  reporter_id: string;
+  target_type: ReportTargetType;
+  product_id?: string | null;
+  seller_id?: string | null;
+  reason: ReportReason;
+  details?: string | null;
+  evidence_urls: string[];
+  status: ReportStatus;
+  resolution_action?: ReportResolutionAction | null;
+  admin_notes?: string | null;
+  reviewed_by?: string | null;
+  reviewed_at?: string | null;
+  created_at: string;
+  updated_at: string;
+  reporter?: {
+    id: string;
+    full_name: string;
+    email: string;
+    role: UserRole;
+  } | null;
+  reviewer?: {
+    id: string;
+    full_name: string;
+    email: string;
+  } | null;
+  product?: {
+    id: string;
+    title: string;
+    price: string | number;
+    currency: string;
+    status: string;
+    category: string;
+    image_urls: string[];
+    seller_id: string;
+    seller?: {
+      id: string;
+      store_name: string;
+      store_link: string;
+      user_id: string;
+      user?: {
+        id: string;
+        full_name: string;
+        email: string;
+        is_suspended: boolean;
+        warnings: number;
+      } | null;
+    } | null;
+  } | null;
+  seller?: {
+    id: string;
+    store_name: string;
+    store_link: string;
+    logo_url?: string | null;
+    location?: string | null;
+    user_id: string;
+    user?: {
+      id: string;
+      full_name: string;
+      email: string;
+      is_suspended: boolean;
+      warnings: number;
+    } | null;
+  } | null;
+  related_counts?: {
+    product_reports: number;
+    seller_reports: number;
+  };
+}
+
+export interface ReportStats {
+  open: number;
+  under_review: number;
+  resolved: number;
+  dismissed: number;
+  active_product_reports: number;
+  active_seller_reports: number;
 }
 
 export interface PlatformSettings {

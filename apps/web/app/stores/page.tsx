@@ -9,7 +9,7 @@ export const revalidate = 300;
 export const metadata = buildMetadata({
   title: 'Discover independent stores',
   description:
-    'Explore verified independent stores in Accra on Verndly Ghana. Browse active catalogs, dispatch timelines, and shop with 7-day Paystack escrow.',
+    'Explore verified independent stores in Accra on Verndly Ghana. Browse active catalogs, dispatch timelines, and shop with 3-day Paystack escrow.',
   path: '/stores',
   keywords: ['independent stores ghana', 'Ghana sellers', 'verified small businesses', 'vendors'],
 });

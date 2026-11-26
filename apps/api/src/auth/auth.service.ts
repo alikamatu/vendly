@@ -438,6 +438,13 @@ export class AuthService {
         is_verified: user.is_verified,
         approval_status: latestApproval?.status || null,
         has_verification_doc: !!user.verification_doc,
+        disabled_at: user.disabled_at ? user.disabled_at.toISOString() : null,
+        deletion_requested_at: user.deletion_requested_at
+          ? user.deletion_requested_at.toISOString()
+          : null,
+        deletion_scheduled_for: user.deletion_scheduled_for
+          ? user.deletion_scheduled_for.toISOString()
+          : null,
         seller_profile: user.seller_profile
           ? {
               id: user.seller_profile.id.toString(),
@@ -492,6 +499,14 @@ export class AuthService {
       approval_status: latestApproval?.status || null,
       is_pro: proActive,
       pro_expires_at: user.pro_expires_at,
+      has_password: Boolean(user.password_hash),
+      disabled_at: user.disabled_at ? user.disabled_at.toISOString() : null,
+      deletion_requested_at: user.deletion_requested_at
+        ? user.deletion_requested_at.toISOString()
+        : null,
+      deletion_scheduled_for: user.deletion_scheduled_for
+        ? user.deletion_scheduled_for.toISOString()
+        : null,
       seller_profile: user.seller_profile
         ? {
             id: user.seller_profile.id.toString(),
@@ -700,6 +715,13 @@ export class AuthService {
         is_verified: true,
         approval_status: latestApproval?.status || null,
         has_verification_doc: !!user.verification_doc,
+        disabled_at: user.disabled_at ? user.disabled_at.toISOString() : null,
+        deletion_requested_at: user.deletion_requested_at
+          ? user.deletion_requested_at.toISOString()
+          : null,
+        deletion_scheduled_for: user.deletion_scheduled_for
+          ? user.deletion_scheduled_for.toISOString()
+          : null,
         seller_profile: user.seller_profile
           ? {
               id: user.seller_profile.id.toString(),

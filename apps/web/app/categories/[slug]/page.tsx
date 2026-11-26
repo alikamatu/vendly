@@ -40,8 +40,9 @@ export async function generateMetadata({
     title: profile?.metaTitle || `${label} from Verified Stores in Ghana`,
     description:
       profile?.metaDescription ||
-      `Shop verified ${label} products from trusted independent Ghanaian businesses on Verndly. Protected by 7-day Paystack escrow and tracked nationwide delivery.`,
+      `Shop verified ${label} products from trusted independent Ghanaian businesses on Verndly. Protected by 3-day Paystack escrow and tracked nationwide delivery.`,
     path: `/categories/${slug}`,
+    noindex: !profile,
     keywords: profile?.keywords || [
       `${label.toLowerCase()} ghana`,
       `buy ${label.toLowerCase()} online ghana`,
@@ -74,10 +75,10 @@ export default async function CategoryDetailPage({
   const subheadline =
     profile?.subheadline ||
     matchedApiCat?.description ||
-    `Discover authentic ${displayName.toLowerCase()} listings from identity-verified Ghanaian merchants — every order protected by 7-day Paystack escrow.`;
+    `Discover authentic ${displayName.toLowerCase()} listings from identity-verified Ghanaian merchants — every order protected by 3-day Paystack escrow.`;
 
   const editorialCopy = profile?.editorialCopy || [
-    `Every ${displayName.toLowerCase()} merchant on Verndly passes manual verification before listing products. When you pay with MTN Mobile Money, Telecel Cash, AirtelTigo Money, or card, Paystack holds your funds safely in escrow until delivery is confirmed and your 7-day inspection window passes.`,
+    `Every ${displayName.toLowerCase()} merchant on Verndly passes manual verification before listing products. When you pay with MTN Mobile Money, Telecel Cash, AirtelTigo Money, or card, Paystack holds your funds safely in escrow until delivery is confirmed and your 3-day inspection window passes.`,
     `Explore verified storefronts based in Greater Accra and across Ghana with seller-configured delivery rates, store pickup where offered, and zero hidden rider fees.`,
   ];
 
@@ -87,9 +88,9 @@ export default async function CategoryDetailPage({
       detail: 'Every seller passes identity and storefront checks before going live.',
     },
     {
-      title: '7-day Paystack escrow',
+      title: '3-day Paystack escrow',
       detail:
-        'Inspect your order for 7 calendar days after delivery with direct MoMo/card refund protection.',
+        'Inspect your order for 3 calendar days after delivery with direct MoMo/card refund protection.',
     },
     {
       title: 'Nationwide delivery or free pickup',
@@ -102,7 +103,7 @@ export default async function CategoryDetailPage({
     {
       question: `Is it safe to buy ${displayName.toLowerCase()} online in Ghana on Verndly?`,
       answer:
-        'Yes. Every payment runs through Paystack custodial escrow and includes a 7-Day Buyer Protection Guarantee covering damaged, defective, wrong, or undelivered orders.',
+        'Yes. Every payment runs through Paystack custodial escrow and includes a 3-Day Buyer Protection Guarantee covering damaged, defective, wrong, or undelivered orders.',
     },
   ];
 
@@ -170,7 +171,7 @@ export default async function CategoryDetailPage({
               className="bg-surface text-foreground hover:bg-foreground/[0.06] inline-flex items-center gap-2 rounded-full px-6 py-3.5 text-xs font-medium transition-colors"
             >
               <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-              7-Day Escrow Guarantee
+              3-Day Escrow Guarantee
             </Link>
           </div>
         </header>

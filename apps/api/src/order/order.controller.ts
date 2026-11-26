@@ -8,7 +8,10 @@ import {
   Param,
   Query,
   Sse,
+  Headers,
+  UnauthorizedException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { OrderService } from './order.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -102,6 +105,11 @@ export class OrderController {
     return this.orderService.cancelOrderByBuyer(req.user.id, id, reason);
   }
 
+  @Post(':id/confirm-delivery')
+  async confirmDelivery(@Req() req: any, @Param('id') id: string) {
+    return this.orderService.confirmDeliveryByBuyer(req.user.id, id);
+  }
+
   @Post(':id/return')
   async createReturnRequest(
     @Req() req: any,
@@ -151,5 +159,29 @@ export class OrderController {
       id,
       note,
     );
+  }
+}
+
+@Controller('cron')
+export class OrderCronController {
+  constructor(
+    private readonly orderService: OrderService,
+    private readonly configService: ConfigService,
+  ) {}
+
+  @Post('escrow/release')
+  async runEscrowReleaseSweep(
+    @Headers('x-cron-token') token: string | undefined,
+  ) {
+    const expected = this.configService.get<string>('CRON_SECRET');
+    if (!expected) {
+      throw new UnauthorizedException(
+        'CRON_SECRET is not configured on this environment',
+      );
+    }
+    if (!token || token !== expected) {
+      throw new UnauthorizedException('Invalid cron token');
+    }
+    return this.orderService.sweepMaturedEscrowOrders();
   }
 }

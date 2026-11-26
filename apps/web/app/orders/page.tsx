@@ -348,8 +348,8 @@ export default function BuyerOrdersPage() {
                           key={item.id}
                           className="bg-surface/20 flex items-center gap-4 rounded-2xl border-0 p-3 shadow-none"
                         >
-                          <div className="bg-surface group relative h-16 w-16 shrink-0 overflow-hidden rounded-xl">
-                            {item.product.video_url ? (
+                          <div className="bg-surface group relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl">
+                            {item.product?.video_url ? (
                               <video
                                 src={item.product.video_url}
                                 autoPlay
@@ -358,35 +358,38 @@ export default function BuyerOrdersPage() {
                                 playsInline
                                 className="h-full w-full object-cover"
                               />
-                            ) : (
+                            ) : item.product?.image_urls?.[0] ? (
                               <img
                                 src={item.product.image_urls[0]}
                                 alt=""
                                 className="h-full w-full object-cover"
                               />
+                            ) : (
+                              <Package className="text-muted h-5 w-5" />
                             )}
                           </div>
                           <div className="min-w-0 flex-1">
                             <h4 className="truncate text-[11px] font-medium uppercase tracking-tight">
-                              {item.product.title}
+                              {item.product?.title || item.product_title || 'Removed product'}
                             </h4>
                             <div className="mt-1.5 flex flex-wrap items-center gap-3">
                               <p className="text-muted text-[10px] font-normal">
                                 Qty: {item.quantity} • GH₵
                                 {parseFloat(item.price).toLocaleString()}
                               </p>
-                              {['DELIVERED', 'COMPLETED', 'PAID', 'FULFILLED'].includes(
-                                order.status.toUpperCase(),
-                              ) && (
-                                <Link
-                                  href={`/product/${item.product.id}#reviews`}
-                                  className="inline-block"
-                                >
-                                  <span className="inline-flex h-6 cursor-pointer items-center rounded-md bg-amber-500/10 px-2 text-[9px] font-medium uppercase tracking-wider text-amber-600 transition-colors hover:bg-amber-500/20 dark:text-amber-400">
-                                    Review Product
-                                  </span>
-                                </Link>
-                              )}
+                              {item.product?.id &&
+                                ['DELIVERED', 'COMPLETED', 'PAID', 'FULFILLED'].includes(
+                                  order.status.toUpperCase(),
+                                ) && (
+                                  <Link
+                                    href={`/product/${item.product.id}#reviews`}
+                                    className="inline-block"
+                                  >
+                                    <span className="inline-flex h-6 cursor-pointer items-center rounded-md bg-amber-500/10 px-2 text-[9px] font-medium uppercase tracking-wider text-amber-600 transition-colors hover:bg-amber-500/20 dark:text-amber-400">
+                                      Review Product
+                                    </span>
+                                  </Link>
+                                )}
                             </div>
                           </div>
                           <div className="text-right">

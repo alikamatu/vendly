@@ -29,6 +29,7 @@ import { LoopsModule } from './loops/loops.module';
 import { EmailModule } from './email/email.module';
 import { EventsModule } from './events/events.module';
 import { AiModule } from './ai/ai.module';
+import { ReportModule } from './report/report.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { SentryModule } from '@sentry/nestjs/setup';
 import { APP_INTERCEPTOR } from '@nestjs/core';
@@ -95,6 +96,7 @@ import { ApiResponseInterceptor } from './common/interceptors/api-response.inter
     AnalyticsModule,
     EventsModule,
     AiModule,
+    ReportModule,
   ],
   controllers: [AppController],
   providers: [

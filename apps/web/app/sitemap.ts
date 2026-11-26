@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { SITE_URL } from '@/lib/seo';
 import { ALL_BLOG_POSTS } from '@/lib/content/blog-posts';
-import { slugifyCategory } from '@/lib/content/categories';
+import { CATEGORY_PROFILES, slugifyCategory } from '@/lib/content/categories';
 import { isPubliclyVisibleInStock } from '@/lib/product-visibility';
 import { getProductPath } from '@/lib/product-slug';
 
@@ -95,11 +95,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const inStockProducts = products.filter(isPubliclyVisibleInStock);
 
   // Dedicated Category Landing Pages (/categories/[slug]):
-  // Include only categories with >= 1 approved, in-stock listing (CT-02 / TX-01).
+  // Include only curated categories in CATEGORY_PROFILES with >= 1 approved, in-stock listing
+  // (excludes thin/uncurated buckets like /categories/general).
+  const curatedCategorySlugs = new Set(CATEGORY_PROFILES.map((c) => c.slug));
   const stockedCategorySlugs = new Set<string>();
   for (const p of inStockProducts) {
     if (p.category && p.category.trim()) {
-      stockedCategorySlugs.add(slugifyCategory(p.category));
+      const slug = slugifyCategory(p.category);
+      if (curatedCategorySlugs.has(slug)) {
+        stockedCategorySlugs.add(slug);
+      }
     }
   }
   const categoryEntries: MetadataRoute.Sitemap = Array.from(stockedCategorySlugs).map((slug) => ({

@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import Modal from "@/components/ui/Modal";
-import Button from "@/components/ui/Button";
-import { AlertCircle, CheckCircle2, RotateCcw } from "lucide-react";
-import { orderApi } from "@/lib/api/order";
-import { toast } from "sonner";
+import React, { useState } from 'react';
+import Modal from '@/components/ui/Modal';
+import Button from '@/components/ui/Button';
+import { AlertCircle, CheckCircle2, RotateCcw } from 'lucide-react';
+import { orderApi } from '@/lib/api/order';
+import { toast } from 'sonner';
 
 const RETURN_REASONS = [
-  { value: "DAMAGED", label: "Damaged on Arrival" },
-  { value: "WRONG_ITEM", label: "Wrong Item Sent" },
-  { value: "NOT_AS_DESCRIBED", label: "Not as Described" },
-  { value: "DEFECTIVE", label: "Defective / Not Working" },
-  { value: "OTHER", label: "Other" },
+  { value: 'DAMAGED', label: 'Damaged on Arrival' },
+  { value: 'WRONG_ITEM', label: 'Wrong Item Sent' },
+  { value: 'NOT_AS_DESCRIBED', label: 'Not as Described' },
+  { value: 'DEFECTIVE', label: 'Defective / Not Working' },
+  { value: 'OTHER', label: 'Other' },
 ] as const;
 
 interface ReturnRequestModalProps {
@@ -30,8 +30,8 @@ export default function ReturnRequestModal({
   token,
   onSuccess,
 }: ReturnRequestModalProps) {
-  const [reason, setReason] = useState("");
-  const [description, setDescription] = useState("");
+  const [reason, setReason] = useState('');
+  const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
@@ -46,10 +46,10 @@ export default function ReturnRequestModal({
         description: description.trim(),
       });
       setIsSuccess(true);
-      toast.success("Return request submitted successfully");
+      toast.success('Return request submitted successfully');
       onSuccess();
     } catch (err: any) {
-      toast.error(err.message || "Failed to submit return request");
+      toast.error(err.message || 'Failed to submit return request');
     } finally {
       setIsSubmitting(false);
     }
@@ -57,8 +57,8 @@ export default function ReturnRequestModal({
 
   const handleClose = () => {
     if (!isSubmitting) {
-      setReason("");
-      setDescription("");
+      setReason('');
+      setDescription('');
       setIsSuccess(false);
       onClose();
     }
@@ -67,22 +67,20 @@ export default function ReturnRequestModal({
   if (isSuccess) {
     return (
       <Modal isOpen={isOpen} onClose={handleClose} title="Return Requested">
-        <div className="py-8 text-center space-y-4">
-          <div className="mx-auto w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center">
-            <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+        <div className="space-y-4 py-8 text-center">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10">
+            <CheckCircle2 className="h-8 w-8 text-emerald-500" />
           </div>
           <div className="space-y-1">
-            <h3 className="text-sm font-medium uppercase tracking-tight">
-              Request Submitted
-            </h3>
-            <p className="text-xs text-muted font-normal leading-relaxed max-w-xs mx-auto">
-              The seller has been notified and has 48 hours to respond. You can
-              escalate to Verndly support if unresolved.
+            <h3 className="text-sm font-medium uppercase tracking-tight">Request Submitted</h3>
+            <p className="text-muted mx-auto max-w-xs text-xs font-normal leading-relaxed">
+              The seller has been notified and has 48 hours to respond. You can escalate to Verndly
+              support if unresolved.
             </p>
           </div>
           <Button
             onClick={handleClose}
-            className="rounded-xl px-8 text-[10px] font-medium uppercase tracking-wider h-10 mt-4"
+            className="mt-4 h-10 rounded-xl px-8 text-[10px] font-medium uppercase tracking-wider"
           >
             Done
           </Button>
@@ -96,16 +94,16 @@ export default function ReturnRequestModal({
       <div className="space-y-6">
         {/* Info banner */}
         <div className="flex items-start gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4">
-          <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
-          <p className="text-[10px] text-amber-600 dark:text-amber-400 font-normal leading-relaxed">
-            Returns must be requested within 7 days of order placement. The
-            seller will review your request and respond within 48 hours.
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+          <p className="text-[10px] font-normal leading-relaxed text-amber-600 dark:text-amber-400">
+            Returns must be requested within 3 days of delivery. The seller will review your request
+            and respond within 48 hours.
           </p>
         </div>
 
         {/* Reason selector */}
         <div className="space-y-2.5">
-          <label className="text-[10px] font-medium text-muted uppercase tracking-wider block">
+          <label className="text-muted block text-[10px] font-medium uppercase tracking-wider">
             Reason for Return
           </label>
           <div className="flex flex-wrap gap-2">
@@ -114,10 +112,11 @@ export default function ReturnRequestModal({
                 key={r.value}
                 type="button"
                 onClick={() => setReason(r.value)}
-                className={`px-3.5 py-2 rounded-xl text-[10px] font-medium uppercase tracking-wider border transition-all ${reason === r.value
-                    ? "bg-primary text-primary border-primary shadow-sm"
-                    : "bg-surface border-border/50 text-muted hover:text-foreground hover:border-border"
-                  }`}
+                className={`rounded-xl border px-3.5 py-2 text-[10px] font-medium uppercase tracking-wider transition-all ${
+                  reason === r.value
+                    ? 'bg-primary text-primary border-primary shadow-sm'
+                    : 'bg-surface border-border/50 text-muted hover:text-foreground hover:border-border'
+                }`}
               >
                 {r.label}
               </button>
@@ -127,7 +126,7 @@ export default function ReturnRequestModal({
 
         {/* Description */}
         <div className="space-y-2.5">
-          <label className="text-[10px] font-medium text-muted uppercase tracking-wider block">
+          <label className="text-muted block text-[10px] font-medium uppercase tracking-wider">
             Describe the Issue
           </label>
           <textarea
@@ -136,18 +135,17 @@ export default function ReturnRequestModal({
             placeholder="Please describe the issue in detail (minimum 20 characters)..."
             rows={4}
             maxLength={1000}
-            className="w-full rounded-xl border border-border bg-background p-3.5 text-xs leading-relaxed text-foreground resize-none outline-none focus:border-primary/50 transition-colors"
+            className="border-border bg-background text-foreground focus:border-primary/50 w-full resize-none rounded-xl border p-3.5 text-xs leading-relaxed outline-none transition-colors"
           />
           <div className="flex justify-between">
             <p
-              className={`text-[9px] font-normal uppercase tracking-wider ${description.trim().length >= 20
-                  ? "text-emerald-500"
-                  : "text-muted"
-                }`}
+              className={`text-[9px] font-normal uppercase tracking-wider ${
+                description.trim().length >= 20 ? 'text-emerald-500' : 'text-muted'
+              }`}
             >
               {description.trim().length} / 20 min
             </p>
-            <p className="text-[9px] font-normal text-muted uppercase tracking-wider">
+            <p className="text-muted text-[9px] font-normal uppercase tracking-wider">
               {description.length} / 1000
             </p>
           </div>
@@ -159,7 +157,7 @@ export default function ReturnRequestModal({
             variant="secondary"
             onClick={handleClose}
             disabled={isSubmitting}
-            className="flex-1 rounded-xl h-12 text-[10px] font-medium uppercase tracking-wider"
+            className="h-12 flex-1 rounded-xl text-[10px] font-medium uppercase tracking-wider"
           >
             Cancel
           </Button>
@@ -167,9 +165,9 @@ export default function ReturnRequestModal({
             onClick={handleSubmit}
             disabled={!canSubmit}
             isLoading={isSubmitting}
-            className="flex-1 rounded-xl h-12 text-[10px] font-medium uppercase tracking-wider gap-2"
+            className="h-12 flex-1 gap-2 rounded-xl text-[10px] font-medium uppercase tracking-wider"
           >
-            <RotateCcw className="w-3.5 h-3.5" />
+            <RotateCcw className="h-3.5 w-3.5" />
             Submit Request
           </Button>
         </div>

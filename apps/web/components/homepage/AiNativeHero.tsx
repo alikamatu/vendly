@@ -15,7 +15,7 @@ const LIVE_THOUGHTS = [
   'Finding verified sneakers under GH₵ 350 in Accra…',
   'Turning 12 raw product photos into a live store…',
   'Importing your website & WhatsApp catalog automatically…',
-  'Protecting Mobile Money orders in 7-day escrow…',
+  'Protecting Mobile Money orders in 3-day escrow…',
 ];
 
 const SHOP_PROMPTS = [

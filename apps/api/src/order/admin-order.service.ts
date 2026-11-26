@@ -236,7 +236,8 @@ export class AdminOrderService {
 
     // Notify buyer & sellers about the status change. Fire-and-forget.
     if (existing.status !== dto.status) {
-      if (dto.status === 'DELIVERED') {
+      // Admin marking COMPLETED immediately settles escrow; marking DELIVERED starts the 3-day inspection window.
+      if (dto.status === 'COMPLETED') {
         this.paymentsService
           .releaseEscrowForOrder(id)
           .catch((err) =>

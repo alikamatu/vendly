@@ -17,9 +17,6 @@ import {
   AlertCircle,
   ArrowUpRight,
   Globe,
-  Instagram,
-  Linkedin,
-  Twitter,
   Download,
 } from 'lucide-react';
 import { contactApi } from '@/lib/api/contact';
@@ -74,21 +71,6 @@ const SOCIALS = [
     label: 'WhatsApp',
     href: 'https://wa.me/233534065652?text=Hello%20Verndly%20Support',
     Icon: MessageSquare,
-  },
-  {
-    label: 'Instagram',
-    href: 'https://instagram.com/verndly',
-    Icon: Instagram,
-  },
-  {
-    label: 'X (Twitter)',
-    href: 'https://x.com/verndly',
-    Icon: Twitter,
-  },
-  {
-    label: 'LinkedIn',
-    href: 'https://linkedin.com/company/verndly',
-    Icon: Linkedin,
   },
 ];
 

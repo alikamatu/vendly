@@ -66,14 +66,14 @@ const STATUSES = [
   {
     value: 'DELIVERED',
     label: 'Delivered',
-    description: 'Handed over successfully to the customer',
+    description: 'Handed over to buyer — starts 3-day escrow window',
     icon: CheckCheck,
     color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20',
   },
   {
     value: 'COMPLETED',
     label: 'Completed',
-    description: 'Fulfilled and finalised',
+    description: 'Finalised after buyer confirmation or 3-day window',
     icon: CheckCheck,
     color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20',
   },

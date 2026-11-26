@@ -73,7 +73,7 @@ const SECTIONS = [
     Icon: ShieldCheck,
     description: 'Buyer protection and how we keep Verndly safe.',
     links: [
-      { label: '7-Day Buyer Protection', href: '/buyer-protection' },
+      { label: '3-Day Buyer Protection', href: '/buyer-protection' },
       { label: 'Shop safely & avoid MoMo scams', href: '/blog/how-to-shop-online-safely-in-ghana' },
       { label: 'Reporting an issue', href: '/contact' },
       { label: 'Terms & Privacy', href: '/terms' },

@@ -5,6 +5,7 @@ import {
   ForbiddenException,
   Logger,
 } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { Prisma } from '@prisma/client';
@@ -14,6 +15,8 @@ import { SmsClient } from '../auth/arkesel.client';
 import { EmailService } from '../email/email.service';
 import { buildOrderEmailPayloads } from '../email/order-email-payload';
 import { OrderEventsService } from '../events/order-events.service';
+
+export const DEFAULT_ESCROW_RELEASE_DAYS = 3;
 
 @Injectable()
 export class OrderService {
@@ -28,14 +31,48 @@ export class OrderService {
     private orderEvents: OrderEventsService,
   ) {}
 
+  async getEscrowReleaseDays(): Promise<number> {
+    try {
+      const setting = await this.prisma.platformSetting?.findUnique({
+        where: { key: 'escrow_release_days' },
+      });
+      const parsed = Number(setting?.value);
+      if (Number.isFinite(parsed) && parsed >= 1 && parsed <= 30) {
+        return Math.floor(parsed);
+      }
+    } catch {
+      // Fall back to default 3-day escrow window
+    }
+    return DEFAULT_ESCROW_RELEASE_DAYS;
+  }
+
   async createOrder(userId: string, dto: CreateOrderDto) {
     // 1. Get seller/store
     const seller = await this.prisma.sellerProfile.findUnique({
       where: { store_link: dto.storeLink },
+      include: {
+        user: {
+          select: {
+            is_suspended: true,
+            disabled_at: true,
+            deletion_scheduled_for: true,
+          },
+        },
+      },
     });
 
     if (!seller) {
       throw new NotFoundException('Store not found');
+    }
+
+    if (
+      (seller as any).user?.is_suspended ||
+      (seller as any).user?.disabled_at ||
+      (seller as any).user?.deletion_scheduled_for
+    ) {
+      throw new BadRequestException(
+        'This store is currently unavailable and not accepting new orders.',
+      );
     }
 
     if (seller.user_id === userId) {
@@ -167,6 +204,7 @@ export class OrderService {
 
       orderItemsData.push({
         product_id: product.id,
+        product_title: product.title,
         variant_id: variantId,
         quantity: item.quantity,
         price: unitPrice,
@@ -382,7 +420,7 @@ export class OrderService {
         ...i,
         id: i.id.toString(),
         order_id: i.order_id.toString(),
-        product_id: i.product_id.toString(),
+        product_id: i.product_id ? i.product_id.toString() : null,
         price: i.price.toString(),
       })),
       payment_info: o.transaction
@@ -461,7 +499,7 @@ export class OrderService {
         ...i,
         id: i.id.toString(),
         order_id: i.order_id.toString(),
-        product_id: i.product_id.toString(),
+        product_id: i.product_id ? i.product_id.toString() : null,
         price: i.price.toString(),
       })),
       return_request: (o as any).return_request,
@@ -532,7 +570,7 @@ export class OrderService {
         ...i,
         id: i.id.toString(),
         order_id: i.order_id.toString(),
-        product_id: i.product_id.toString(),
+        product_id: i.product_id ? i.product_id.toString() : null,
         price: i.price.toString(),
       })),
       return_request: order.return_request,
@@ -571,6 +609,12 @@ export class OrderService {
             },
           },
         },
+        transaction: {
+          include: {
+            payout: true,
+          },
+        },
+        return_request: true,
       },
     });
 
@@ -580,6 +624,30 @@ export class OrderService {
 
     if (order.items.length === 0) {
       throw new BadRequestException('Unauthorized access to this order');
+    }
+
+    const releaseDays = await this.getEscrowReleaseDays();
+    const isEscrowHeld =
+      order.transaction?.provider === 'PAYSTACK' &&
+      order.transaction?.status === 'SUCCESS' &&
+      !order.transaction?.payout;
+
+    if (status === 'COMPLETED' && isEscrowHeld) {
+      const hasOpenReturn =
+        order.return_request &&
+        !['REJECTED'].includes(order.return_request.status);
+      const matured =
+        order.status === 'DELIVERED' &&
+        order.updated_at &&
+        Date.now() - order.updated_at.getTime() >=
+          releaseDays * 24 * 60 * 60 * 1000 &&
+        !hasOpenReturn;
+
+      if (!matured) {
+        throw new BadRequestException(
+          `Paystack escrow orders complete automatically after the ${releaseDays}-day buyer inspection window, or immediately when the buyer confirms delivery.`,
+        );
+      }
     }
 
     const updatedOrder = await this.prisma.order.update({
@@ -592,9 +660,12 @@ export class OrderService {
     // In-app notification for buyer
     await this.notifications.create({
       userId: order.buyer_id,
-      type: 'ORDER_STATUS_CHANGED',
+      type: status === 'DELIVERED' ? 'ORDER_DELIVERED' : 'ORDER_STATUS_CHANGED',
       title: `Order ${orderNumber} is now ${status.replace(/_/g, ' ')}`,
-      body: `Your order status has been updated to ${status.replace(/_/g, ' ')}.`,
+      body:
+        status === 'DELIVERED'
+          ? `Your order has been marked delivered. Your ${releaseDays}-day Buyer Protection inspection window is now active — confirm receipt anytime or open a return if anything is wrong.`
+          : `Your order status has been updated to ${status.replace(/_/g, ' ')}.`,
       link: `/orders/${orderId}`,
       data: { orderId, status },
     });
@@ -617,7 +688,7 @@ export class OrderService {
       console.error(`Failed to send status email for order ${orderId}:`, err),
     );
 
-    if (status === 'DELIVERED') {
+    if (status === 'COMPLETED' && isEscrowHeld) {
       this.paymentsService
         .releaseEscrowForOrder(orderId)
         .catch((err) =>
@@ -626,9 +697,192 @@ export class OrderService {
     }
 
     return {
-      message: 'Order status updated successfully',
+      message:
+        status === 'DELIVERED' && isEscrowHeld
+          ? `Order marked delivered. Escrow payout will release automatically after the ${releaseDays}-day buyer inspection window or upon buyer confirmation.`
+          : 'Order status updated successfully',
       status: updatedOrder.status,
     };
+  }
+
+  async confirmDeliveryByBuyer(buyerId: string, orderId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        items: {
+          include: {
+            product: {
+              select: {
+                seller: {
+                  select: { id: true, user_id: true, store_name: true },
+                },
+              },
+            },
+          },
+        },
+        transaction: { include: { payout: true } },
+        return_request: true,
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    if (order.buyer_id !== buyerId) {
+      throw new BadRequestException('Unauthorized access to this order');
+    }
+
+    const upper = order.status.toUpperCase();
+    if (['CANCELLED', 'REFUNDED', 'AWAITING_PAYMENT'].includes(upper)) {
+      throw new BadRequestException(
+        `Cannot confirm delivery for an order with status ${order.status}`,
+      );
+    }
+
+    if (
+      order.return_request &&
+      ['PENDING', 'APPROVED', 'ESCALATED'].includes(order.return_request.status)
+    ) {
+      throw new BadRequestException(
+        'Resolve or close your active return request before confirming delivery',
+      );
+    }
+
+    const updatedOrder =
+      upper === 'COMPLETED'
+        ? order
+        : await this.prisma.order.update({
+            where: { id: orderId },
+            data: { status: 'COMPLETED' },
+          });
+
+    await this.paymentsService.releaseEscrowForOrder(orderId);
+
+    const orderNumber = `ORD-${orderId.slice(-6).toUpperCase()}`;
+    const sellerUserIds = Array.from(
+      new Set(
+        order.items
+          .map((i) => i.product?.seller?.user_id)
+          .filter((x): x is string => Boolean(x)),
+      ),
+    );
+
+    for (const sellerUserId of sellerUserIds) {
+      await this.notifications
+        .create({
+          userId: sellerUserId,
+          type: 'ORDER_STATUS_CHANGED',
+          title: `Buyer confirmed ${orderNumber}`,
+          body: `The buyer confirmed receipt of ${orderNumber}. Escrow funds have been released for payout.`,
+          link: `/dashboard/orders/${orderId}`,
+          data: { orderId, status: 'COMPLETED' },
+        })
+        .catch(() => {});
+    }
+
+    this.orderEvents.emit({
+      type: 'order.status_updated',
+      orderId,
+      orderNumber,
+      status: 'COMPLETED',
+      buyerId: order.buyer_id,
+      sellerUserIds,
+      total: order.total_amount.toString(),
+      customerName: order.customer_name || undefined,
+      timestamp: new Date().toISOString(),
+    });
+
+    return {
+      message: 'Delivery confirmed and escrow released to seller',
+      status: updatedOrder.status,
+    };
+  }
+
+  /**
+   * Hourly sweep that automatically releases Paystack escrow for DELIVERED
+   * orders once the 3-day buyer inspection window (or `escrow_release_days`
+   * platform setting) has elapsed with no open return claim.
+   */
+  @Cron(CronExpression.EVERY_HOUR)
+  async sweepMaturedEscrowOrders() {
+    const releaseDays = await this.getEscrowReleaseDays();
+    const cutoff = new Date(Date.now() - releaseDays * 24 * 60 * 60 * 1000);
+
+    const maturedOrders = await this.prisma.order.findMany({
+      where: {
+        status: 'DELIVERED',
+        updated_at: { lte: cutoff },
+        transaction: {
+          is: {
+            status: 'SUCCESS',
+            payout: { is: null },
+          },
+        },
+        OR: [
+          { return_request: { is: null } },
+          { return_request: { is: { status: 'REJECTED' } } },
+        ],
+      },
+      include: {
+        items: {
+          include: {
+            product: {
+              select: {
+                seller: { select: { user_id: true } },
+              },
+            },
+          },
+        },
+      },
+      take: 100,
+    });
+
+    let released = 0;
+    for (const order of maturedOrders) {
+      try {
+        await this.paymentsService.releaseEscrowForOrder(order.id);
+        await this.prisma.order.update({
+          where: { id: order.id },
+          data: { status: 'COMPLETED' },
+        });
+        released++;
+
+        const orderNumber = `ORD-${order.id.slice(-6).toUpperCase()}`;
+        const sellerUserIds = Array.from(
+          new Set(
+            order.items
+              .map((i) => i.product?.seller?.user_id)
+              .filter((x): x is string => Boolean(x)),
+          ),
+        );
+        for (const sellerUserId of sellerUserIds) {
+          await this.notifications
+            .create({
+              userId: sellerUserId,
+              type: 'ORDER_STATUS_CHANGED',
+              title: `Escrow released for ${orderNumber}`,
+              body: `The ${releaseDays}-day buyer inspection window has cleared for ${orderNumber}. Funds have been released for payout.`,
+              link: `/dashboard/orders/${order.id}`,
+              data: { orderId: order.id, status: 'COMPLETED' },
+            })
+            .catch(() => {});
+        }
+      } catch (err) {
+        this.logger.error(
+          `Failed to auto-release matured escrow for order ${order.id}`,
+          err,
+        );
+      }
+    }
+
+    if (released > 0) {
+      this.logger.log(
+        `Auto-released escrow for ${released} matured order(s) (${releaseDays}-day window)`,
+      );
+    }
+
+    return { checked: maturedOrders.length, released, releaseDays };
   }
 
   async updateOrderPaymentStatus(
@@ -759,10 +1013,12 @@ export class OrderService {
                 data: { quantity_available: { decrement: item.quantity } },
               });
             }
-            await tx.product.update({
-              where: { id: item.product_id },
-              data: { quantity_available: { decrement: item.quantity } },
-            });
+            if (item.product_id) {
+              await tx.product.update({
+                where: { id: item.product_id },
+                data: { quantity_available: { decrement: item.quantity } },
+              });
+            }
           }
         })
         .catch(() => {});
@@ -911,10 +1167,12 @@ export class OrderService {
       const isCOD = !order.transaction;
       if (isCOD && order.status === 'PENDING') {
         for (const item of order.items) {
-          await tx.product.update({
-            where: { id: item.product_id },
-            data: { quantity_available: { increment: item.quantity } },
-          });
+          if (item.product_id) {
+            await tx.product.update({
+              where: { id: item.product_id },
+              data: { quantity_available: { increment: item.quantity } },
+            });
+          }
         }
       }
       return tx.order.update({
@@ -1267,7 +1525,11 @@ export class OrderService {
             },
           },
         },
-        transaction: true,
+        transaction: {
+          include: {
+            payout: { select: { id: true, status: true } },
+          },
+        },
         return_request: true,
       },
     });
@@ -1280,6 +1542,21 @@ export class OrderService {
       throw new BadRequestException('Unauthorized access to this order');
     }
 
+    const releaseDays = await this.getEscrowReleaseDays();
+    const isEscrowOrder =
+      order.transaction?.provider === 'PAYSTACK' &&
+      order.transaction?.status === 'SUCCESS';
+    const escrowReleased = Boolean((order.transaction as any)?.payout);
+    const autoReleaseAt =
+      isEscrowOrder &&
+      !escrowReleased &&
+      order.status === 'DELIVERED' &&
+      order.updated_at
+        ? new Date(
+            order.updated_at.getTime() + releaseDays * 24 * 60 * 60 * 1000,
+          ).toISOString()
+        : null;
+
     return {
       ...order,
       id: order.id.toString(),
@@ -1289,9 +1566,15 @@ export class OrderService {
         ...i,
         id: i.id.toString(),
         order_id: i.order_id.toString(),
-        product_id: i.product_id.toString(),
+        product_id: i.product_id ? i.product_id.toString() : null,
         price: i.price.toString(),
       })),
+      escrow_info: {
+        window_days: releaseDays,
+        is_escrow_protected: isEscrowOrder,
+        escrow_released: escrowReleased,
+        auto_release_at: autoReleaseAt,
+      },
       payment_info: order.transaction
         ? {
             status: order.transaction.status,
@@ -1342,13 +1625,19 @@ export class OrderService {
       );
     }
 
-    // Check 7-day window
-    const daysSinceOrder = Math.floor(
-      (Date.now() - order.created_at.getTime()) / (1000 * 60 * 60 * 24),
+    // Check 3-day buyer protection window (anchored on delivery when delivered, else order creation)
+    const releaseDays = await this.getEscrowReleaseDays();
+    const upperStatus = order.status.toUpperCase();
+    const anchorDate =
+      ['DELIVERED', 'COMPLETED'].includes(upperStatus) && order.updated_at
+        ? order.updated_at
+        : order.created_at;
+    const daysElapsed = Math.floor(
+      (Date.now() - anchorDate.getTime()) / (1000 * 60 * 60 * 24),
     );
-    if (daysSinceOrder > 7) {
+    if (daysElapsed > releaseDays) {
       throw new BadRequestException(
-        'Return requests must be submitted within 7 days of order placement',
+        `Return requests must be submitted within ${releaseDays} days of delivery`,
       );
     }
 

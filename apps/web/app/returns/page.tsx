@@ -6,9 +6,9 @@ import BreadcrumbJsonLd from '@/components/seo/BreadcrumbJsonLd';
 import { buildMetadata } from '@/lib/seo';
 
 export const metadata: Metadata = buildMetadata({
-  title: '7-Day Buyer Protection, Returns & Refunds Policy',
+  title: '3-Day Buyer Protection, Returns & Refunds Policy',
   description:
-    'Official 7-Day Buyer Protection policy, return eligibility, replacement protocols, escrow refund timelines, and dispute mediation on Verndly Ghana.',
+    'Official 3-Day Buyer Protection policy, return eligibility, replacement protocols, escrow refund timelines, and dispute mediation on Verndly Ghana.',
   path: '/returns',
 });
 
@@ -16,12 +16,12 @@ const RETURNS_FAQ = [
   {
     question: 'How long is the return window on Verndly?',
     answer:
-      'Buyers have seven (7) calendar days starting from the recorded delivery confirmation timestamp to inspect their purchase and file a return claim.',
+      'Buyers have three (3) calendar days starting from the recorded delivery confirmation timestamp to inspect their purchase and file a return claim.',
   },
   {
     question: 'How does the escrow protection work during returns?',
     answer:
-      'Funds paid online via Paystack are held in secure escrow settlement accounts and are not disbursed to the seller until the 7-day buyer protection window passes without dispute.',
+      'Funds paid online via Paystack are held in secure escrow settlement accounts and are not disbursed to the seller until the 3-day buyer protection window passes without dispute.',
   },
   {
     question: 'How quickly are approved refunds processed?',
@@ -48,11 +48,11 @@ export default function ReturnsPage() {
       <LegalPage
         eyebrow="Buyer Protection & Peace of Mind"
         title="Returns, Replacements & Refunds Policy"
-        description="Every purchase on Verndly is backed by our escrow-protected 7-Day Buyer Protection Guarantee. If your order arrives damaged, defective, or materially different from the seller's listing, this policy ensures a prompt, fair replacement or full refund."
-        updatedAt="September 2026"
+        description="Every purchase on Verndly is backed by our escrow-protected 3-Day Buyer Protection Guarantee. If your order arrives damaged, defective, or materially different from the seller's listing, this policy ensures a prompt, fair replacement or full refund."
+        updatedAt="November 2026"
         sections={[
           {
-            title: 'Verndly 7-Day Buyer Protection Guarantee',
+            title: 'Verndly 3-Day Buyer Protection Guarantee',
             badge: 'Escrow Assurance',
             body: (
               <>
@@ -74,11 +74,11 @@ export default function ReturnsPage() {
           },
           {
             title: 'Inspection Window & Return Eligibility Standards',
-            badge: '7-Day Window',
+            badge: '3-Day Window',
             body: (
               <>
                 <p>
-                  The return inspection window spans <strong>seven (7) calendar days</strong>,
+                  The return inspection window spans <strong>three (3) calendar days</strong>,
                   commencing immediately upon the verified delivery timestamp recorded by our
                   courier partner or your delivery confirmation notice.
                 </p>

@@ -16,13 +16,19 @@ import {
   Info,
   ExternalLink,
   Globe,
+  Flag,
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/contexts/auth-context';
+import { isOwnStore } from '@/lib/utils/ownership';
+import ReportModal from '@/components/report/ReportModal';
 import StorefrontShareModal from './StorefrontShareModal';
 import StorefrontContactModal, { formatWhatsappUrl } from './StorefrontContactModal';
 
 export interface StorefrontHeaderData {
+  id?: string;
+  user_id?: string;
   store_name: string;
   store_link: string;
   logo_url?: string | null;
@@ -76,9 +82,12 @@ interface StorefrontHeaderProps {
 }
 
 export default function StorefrontHeader({ store, productsCount }: StorefrontHeaderProps) {
+  const { user } = useAuth();
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [logoError, setLogoError] = useState(false);
+  const isOwner = isOwnStore(user, store);
 
   const memberSince = memberSinceLabel(store.member_since);
   const locationLabel = [store.area, store.location].filter(Boolean).join(' · ');
@@ -236,6 +245,18 @@ export default function StorefrontHeader({ store, productsCount }: StorefrontHea
               >
                 <Info className="h-4 w-4" />
               </button>
+
+              {store.id && !isOwner && (
+                <button
+                  type="button"
+                  onClick={() => setIsReportModalOpen(true)}
+                  className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-muted)] transition-all hover:border-rose-500/30 hover:bg-rose-500/10 hover:text-rose-500 active:scale-95"
+                  title="Report this store"
+                  aria-label="Report this store"
+                >
+                  <Flag className="h-4 w-4" />
+                </button>
+              )}
             </div>
           </div>
 
@@ -326,6 +347,17 @@ export default function StorefrontHeader({ store, productsCount }: StorefrontHea
         onClose={() => setIsContactModalOpen(false)}
         store={store}
       />
+
+      {/* Report Seller Modal */}
+      {store.id && !isOwner && (
+        <ReportModal
+          isOpen={isReportModalOpen}
+          onClose={() => setIsReportModalOpen(false)}
+          targetType="SELLER"
+          targetId={String(store.id)}
+          targetName={store.store_name}
+        />
+      )}
     </>
   );
 }

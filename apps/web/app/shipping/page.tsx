@@ -41,9 +41,9 @@ export default function ShippingPage() {
                   professional express courier networks.
                 </p>
                 <p>
-                  Verndly provides the central technological tracking framework, automated delivery
-                  notifications, courier waybill monitoring, and escrow settlement holds that ensure
-                  packages are safely delivered before merchant payouts are released.
+                  Verndly provides order status tracking, email status notifications, and Paystack
+                  escrow settlement holds so payments are protected while your order is fulfilled
+                  and inspected.
                 </p>
               </>
             ),
@@ -222,22 +222,22 @@ export default function ShippingPage() {
                   <div className="flex items-center gap-3">
                     <span className="h-2 w-2 shrink-0 rounded-full bg-amber-500" />
                     <span>
-                      <strong>2. Dispatched:</strong> Package handed over to delivery courier;
-                      waybill reference generated.
+                      <strong>2. Dispatched:</strong> Seller marks the package handed over to the
+                      delivery courier.
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="h-2 w-2 shrink-0 rounded-full bg-purple-500" />
                     <span>
-                      <strong>3. Out for Delivery:</strong> Courier is en route to your specific
-                      delivery address; rider contact shared.
+                      <strong>3. Out for Delivery:</strong> Package is en route to your specified
+                      delivery address.
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
                     <span>
                       <strong>4. Delivered:</strong> Package safely handed over; delivery confirmed;
-                      7-day inspection window begins.
+                      3-day inspection window begins.
                     </span>
                   </div>
                 </div>
@@ -322,25 +322,24 @@ export default function ShippingPage() {
                 </p>
                 <ul className="list-disc space-y-2 pl-5 text-xs md:text-sm">
                   <li>
-                    <strong>Transit Delays:</strong> If your package has not arrived within
-                    forty-eight (48) hours beyond the merchant&apos;s estimated delivery window,
-                    notify our Logistics Desk at{' '}
-                    <a href="mailto:shipping@verndly.com" className="text-primary underline">
-                      shipping@verndly.com
-                    </a>
-                    . We will initiate an immediate tracer with the courier.
+                    <strong>Transit Delays:</strong> If your package has not arrived past the
+                    merchant&apos;s stated delivery window, reach out to our support team at{' '}
+                    <a href="mailto:support@verndly.com" className="text-primary underline">
+                      support@verndly.com
+                    </a>{' '}
+                    or WhatsApp +233 53 406 5652 with your Order Number so we can follow up with the
+                    seller.
                   </li>
                   <li>
-                    <strong>Lost Parcels:</strong> If a courier investigation confirms that a parcel
-                    has been lost in transit or untraceable for more than five (5) business days,
-                    Verndly will immediately issue a <strong>100% full refund</strong> (including
-                    all shipping fees) from escrow back to your original payment method, or
-                    coordinate an immediate free replacement dispatch from the merchant.
+                    <strong>Undelivered Orders:</strong> If an order cannot be delivered or is
+                    confirmed undelivered during dispute review, Verndly can reverse the held escrow
+                    payment back to your original payment method or coordinate a replacement with
+                    the merchant.
                   </li>
                   <li>
                     <strong>In-Transit Damage:</strong> If merchandise arrives broken, cracked, or
                     ruined due to courier mishandling or inadequate merchant packaging, photograph
-                    the damaged items and file a claim within seven (7) days under our{' '}
+                    the damaged items and file a claim within three (3) days under our{' '}
                     <Link href="/returns" className="text-primary underline">
                       Returns &amp; Refunds Policy
                     </Link>{' '}
@@ -356,36 +355,36 @@ export default function ShippingPage() {
             body: (
               <>
                 <p>
-                  To maintain high fulfillment standards across the marketplace, merchants are
-                  audited on their logistics performance:
+                  To maintain reliable fulfillment across the marketplace, merchants are expected to
+                  follow these dispatch standards:
                 </p>
                 <ul className="list-disc space-y-1.5 pl-5 text-xs md:text-sm">
                   <li>
-                    <strong>Late Dispatch Penalties:</strong> Merchants with chronic dispatch delays
-                    exceeding their stated SLA by more than 48 hours face listing de-ranking and
-                    temporary suspension of express seller badges.
+                    <strong>Timely Dispatch:</strong> Merchants should package and hand over orders
+                    within the dispatch window shown on their storefront and keep buyers informed of
+                    any unexpected delay. Repeated unfulfilled orders may result in store review or
+                    account suspension.
                   </li>
                   <li>
-                    <strong>False Tracking Dispatches:</strong> Marking an order as
-                    &quot;Dispatched&quot; before the package has physically been handed over to the
-                    courier constitutes deceptive commercial conduct and results in immediate
-                    financial penalties.
+                    <strong>Accurate Status Updates:</strong> Merchants must only mark an order as
+                    &quot;Dispatched&quot; or &quot;Delivered&quot; once the handoff has actually
+                    occurred. Misleading status updates may result in escrow holds or account
+                    review.
                   </li>
                   <li>
-                    <strong>Packaging Quality:</strong> Merchants must use bubble wrap, corrugated
-                    cardboard, and weather-resistant outer packaging for fragile or high-value
-                    merchandise.
+                    <strong>Packaging Quality:</strong> Merchants must package fragile or high-value
+                    items securely so they arrive undamaged.
                   </li>
                 </ul>
                 <div className="bg-surface border-border/70 text-muted-foreground rounded-xl border p-4 text-xs">
-                  <strong>Logistics Support &amp; Delivery Inquiries:</strong>
+                  <strong>Delivery Support &amp; Inquiries:</strong>
                   <br />
                   Have questions regarding an active delivery or need to update your address before
-                  dispatch? Contact our Delivery Operations Desk at{' '}
-                  <a href="mailto:shipping@verndly.com" className="text-primary underline">
-                    shipping@verndly.com
+                  dispatch? Email{' '}
+                  <a href="mailto:support@verndly.com" className="text-primary underline">
+                    support@verndly.com
                   </a>{' '}
-                  or WhatsApp our logistics hotline at +233 53 406 5652 quoting your Order Number.
+                  or WhatsApp +233 53 406 5652 quoting your Order Number.
                 </div>
               </>
             ),

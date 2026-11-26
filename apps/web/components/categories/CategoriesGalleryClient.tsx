@@ -126,7 +126,7 @@ export default function CategoriesGalleryClient({
             </h1>
             <p className="text-muted text-sm leading-relaxed md:text-base">
               Browse categories from verified independent sellers in Accra. Every order is backed by
-              7-day Paystack escrow.
+              3-day Paystack escrow.
             </p>
           </header>
 

@@ -8,13 +8,13 @@ import FaqJsonLd from '@/components/seo/FaqJsonLd';
 import { EscrowFlowSvg } from '@/components/editorial/VisualDiagrams';
 
 export const metadata = buildMetadata({
-  title: 'Verndly Buyer Protection — 7-Day Paystack Escrow Guarantee',
+  title: 'Verndly Buyer Protection — 3-Day Paystack Escrow Guarantee',
   description:
-    "How Verndly's 7-day Paystack escrow protects online shoppers in Ghana. Funds are held safely until delivery and inspection, with 48-hour dispute response and direct MoMo or card reversals.",
+    "How Verndly's 3-day Paystack escrow protects online shoppers in Ghana. Funds are held safely until delivery and inspection, with 48-hour dispute response and direct MoMo or card reversals.",
   path: '/buyer-protection',
   keywords: [
     'buyer protection ghana',
-    '7 day return policy online ghana',
+    '3 day return policy online ghana',
     'escrow payment ghana',
     'refund online shopping ghana',
     'verndly buyer protection',
@@ -30,9 +30,9 @@ const PILLARS = [
   },
   {
     Icon: Clock,
-    title: '7-Day Inspection Window',
+    title: '3-Day Inspection Window',
     detail:
-      'You get 7 full calendar days after verified courier delivery to unbox, try on, and test your order before funds settle permanently.',
+      'You get 3 full calendar days after verified courier delivery to unbox, try on, and test your order before funds settle permanently.',
   },
   {
     Icon: Scale,
@@ -51,7 +51,7 @@ const PILLARS = [
 const COVERED_ITEMS = [
   'Order never arrives or parcel is confirmed lost in transit (100% refund including delivery fee)',
   'Item arrives physically damaged, broken, leaking, or crushed during courier transit',
-  'Product is defective, non-functional, or fails to power on during the 7-day window',
+  'Product is defective, non-functional, or fails to power on during the 3-day window',
   'Wrong color, size, model, storage capacity, or materially different from listing photos',
   'Missing accessories, parts, or incomplete quantity from your order summary',
   'Counterfeit or misrepresented merchandise sold as original',
@@ -60,7 +60,7 @@ const COVERED_ITEMS = [
 const NOT_COVERED_ITEMS = [
   'Payments made outside verndly.com via direct personal MoMo transfers in DMs',
   'Damage caused by buyer misuse, drops, liquid spills, or unauthorized repair after delivery',
-  'Claims opened after the 7-calendar-day post-delivery inspection window expires',
+  'Claims opened after the 3-calendar-day post-delivery inspection window expires',
   'Change-of-mind returns unless the individual merchant voluntarily agrees (buyer covers return courier)',
 ];
 
@@ -68,12 +68,12 @@ const PROTECTION_FAQS = [
   {
     question: 'What happens if my order is wrong, damaged, or never arrives?',
     answer:
-      'Open a claim from your Orders page within 7 calendar days of delivery (or notify shipping@verndly.com if delayed beyond 48 hours past the delivery estimate). For defective, wrong, damaged, or lost orders, you receive a 100% full refund — including original shipping — directly via Paystack.',
+      'Open a claim from your Orders page within 3 calendar days of delivery (or contact support@verndly.com if your order has not arrived past the seller’s stated delivery window). For verified defective, wrong, damaged, or undelivered orders, approved refunds reverse directly via Paystack.',
   },
   {
     question: 'How does escrow protect me compared to Pay on Delivery?',
     answer:
-      "Pay on Delivery ends your protection the second the rider leaves. Verndly's Paystack escrow protects you both before delivery (no upfront scam risk) and for 7 full days after delivery while you test your item thoroughly.",
+      "Pay on Delivery ends your protection the second the rider leaves. Verndly's Paystack escrow protects you both before delivery (no upfront scam risk) and for 3 full days after delivery while you test your item thoroughly.",
   },
   {
     question: 'Who pays the return courier fee if the seller made a mistake?',
@@ -83,7 +83,7 @@ const PROTECTION_FAQS = [
   {
     question: 'Do buyers pay an extra fee for Verndly Buyer Protection?',
     answer:
-      'No. Every eligible order on Verndly includes 7-day Paystack escrow protection automatically at GH₵ 0 buyer surcharge.',
+      'No. Every eligible order on Verndly includes 3-day Paystack escrow protection automatically at GH₵ 0 buyer surcharge.',
   },
   {
     question: 'How fast do refunds return to MTN MoMo or my bank card?',
@@ -110,7 +110,7 @@ export default function BuyerProtectionPage() {
         <section className="max-w-4xl space-y-8">
           <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-4 py-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-emerald-600 dark:text-emerald-400">
             <ShieldCheck className="h-3.5 w-3.5" />
-            7-Day Escrow Guarantee
+            3-Day Escrow Guarantee
           </div>
 
           <h1 className="text-4xl font-medium leading-[1.06] tracking-tight sm:text-5xl md:text-6xl">

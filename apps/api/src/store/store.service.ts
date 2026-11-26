@@ -272,7 +272,7 @@ export class StoreService {
       id: `${item.order_id.toString()}-${item.id.toString()}`,
       displayId: `#ORD-${item.order_id.toString().slice(-4)}`,
       customer: item.order.buyer?.full_name || 'Customer',
-      product: item.product.title,
+      product: item.product?.title || item.product_title || 'Removed product',
       status: item.order.status,
       amount: `GH₵${(Number(item.price) * item.quantity).toLocaleString()}`,
       date: item.order.created_at,
@@ -335,6 +335,8 @@ export class StoreService {
         user: {
           is_pro: true,
           is_suspended: false,
+          disabled_at: null,
+          deletion_scheduled_for: null,
           OR: [{ pro_expires_at: null }, { pro_expires_at: { gt: now } }],
         },
       },
@@ -374,6 +376,8 @@ export class StoreService {
     const whereClause: any = {
       user: {
         is_suspended: false,
+        disabled_at: null,
+        deletion_scheduled_for: null,
       },
     };
 
@@ -509,6 +513,9 @@ export class StoreService {
             is_pro: true,
             pro_expires_at: true,
             is_verified: true,
+            is_suspended: true,
+            disabled_at: true,
+            deletion_scheduled_for: true,
             created_at: true,
           },
         },
@@ -518,7 +525,12 @@ export class StoreService {
       },
     });
 
-    if (!store) {
+    if (
+      !store ||
+      store.user?.is_suspended ||
+      store.user?.disabled_at ||
+      store.user?.deletion_scheduled_for
+    ) {
       throw new NotFoundException('Store not found');
     }
 
@@ -529,6 +541,7 @@ export class StoreService {
 
     return {
       id: store.id.toString(),
+      user_id: store.user_id,
       store_name: store.store_name,
       store_link: store.store_link,
       logo_url: store.logo_url,

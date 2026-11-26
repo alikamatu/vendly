@@ -15,7 +15,7 @@ import { getProductPath } from '@/lib/product-slug';
 export const metadata = buildMetadata({
   title: 'Verndly — Ghana’s AI-Native Marketplace for Verified Stores',
   description:
-    'Shop verified independent stores in Ghana with Verndly AI, or launch your online storefront in seconds from product photos, a website URL, or WhatsApp screenshots. Protected by 7-day Paystack escrow.',
+    'Shop verified independent stores in Ghana with Verndly AI, or launch your online storefront in seconds from product photos, a website URL, or WhatsApp screenshots. Protected by 3-day Paystack escrow.',
   path: '/homepage',
   keywords: [
     'Verndly',
@@ -37,9 +37,9 @@ const HOMEPAGE_FAQS: HomepageFaqEntry[] = [
       'Verndly embeds Verndly AI into both shopping and selling. Buyers can describe what they want, their occasion, or their GH₵ budget in plain English to find in-stock items from verified Ghanaian stores. Sellers can upload raw photos, paste their existing website URL, or drop WhatsApp Business catalog screenshots to generate complete product listings automatically.',
   },
   {
-    question: 'How does 7-day Paystack escrow protect buyers and sellers in Ghana?',
+    question: 'How does 3-day Paystack escrow protect buyers and sellers in Ghana?',
     answer:
-      'When a buyer pays with MTN Mobile Money, Telecel Cash, AirtelTigo Money, or a bank card, Paystack verifies and holds the payment in escrow. Sellers know the funds are genuinely secured before dispatching a rider, and buyers have up to 7 days after delivery to inspect their item before payout settles.',
+      'When a buyer pays with MTN Mobile Money, Telecel Cash, AirtelTigo Money, or a bank card, Paystack verifies and holds the payment in escrow. Sellers know the funds are genuinely secured before dispatching a rider, and buyers have up to 3 days after delivery to inspect their item before payout settles.',
   },
   {
     question: 'Can I import my existing website or WhatsApp Business catalog into Verndly?',
@@ -132,7 +132,7 @@ export default async function AiHomepageRoute() {
     applicationCategory: 'ShoppingApplication',
     operatingSystem: 'Web, iOS, Android',
     description:
-      'AI-native e-commerce marketplace in Ghana connecting shoppers with identity-verified stores under 7-day Paystack escrow protection.',
+      'AI-native e-commerce marketplace in Ghana connecting shoppers with identity-verified stores under 3-day Paystack escrow protection.',
     areaServed: {
       '@type': 'Country',
       name: 'Ghana',
@@ -147,7 +147,7 @@ export default async function AiHomepageRoute() {
       'Verndly AI conversational product search in GH₵',
       'AI photo-to-listing bulk studio (up to 20 photos)',
       'One-click Website & WhatsApp Business catalog importer',
-      '7-day Paystack escrow for MTN Mobile Money, Telecel Cash, AirtelTigo Money, and cards',
+      '3-day Paystack escrow for MTN Mobile Money, Telecel Cash, AirtelTigo Money, and cards',
     ],
   };
 

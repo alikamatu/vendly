@@ -1248,6 +1248,7 @@ export class PaymentsService {
         : txnAmount;
 
     const isFullRefund = refundAmount >= txnAmount;
+    const hadReleasedEscrow = Boolean((transaction as any).payout);
     const refundRef = `REF_${Date.now()}_${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
 
     let providerRef: string | undefined;
@@ -1365,7 +1366,9 @@ export class PaymentsService {
 
       await this.paymentsRepository.upsertVendorBalanceSnapshot({
         sellerId,
-        availableDelta: net.negated(),
+        ...(hadReleasedEscrow
+          ? { availableDelta: net.negated() }
+          : { pendingDelta: net.negated() }),
         earnedDelta: gross.negated(),
       });
     }

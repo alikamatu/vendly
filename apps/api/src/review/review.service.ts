@@ -48,11 +48,19 @@ export class ReviewService {
     if (orderItem.review) {
       throw new ConflictException('You already reviewed this item');
     }
-    if (orderItem.product.seller_id) {
+    if (!orderItem.product || !orderItem.product_id) {
+      throw new BadRequestException(
+        'This product is no longer available to review',
+      );
+    }
+    const product = orderItem.product;
+    const productId = orderItem.product_id;
+
+    if (product.seller_id) {
       // Block self-reviews — a seller cannot review their own product
       // even if they "bought" it through their own account.
       const sellerProfile = await this.prisma.sellerProfile.findUnique({
-        where: { id: orderItem.product.seller_id },
+        where: { id: product.seller_id },
         select: { user_id: true },
       });
       if (sellerProfile?.user_id === buyerId) {
@@ -63,8 +71,8 @@ export class ReviewService {
     const review = await this.prisma.$transaction(async (tx) => {
       const created = await tx.review.create({
         data: {
-          product_id: orderItem.product_id,
-          seller_id: orderItem.product.seller_id,
+          product_id: productId,
+          seller_id: product.seller_id,
           buyer_id: buyerId,
           order_item_id: orderItem.id,
           rating: dto.rating,
@@ -75,11 +83,7 @@ export class ReviewService {
         },
         include: { buyer: { select: { id: true, full_name: true } } },
       });
-      await this.recomputeAggregates(
-        tx,
-        orderItem.product_id,
-        orderItem.product.seller_id,
-      );
+      await this.recomputeAggregates(tx, productId, product.seller_id);
       return created;
     });
 

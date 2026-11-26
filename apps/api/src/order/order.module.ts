@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { OrderService } from './order.service';
-import { OrderController } from './order.controller';
+import { OrderController, OrderCronController } from './order.controller';
 import { AdminOrderController } from './admin-order.controller';
 import { AdminOrderService } from './admin-order.service';
 import { PrismaModule } from '../prisma/prisma.module';
@@ -12,8 +13,14 @@ import { NotificationModule } from '../notification/notification.module';
 import { SmsClient } from '../auth/arkesel.client';
 
 @Module({
-  imports: [PrismaModule, PaymentsModule, EmailModule, NotificationModule],
-  controllers: [OrderController, AdminOrderController],
+  imports: [
+    ConfigModule,
+    PrismaModule,
+    PaymentsModule,
+    EmailModule,
+    NotificationModule,
+  ],
+  controllers: [OrderController, OrderCronController, AdminOrderController],
   providers: [OrderService, AdminOrderService, SmsClient],
   exports: [OrderService],
 })

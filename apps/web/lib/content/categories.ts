@@ -31,13 +31,13 @@ export const CATEGORY_PROFILES: CategorySeoProfile[] = [
     name: 'Fashion & Apparel',
     metaTitle: 'Ghanaian Fashion from Verified Independent Brands Online',
     metaDescription:
-      'Shop clothing, footwear, thrift finds, and accessories from verified Ghanaian fashion brands on Verndly. Protected by 7-day Paystack escrow and nationwide delivery.',
+      'Shop clothing, footwear, thrift finds, and accessories from verified Ghanaian fashion brands on Verndly. Protected by 3-day Paystack escrow and nationwide delivery.',
     headline: 'Ghanaian fashion from verified independent brands.',
     subheadline:
-      'Discover streetwear, tailored pieces, footwear, bags, and curated thrift from vetted local designers and boutiques — every order protected by 7-day Paystack escrow.',
+      'Discover streetwear, tailored pieces, footwear, bags, and curated thrift from vetted local designers and boutiques — every order protected by 3-day Paystack escrow.',
     editorialCopy: [
       "Ghana's most exciting fashion rarely lives in massive corporate warehouses — it comes from independent designers, campus labels, thrift curators, and small boutiques in Greater Accra and across Ghana. Until now, buying from independent fashion sellers meant paying Mobile Money up front in an Instagram DM and hoping the right size or fabric showed up.",
-      'Every fashion store on Verndly is identity-verified before listing a single item. Your payment via MTN MoMo, Telecel Cash, AirtelTigo Money, or card is held safely in Paystack escrow until your order arrives and passes your 7-day inspection window. If a piece arrives damaged, stained, or completely different from the listing photos, you are protected for a free return or full refund.',
+      'Every fashion store on Verndly is identity-verified before listing a single item. Your payment via MTN MoMo, Telecel Cash, AirtelTigo Money, or card is held safely in Paystack escrow until your order arrives and passes your 3-day inspection window. If a piece arrives damaged, stained, or completely different from the listing photos, you are protected for a free return or full refund.',
       'For fashion founders, Verndly charges a flat 4% fee (including Paystack processing) instead of the 20% fashion commission plus shipping deductions charged by legacy marketplaces — letting independent Ghanaian brands offer fairer prices directly to shoppers.',
     ],
     buyerHighlights: [
@@ -47,9 +47,9 @@ export const CATEGORY_PROFILES: CategorySeoProfile[] = [
           'Every seller passes identity and storefront checks before receiving a Verified Merchant badge.',
       },
       {
-        title: '7-day inspection & fit protection',
+        title: '3-day inspection & fit protection',
         detail:
-          'Received the wrong size, color, or defective stitching? Claim a protected return within 7 days of delivery.',
+          'Received the wrong size, color, or defective stitching? Claim a protected return within 3 days of delivery.',
       },
       {
         title: 'Nationwide doorstep delivery',
@@ -61,12 +61,12 @@ export const CATEGORY_PROFILES: CategorySeoProfile[] = [
       {
         question: 'Is it safe to buy clothes from independent Ghanaian brands on Verndly?',
         answer:
-          'Yes. Unlike paying directly to an unverified Instagram vendor via MoMo, Verndly holds your payment in Paystack escrow until your order is delivered and backed by our 7-day buyer protection window.',
+          'Yes. Unlike paying directly to an unverified Instagram vendor via MoMo, Verndly holds your payment in Paystack escrow until your order is delivered and backed by our 3-day buyer protection window.',
       },
       {
         question: 'What happens if the clothing I receive does not match the photos?',
         answer:
-          'You have 7 calendar days from delivery confirmation to submit a return claim with photos. For wrong items, defects, or misrepresentation, the seller covers return courier fees and you receive a full Paystack refund.',
+          'You have 3 calendar days from delivery confirmation to submit a return claim with photos. For wrong items, defects, or misrepresentation, the seller covers return courier fees and you receive a full Paystack refund.',
       },
       {
         question: 'How much does Verndly charge fashion sellers in Ghana?',
@@ -89,19 +89,19 @@ export const CATEGORY_PROFILES: CategorySeoProfile[] = [
     name: 'Electronics & Gadgets',
     metaTitle: 'Verified Electronics, Phones & Laptops in Ghana with Escrow',
     metaDescription:
-      'Buy smartphones, laptops, audio gear, and tech accessories from verified Ghanaian tech vendors. Every purchase protected by 7-day Paystack escrow.',
-    headline: 'Electronics and gadgets backed by 7-day escrow.',
+      'Buy smartphones, laptops, audio gear, and tech accessories from verified Ghanaian tech vendors. Every purchase protected by 3-day Paystack escrow.',
+    headline: 'Electronics and gadgets backed by 3-day escrow.',
     subheadline:
       'Shop smartphones, laptops, headphones, chargers, and accessories from verified Ghanaian tech stores without risking your Mobile Money.',
     editorialCopy: [
       'Buying a phone, laptop, or pair of headphones online in Ghana carries the highest scam risk on classifieds and social media — from swapped refurb devices to vanishing sellers after a MoMo transfer. Verndly eliminates pre-payment risk by holding your payment in Paystack escrow until your device is delivered and verified.',
-      'Every electronics listing displays clear condition labels (Brand New, Refurbished, Used – Like New), storage specifications, and warranty terms directly from vetted Ghanaian merchants. You get 7 full calendar days from delivery to test battery health, ports, screen quality, and authenticity.',
+      'Every electronics listing displays clear condition labels (Brand New, Refurbished, Used – Like New), storage specifications, and warranty terms directly from vetted Ghanaian merchants. You get 3 full calendar days from delivery to test battery health, ports, screen quality, and authenticity.',
     ],
     buyerHighlights: [
       {
         title: 'Zero fake-device risk',
         detail:
-          'Test your phone, laptop, or accessory during the 7-day inspection period before funds settle permanently.',
+          'Test your phone, laptop, or accessory during the 3-day inspection period before funds settle permanently.',
       },
       {
         title: 'Clear condition & warranty specs',
@@ -118,7 +118,7 @@ export const CATEGORY_PROFILES: CategorySeoProfile[] = [
       {
         question: 'How does escrow protect me when buying a phone or laptop in Ghana?',
         answer:
-          "Your Mobile Money or card payment stays in Verndly's Paystack escrow ledger while your device ships. You inspect and test the device for up to 7 days after delivery, and if it is faulty or counterfeit, you can file a claim for a full refund.",
+          "Your Mobile Money or card payment stays in Verndly's Paystack escrow ledger while your device ships. You inspect and test the device for up to 3 days after delivery, and if it is faulty or counterfeit, you can file a claim for a full refund.",
       },
       {
         question: "Can I pick up electronics directly from the seller's shop?",
@@ -140,7 +140,7 @@ export const CATEGORY_PROFILES: CategorySeoProfile[] = [
     name: 'Beauty & Personal Care',
     metaTitle: 'Authentic Beauty, Skincare & Fragrance Brands in Ghana',
     metaDescription:
-      'Shop genuine skincare, Ghanaian shea formulations, makeup, haircare, and fragrances from verified beauty stores on Verndly with 7-day buyer protection.',
+      'Shop genuine skincare, Ghanaian shea formulations, makeup, haircare, and fragrances from verified beauty stores on Verndly with 3-day buyer protection.',
     headline: 'Authentic beauty and skincare from vetted stores.',
     subheadline:
       'From locally formulated shea skincare and hair care to original fragrances and cosmetics — sourced exclusively from verified merchants.',
@@ -168,7 +168,7 @@ export const CATEGORY_PROFILES: CategorySeoProfile[] = [
       {
         question: 'What if a skincare bottle leaks or breaks during delivery?',
         answer:
-          "Take photos of the parcel and item within 7 days of delivery and open a return claim. Transit damage is covered 100% under Verndly's Buyer Protection Guarantee.",
+          "Take photos of the parcel and item within 3 days of delivery and open a return claim. Transit damage is covered 100% under Verndly's Buyer Protection Guarantee.",
       },
     ],
     keywords: [
@@ -201,7 +201,7 @@ export const CATEGORY_PROFILES: CategorySeoProfile[] = [
       {
         title: 'Escrow-backed appliances',
         detail:
-          'Verify that blenders, kettles, and electronics power on properly during your 7-day inspection period.',
+          'Verify that blenders, kettles, and electronics power on properly during your 3-day inspection period.',
       },
       {
         title: 'Flexible pickup or doorstep drop',
@@ -221,7 +221,7 @@ export const CATEGORY_PROFILES: CategorySeoProfile[] = [
       'furniture ghana verified stores',
       'home decor ghana',
     ],
-    relatedGuideSlug: 'nationwide-delivery-ghana-accra-kumasi-takoradi-tamale',
+    relatedGuideSlug: 'delivery-and-pickup-ghana',
   },
   {
     slug: 'food-beverages',
@@ -290,7 +290,7 @@ export const CATEGORY_PROFILES: CategorySeoProfile[] = [
       },
       {
         title: 'Escrow-protected orders',
-        detail: 'Wrong edition or damaged spine? Protected by our 7-day return guarantee.',
+        detail: 'Wrong edition or damaged spine? Protected by our 3-day return guarantee.',
       },
     ],
     faqs: [
@@ -308,7 +308,7 @@ export const CATEGORY_PROFILES: CategorySeoProfile[] = [
     name: 'Jewelry & Watches',
     metaTitle: 'Jewelry, Watches & Handcrafted Accessories in Ghana — Verndly',
     metaDescription:
-      'Shop verified timepieces, minimalist jewelry, and Ghanaian beadwork from trusted independent makers with 7-day escrow protection.',
+      'Shop verified timepieces, minimalist jewelry, and Ghanaian beadwork from trusted independent makers with 3-day escrow protection.',
     headline: 'Fine jewelry, beadwork, and watches you can trust.',
     subheadline:
       'Shop authentic watches and handcrafted jewelry from verified Ghanaian artisans and jewelers with Paystack escrow protection.',
@@ -321,7 +321,7 @@ export const CATEGORY_PROFILES: CategorySeoProfile[] = [
         detail: 'Buy directly from vetted independent brands and traditional beadwork studios.',
       },
       {
-        title: '7-day quality verification',
+        title: '3-day quality verification',
         detail: 'Confirm material finish and timepiece accuracy with zero pre-payment risk.',
       },
       {
@@ -333,7 +333,7 @@ export const CATEGORY_PROFILES: CategorySeoProfile[] = [
       {
         question: 'What if a watch arrives non-functional or different from the listing?',
         answer:
-          'Open a return claim within 7 calendar days of delivery for a seller-covered return pickup and full Paystack refund.',
+          'Open a return claim within 3 calendar days of delivery for a seller-covered return pickup and full Paystack refund.',
       },
     ],
     keywords: ['jewelry online ghana', 'watches accra verified', 'ghanaian beadwork online'],
@@ -369,7 +369,7 @@ export const CATEGORY_PROFILES: CategorySeoProfile[] = [
       {
         question: 'Are fragile art and craft items protected during delivery?',
         answer:
-          'Yes. If an artwork arrives damaged due to transit mishandling, document it within 7 days for a full escrow refund or replacement.',
+          'Yes. If an artwork arrives damaged due to transit mishandling, document it within 3 days for a full escrow refund or replacement.',
       },
     ],
     keywords: ['made in ghana art online', 'ghanaian crafts marketplace', 'buy paintings accra'],
@@ -406,7 +406,7 @@ export const CATEGORY_PROFILES: CategorySeoProfile[] = [
       {
         question: 'What if a wellness product arrives expired or with a broken seal?',
         answer:
-          'Do not use the product — photograph the expiry date or seal and file a claim within 7 days for an immediate full refund from escrow.',
+          'Do not use the product — photograph the expiry date or seal and file a claim within 3 days for an immediate full refund from escrow.',
       },
     ],
     keywords: [
@@ -421,12 +421,12 @@ export const CATEGORY_PROFILES: CategorySeoProfile[] = [
     name: 'Sports & Outdoors',
     metaTitle: 'Sports Gear, Gym Equipment & Outdoor Essentials in Ghana — Verndly',
     metaDescription:
-      'Shop football boots, gym accessories, activewear, and outdoor gear from verified Ghanaian sports stores with 7-day buyer protection.',
+      'Shop football boots, gym accessories, activewear, and outdoor gear from verified Ghanaian sports stores with 3-day buyer protection.',
     headline: 'Sports gear and fitness essentials built to perform.',
     subheadline:
       'Find gym equipment, football boots, activewear, and outdoor accessories from verified independent sports vendors across Ghana.',
     editorialCopy: [
-      'Gear up for the pitch, gym, or weekend trail without worrying about knockoff cleats or flimsy equipment. Every sports store on Verndly is verified and backed by 7-day escrow protection.',
+      'Gear up for the pitch, gym, or weekend trail without worrying about knockoff cleats or flimsy equipment. Every sports store on Verndly is verified and backed by 3-day escrow protection.',
     ],
     buyerHighlights: [
       {
@@ -435,7 +435,7 @@ export const CATEGORY_PROFILES: CategorySeoProfile[] = [
       },
       {
         title: 'Protected sizing & quality',
-        detail: 'Wrong size delivered or defective gear? Covered by our 7-day return window.',
+        detail: 'Wrong size delivered or defective gear? Covered by our 3-day return window.',
       },
       {
         title: 'Fast courier dispatch',
@@ -457,7 +457,7 @@ export const CATEGORY_PROFILES: CategorySeoProfile[] = [
     name: 'Baby & Kids',
     metaTitle: 'Baby Gear, Kids Clothing & Toys from Verified Stores in Ghana',
     metaDescription:
-      'Shop safe baby essentials, kids apparel, and educational toys from vetted Ghanaian family shops with 7-day Paystack escrow protection.',
+      'Shop safe baby essentials, kids apparel, and educational toys from vetted Ghanaian family shops with 3-day Paystack escrow protection.',
     headline: 'Everyday essentials for babies and growing kids.',
     subheadline:
       'Discover gentle babywear, nursery items, and kids clothing from trusted independent family boutiques across Ghana.',
@@ -480,9 +480,9 @@ export const CATEGORY_PROFILES: CategorySeoProfile[] = [
     ],
     faqs: [
       {
-        question: 'Are baby and kids orders covered by the 7-day return guarantee?',
+        question: 'Are baby and kids orders covered by the 3-day return guarantee?',
         answer:
-          'Yes. Unused, unopened items that arrive damaged, defective, or incorrect are eligible for a full refund or free replacement within 7 days.',
+          'Yes. Unused, unopened items that arrive damaged, defective, or incorrect are eligible for a full refund or free replacement within 3 days.',
       },
     ],
     keywords: ['baby shop ghana online', 'kids clothing accra', 'baby gear ghana'],

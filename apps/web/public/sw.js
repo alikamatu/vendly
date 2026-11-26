@@ -1,9 +1,7 @@
 // Verndly PWA Service Worker
-const CACHE_NAME = 'verndly-pwa-v3';
+const CACHE_NAME = 'verndly-pwa-v4';
 
 const STATIC_ASSETS = [
-  '/',
-  '/manifest.json',
   '/favicon.ico',
   '/icons/icon-192x192.png',
   '/icons/icon-512x512.png',
@@ -61,8 +59,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // API calls & dynamic endpoints: Network only
-  if (url.pathname.startsWith('/api/')) {
+  // API calls, manifest, & dynamic endpoints: Network only
+  if (url.pathname.startsWith('/api/') || url.pathname === '/manifest.json') {
     return;
   }
 

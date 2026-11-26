@@ -159,19 +159,21 @@ All successful JSON responses are wrapped by `ApiResponseInterceptor` in a stand
 
 ### Order (`/orders`)
 
-| Method | Path                        | Auth Required | Description                                                                                                  |
-| ------ | --------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------ |
-| POST   | `/orders`                   | JWT           | Create a new order. Rejects self-purchase (`403 Forbidden`) if any item belongs to the authenticated seller. |
-| GET    | `/orders/buyer`             | JWT           | Get current user's order history                                                                             |
-| GET    | `/orders/buyer/:id`         | JWT           | Get buyer's specific order details                                                                           |
-| GET    | `/orders/seller`            | SELLER        | Get orders placed at current seller's store                                                                  |
-| GET    | `/orders/verify/payment`    | JWT           | Verify an order payment                                                                                      |
-| GET    | `/orders/:id`               | JWT           | Get general order details                                                                                    |
-| POST   | `/orders/:id/status`        | SELLER/ADMIN  | Update order fulfillment status                                                                              |
-| POST   | `/orders/:id/retry-payment` | JWT           | Retry payment for a failed order                                                                             |
-| POST   | `/orders/:id/cancel`        | JWT           | Cancel an order                                                                                              |
-| POST   | `/orders/:id/return`        | JWT           | Submit a return request                                                                                      |
-| POST   | `/orders/:id/return/status` | SELLER/ADMIN  | Update return request status                                                                                 |
+| Method | Path                           | Auth Required  | Description                                                                                                  |
+| ------ | ------------------------------ | -------------- | ------------------------------------------------------------------------------------------------------------ |
+| POST   | `/orders`                      | JWT            | Create a new order. Rejects self-purchase (`403 Forbidden`) if any item belongs to the authenticated seller. |
+| GET    | `/orders/buyer`                | JWT            | Get current user's order history                                                                             |
+| GET    | `/orders/buyer/:id`            | JWT            | Get buyer's specific order details                                                                           |
+| GET    | `/orders/seller`               | SELLER         | Get orders placed at current seller's store                                                                  |
+| GET    | `/orders/verify/payment`       | JWT            | Verify an order payment                                                                                      |
+| GET    | `/orders/:id`                  | JWT            | Get general order details                                                                                    |
+| POST   | `/orders/:id/status`           | SELLER/ADMIN   | Update order fulfillment status                                                                              |
+| POST   | `/orders/:id/retry-payment`    | JWT            | Retry payment for a failed order                                                                             |
+| POST   | `/orders/:id/cancel`           | JWT            | Cancel an order                                                                                              |
+| POST   | `/orders/:id/confirm-delivery` | JWT            | Buyer confirms delivery & satisfactory inspection, immediately completing the order and releasing escrow     |
+| POST   | `/orders/:id/return`           | JWT            | Submit a return request (within the 3-day buyer inspection window)                                           |
+| POST   | `/orders/:id/return/status`    | SELLER/ADMIN   | Update return request status                                                                                 |
+| POST   | `/cron/escrow/release`         | `X-Cron-Token` | Sweep `DELIVERED` orders past the 3-day escrow window with no open return claim and release seller payouts   |
 
 ### Payment (`/payments`)
 

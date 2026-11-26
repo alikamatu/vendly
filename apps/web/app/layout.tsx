@@ -101,6 +101,7 @@ import SiteFooter from '../components/layout/SiteFooter';
 import Toaster from '../components/ui/Toaster';
 import PwaInstallPrompt from '../components/pwa/PwaInstallPrompt';
 import VerndlyAiAssistant from '../components/ai/VerndlyAiAssistant';
+import AccountStatusBanner from '../components/account/AccountStatusBanner';
 
 export default function RootLayout({
   children,
@@ -141,6 +142,7 @@ export default function RootLayout({
               <FavoriteProvider>
                 <CartProvider>
                   <StoreGuard>
+                    <AccountStatusBanner />
                     {children}
                     <SiteFooter />
                     <AuthModal />

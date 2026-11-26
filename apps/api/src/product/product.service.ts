@@ -314,7 +314,11 @@ export class ProductService {
 
     // Seller-scoped filters (region, city, service area, delivery time)
     const sellerFilter: Prisma.SellerProfileWhereInput = {
-      user: { is_suspended: false },
+      user: {
+        is_suspended: false,
+        disabled_at: null,
+        deletion_scheduled_for: null,
+      },
     };
     if (cityId) {
       sellerFilter.location_id = cityId;
@@ -524,6 +528,8 @@ export class ProductService {
               pro_expires_at: true,
               is_verified: true,
               is_suspended: true,
+              disabled_at: true,
+              deletion_scheduled_for: true,
               created_at: true,
             },
           },
@@ -640,6 +646,8 @@ export class ProductService {
           store_link: link,
           user: {
             is_suspended: false,
+            disabled_at: null,
+            deletion_scheduled_for: null,
           },
         },
       },

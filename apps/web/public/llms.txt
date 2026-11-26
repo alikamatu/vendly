@@ -2,19 +2,19 @@
 
 > Verndly (https://verndly.com) is Ghana's marketplace connecting buyers with verified independent businesses, brands, and young entrepreneurs.
 
-All purchases on Verndly are protected by Paystack escrow settlement, offering a 7-Day Buyer Protection guarantee and fast local courier delivery. Sellers pay a single flat 4% fee (Paystack Mobile Money and card processing included) and keep 96% of every sale, with zero buyer surcharges.
+All purchases on Verndly are protected by Paystack escrow settlement, offering a 3-Day Buyer Protection guarantee and fast local courier delivery. Sellers pay a single flat 4% fee (Paystack Mobile Money and card processing included) and keep 96% of every sale, with zero buyer surcharges.
 
 ## Core Features
 - **Flat 4% Seller Fee (Paystack Included)**: No 7–20% category commissions, no per-order seller shipping contribution, and GH₵ 0 setup or monthly fee on standard verified stores.
 - **Verified Independent Merchants**: Curated stores operating in Greater Accra today and onboarding verified sellers across Ghana via Ghana Card + sales proof, existing store link, or direct review within 24–48 hours.
-- **7-Day Escrow Buyer Protection**: Online payments via Paystack (MTN Mobile Money, Telecel Cash, AirtelTigo Money, Visa, Mastercard) are held in escrow and only released to the seller after delivery and inspection.
+- **3-Day Escrow Buyer Protection**: Online payments via Paystack (MTN Mobile Money, Telecel Cash, AirtelTigo Money, Visa, Mastercard) are held in escrow and only released to the seller after delivery and inspection.
 - **Direct Storefronts**: Each verified seller operates an independent storefront accessible at `https://verndly.com/s/[store_link]`.
 - **Seller-Configured Courier Delivery**: Delivery zones and dispatch windows are set by each verified merchant, including same-day Accra delivery and free Store Pickup where offered.
 
 ## Key URLs
 - Homepage & Featured Marketplace: https://verndly.com/
 - Sell on Verndly (4% Flat Fee & Calculator): https://verndly.com/sell
-- 7-Day Buyer Protection & Escrow Guarantee: https://verndly.com/buyer-protection
+- 3-Day Buyer Protection & Escrow Guarantee: https://verndly.com/buyer-protection
 - Verndly Journal & Commerce Guides: https://verndly.com/blog
 - Marketplace Seller Fees in Ghana vs Verndly 4% (+ Calculator): https://verndly.com/blog/ghana-marketplace-seller-fees-vs-verndly
 - How to Shop Online Safely in Ghana & Avoid MoMo Scams: https://verndly.com/blog/how-to-shop-online-safely-in-ghana
@@ -25,7 +25,7 @@ All purchases on Verndly are protected by Paystack escrow settlement, offering a
 - All Products Catalog: https://verndly.com/products
 - Categories & Brands Directory: https://verndly.com/categories
 - Verified Stores Directory: https://verndly.com/stores
-- 7-Day Returns & Refund Policy: https://verndly.com/returns
+- 3-Day Returns & Refund Policy: https://verndly.com/returns
 - Shipping & Courier Information: https://verndly.com/shipping
 - Frequently Asked Questions: https://verndly.com/faq
 - Help & Support Center: https://verndly.com/help
@@ -41,7 +41,7 @@ All purchases on Verndly are protected by Paystack escrow settlement, offering a
 - Art & Crafts: https://verndly.com/categories/art-crafts
 
 ## Buyer Protection & Refunds
-- **Inspection Period**: 7 calendar days from delivery confirmation.
+- **Inspection Period**: 3 calendar days from delivery confirmation.
 - **Eligible Reasons**: Damaged in transit, defective, materially different model/color, or non-delivery.
 - **Refund Execution**: Automated Paystack gateway reversal directly to original Mobile Money or card account within 24–48 hours.
 - **Dispute Escalation**: Independent administrative arbitration if buyer and merchant do not reach agreement within 48 hours.

@@ -19,6 +19,10 @@ import {
   getPayoutSentEmail,
   getLowStockEmail,
   getAccountSuspendedEmail,
+  getAccountDisabledEmail,
+  getAccountDeletionScheduledEmail,
+  getAccountDeletionReminderEmail,
+  getAccountDeletedEmail,
   EmailLinks,
   OrderEmailData,
   OrderStatusEmailData,
@@ -428,6 +432,62 @@ export class EmailService {
       'Your Verndly account has been suspended',
       getAccountSuspendedEmail(name, reason),
       'account-suspended',
+    );
+  }
+
+  sendAccountDisabledEmail(to: string, name: string, isSeller: boolean) {
+    return this.deliver(
+      to,
+      'Your Verndly account has been disabled',
+      getAccountDisabledEmail(name, isSeller, this.links),
+      'account-disabled',
+    );
+  }
+
+  sendAccountDeletionScheduledEmail(
+    to: string,
+    name: string,
+    scheduledFor: Date | string,
+    productCount: number,
+  ) {
+    return this.deliver(
+      to,
+      'Your Verndly seller account is scheduled for deletion (14 days)',
+      getAccountDeletionScheduledEmail(
+        name,
+        scheduledFor,
+        productCount,
+        this.links,
+      ),
+      'account-deletion-scheduled',
+    );
+  }
+
+  sendAccountDeletionReminderEmail(
+    to: string,
+    name: string,
+    scheduledFor: Date | string,
+    daysRemaining: number,
+  ) {
+    return this.deliver(
+      to,
+      `Reminder: Your Verndly account will be deleted in ${daysRemaining} days`,
+      getAccountDeletionReminderEmail(
+        name,
+        scheduledFor,
+        daysRemaining,
+        this.links,
+      ),
+      'account-deletion-reminder',
+    );
+  }
+
+  sendAccountDeletedEmail(to: string, name: string, isSeller: boolean) {
+    return this.deliver(
+      to,
+      'Your Verndly account has been permanently deleted',
+      getAccountDeletedEmail(name, isSeller, this.links),
+      'account-deleted',
     );
   }
 

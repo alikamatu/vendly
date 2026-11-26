@@ -162,10 +162,10 @@ export function EscrowFlowSvg({ className = 'w-full h-auto' }: { className?: str
           Tracked courier drop
         </text>
         <text x="20" y="136" fill="var(--color-muted)" fontSize="12">
-          + 7-day protection.
+          + 3-day protection.
         </text>
         <text x="20" y="156" fill="var(--color-muted)" fontSize="11" fontFamily="var(--font-mono)">
-          7-day window
+          3-day window
         </text>
       </g>
 
@@ -341,115 +341,82 @@ export function FeeSplitSvg({ className = 'w-full h-auto' }: { className?: strin
 export function GhanaDeliveryNetworkSvg({ className = 'w-full h-auto' }: { className?: string }) {
   return (
     <svg
-      viewBox="0 0 760 240"
+      viewBox="0 0 760 220"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       role="img"
-      aria-label="Verndly seller-configured delivery network starting in Greater Accra with optional inter-regional courier dispatch and free store pickup."
+      aria-label="Verndly seller-configured delivery options: Greater Accra courier dispatch, free store pickup where offered, and seller-arranged regional shipping."
       className={className}
     >
-      <rect width="760" height="240" rx="24" fill="var(--color-surface)" />
+      <rect width="760" height="220" rx="24" fill="var(--color-surface)" />
 
-      {/* Subtle grid dots */}
-      {[120, 240, 360, 480, 600].map((x) =>
-        [60, 120, 180].map((y) => (
-          <circle
-            key={`${x}-${y}`}
-            cx={x}
-            cy={y}
-            r="1.5"
-            fill="var(--color-foreground)"
-            fillOpacity="0.12"
-          />
-        )),
-      )}
-
-      {/* Connecting routes */}
+      {/* Connecting lines */}
       <path
-        d="M150 156 L350 116 L580 76"
+        d="M250 110 L296 110"
         stroke="var(--color-foreground)"
         strokeOpacity="0.22"
         strokeWidth="2"
         strokeDasharray="5 5"
       />
       <path
-        d="M150 156 L350 176 L580 156"
+        d="M492 110 L538 110"
         stroke="var(--color-foreground)"
         strokeOpacity="0.22"
         strokeWidth="2"
         strokeDasharray="5 5"
       />
-      <path
-        d="M350 116 L350 176"
-        stroke="var(--color-foreground)"
-        strokeOpacity="0.16"
-        strokeWidth="1.5"
-      />
 
-      {/* Hub 1: Accra / Tema */}
-      <g transform="translate(88, 128)">
-        <rect width="144" height="56" rx="16" fill="var(--color-foreground)" />
-        <circle cx="22" cy="28" r="5" fill="var(--color-accent)" />
-        <text x="36" y="25" fill="var(--color-background)" fontSize="13" fontWeight="500">
-          Accra · Tema
+      {/* Option 1: Greater Accra Courier */}
+      <g transform="translate(42, 48)">
+        <rect width="208" height="124" rx="20" fill="var(--color-foreground)" />
+        <circle cx="24" cy="30" r="5" fill="var(--color-accent)" />
+        <text x="38" y="34" fill="var(--color-background)" fontSize="14" fontWeight="500">
+          Greater Accra
         </text>
-        <text
-          x="36"
-          y="42"
-          fill="var(--color-background)"
-          fillOpacity="0.68"
-          fontSize="11"
-          fontFamily="var(--font-mono)"
-        >
-          2–6 hrs express
+        <text x="24" y="64" fill="var(--color-background)" fillOpacity="0.78" fontSize="12">
+          Live verified stores today
+        </text>
+        <text x="24" y="84" fill="var(--color-background)" fillOpacity="0.78" fontSize="12">
+          via seller dispatch riders
+        </text>
+        <text x="24" y="108" fill="var(--color-accent)" fontSize="11" fontFamily="var(--font-mono)">
+          SAME-DAY / NEXT-DAY
         </text>
       </g>
 
-      {/* Hub 2: Kumasi */}
-      <g transform="translate(288, 86)">
-        <rect width="148" height="56" rx="16" fill="var(--color-background)" />
-        <circle cx="22" cy="28" r="5" fill="#10b981" />
-        <text x="36" y="25" fill="var(--color-foreground)" fontSize="13" fontWeight="500">
-          Kumasi
-        </text>
-        <text x="36" y="42" fill="var(--color-muted)" fontSize="11" fontFamily="var(--font-mono)">
-          24–48 hrs transit
-        </text>
-      </g>
-
-      {/* Hub 3: Takoradi / Cape Coast */}
-      <g transform="translate(288, 152)">
-        <rect width="164" height="56" rx="16" fill="var(--color-background)" />
-        <circle cx="22" cy="28" r="5" fill="var(--color-foreground)" />
-        <text x="36" y="25" fill="var(--color-foreground)" fontSize="13" fontWeight="500">
-          Takoradi · Coast
-        </text>
-        <text x="36" y="42" fill="var(--color-muted)" fontSize="11" fontFamily="var(--font-mono)">
-          24–48 hrs transit
-        </text>
-      </g>
-
-      {/* Hub 4: Store Pickup */}
-      <g transform="translate(520, 48)">
-        <rect width="176" height="56" rx="16" fill="var(--color-background)" />
-        <circle cx="22" cy="28" r="5" fill="var(--color-foreground)" />
-        <text x="36" y="25" fill="var(--color-foreground)" fontSize="13" fontWeight="500">
+      {/* Option 2: Store Pickup */}
+      <g transform="translate(296, 48)">
+        <rect width="196" height="124" rx="20" fill="var(--color-background)" />
+        <circle cx="24" cy="30" r="5" fill="#10b981" />
+        <text x="38" y="34" fill="var(--color-foreground)" fontSize="14" fontWeight="500">
           Store Pickup
         </text>
-        <text x="36" y="42" fill="var(--color-muted)" fontSize="11" fontFamily="var(--font-mono)">
-          Free where offered
+        <text x="24" y="64" fill="var(--color-muted)" fontSize="12">
+          Collect directly from
+        </text>
+        <text x="24" y="84" fill="var(--color-muted)" fontSize="12">
+          participating shops
+        </text>
+        <text x="24" y="108" fill="#10b981" fontSize="11" fontFamily="var(--font-mono)">
+          GH₵ 0 · FREE PICKUP
         </text>
       </g>
 
-      {/* Hub 5: Inter-Regional */}
-      <g transform="translate(520, 130)">
-        <rect width="176" height="56" rx="16" fill="var(--color-background)" />
-        <circle cx="22" cy="28" r="5" fill="#10b981" />
-        <text x="36" y="25" fill="var(--color-foreground)" fontSize="13" fontWeight="500">
+      {/* Option 3: Other Regions */}
+      <g transform="translate(538, 48)">
+        <rect width="180" height="124" rx="20" fill="var(--color-background)" />
+        <circle cx="24" cy="30" r="5" fill="var(--color-foreground)" />
+        <text x="38" y="34" fill="var(--color-foreground)" fontSize="14" fontWeight="500">
           Other Regions
         </text>
-        <text x="36" y="42" fill="var(--color-muted)" fontSize="11" fontFamily="var(--font-mono)">
-          Seller-arranged
+        <text x="24" y="64" fill="var(--color-muted)" fontSize="12">
+          Where enabled by the
+        </text>
+        <text x="24" y="84" fill="var(--color-muted)" fontSize="12">
+          individual merchant
+        </text>
+        <text x="24" y="108" fill="var(--color-muted)" fontSize="11" fontFamily="var(--font-mono)">
+          SELLER-ARRANGED
         </text>
       </g>
     </svg>

@@ -56,7 +56,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             Privacy
           </Link>
           <a
-            href="mailto:support@verndly.app"
+            href="mailto:support@verndly.com"
             className="hover:text-foreground/70 transition-colors"
           >
             Help

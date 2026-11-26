@@ -140,8 +140,8 @@ export const CORE_BLOG_POSTS: BlogPost[] = [
         id: 'pricing-margin-impact',
         heading: 'Why fee structure changes how fast your brand grows',
         paragraphs: [
-          'When a marketplace takes 20% to 25% of your retail price, small businesses are forced into an impossible choice: either inflate prices above Instagram competitors and lose buyers, or cut margins so thin that one returned order wipes out the profit from three sales.',
-          'With a flat 4% fee, you can list your exact Instagram or walk-in shop price on Verndly without punishing your margin — while giving cold buyers the verified store badge and 7-day Paystack escrow guarantee that makes them click Buy instead of hesitating in DMs.',
+          'When a marketplace takes up to 20% of your retail price plus a per-order shipping contribution, small businesses are forced into an impossible choice: either inflate prices above Instagram competitors and lose buyers, or cut margins so thin that one returned order wipes out the profit from three sales.',
+          'With a flat 4% fee, you can list your exact Instagram or walk-in shop price on Verndly without punishing your margin — while giving cold buyers the verified store badge and 3-day Paystack escrow guarantee that makes them click Buy instead of hesitating in DMs.',
           'Even better, if you already sell on other marketplaces, you do not have to shut anything down overnight. Many Ghanaian merchants run Verndly alongside their existing channels as their primary direct-link storefront (`verndly.com/s/yourstore`) for Instagram, TikTok, and WhatsApp traffic.',
         ],
       },
@@ -202,7 +202,7 @@ export const CORE_BLOG_POSTS: BlogPost[] = [
     keyTakeaways: [
       'Direct MoMo transfers before delivery are irreversible once the scammer cashes out — never send pre-payment to an unverified personal wallet.',
       "Watch for the five CSA-flagged traps: 'delivery fee deposit' scams, stolen Instagram catalogs, brand-impersonation ads, too-good-to-be-true iPhone deals, and fake courier calls.",
-      'Escrow breaks the scam model completely: your money sits with Paystack until the item reaches you and passes a 7-day inspection window.',
+      'Escrow breaks the scam model completely: your money sits with Paystack until the item reaches you and passes a 3-day inspection window.',
       "If you have already been scammed, contact your telco immediately and report to Ghana's Cyber Security Authority via shortcode 292.",
     ],
     keywords: [
@@ -258,7 +258,7 @@ export const CORE_BLOG_POSTS: BlogPost[] = [
         paragraphs: [
           'Conventional advice tells Ghanaian buyers to insist on Pay on Delivery (POD). While POD protects you against total non-delivery, honest sellers increasingly refuse it — especially for long-distance courier orders — because buyers sometimes cancel at the gate or take items without paying.',
           'Marketplace escrow solves trust for both sides simultaneously. When you buy on Verndly, you pay conveniently with MTN MoMo, Telecel Cash, AirtelTigo Money, or card through Paystack — but the merchant does NOT receive your money yet. Your payment is locked in Paystack escrow custody.',
-          'The merchant sees verified confirmation that funds are secured, so they dispatch quickly. After the parcel arrives, you get 7 calendar days to inspect, test, and verify authenticity. If the item never arrives, arrives broken, or does not match the listing, you file a claim and Paystack reverses the funds directly back to your MoMo wallet or card.',
+          'The merchant sees verified confirmation that funds are secured, so they dispatch quickly. After the parcel arrives, you get 3 calendar days to inspect, test, and verify authenticity. If the item never arrives, arrives broken, or does not match the listing, you file a claim and Paystack reverses the funds directly back to your MoMo wallet or card.',
         ],
         callout: {
           eyebrow: 'Zero Pre-Payment Gamble',
@@ -296,7 +296,7 @@ export const CORE_BLOG_POSTS: BlogPost[] = [
       {
         question: 'Is it safe to pay with Mobile Money before I see an item in Ghana?',
         answer:
-          "Paying Mobile Money directly to an unverified individual's personal wallet before seeing the item is risky because MoMo transfers are hard to reverse. Paying via Mobile Money inside a Paystack escrow marketplace like Verndly is safe because the seller does not get your money until delivery is verified and the 7-day inspection window passes.",
+          "Paying Mobile Money directly to an unverified individual's personal wallet before seeing the item is risky because MoMo transfers are hard to reverse. Paying via Mobile Money inside a Paystack escrow marketplace like Verndly is safe because the seller does not get your money until delivery is verified and the 3-day inspection window passes.",
       },
       {
         question: 'What should I do if an online seller asks for a deposit before delivery?',
@@ -306,7 +306,7 @@ export const CORE_BLOG_POSTS: BlogPost[] = [
       {
         question: 'What is the safest way to shop online in Ghana?',
         answer:
-          'Buy from identity-verified merchants on an escrow-protected marketplace. On Verndly, every store is vetted before selling, payments run through Paystack escrow, and every order includes a 7-day Buyer Protection Guarantee.',
+          'Buy from identity-verified merchants on an escrow-protected marketplace. On Verndly, every store is vetted before selling, payments run through Paystack escrow, and every order includes a 3-day Buyer Protection Guarantee.',
       },
       {
         question: 'How do I report an online shopping scam in Ghana?',
@@ -316,7 +316,7 @@ export const CORE_BLOG_POSTS: BlogPost[] = [
     ],
     cta: {
       eyebrow: 'Shop without the MoMo gamble',
-      heading: 'Every order on Verndly is protected by 7-day Paystack escrow.',
+      heading: 'Every order on Verndly is protected by 3-day Paystack escrow.',
       description:
         'Browse verified independent stores across Ghana — pay with MoMo or card while your money stays safe until you inspect your order.',
       primaryLabel: 'Explore verified products',
@@ -337,7 +337,7 @@ export const CORE_BLOG_POSTS: BlogPost[] = [
     shortTitle: 'What is escrow & how it protects Ghanaian shoppers',
     metaTitle: 'What Is Escrow in Online Shopping? Ghana Buyer Protection Explained',
     metaDescription:
-      "Plain-English guide to how escrow works when shopping online in Ghana, how Verndly's 7-day Paystack escrow protects your MoMo, and how it compares to payment-link escrow tools.",
+      "Plain-English guide to how escrow works when shopping online in Ghana, how Verndly's 3-day Paystack escrow protects your MoMo, and how it compares to payment-link escrow tools.",
     eyebrow: 'Escrow & Payments · Explainer',
     audience: 'Buyers',
     readingTime: '5 min read',
@@ -347,7 +347,7 @@ export const CORE_BLOG_POSTS: BlogPost[] = [
       'Escrow is a neutral financial holding step between paying for an order and the seller receiving the cash. Here is exactly how escrow works in Ghana — and why built-in marketplace escrow beats juggling standalone payment links.',
     keyTakeaways: [
       'Escrow holds your Mobile Money or card payment in a neutral Paystack account until your parcel is delivered and inspected.',
-      'Unlike standalone escrow link tools (where you still have to find and vet a stranger yourself), Verndly combines verified merchant storefronts, catalog search, delivery tracking, and 7-day escrow in one checkout.',
+      'Unlike standalone escrow link tools (where you still have to find and vet a stranger yourself), Verndly combines verified merchant storefronts, catalog search, delivery tracking, and 3-day escrow in one checkout.',
       'If an order is wrong, damaged, or never arrives, you get a direct Paystack refund back to your original MoMo wallet or card.',
     ],
     keywords: [
@@ -365,7 +365,7 @@ export const CORE_BLOG_POSTS: BlogPost[] = [
         paragraphs: [
           'Imagine handing cash to a trusted referee while two people trade. The buyer shows they truly have the money; the seller hands over the item knowing they will definitely be paid once they deliver what they promised. Neither side has to gamble on blind trust.',
           "Digital escrow does the exact same thing automatically. When you pay for an item on Verndly using MTN Mobile Money, Telecel Cash, AirtelTigo Money, Visa, or Mastercard, Paystack processes your payment into Verndly's custodial escrow balance rather than sending it straight to the merchant's personal account.",
-          "The seller's dashboard updates immediately to show that the order is paid and secured, so they pack and dispatch your parcel with confidence. Once the courier delivers it, your 7-day Buyer Protection inspection clock starts.",
+          "The seller's dashboard updates immediately to show that the order is paid and secured, so they pack and dispatch your parcel with confidence. Once the courier delivers it, your 3-day Buyer Protection inspection clock starts.",
         ],
       },
       {
@@ -400,7 +400,7 @@ export const CORE_BLOG_POSTS: BlogPost[] = [
               'Manual chat screenshots',
             ],
             [
-              '7-Day inspection & dispute arbitration',
+              '3-Day inspection & dispute arbitration',
               'Included on every order',
               'Varies by tool (often 24–48 hrs)',
             ],
@@ -411,12 +411,12 @@ export const CORE_BLOG_POSTS: BlogPost[] = [
         id: 'what-happens-when-something-goes-wrong',
         heading: 'What happens if your order arrives damaged, wrong, or never shows up?',
         paragraphs: [
-          'Because the money has not been permanently disbursed to the seller during your 7-day inspection window, disputes are resolved with actual financial teeth — not empty apology messages.',
+          'Because the money has not been permanently disbursed to the seller during your 3-day inspection window, disputes are resolved with actual financial teeth — not empty apology messages.',
         ],
         bullets: [
           {
             label: 'Open a claim from your Orders page',
-            text: 'Select the order within 7 calendar days of delivery, choose the issue (damaged, defective, wrong item, or missing parts), and attach clear photos.',
+            text: 'Select the order within 3 calendar days of delivery, choose the issue (damaged, defective, wrong item, or missing parts), and attach clear photos.',
           },
           {
             label: '48-hour merchant response SLA',
@@ -437,7 +437,7 @@ export const CORE_BLOG_POSTS: BlogPost[] = [
       {
         question: 'How does escrow work when buying online in Ghana?',
         answer:
-          'You pay at checkout via Mobile Money or card, and Paystack holds your funds safely in escrow instead of paying the seller immediately. After your order is delivered and passes the 7-day inspection window without a dispute, the funds are released to the seller.',
+          'You pay at checkout via Mobile Money or card, and Paystack holds your funds safely in escrow instead of paying the seller immediately. After your order is delivered and passes the 3-day inspection window without a dispute, the funds are released to the seller.',
       },
       {
         question: 'Do buyers pay an extra fee for escrow on Verndly?',
@@ -447,12 +447,12 @@ export const CORE_BLOG_POSTS: BlogPost[] = [
       {
         question: 'Is there an escrow service in Ghana for Instagram and WhatsApp sellers?',
         answer:
-          'Yes — instead of relying on manual payment links, Instagram and WhatsApp sellers can verify their store on Verndly for free and share their direct storefront link (verndly.com/s/yourstore) so buyers check out with automatic 7-day Paystack escrow.',
+          'Yes — instead of relying on manual payment links, Instagram and WhatsApp sellers can verify their store on Verndly for free and share their direct storefront link (verndly.com/s/yourstore) so buyers check out with automatic 3-day Paystack escrow.',
       },
     ],
     cta: {
       eyebrow: 'Built-in buyer protection',
-      heading: 'See every rule of our 7-Day Escrow Guarantee.',
+      heading: 'See every rule of our 3-Day Escrow Guarantee.',
       description:
         'Learn what is covered, how refunds reverse to Mobile Money, and how our 48-hour dispute SLA protects you.',
       primaryLabel: 'Explore Buyer Protection',
@@ -484,7 +484,7 @@ export const CORE_BLOG_POSTS: BlogPost[] = [
     keyTakeaways: [
       'Pay on Delivery (POD) shifts 100% of transit, rejection, and theft risk onto the seller — which is why many legitimate shops refuse POD outside Accra.',
       'POD also stops protecting buyers the moment you hand over cash: if a phone battery dies or a blender sparks that evening, the rider and seller are already gone.',
-      'Escrow protects BOTH parties at once: sellers only dispatch after confirmed Paystack payment, and buyers get a full 7-day inspection window after delivery.',
+      'Escrow protects BOTH parties at once: sellers only dispatch after confirmed Paystack payment, and buyers get a full 3-day inspection window after delivery.',
     ],
     keywords: [
       'pay on delivery ghana',
@@ -530,7 +530,7 @@ export const CORE_BLOG_POSTS: BlogPost[] = [
             [
               'Electronics / appliance fails 2 days later',
               'Buyer has zero leverage after cash handover',
-              'Buyer protected for full 7 calendar days',
+              'Buyer protected for full 3 calendar days',
             ],
             [
               'Inter-regional courier orders (where seller ships)',
@@ -550,7 +550,7 @@ export const CORE_BLOG_POSTS: BlogPost[] = [
         heading: 'Why buyers actually get stronger protection with escrow than POD',
         paragraphs: [
           "With Cash on Delivery, a rushed courier waiting in traffic rarely gives you 20 minutes to charge a laptop, check a jacket's seams, or test an appliance. Once you hand over cash or send MoMo to the rider, your protection ends.",
-          "With Verndly's 7-day escrow guarantee, you never have to rush a doorstep inspection. Take your order inside, try it on, test the device thoroughly, and confirm everything matches the listing. Your money is safely held during the protection window — and if anything is wrong, Verndly mediates and reverses your payment via Paystack.",
+          "With Verndly's 3-day escrow guarantee, you never have to rush a doorstep inspection. Take your order inside, try it on, test the device thoroughly, and confirm everything matches the listing. Your money is safely held during the protection window — and if anything is wrong, Verndly mediates and reverses your payment via Paystack.",
         ],
       },
       {
@@ -570,7 +570,7 @@ export const CORE_BLOG_POSTS: BlogPost[] = [
       {
         question: 'Should I insist on Pay on Delivery in Ghana, or is escrow safer?',
         answer:
-          'Escrow is safer for both buyers and sellers. Pay on Delivery only protects buyers up to the doorstep and leaves sellers exposed to no-show losses, whereas Paystack escrow protects buyers for 7 full days after delivery while guaranteeing sellers are paid for fulfilled orders.',
+          'Escrow is safer for both buyers and sellers. Pay on Delivery only protects buyers up to the doorstep and leaves sellers exposed to no-show losses, whereas Paystack escrow protects buyers for 3 full days after delivery while guaranteeing sellers are paid for fulfilled orders.',
       },
       {
         question: 'A buyer took my item on pay on delivery and never paid — how do I prevent that?',
@@ -687,7 +687,7 @@ export const CORE_BLOG_POSTS: BlogPost[] = [
         ],
         callout: {
           eyebrow: 'Verification + Escrow Together',
-          text: 'Identity vetting catches bad actors at the door; Paystack 7-day escrow guarantees that even if a real store makes an honest fulfillment mistake, your money is still 100% protected.',
+          text: 'Identity vetting catches bad actors at the door; Paystack 3-day escrow guarantees that even if a real store makes an honest fulfillment mistake, your money is still 100% protected.',
           tone: 'emerald',
         },
       },
@@ -696,7 +696,7 @@ export const CORE_BLOG_POSTS: BlogPost[] = [
       {
         question: 'Is there a place in Ghana to check if an online seller is legit before paying?',
         answer:
-          "You can check registered company names via the Office of the Registrar of Companies (ORC) at orc.gov.gh and review public feedback, or shop directly through Verndly's Verified Stores directory where every merchant is manually vetted and every payment is held in 7-day Paystack escrow.",
+          "You can check registered company names via the Office of the Registrar of Companies (ORC) at orc.gov.gh and review public feedback, or shop directly through Verndly's Verified Stores directory where every merchant is manually vetted and every payment is held in 3-day Paystack escrow.",
       },
       {
         question: 'How do I tell if an Instagram shop in Ghana is fake?',
@@ -713,7 +713,7 @@ export const CORE_BLOG_POSTS: BlogPost[] = [
       eyebrow: 'Skip the guesswork',
       heading: "Browse Ghana's directory of verified independent stores.",
       description:
-        'Every storefront on Verndly is vetted before going live and backed by 7-day Paystack escrow.',
+        'Every storefront on Verndly is vetted before going live and backed by 3-day Paystack escrow.',
       primaryLabel: 'Browse verified stores',
       primaryHref: '/stores',
       secondaryLabel: 'Learn about Buyer Protection',

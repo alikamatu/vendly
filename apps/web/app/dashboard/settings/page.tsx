@@ -256,6 +256,15 @@ export default function SettingsPage() {
       color: 'text-blue-500',
       bg: 'bg-blue-500/10',
     },
+    {
+      id: 'data',
+      name: 'Data & Account Status',
+      desc: 'Export data, disable or delete account',
+      icon: ShieldAlert,
+      href: '/dashboard/settings/data',
+      color: 'text-rose-500',
+      bg: 'bg-rose-500/10',
+    },
   ];
 
   const shoppingGroup: SettingItem[] = [

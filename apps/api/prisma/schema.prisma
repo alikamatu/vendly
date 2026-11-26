@@ -48,6 +48,14 @@ model User {
   oauth_provider_id          String?
   avatar_url                 String?
   terms_accepted_at          DateTime?
+  /// Self-service reversible account pause (separate from admin `is_suspended`).
+  disabled_at                DateTime?
+  /// Timestamp when a seller requested permanent deletion (starts 14-day grace period).
+  deletion_requested_at      DateTime?
+  /// Timestamp when scheduled permanent deletion executes (14 days after request).
+  deletion_scheduled_for     DateTime?
+  /// Set once the 3-day pre-deletion reminder email (Day 11) has been dispatched.
+  deletion_reminder_sent_at  DateTime?
   reviewed_approvals         AdminApproval[] @relation("ReviewedBy")
   admin_approvals            AdminApproval[]
   favorites                  Favorite[]
@@ -58,6 +66,8 @@ model User {
   return_requests            ReturnRequest[]
   addresses                  Address[]
   notifications              Notification[]
+  reports_filed              Report[]        @relation("ReportsFiled")
+  reports_reviewed           Report[]        @relation("ReportsReviewed")
 
   @@unique([oauth_provider, oauth_provider_id])
   @@map("users")
@@ -119,6 +129,7 @@ model SellerProfile {
   user                     User                      @relation(fields: [user_id], references: [id])
   structured_location      Location?                 @relation(fields: [location_id], references: [id])
   reviews                  Review[]                  @relation("SellerReviews")
+  reports                  Report[]                  @relation("SellerReports")
 
   /// Denormalized ratings — recalculated on review write/delete.
   rating_avg   Float @default(0)
@@ -166,6 +177,7 @@ model Product {
   seller             SellerProfile             @relation(fields: [seller_id], references: [id])
   reviews            Review[]                  @relation("ProductReviews")
   variants           ProductVariant[]
+  reports            Report[]                  @relation("ProductReports")
 
   /// Denormalized ratings — recalculated on review write/delete.
   rating_avg   Float @default(0)
@@ -181,7 +193,7 @@ model Product {
 model ProductPromotionPayment {
   id           String                   @id @default(uuid()) @db.Uuid
   seller_id    String                   @db.Uuid
-  product_id   String                   @db.Uuid
+  product_id   String?                  @db.Uuid
   reference    String                   @unique
   category     PromotionPaymentCategory @default(BOOST)
   amount       Decimal                  @db.Decimal(10, 2)
@@ -192,7 +204,7 @@ model ProductPromotionPayment {
   consumed_at  DateTime?
   created_at   DateTime                 @default(now())
   updated_at   DateTime                 @updatedAt
-  product      Product                  @relation(fields: [product_id], references: [id])
+  product      Product?                 @relation(fields: [product_id], references: [id], onDelete: SetNull)
   seller       SellerProfile            @relation(fields: [seller_id], references: [id])
 
   @@index([seller_id, status])
@@ -314,16 +326,17 @@ model VendorBalanceSnapshot {
 }
 
 model OrderItem {
-  id         String          @id @default(uuid()) @db.Uuid
-  order_id   String          @db.Uuid
-  product_id String          @db.Uuid
-  variant_id String?         @db.Uuid
-  quantity   Int
-  price      Decimal         @db.Decimal(10, 2)
-  order      Order           @relation(fields: [order_id], references: [id])
-  product    Product         @relation(fields: [product_id], references: [id])
-  variant    ProductVariant? @relation(fields: [variant_id], references: [id])
-  review     Review?
+  id            String          @id @default(uuid()) @db.Uuid
+  order_id      String          @db.Uuid
+  product_id    String?         @db.Uuid
+  product_title String?
+  variant_id    String?         @db.Uuid
+  quantity      Int
+  price         Decimal         @db.Decimal(10, 2)
+  order         Order           @relation(fields: [order_id], references: [id])
+  product       Product?        @relation(fields: [product_id], references: [id], onDelete: SetNull)
+  variant       ProductVariant? @relation(fields: [variant_id], references: [id], onDelete: SetNull)
+  review        Review?
 
   @@map("order_items")
 }
@@ -405,8 +418,8 @@ model Favorite {
   user_id    String   @db.Uuid
   product_id String   @db.Uuid
   created_at DateTime @default(now())
-  product    Product  @relation(fields: [product_id], references: [id])
-  user       User     @relation(fields: [user_id], references: [id])
+  product    Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@unique([user_id, product_id])
   @@map("favorites")
@@ -442,7 +455,7 @@ model Review {
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
 
-  product    Product       @relation("ProductReviews", fields: [product_id], references: [id])
+  product    Product       @relation("ProductReviews", fields: [product_id], references: [id], onDelete: Cascade)
   seller     SellerProfile @relation("SellerReviews", fields: [seller_id], references: [id])
   buyer      User          @relation("BuyerReviews", fields: [buyer_id], references: [id])
   order_item OrderItem     @relation(fields: [order_item_id], references: [id])
@@ -744,4 +757,68 @@ enum RefundStatus {
   PROCESSING
   SUCCESS
   FAILED
+}
+
+/// Buyer-filed trust & safety reports against a product listing or seller store.
+model Report {
+  id                String                  @id @default(uuid()) @db.Uuid
+  reporter_id       String                  @db.Uuid
+  target_type       ReportTargetType
+  product_id        String?                 @db.Uuid
+  seller_id         String?                 @db.Uuid
+  reason            ReportReason
+  details           String?                 @db.Text
+  evidence_urls     String[]                @default([])
+  status            ReportStatus            @default(OPEN)
+  resolution_action ReportResolutionAction?
+  admin_notes       String?                 @db.Text
+  reviewed_by       String?                 @db.Uuid
+  reviewed_at       DateTime?
+  created_at        DateTime                @default(now())
+  updated_at        DateTime                @updatedAt
+
+  reporter User           @relation("ReportsFiled", fields: [reporter_id], references: [id], onDelete: Cascade)
+  reviewer User?          @relation("ReportsReviewed", fields: [reviewed_by], references: [id], onDelete: SetNull)
+  product  Product?       @relation("ProductReports", fields: [product_id], references: [id], onDelete: SetNull)
+  seller   SellerProfile? @relation("SellerReports", fields: [seller_id], references: [id], onDelete: SetNull)
+
+  @@index([status, created_at(sort: Desc)])
+  @@index([target_type, status, created_at(sort: Desc)])
+  @@index([product_id])
+  @@index([seller_id])
+  @@index([reporter_id, created_at(sort: Desc)])
+  @@map("reports")
+}
+
+enum ReportTargetType {
+  PRODUCT
+  SELLER
+}
+
+enum ReportReason {
+  COUNTERFEIT
+  MISLEADING
+  PROHIBITED_ITEM
+  SCAM_FRAUD
+  HARASSMENT
+  SPAM
+  OFFENSIVE_CONTENT
+  INACCURATE_PRICING
+  OTHER
+}
+
+enum ReportStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  DISMISSED
+}
+
+enum ReportResolutionAction {
+  NONE
+  WARNING_ISSUED
+  PRODUCT_REJECTED
+  PRODUCT_ARCHIVED
+  SELLER_SUSPENDED
+  DISMISSED
 }

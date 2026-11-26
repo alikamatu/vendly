@@ -7,7 +7,7 @@ import { SITE_FAQ_ITEMS } from '@/lib/content/faq';
 export const metadata: Metadata = buildMetadata({
   title: 'Frequently Asked Questions (FAQ) — Buyer Protection & Shopping Guide',
   description:
-    'Find answers to frequently asked questions about shopping, Paystack escrow payments, 7-day buyer protection, returns, delivery, and seller verification on Verndly.',
+    'Find answers to frequently asked questions about shopping, Paystack escrow payments, 3-day buyer protection, returns, delivery, and seller verification on Verndly.',
   path: '/faq',
   keywords: [
     'Verndly FAQ',

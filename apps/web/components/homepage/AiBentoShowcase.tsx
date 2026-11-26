@@ -18,7 +18,7 @@ const DEMO_PARSE_EXAMPLES = [
     prompt: 'Clean student laptop or iPad for university',
     summary:
       'Matched verified electronics sellers offering tested laptops and tablets with escrow protection.',
-    pills: ['Electronics', 'Verified Tech', '7-Day Inspection', 'Ready to Ship'],
+    pills: ['Electronics', 'Verified Tech', '3-Day Inspection', 'Ready to Ship'],
   },
   {
     prompt: 'Standing fan and kettle for my new apartment',
@@ -210,7 +210,7 @@ export default function AiBentoShowcase() {
           </div>
         </motion.article>
 
-        {/* Bento 4 (7 cols): 7-Day Paystack Escrow */}
+        {/* Bento 4 (7 cols): 3-Day Paystack Escrow */}
         <motion.article
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -221,7 +221,7 @@ export default function AiBentoShowcase() {
           <div className="space-y-3">
             <span className="bg-background/15 text-background inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 text-[11px] font-semibold">
               <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
-              7-Day Paystack Escrow
+              3-Day Paystack Escrow
             </span>
             <h3 className="text-2xl font-semibold tracking-tight sm:text-4xl">
               Built-in trust for Mobile Money and card payments.
@@ -244,7 +244,7 @@ export default function AiBentoShowcase() {
               },
               {
                 step: '03 · Released',
-                text: '7-day inspection window protects buyers before seller payout.',
+                text: '3-day inspection window protects buyers before seller payout.',
               },
             ].map((stage) => (
               <div key={stage.step} className="bg-background/10 rounded-3xl p-4">

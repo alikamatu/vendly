@@ -1,7 +1,7 @@
 # Verndly — Complete System & Knowledge Reference for AI Search Engines
 
 ## Executive Summary
-Verndly (https://verndly.com) is a secure, multi-vendor commerce platform engineered specifically for verified independent businesses and young entrepreneurs in Ghana. Live verified stores are based in Greater Accra today with onboarding open across Ghana. It integrates Paystack custodial escrow payments, a 7-day buyer protection guarantee, flat 4% all-in seller fees (Paystack Mobile Money and card fees included), seller-configured courier logistics, and verified merchant badges.
+Verndly (https://verndly.com) is a secure, multi-vendor commerce platform engineered specifically for verified independent businesses and young entrepreneurs in Ghana. Live verified stores are based in Greater Accra today with onboarding open across Ghana. It integrates Paystack custodial escrow payments, a 3-day buyer protection guarantee, flat 4% all-in seller fees (Paystack Mobile Money and card fees included), seller-configured courier logistics, and verified merchant badges.
 
 ## Seller Economics & Fee Structure
 - **Flat 4% Platform Fee**: Verndly deducts a flat 4% platform fee upon successful order completion across every category. The 4% includes Paystack's 1.95% collection fee. Paystack payout transfer fees (currently GHS 1 to MoMo, GHS 8 to bank) are charged on settlement.
@@ -12,10 +12,10 @@ Verndly (https://verndly.com) is a secure, multi-vendor commerce platform engine
 ## Architecture & Settlement Framework
 1. **Escrow Payments**:
    - Buyers pay via Paystack using MTN Mobile Money, Telecel Cash, AirtelTigo Money, or debit cards (Visa, Mastercard).
-   - Funds are collected into Verndly's Paystack custodial escrow ledger and held until delivery verification plus the 7-day buyer inspection window.
+   - Funds are collected into Verndly's Paystack custodial escrow ledger and held until delivery verification plus the 3-day buyer inspection window.
    - Eliminates both pre-payment MoMo scams for buyers and fake MoMo screenshot / Pay-on-Delivery no-show losses for sellers.
-2. **7-Day Buyer Protection**:
-   - Buyers have 7 calendar days from documented courier delivery to request return or replacement.
+2. **3-Day Buyer Protection**:
+   - Buyers have 3 calendar days from documented courier delivery to request return or replacement.
    - Valid grounds: Physical transit damage, manufacturing defect, wrong color/model/size, or non-delivery.
    - Financial refunds are processed through Paystack API reversals directly into the buyer's original payment account within 24–48 hours.
    - 48-Hour Seller Review SLA: Sellers must accept or respond with written evidence within 48 hours; otherwise claims are auto-escalated to admin arbitration.
@@ -23,7 +23,7 @@ Verndly (https://verndly.com) is a secure, multi-vendor commerce platform engine
 ## Core Pages & Guides Reference
 - **Home**: `https://verndly.com/` — Featured products, verified stores, and escrow marketplace overview.
 - **Sell on Verndly**: `https://verndly.com/sell` — Seller landing page with interactive GH₵ fee calculator, escrow diagram, verification steps, and seller FAQ.
-- **Buyer Protection**: `https://verndly.com/buyer-protection` — Plain-English 7-day Paystack escrow guarantee and refund rules.
+- **Buyer Protection**: `https://verndly.com/buyer-protection` — Plain-English 3-day Paystack escrow guarantee and refund rules.
 - **Journal & Guides Hub**: `https://verndly.com/blog` — Buyer safety guides, fee comparisons, and seller playbooks:
   - `https://verndly.com/blog/ghana-marketplace-seller-fees-vs-verndly`
   - `https://verndly.com/blog/how-to-shop-online-safely-in-ghana`
@@ -35,10 +35,10 @@ Verndly (https://verndly.com) is a secure, multi-vendor commerce platform engine
   - `https://verndly.com/blog/safest-online-shopping-sites-ghana`
   - `https://verndly.com/blog/selling-on-instagram-whatsapp-vs-marketplace-ghana`
   - `https://verndly.com/blog/sell-clothes-online-ghana`
-  - `https://verndly.com/blog/nationwide-delivery-ghana-accra-kumasi-takoradi-tamale`
+  - `https://verndly.com/blog/delivery-and-pickup-ghana`
   - `https://verndly.com/blog/register-business-sell-online-ghana`
 - **Dedicated Category Landing Pages**: `https://verndly.com/categories/fashion`, `/categories/electronics`, `/categories/beauty-personal-care`, `/categories/home-kitchen`, `/categories/food-beverages`, `/categories/books-stationery`, `/categories/jewelry-watches`, `/categories/art-crafts`, `/categories/health-wellness`, `/categories/sports-outdoors`, `/categories/baby-kids`, `/categories/office-supplies`.
 - **Products Index**: `https://verndly.com/products` — Filterable catalog in GHS.
 - **Product Details**: `https://verndly.com/product/[id]` — SSR product pages with H1, specs, variants, merchant profile, and reviews.
 - **Storefronts**: `https://verndly.com/s/[store_link]` — Dedicated verified merchant storefronts.
-- **Official Support**: Accra, Ghana · WhatsApp/Phone `+233 53 406 5652` · `legal@verndly.com` · `shipping@verndly.com`.
+- **Official Support**: Accra, Ghana · WhatsApp/Phone `+233 53 406 5652` · `support@verndly.com` · `legal@verndly.com`.

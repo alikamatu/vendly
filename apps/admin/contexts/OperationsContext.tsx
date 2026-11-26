@@ -16,6 +16,7 @@ interface BadgeCounts {
   pendingApprovals: number;
   pendingReturns: number;
   flaggedReviews: number;
+  openReports: number;
   unreadNotifications: number;
 }
 
@@ -36,6 +37,7 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
     pendingApprovals: 0,
     pendingReturns: 0,
     flaggedReviews: 0,
+    openReports: 0,
     unreadNotifications: 0,
   });
 
@@ -51,6 +53,7 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
         pendingApprovals: 0,
         pendingReturns: 0,
         flaggedReviews: 0,
+        openReports: 0,
         unreadNotifications: 0,
       };
 
@@ -58,6 +61,7 @@ export function OperationsProvider({ children }: { children: ReactNode }) {
         newBadges.pendingApprovals = overview.value.pendingApprovalsCount || 0;
         newBadges.pendingReturns = overview.value.pendingReturnsCount || 0;
         newBadges.flaggedReviews = overview.value.flaggedReviewsCount || 0;
+        newBadges.openReports = overview.value.openReportsCount || 0;
       }
 
       if (notifStats.status === 'fulfilled' && notifStats.value) {

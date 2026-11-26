@@ -112,7 +112,7 @@ export const EXTENDED_BLOG_POSTS: BlogPost[] = [
     shortTitle: 'Is Verndly legit? How it works & protects you',
     metaTitle: 'Is Verndly Legit? How Verndly Ghana Works, Paystack Escrow & Support',
     metaDescription:
-      'Everything you should check before buying or selling on Verndly Ghana: our Paystack custodial escrow architecture, 7-day refund guarantee, merchant vetting, and official contact channels.',
+      'Everything you should check before buying or selling on Verndly Ghana: our Paystack custodial escrow architecture, 3-day refund guarantee, merchant vetting, and official contact channels.',
     eyebrow: 'Brand Transparency · Trust',
     audience: 'Buyers',
     readingTime: '5 min read',
@@ -123,7 +123,7 @@ export const EXTENDED_BLOG_POSTS: BlogPost[] = [
     keyTakeaways: [
       'Verndly is a Ghanaian multi-vendor marketplace headquartered in Accra connecting buyers with verified independent businesses and young entrepreneurs.',
       'All online payments are processed exclusively through Paystack (PCI-DSS certified) and held in custodial escrow — Verndly never asks you to send MoMo to a personal phone number.',
-      'Every order includes a legally binding 7-Day Buyer Protection Guarantee with direct Paystack reversals for damaged, defective, wrong, or undelivered orders.',
+      'Every order includes a legally binding 3-Day Buyer Protection Guarantee with direct Paystack reversals for damaged, defective, wrong, or undelivered orders.',
       'Official Verndly domain is strictly https://verndly.com and official support WhatsApp/phone is +233 53 406 5652.',
     ],
     keywords: [
@@ -141,7 +141,7 @@ export const EXTENDED_BLOG_POSTS: BlogPost[] = [
         paragraphs: [
           'The fastest way to judge whether a Ghanaian commerce platform is legitimate is to look at its payment rails. Verndly does not collect personal Mobile Money transfers in WhatsApp DMs.',
           "Every checkout runs directly through Paystack — the same regulated payment processor trusted across Ghana and Africa for MTN MoMo, Telecel Cash, AirtelTigo Money, Visa, and Mastercard. Your card or MoMo credentials are entered directly in Paystack's encrypted checkout, never stored on Verndly servers.",
-          'Instead of forwarding your cash instantly to an unfamiliar seller, Verndly holds the funds in escrow until your order is delivered and backed by our 7-day inspection policy. If something goes wrong, refunds reverse automatically through Paystack back to your original payment source.',
+          'Instead of forwarding your cash instantly to an unfamiliar seller, Verndly holds the funds in escrow until your order is delivered and backed by our 3-day inspection policy. If something goes wrong, refunds reverse automatically through Paystack back to your original payment source.',
         ],
       },
       {
@@ -159,7 +159,7 @@ export const EXTENDED_BLOG_POSTS: BlogPost[] = [
             ['Official Storefront URLs', 'https://verndly.com/s/[store-name]'],
             ['Payment Processor', 'Paystack (MTN MoMo, Telecel, AT Money, Visa, Mastercard)'],
             ['Support WhatsApp & Phone', '+233 53 406 5652 (Mon – Sat, 8:00 AM – 8:00 PM GMT)'],
-            ['Legal & Dispute Desk', 'legal@verndly.com · shipping@verndly.com'],
+            ['Support & Dispute Desk', 'support@verndly.com · legal@verndly.com'],
             ['Headquarters', 'Accra, Ghana'],
           ],
         },
@@ -169,7 +169,7 @@ export const EXTENDED_BLOG_POSTS: BlogPost[] = [
         heading: 'How Verndly makes money (so you know the incentives)',
         paragraphs: [
           'Transparency about business models builds trust. Verndly earns a flat 4% platform fee from sellers only when an order is completed successfully, plus optional Verndly Pro subscriptions for merchants who want featured placement and deeper analytics.',
-          'Because we only succeed when buyers receive genuine products and come back to shop again, our incentives are directly aligned with weeding out dishonest sellers and enforcing our 7-day Buyer Protection Guarantee.',
+          'Because we only succeed when buyers receive genuine products and come back to shop again, our incentives are directly aligned with weeding out dishonest sellers and enforcing our 3-day Buyer Protection Guarantee.',
         ],
       },
     ],
@@ -226,7 +226,7 @@ export const EXTENDED_BLOG_POSTS: BlogPost[] = [
       'Jiji and Tonaton are classifieds boards, not escrow marketplaces — their own FAQs state they cannot vouch for every seller or protect payments.',
       "Instagram and WhatsApp host Ghana's most creative independent brands, but offer zero built-in checkout protection or dispute arbitration.",
       'Traditional large marketplaces offer broad warehouse inventory and pickup stations, though shoppers cite slower refund tickets and high seller fees (up to 20%) push independent brands away.',
-      'Verndly combines independent Ghanaian brands with mandatory merchant verification and 7-day Paystack escrow protection.',
+      'Verndly combines independent Ghanaian brands with mandatory merchant verification and 3-day Paystack escrow protection.',
     ],
     keywords: [
       'best online shopping sites in ghana',
@@ -254,7 +254,7 @@ export const EXTENDED_BLOG_POSTS: BlogPost[] = [
           rows: [
             [
               'Payment Protection',
-              'Paystack Escrow (7-day window)',
+              'Paystack Escrow (3-day window)',
               'Platform checkout & refund ticket',
               'None (classifieds)',
               'None (direct MoMo)',
@@ -268,7 +268,7 @@ export const EXTENDED_BLOG_POSTS: BlogPost[] = [
             ],
             [
               'Return Window',
-              '7 calendar days + 48h SLA',
+              '3 calendar days + 48h SLA',
               '7 days (select items)',
               'None — meet in person',
               'Depends on seller goodwill',
@@ -314,12 +314,12 @@ export const EXTENDED_BLOG_POSTS: BlogPost[] = [
       {
         question: 'Which online marketplace in Ghana has built-in escrow buyer protection?',
         answer:
-          'Verndly holds every online Mobile Money and card payment in Paystack escrow with a 7-Day Buyer Protection Guarantee and manual merchant verification.',
+          'Verndly holds every online Mobile Money and card payment in Paystack escrow with a 3-Day Buyer Protection Guarantee and manual merchant verification.',
       },
     ],
     cta: {
       eyebrow: 'Independent brands, zero scam anxiety',
-      heading: 'Shop verified Ghanaian stores with 7-day escrow.',
+      heading: 'Shop verified Ghanaian stores with 3-day escrow.',
       description:
         'Pay with MTN MoMo, Telecel Cash, AirtelTigo Money, or card — protected from checkout to inspection.',
       primaryLabel: 'Explore Verndly products',
@@ -395,7 +395,7 @@ export const EXTENDED_BLOG_POSTS: BlogPost[] = [
               'Buyer escrow protection',
               'None — high drop-off',
               'None — buyer must trust new domain',
-              'Built-in 7-day Paystack escrow',
+              'Built-in 3-day Paystack escrow',
             ],
             [
               'Search & marketplace discovery',
@@ -458,7 +458,7 @@ export const EXTENDED_BLOG_POSTS: BlogPost[] = [
       "Fashion is Ghana's fastest-growing online category — and also the category punished hardest by legacy 20% marketplace commissions. Here is how independent clothing and thrift brands are launching profitably in 2026.",
     keyTakeaways: [
       'Instagram Shopping Checkout is unavailable in Ghana, and legacy marketplaces charge up to 20% commission + shipping deductions on fashion — wiping out 25–30% of every sale.',
-      'On Verndly, fashion sellers pay a flat 4% all-in fee (keeping 96%), support size/color SKU variants natively, and convert cold shoppers with 7-day escrow.',
+      'On Verndly, fashion sellers pay a flat 4% all-in fee (keeping 96%), support size/color SKU variants natively, and convert cold shoppers with 3-day escrow.',
       'Clear natural-light photography, exact size measurements, and transparent dispatch SLAs cut size-related returns dramatically.',
     ],
     keywords: [
@@ -537,7 +537,7 @@ export const EXTENDED_BLOG_POSTS: BlogPost[] = [
     ],
   },
   {
-    slug: 'nationwide-delivery-ghana-accra-kumasi-takoradi-tamale',
+    slug: 'delivery-and-pickup-ghana',
     rank: 17,
     title: 'How delivery and store pickup work on Verndly in Ghana',
     shortTitle: 'How delivery & store pickup work on Verndly',
@@ -642,7 +642,7 @@ export const EXTENDED_BLOG_POSTS: BlogPost[] = [
       eyebrow: 'Transparent delivery & pickup',
       heading: 'Order from verified stores with clear checkout delivery fees.',
       description:
-        'See each store’s delivery options before you pay, backed by 7-day escrow protection.',
+        'See each store’s delivery options before you pay, backed by 3-day escrow protection.',
       primaryLabel: 'Shop products now',
       primaryHref: '/products',
       secondaryLabel: 'Full Shipping Policy',

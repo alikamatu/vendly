@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft,
   HelpCircle,
@@ -19,13 +19,12 @@ import {
   UserCircle,
   Store,
   Bug,
-} from "lucide-react";
-import Link from "next/link";
-import Button from "@/components/ui/Button";
-import Select from "@/components/ui/Select";
-import { useAuth } from "@/lib/contexts/auth-context";
-import { sanitizeText } from "@/lib/utils/sanitize";
-
+} from 'lucide-react';
+import Link from 'next/link';
+import Button from '@/components/ui/Button';
+import Select from '@/components/ui/Select';
+import { useAuth } from '@/lib/contexts/auth-context';
+import { sanitizeText } from '@/lib/utils/sanitize';
 
 interface FaqItem {
   q: string;
@@ -36,122 +35,124 @@ interface FaqItem {
 
 const FAQS: FaqItem[] = [
   {
-    q: "How do I track my order?",
+    q: 'How do I track my order?',
     a: "Go to My Orders from the Settings menu or visit the Orders page. Each order shows its current status — Pending, Processing, Shipped, or Delivered. You can also see the seller's contact details to follow up directly.",
     icon: Package,
-    tag: "Orders",
+    tag: 'Orders',
   },
   {
-    q: "How do I become a seller on Verndly?",
+    q: 'How do I become a seller on Verndly?',
     a: "Tap 'Become a Seller' in your Settings. You'll need to complete identity verification by submitting a National ID and proof of business activity. Our team reviews applications within 24–48 hours.",
     icon: Store,
-    tag: "Selling",
+    tag: 'Selling',
   },
   {
-    q: "What payment methods are accepted?",
+    q: 'What payment methods are accepted?',
     a: "Verndly accepts Mobile Money (MTN, Vodafone, AirtelTigo), bank transfer, and cash on delivery depending on the seller's settings. You'll see available payment options at checkout.",
     icon: CreditCard,
-    tag: "Payments",
+    tag: 'Payments',
   },
   {
-    q: "How do I reset or change my password?",
+    q: 'How do I reset or change my password?',
     a: "Go to Settings → Password & Security and use the Change Password form. If you're locked out, use 'Forgot Password' on the login screen and we'll send a reset link to your email.",
     icon: ShieldCheck,
-    tag: "Account",
+    tag: 'Account',
   },
   {
-    q: "How do I report a problem with a seller?",
+    q: 'How do I report a problem with a seller?',
     a: "Use the 'Report a Problem' form below and select 'Seller Issue' as the topic. Include the seller's store name and a description of what happened. Our support team will investigate within 2 business days.",
     icon: UserCircle,
-    tag: "Safety",
+    tag: 'Safety',
   },
   {
-    q: "Can I change my email address?",
-    a: "Email changes require identity verification to protect your account. Please contact our support team via the form below or by emailing support@verndly.app. We'll guide you through the process securely.",
+    q: 'Can I change my email address?',
+    a: "Email changes require identity verification to protect your account. Please contact our support team via the form below or by emailing support@verndly.com. We'll guide you through the process securely.",
     icon: Mail,
-    tag: "Account",
+    tag: 'Account',
   },
   {
-    q: "How do I cancel or return an order?",
-    a: "Contact the seller directly via their WhatsApp or store page to request a cancellation or return. Our platform currently facilitates buyer–seller communication; cancellation policies vary per seller.",
+    q: 'How do I cancel or return an order?',
+    a: 'Contact the seller directly via their WhatsApp or store page to request a cancellation or return. Our platform currently facilitates buyer–seller communication; cancellation policies vary per seller.',
     icon: Package,
-    tag: "Orders",
+    tag: 'Orders',
   },
   {
-    q: "Is my personal information safe?",
-    a: "Yes. Verndly encrypts your data in transit (TLS) and at rest. We never sell your personal data to third parties. You can review our full privacy policy in the Terms & Conditions section.",
+    q: 'Is my personal information safe?',
+    a: 'Yes. Verndly encrypts your data in transit (TLS) and at rest. We never sell your personal data to third parties. You can review our full privacy policy in the Terms & Conditions section.',
     icon: ShieldCheck,
-    tag: "Privacy",
+    tag: 'Privacy',
   },
 ];
 
-
 const CONTACT_OPTIONS = [
   {
-    id: "whatsapp",
-    label: "WhatsApp",
-    desc: "Fastest response · Mon–Fri 8am–8pm",
+    id: 'whatsapp',
+    label: 'WhatsApp',
+    desc: 'Fastest response · Mon–Sat 8am–8pm',
     icon: MessageCircle,
-    color: "text-emerald-500",
-    bg: "bg-emerald-500/10",
-    href: "https://wa.me/233000000000?text=Hi%20Verndly%20Support",
+    color: 'text-emerald-500',
+    bg: 'bg-emerald-500/10',
+    href: 'https://wa.me/233534065652?text=Hi%20Verndly%20Support',
   },
   {
-    id: "email",
-    label: "Email Support",
-    desc: "support@verndly.app · within 24hrs",
+    id: 'email',
+    label: 'Email Support',
+    desc: 'support@verndly.com · within 24hrs',
     icon: Mail,
-    color: "text-blue-500",
-    bg: "bg-blue-500/10",
-    href: "mailto:support@verndly.app",
+    color: 'text-blue-500',
+    bg: 'bg-blue-500/10',
+    href: 'mailto:support@verndly.com',
   },
   {
-    id: "phone",
-    label: "Call Us",
-    desc: "+233 00 000 0000 · Mon–Fri 9am–5pm",
+    id: 'phone',
+    label: 'Call Us',
+    desc: '+233 53 406 5652 · Mon–Sat 8am–8pm',
     icon: Phone,
-    color: "text-violet-500",
-    bg: "bg-violet-500/10",
-    href: "tel:+233000000000",
+    color: 'text-violet-500',
+    bg: 'bg-violet-500/10',
+    href: 'tel:+233534065652',
   },
 ];
 
 const REPORT_TOPICS = [
-  "Order Issue",
-  "Seller Issue",
-  "Payment Problem",
-  "Account Problem",
-  "App Bug / Error",
-  "Safety Concern",
-  "Feature Request",
-  "Other",
+  'Order Issue',
+  'Seller Issue',
+  'Payment Problem',
+  'Account Problem',
+  'App Bug / Error',
+  'Safety Concern',
+  'Feature Request',
+  'Other',
 ] as const;
-
 
 function FaqAccordion({ item }: { item: FaqItem }) {
   const [open, setOpen] = useState(false);
   const Icon = item.icon;
 
   return (
-    <div className="border-b border-[var(--color-border)]/60 last:border-none">
+    <div className="border-[var(--color-border)]/60 border-b last:border-none">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-[var(--color-surface)] transition-colors"
+        className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-[var(--color-surface)]"
       >
-        <div className="w-8 h-8 rounded-xl bg-[var(--color-border)]/40 flex items-center justify-center flex-shrink-0">
-          <Icon className="w-3.5 h-3.5 text-[var(--color-muted)]" />
+        <div className="bg-[var(--color-border)]/40 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl">
+          <Icon className="h-3.5 w-3.5 text-[var(--color-muted)]" />
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-normal text-[var(--color-foreground)] leading-snug">{item.q}</p>
-          <span className="text-[10px] font-normal text-[var(--color-muted)] uppercase tracking-wide">{item.tag}</span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-normal leading-snug text-[var(--color-foreground)]">
+            {item.q}
+          </p>
+          <span className="text-[10px] font-normal uppercase tracking-wide text-[var(--color-muted)]">
+            {item.tag}
+          </span>
         </div>
         <motion.div
           animate={{ rotate: open ? 180 : 0 }}
           transition={{ duration: 0.2 }}
           className="flex-shrink-0"
         >
-          <ChevronDown className="w-4 h-4 text-[var(--color-muted)]" />
+          <ChevronDown className="h-4 w-4 text-[var(--color-muted)]" />
         </motion.div>
       </button>
 
@@ -160,12 +161,12 @@ function FaqAccordion({ item }: { item: FaqItem }) {
           <motion.div
             key="answer"
             initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
+            animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.22, ease: "easeInOut" }}
+            transition={{ duration: 0.22, ease: 'easeInOut' }}
             className="overflow-hidden"
           >
-            <p className="px-4 pb-4 pt-1 text-[12px] text-[var(--color-muted)] leading-relaxed pl-[3.75rem]">
+            <p className="px-4 pb-4 pl-[3.75rem] pt-1 text-[12px] leading-relaxed text-[var(--color-muted)]">
               {item.a}
             </p>
           </motion.div>
@@ -175,12 +176,11 @@ function FaqAccordion({ item }: { item: FaqItem }) {
   );
 }
 
-
 function ReportForm() {
   const { user } = useAuth();
-  const [topic, setTopic] = useState("");
-  const [message, setMessage] = useState("");
-  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [topic, setTopic] = useState('');
+  const [message, setMessage] = useState('');
+  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -189,44 +189,47 @@ function ReportForm() {
     const cleanMessage = sanitizeText(message, 1000);
     if (cleanMessage.length < 10) return;
 
-    setStatus("sending");
+    setStatus('sending');
 
     // Build a mailto: link as the submission mechanism (no dedicated
     // report API exists yet — degrades gracefully and still works).
     const body = encodeURIComponent(
-      `From: ${user?.full_name ?? "Guest"} <${user?.email ?? ""}>\nTopic: ${topic}\n\n${cleanMessage}`
+      `From: ${user?.full_name ?? 'Guest'} <${user?.email ?? ''}>\nTopic: ${topic}\n\n${cleanMessage}`,
     );
     const subject = encodeURIComponent(`[Verndly Support] ${topic}`);
-    window.location.href = `mailto:support@verndly.app?subject=${subject}&body=${body}`;
+    window.location.href = `mailto:support@verndly.com?subject=${subject}&body=${body}`;
 
     setTimeout(() => {
-      setStatus("sent");
-      setTopic("");
-      setMessage("");
+      setStatus('sent');
+      setTopic('');
+      setMessage('');
     }, 600);
   };
 
-  if (status === "sent") {
+  if (status === 'sent') {
     return (
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         className="flex flex-col items-center gap-3 py-8 text-center"
       >
-        <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center">
-          <Check className="w-7 h-7 text-emerald-500" />
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/10">
+          <Check className="h-7 w-7 text-emerald-500" />
         </div>
         <p className="text-base font-medium text-[var(--color-foreground)]">Report submitted</p>
-        <p className="text-[11px] text-[var(--color-muted)] max-w-xs">
-          Your email client should have opened. If not, send directly to{" "}
-          <a href="mailto:support@verndly.app" className="font-normal text-[var(--color-accent)] underline">
-            support@verndly.app
+        <p className="max-w-xs text-[11px] text-[var(--color-muted)]">
+          Your email client should have opened. If not, send directly to{' '}
+          <a
+            href="mailto:support@verndly.com"
+            className="font-normal text-[var(--color-accent)] underline"
+          >
+            support@verndly.com
           </a>
         </p>
         <button
           type="button"
-          onClick={() => setStatus("idle")}
-          className="text-[11px] font-normal text-[var(--color-muted)] hover:text-[var(--color-foreground)] underline mt-1"
+          onClick={() => setStatus('idle')}
+          className="mt-1 text-[11px] font-normal text-[var(--color-muted)] underline hover:text-[var(--color-foreground)]"
         >
           Send another report
         </button>
@@ -253,28 +256,30 @@ function ReportForm() {
         maxLength={1000}
         required
         className={[
-          "w-full px-4 py-3 rounded-2xl border border-[var(--color-border)]",
-          "bg-[var(--color-background)] text-[var(--color-foreground)] text-base",
-          "placeholder:text-[var(--color-muted)]/50 resize-none",
-          "outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15",
-          "transition-all",
-        ].join(" ")}
+          'w-full rounded-2xl border border-[var(--color-border)] px-4 py-3',
+          'bg-[var(--color-background)] text-base text-[var(--color-foreground)]',
+          'placeholder:text-[var(--color-muted)]/50 resize-none',
+          'focus:ring-[var(--color-accent)]/15 outline-none focus:border-[var(--color-accent)] focus:ring-2',
+          'transition-all',
+        ].join(' ')}
       />
 
       <div className="flex items-center justify-between">
-        <span className="text-[10px] text-[var(--color-muted)] tabular-nums">{message.length}/1000</span>
+        <span className="text-[10px] tabular-nums text-[var(--color-muted)]">
+          {message.length}/1000
+        </span>
         <Button
           type="submit"
-          disabled={status === "sending" || !topic || message.trim().length < 10}
-          className="h-11 px-6 rounded-2xl text-xs font-medium uppercase tracking-wider"
+          disabled={status === 'sending' || !topic || message.trim().length < 10}
+          className="h-11 rounded-2xl px-6 text-xs font-medium uppercase tracking-wider"
         >
-          {status === "sending" ? (
+          {status === 'sending' ? (
             <span className="flex items-center gap-2">
-              <Loader2 className="w-4 h-4 animate-spin" /> Sending…
+              <Loader2 className="h-4 w-4 animate-spin" /> Sending…
             </span>
           ) : (
             <span className="flex items-center gap-2">
-              <Send className="w-4 h-4" /> Submit
+              <Send className="h-4 w-4" /> Submit
             </span>
           )}
         </Button>
@@ -282,7 +287,6 @@ function ReportForm() {
     </form>
   );
 }
-
 
 function Section({
   title,
@@ -300,77 +304,98 @@ function Section({
   return (
     <div className="space-y-1.5">
       <div className="flex items-center gap-2 px-1">
-        <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${iconBg}`}>
-          <Icon className={`w-3.5 h-3.5 ${iconColor}`} />
+        <div className={`flex h-6 w-6 items-center justify-center rounded-lg ${iconBg}`}>
+          <Icon className={`h-3.5 w-3.5 ${iconColor}`} />
         </div>
-        <p className="text-[10px] font-medium text-[var(--color-muted)] uppercase tracking-wider">{title}</p>
+        <p className="text-[10px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
+          {title}
+        </p>
       </div>
-      <div className="bg-[var(--color-surface)] rounded-3xl border border-[var(--color-border)] overflow-hidden">
+      <div className="overflow-hidden rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)]">
         {children}
       </div>
     </div>
   );
 }
 
-
 export default function HelpPage() {
   return (
-    <div className="max-w-lg mx-auto space-y-5 pb-10">
+    <div className="mx-auto max-w-lg space-y-5 pb-10">
       <Link
         href="/dashboard/settings"
-        className="inline-flex items-center gap-2 text-xs font-normal text-[var(--color-muted)] hover:text-[var(--color-foreground)] transition-colors group"
+        className="group inline-flex items-center gap-2 text-xs font-normal text-[var(--color-muted)] transition-colors hover:text-[var(--color-foreground)]"
       >
-        <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+        <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
         Settings
       </Link>
 
       <div>
-        <h1 className="text-lg font-medium tracking-tight text-[var(--color-foreground)]">Help & Support</h1>
-        <p className="text-[11px] text-[var(--color-muted)] font-medium mt-0.5">
+        <h1 className="text-lg font-medium tracking-tight text-[var(--color-foreground)]">
+          Help & Support
+        </h1>
+        <p className="mt-0.5 text-[11px] font-medium text-[var(--color-muted)]">
           Find answers, contact us, or report a problem
         </p>
       </div>
 
-      <Section title="Contact Us" icon={MessageCircle} iconBg="bg-emerald-500/10" iconColor="text-emerald-500">
-        <div className="divide-y divide-[var(--color-border)]/50">
+      <Section
+        title="Contact Us"
+        icon={MessageCircle}
+        iconBg="bg-emerald-500/10"
+        iconColor="text-emerald-500"
+      >
+        <div className="divide-[var(--color-border)]/50 divide-y">
           {CONTACT_OPTIONS.map((opt) => (
             <a
               key={opt.id}
               href={opt.href}
-              target={opt.id !== "phone" ? "_blank" : undefined}
+              target={opt.id !== 'phone' ? '_blank' : undefined}
               rel="noopener noreferrer"
-              className="flex items-center gap-3.5 px-4 py-3.5 hover:bg-[var(--color-background)] active:bg-[var(--color-border)]/20 transition-colors"
+              className="active:bg-[var(--color-border)]/20 flex items-center gap-3.5 px-4 py-3.5 transition-colors hover:bg-[var(--color-background)]"
             >
-              <div className={`w-9 h-9 rounded-2xl flex items-center justify-center flex-shrink-0 ${opt.bg}`}>
-                <opt.icon className={`w-4 h-4 ${opt.color}`} />
+              <div
+                className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-2xl ${opt.bg}`}
+              >
+                <opt.icon className={`h-4 w-4 ${opt.color}`} />
               </div>
-              <div className="flex-1 min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="text-sm font-normal text-[var(--color-foreground)]">{opt.label}</p>
                 <p className="text-[11px] text-[var(--color-muted)]">{opt.desc}</p>
               </div>
-              <ChevronDown className="w-4 h-4 text-[var(--color-muted)] -rotate-90 flex-shrink-0" />
+              <ChevronDown className="h-4 w-4 flex-shrink-0 -rotate-90 text-[var(--color-muted)]" />
             </a>
           ))}
         </div>
       </Section>
 
-      <Section title="Frequently Asked Questions" icon={HelpCircle} iconBg="bg-blue-500/10" iconColor="text-blue-500">
+      <Section
+        title="Frequently Asked Questions"
+        icon={HelpCircle}
+        iconBg="bg-blue-500/10"
+        iconColor="text-blue-500"
+      >
         {FAQS.map((item, i) => (
           <FaqAccordion key={i} item={item} />
         ))}
       </Section>
 
-      <Section title="Report a Problem" icon={Bug} iconBg="bg-rose-500/10" iconColor="text-rose-500">
-        <div className="p-4 space-y-3">
-          <p className="text-[11px] text-[var(--color-muted)] leading-relaxed">
-            Something not working? Let us know and we'll get on it as soon as possible. Reports are reviewed within 2 business days.
+      <Section
+        title="Report a Problem"
+        icon={Bug}
+        iconBg="bg-rose-500/10"
+        iconColor="text-rose-500"
+      >
+        <div className="space-y-3 p-4">
+          <p className="text-[11px] leading-relaxed text-[var(--color-muted)]">
+            Something not working? Let us know and we'll get on it as soon as possible. Reports are
+            reviewed within 2 business days.
           </p>
           <ReportForm />
         </div>
       </Section>
 
       <p className="text-center text-[10px] text-[var(--color-muted)]">
-        Verndly v1.0 · support@verndly.app
+        Verndly v1.0 · support@verndly.com
       </p>
     </div>
   );

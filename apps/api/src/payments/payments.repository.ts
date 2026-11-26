@@ -71,7 +71,6 @@ export class PaymentsRepository {
     });
   }
 
-
   async finalizeOrderInventory(orderId: string) {
     return this.prisma.$transaction(async (tx) => {
       // 1. Fetch order with items
@@ -86,6 +85,7 @@ export class PaymentsRepository {
 
       // 2. Deduct inventory
       for (const item of order.items) {
+        if (!item.product_id) continue;
         await tx.product.update({
           where: { id: item.product_id },
           data: {
@@ -109,7 +109,11 @@ export class PaymentsRepository {
       where: { id: orderId },
       include: {
         buyer: true,
-        transaction: true,
+        transaction: {
+          include: {
+            payout: true,
+          },
+        },
         items: {
           include: {
             product: {
@@ -171,12 +175,15 @@ export class PaymentsRepository {
     return items
       .map((it) => it.product)
       .filter((p) => p != null && p.quantity_available <= threshold) as Array<{
-        id: string;
-        title: string;
-        quantity_available: number;
-        image_urls: string[];
-        seller: { store_name: string; user: { email: string | null } | null } | null;
-      }>;
+      id: string;
+      title: string;
+      quantity_available: number;
+      image_urls: string[];
+      seller: {
+        store_name: string;
+        user: { email: string | null } | null;
+      } | null;
+    }>;
   }
 
   async findUserByEmail(email: string) {
@@ -298,10 +305,12 @@ export class PaymentsRepository {
         },
       });
 
-      await tx.product.update({
-        where: { id: payment.product_id },
-        data: { is_featured: true },
-      });
+      if (payment.product_id) {
+        await tx.product.update({
+          where: { id: payment.product_id },
+          data: { is_featured: true },
+        });
+      }
 
       return updatedPayment;
     });
@@ -336,7 +345,13 @@ export class PaymentsRepository {
     payout_id?: string;
     reference: string;
     type: 'CREDIT' | 'DEBIT';
-    source_type: 'ORDER' | 'PROMOTION' | 'ADJUSTMENT' | 'FEE' | 'PAYOUT' | 'REFUND';
+    source_type:
+      | 'ORDER'
+      | 'PROMOTION'
+      | 'ADJUSTMENT'
+      | 'FEE'
+      | 'PAYOUT'
+      | 'REFUND';
     amount: Prisma.Decimal | number;
     description?: string;
     metadata?: Prisma.InputJsonValue;
@@ -602,7 +617,12 @@ export class PaymentsRepository {
             order: {
               include: {
                 buyer: {
-                  select: { id: true, full_name: true, email: true, phone_e164: true },
+                  select: {
+                    id: true,
+                    full_name: true,
+                    email: true,
+                    phone_e164: true,
+                  },
                 },
                 items: {
                   include: {
@@ -919,14 +939,16 @@ export class PaymentsRepository {
       if (!order) return;
 
       for (const item of order.items) {
-        await tx.product.update({
-          where: { id: item.product_id },
-          data: {
-            quantity_available: {
-              increment: item.quantity,
+        if (item.product_id) {
+          await tx.product.update({
+            where: { id: item.product_id },
+            data: {
+              quantity_available: {
+                increment: item.quantity,
+              },
             },
-          },
-        });
+          });
+        }
 
         if (item.variant_id) {
           await tx.productVariant.update({
@@ -942,4 +964,3 @@ export class PaymentsRepository {
     });
   }
 }
-

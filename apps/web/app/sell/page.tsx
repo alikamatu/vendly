@@ -18,7 +18,6 @@ import FaqJsonLd from '@/components/seo/FaqJsonLd';
 import JsonLd from '@/components/seo/JsonLd';
 import FeeCalculator from '@/components/editorial/FeeCalculator';
 import { EscrowFlowSvg } from '@/components/editorial/VisualDiagrams';
-import { COVERAGE_COPY } from '@/lib/copy/coverage';
 import { ESCROW_AND_FEE_COPY } from '@/lib/copy/escrow-and-fees';
 
 export const metadata = buildMetadata({
@@ -55,7 +54,7 @@ const SELLER_METRICS = [
   {
     value: 'GH₵ 0',
     label: 'Setup cost',
-    detail: COVERAGE_COPY.sellDeliveryDetail,
+    detail: 'Free verified storefront setup, zero monthly rent, and free product listings.',
   },
 ];
 
@@ -133,7 +132,7 @@ const COMPARISON_ROWS = [
   },
   {
     metric: 'Cold buyer trust (Verified Badge)',
-    verndly: 'Verified Merchant + 7-day guarantee',
+    verndly: 'Verified Merchant + 3-day guarantee',
     legacy: 'Marketplace trust',
     social: 'Low — buyers fear MoMo scams',
   },

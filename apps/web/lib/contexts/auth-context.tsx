@@ -18,6 +18,10 @@ export interface User {
   /** True when the user has an active Pro subscription (not expired). */
   is_pro?: boolean;
   pro_expires_at?: string | null;
+  has_password?: boolean;
+  disabled_at?: string | null;
+  deletion_requested_at?: string | null;
+  deletion_scheduled_for?: string | null;
   seller_profile?: {
     id: string;
     store_name: string;

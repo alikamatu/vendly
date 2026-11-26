@@ -328,7 +328,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                 Start with Verndly
               </p>
               <p className="text-foreground text-sm font-medium leading-snug">
-                Free storefront setup. 7-day escrow for every buyer.
+                Free storefront setup. 3-day escrow for every buyer.
               </p>
               <div className="flex flex-col gap-2 pt-1">
                 <Link

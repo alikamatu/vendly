@@ -1,5 +1,29 @@
 import { api, API_URL } from './index';
 
+export interface LifecycleBlocker {
+  code: string;
+  label: string;
+  count?: number;
+  amount?: number;
+  href?: string;
+}
+
+export interface AccountLifecycleStatus {
+  role: string;
+  is_seller: boolean;
+  has_password: boolean;
+  status: 'ACTIVE' | 'DISABLED' | 'PENDING_DELETION' | 'SUSPENDED';
+  disabled_at: string | null;
+  deletion_requested_at: string | null;
+  deletion_scheduled_for: string | null;
+  grace_period_days: number;
+  product_count: number;
+  can_disable: boolean;
+  disable_blockers: LifecycleBlocker[];
+  can_delete: boolean;
+  delete_blockers: LifecycleBlocker[];
+}
+
 export const authApi = {
   async login(
     email: string,
@@ -196,8 +220,46 @@ export const authApi = {
     return res.data;
   },
 
-  async deleteAccount(token: string) {
-    const res = await api.delete<{ message: string }>('/auth/account', { token });
+  async getAccountLifecycleStatus(token: string) {
+    const res = await api.get<AccountLifecycleStatus>('/auth/account/lifecycle-status', { token });
+    return res.data;
+  },
+
+  async disableAccount(token: string, body: { password?: string; confirmText?: string }) {
+    const res = await api.post<{ message: string; disabled_at: string }>(
+      '/auth/account/disable',
+      body,
+      { token },
+    );
+    return res.data;
+  },
+
+  async reactivateAccount(token: string) {
+    const res = await api.post<{ message: string; status: string }>(
+      '/auth/account/reactivate',
+      {},
+      { token },
+    );
+    return res.data;
+  },
+
+  async cancelAccountDeletion(token: string) {
+    const res = await api.post<{ message: string; status: string }>(
+      '/auth/account/cancel-deletion',
+      {},
+      { token },
+    );
+    return res.data;
+  },
+
+  async deleteAccount(token: string, body?: { password?: string; confirmText?: string }) {
+    const res = await api.post<{
+      deleted: boolean;
+      scheduled: boolean;
+      deletion_scheduled_for: string | null;
+      grace_period_days: number;
+      message: string;
+    }>('/auth/account/delete', body || {}, { token });
     return res.data;
   },
 };

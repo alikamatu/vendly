@@ -216,7 +216,7 @@ export default function StoresBrowser({ initialData }: { initialData?: InitialSt
               </h1>
               <p className="mx-auto max-w-2xl text-sm leading-relaxed text-[var(--color-muted)]">
                 Browse verified independent stores in Accra on Verndly. Check each merchant&apos;s
-                catalog, dispatch area, and shop safely with 7-day Paystack escrow.
+                catalog, dispatch area, and shop safely with 3-day Paystack escrow.
               </p>
             </div>
           </div>

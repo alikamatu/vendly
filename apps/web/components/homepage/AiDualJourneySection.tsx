@@ -24,7 +24,7 @@ const AUDIENCE_JOURNEYS = {
     },
     {
       step: '03',
-      title: 'Protected by 7-day Paystack escrow',
+      title: 'Protected by 3-day Paystack escrow',
       detail:
         'Your funds stay safely held until your order arrives and passes inspection — eliminating Instagram DM ghosting forever.',
     },

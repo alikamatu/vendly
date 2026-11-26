@@ -6,7 +6,7 @@ import JsonLd from '@/components/seo/JsonLd';
 export const metadata: Metadata = buildMetadata({
   title: 'Browse Categories — Shop Verified Sellers in Accra',
   description:
-    'Browse stocked product categories from verified independent sellers in Accra on Verndly, backed by 7-day Paystack escrow.',
+    'Browse stocked product categories from verified independent sellers in Accra on Verndly, backed by 3-day Paystack escrow.',
   path: '/categories',
   keywords: [
     'categories Accra',

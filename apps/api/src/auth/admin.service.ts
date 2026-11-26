@@ -139,6 +139,9 @@ export class AdminService {
           role: true,
           is_verified: true,
           is_suspended: true,
+          disabled_at: true,
+          deletion_requested_at: true,
+          deletion_scheduled_for: true,
           warnings: true,
           created_at: true,
         },
@@ -662,7 +665,8 @@ export class AdminService {
         totalSales,
         recentOrders: orderItems.slice(0, 10).map((item) => ({
           id: item.order_id.toString(),
-          product: item.product.title,
+          product:
+            item.product?.title || item.product_title || 'Removed product',
           amount: Number(item.price) * item.quantity,
           date: item.order.created_at,
           status: item.order.status,
@@ -763,7 +767,14 @@ export class AdminService {
         new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
     );
 
-    const [payoutAggregate, pendingPayoutAggregate] = await Promise.all([
+    const [
+      payoutAggregate,
+      pendingPayoutAggregate,
+      pendingApprovalsCount,
+      pendingReturnsCount,
+      flaggedReviewsCount,
+      openReportsCount,
+    ] = await Promise.all([
       this.prisma.payout.aggregate({
         where: { status: 'SUCCESS' },
         _sum: { amount: true },
@@ -771,6 +782,14 @@ export class AdminService {
       this.prisma.payout.aggregate({
         where: { status: 'PENDING' },
         _sum: { amount: true },
+      }),
+      this.prisma.adminApproval.count({ where: { status: 'PENDING' } }),
+      this.prisma.returnRequest.count({
+        where: { status: { in: ['PENDING', 'ESCALATED'] } },
+      }),
+      this.prisma.review.count({ where: { status: 'FLAGGED' } }),
+      this.prisma.report.count({
+        where: { status: { in: ['OPEN', 'UNDER_REVIEW'] } },
       }),
     ]);
 
@@ -787,6 +806,10 @@ export class AdminService {
       transactionCount: transactionCount || 0,
       productCount: productCount || 0,
       sellerCount: sellerCount || 0,
+      pendingApprovalsCount,
+      pendingReturnsCount,
+      flaggedReviewsCount,
+      openReportsCount,
       users: {
         total: Object.values(usersByRole).reduce(
           (a: number, b: number) => a + (Number(b) || 0),

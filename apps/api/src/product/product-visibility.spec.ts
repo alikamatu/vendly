@@ -66,6 +66,18 @@ describe('Product public visibility & moderation (T04 / ST-03)', () => {
       }),
     ).toBe(false);
     expect(
+      isPubliclyVisibleProduct({
+        status: 'active',
+        seller: { user: { disabled_at: new Date() } },
+      }),
+    ).toBe(false);
+    expect(
+      isPubliclyVisibleProduct({
+        status: 'active',
+        seller: { user: { deletion_scheduled_for: new Date() } },
+      }),
+    ).toBe(false);
+    expect(
       isPubliclyVisibleProduct({ status: 'active', quantity_available: 1 }),
     ).toBe(true);
     expect(
@@ -116,7 +128,11 @@ describe('Product public visibility & moderation (T04 / ST-03)', () => {
           status: PUBLIC_PRODUCT_STATUS_FILTER,
           seller: expect.objectContaining({
             store_link: 'kitchenhub-application',
-            user: { is_suspended: false },
+            user: {
+              is_suspended: false,
+              disabled_at: null,
+              deletion_scheduled_for: null,
+            },
           }),
         }),
       }),

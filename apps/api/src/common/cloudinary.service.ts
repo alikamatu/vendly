@@ -246,4 +246,27 @@ export class CloudinaryService {
       upload.end(file.buffer);
     });
   }
+
+  /**
+   * Best-effort deletion of a Cloudinary asset by its full secure_url.
+   * Never throws so account/product cleanup cannot fail due to a stale URL.
+   */
+  async deleteByUrl(
+    url: string | null | undefined,
+    resourceType: 'image' | 'video' = 'image',
+  ): Promise<void> {
+    if (!url || !url.includes('res.cloudinary.com')) return;
+    try {
+      const match = url.match(
+        /\/upload\/(?:v\d+\/)?(.+?)(?:\.[a-z0-9]+)?(?:\?.*)?$/i,
+      );
+      const publicId = match?.[1];
+      if (!publicId) return;
+      await cloudinary.uploader.destroy(publicId, {
+        resource_type: resourceType,
+      });
+    } catch (err) {
+      console.warn('[Cloudinary] Failed to destroy asset:', url, err);
+    }
+  }
 }

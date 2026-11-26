@@ -139,7 +139,7 @@ export default function BlogPage() {
             <p className="font-mono text-[11px] uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
               For Buyers
             </p>
-            <h3 className="text-2xl font-medium tracking-tight">7-Day Buyer Protection.</h3>
+            <h3 className="text-2xl font-medium tracking-tight">3-Day Buyer Protection.</h3>
             <p className="text-muted text-sm leading-relaxed">
               Every online checkout is held safely in Paystack escrow until you receive and inspect
               your item.

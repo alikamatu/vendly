@@ -25,7 +25,7 @@ export const SITE_FAQ_ITEMS: SiteFaqEntry[] = [
     id: 'buyer-protection',
     question: 'How does Buyer Protection and Escrow work on Verndly?',
     answer:
-      'Every purchase on Verndly is safeguarded by Paystack escrow. When you pay online via Paystack (MTN Mobile Money, Telecel Cash, AirtelTigo Money, card, or bank transfer), your payment is held securely in escrow and only released after delivery and our 7-day buyer protection window.',
+      'Every purchase on Verndly is safeguarded by Paystack escrow. When you pay online via Paystack (MTN Mobile Money, Telecel Cash, AirtelTigo Money, card, or bank transfer), your payment is held securely in escrow and only released after delivery and our 3-day buyer protection window.',
     tags: ['escrow', 'buyer protection', 'safety'],
     link: { label: 'Read Buyer Protection', href: '/buyer-protection' },
   },
@@ -55,15 +55,15 @@ export const SITE_FAQ_ITEMS: SiteFaqEntry[] = [
   {
     id: 'seller-payouts',
     question: 'How do seller payouts work?',
-    answer: `When an order is delivered and clears the 7-day Paystack escrow window, your 96% payout settles to your linked Ghanaian bank or Mobile Money account via Paystack Transfers. ${ESCROW_AND_FEE_COPY.feeSettlementDisclosure}`,
+    answer: `When an order is delivered and clears the 3-day Paystack escrow window, your 96% payout settles to your linked Ghanaian bank or Mobile Money account via Paystack Transfers. ${ESCROW_AND_FEE_COPY.feeSettlementDisclosure}`,
     tags: ['seller', 'payouts', 'fees', 'escrow'],
     link: { label: 'Sell on Verndly', href: '/sell' },
   },
   {
     id: 'returns-refunds',
-    question: "What is Verndly's 7-Day Return and Refund Policy?",
+    question: "What is Verndly's 3-Day Return and Refund Policy?",
     answer:
-      'Buyers have 7 calendar days from delivery confirmation to request a return or replacement if an item arrives damaged, defective, incomplete, or materially different from the seller listing. Approved claims are refunded directly to the buyer via Paystack gateway reversal.',
+      'Buyers have 3 calendar days from delivery confirmation to request a return or replacement if an item arrives damaged, defective, incomplete, or materially different from the seller listing. Approved claims are refunded directly to the buyer via Paystack gateway reversal.',
     tags: ['returns', 'refunds'],
     link: { label: 'Returns & Refunds Policy', href: '/returns' },
   },

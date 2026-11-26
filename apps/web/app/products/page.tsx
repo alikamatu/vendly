@@ -15,7 +15,7 @@ export const revalidate = 300;
 export const metadata = buildMetadata({
   title: 'Shop all products',
   description:
-    'Browse, filter and search verified products from independent sellers in Accra on Verndly Ghana. Every order is protected by 7-day Paystack escrow.',
+    'Browse, filter and search verified products from independent sellers in Accra on Verndly Ghana. Every order is protected by 3-day Paystack escrow.',
   path: '/products',
   keywords: ['shop', 'buy online ghana', 'Ghana products', 'verified marketplace'],
 });

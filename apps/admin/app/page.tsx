@@ -77,7 +77,8 @@ export default function OperationsDashboardPage() {
   const pendingApprovals = stats?.pendingApprovalsCount || 0;
   const pendingReturns = stats?.pendingReturnsCount || 0;
   const flaggedReviews = stats?.flaggedReviewsCount || 0;
-  const totalUrgent = pendingApprovals + pendingReturns + flaggedReviews;
+  const openReports = stats?.openReportsCount || 0;
+  const totalUrgent = pendingApprovals + pendingReturns + flaggedReviews + openReports;
 
   const userDistribution = [
     {
@@ -149,6 +150,7 @@ export default function OperationsDashboardPage() {
                 </p>
                 <p className="text-muted-foreground mt-0.5 text-[11px]">
                   {[
+                    openReports > 0 && `${openReports} buyer reports open`,
                     pendingApprovals > 0 && `${pendingApprovals} seller verifications`,
                     pendingReturns > 0 && `${pendingReturns} returns to resolve`,
                     flaggedReviews > 0 && `${flaggedReviews} reviews flagged`,
@@ -158,7 +160,14 @@ export default function OperationsDashboardPage() {
                 </p>
               </div>
             </div>
-            <div className="flex w-full items-center gap-2 sm:w-auto">
+            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+              {openReports > 0 && (
+                <Link href="/reports" className="flex-1 sm:flex-none">
+                  <Button size="sm" variant="outline" className="h-8 w-full text-xs">
+                    Reports ({openReports})
+                  </Button>
+                </Link>
+              )}
               {pendingApprovals > 0 && (
                 <Link href="/verifications" className="flex-1 sm:flex-none">
                   <Button size="sm" variant="outline" className="h-8 w-full text-xs">

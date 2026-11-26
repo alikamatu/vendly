@@ -373,7 +373,7 @@ describe('GeminiService & normalizers', () => {
                       text: JSON.stringify({
                         bio: 'Accra Craft Studio makes handcrafted leather sandals and woven bags in East Legon.',
                         delivery_policies:
-                          'Same-day courier delivery across Accra and nationwide dispatch within 2 days. All orders are protected by Verndly 7-day escrow.',
+                          'Same-day courier delivery across Accra and nationwide dispatch within 2 days. All orders are protected by Verndly 3-day escrow.',
                         business_hours: 'Mon–Sat: 9:00 AM – 6:00 PM',
                         service_area: 'NATIONWIDE',
                         avg_delivery_time: 'SAME_DAY',
@@ -434,7 +434,7 @@ describe('GeminiService & normalizers', () => {
                         bio: 'Verified sneakers and streetwear based in East Legon, Accra with fast campus and citywide delivery.',
                         business_hours: 'Mon – Sat: 9:00 AM – 7:00 PM',
                         delivery_policies:
-                          'Same-day rider dispatch in Accra and nationwide VIP bus delivery. Protected by Verndly 7-day escrow.',
+                          'Same-day rider dispatch in Accra and nationwide VIP bus delivery. Protected by Verndly 3-day escrow.',
                         whatsapp_number: '0244112233',
                         inferred_city: 'Accra',
                         inferred_region: 'Greater Accra',

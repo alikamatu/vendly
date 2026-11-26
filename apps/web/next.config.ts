@@ -106,6 +106,21 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ['lucide-react', 'framer-motion', 'sonner', '@hookform/resolvers'],
   },
 
+  async redirects() {
+    return [
+      {
+        source: '/blog/jumia-seller-fees-ghana-2026-vs-verndly',
+        destination: '/blog/ghana-marketplace-seller-fees-vs-verndly',
+        statusCode: 301,
+      },
+      {
+        source: '/blog/nationwide-delivery-ghana-accra-kumasi-takoradi-tamale',
+        destination: '/blog/delivery-and-pickup-ghana',
+        statusCode: 301,
+      },
+    ];
+  },
+
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];
   },

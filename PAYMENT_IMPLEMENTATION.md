@@ -13,9 +13,10 @@ This documentation outlines how payments are processed, held, and settled, along
    - The `charge.success` webhook fires.
    - The system calculates the platform fee and the net seller payout.
    - The seller's `pending_balance` (Escrow) is credited. The funds are _not_ immediately available to the seller.
-3. **Delivery (Escrow Release)**:
-   - When the order status is updated to `DELIVERED` (either by the admin or the seller), the escrow is released.
-   - The system moves the funds from the seller's `pending_balance` to their `available_balance`.
+3. **Delivery & 3-Day Escrow Inspection Window (Escrow Release)**:
+   - When the order status is updated to `DELIVERED`, the buyer's **3-day inspection window** (`escrow_release_days = 3` default) begins while funds remain protected in `pending_balance`.
+   - Escrow is released either **immediately** when the buyer confirms delivery (`POST /orders/:id/confirm-delivery`) / an admin marks `COMPLETED`, or **automatically** after 3 days with no open return claim via the hourly `OrderService.sweepMaturedEscrowOrders` cron (`POST /cron/escrow/release`).
+   - Upon release, the system moves the funds from the seller's `pending_balance` to their `available_balance`.
    - A `Payout` record is created, and the system attempts an automatic transfer via the Paystack Transfers API (if the payout mode is AUTO).
 4. **Settlement**:
    - The `transfer.success` webhook fires.

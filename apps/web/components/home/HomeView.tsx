@@ -36,7 +36,7 @@ function inDefaultPrice(price: string) {
 const MARKETPLACE_PILLARS = [
   {
     Icon: ShieldCheck,
-    title: '7-Day Paystack Escrow',
+    title: '3-Day Paystack Escrow',
     description:
       'Every Mobile Money and card payment stays safely in Paystack escrow until delivery and inspection.',
     href: '/buyer-protection',
@@ -181,7 +181,7 @@ export default function HomeView({ initialData }: { initialData?: InitialHomeDat
             <p className="text-muted text-sm leading-relaxed md:text-base">
               Verndly connects shoppers across Ghana with identity-verified entrepreneurs and small
               businesses. Pay seamlessly with MTN Mobile Money, Telecel Cash, AirtelTigo Money, or
-              bank card under 7-day Paystack escrow protection.
+              bank card under 3-day Paystack escrow protection.
             </p>
           </div>
 

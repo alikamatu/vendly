@@ -55,7 +55,7 @@ export async function generateMetadata({
   const title = `${store.store_name} — Verified Store on Verndly`;
   const description =
     store.bio ||
-    `Shop verified products directly from ${store.store_name} on Verndly. Backed by 7-day buyer protection escrow, secure Paystack checkout, and swift courier delivery across Ghana.`;
+    `Shop verified products directly from ${store.store_name} on Verndly. Backed by 3-day buyer protection escrow, secure Paystack checkout, and swift courier delivery across Ghana.`;
 
   const image = store.logo_url || store.banner_url || `${SITE_URL}/logos/verndly.png`;
 

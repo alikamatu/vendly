@@ -285,6 +285,14 @@ export default function UsersManagementPage() {
                         <Badge variant="danger" dot>
                           Suspended
                         </Badge>
+                      ) : u.deletion_scheduled_for ? (
+                        <Badge variant="danger" dot>
+                          Deleting {dateShort(u.deletion_scheduled_for)}
+                        </Badge>
+                      ) : u.disabled_at ? (
+                        <Badge variant="warning" dot>
+                          Disabled
+                        </Badge>
                       ) : (
                         <Badge variant="success" dot>
                           Active
@@ -360,7 +368,13 @@ export default function UsersManagementPage() {
                 <div>
                   <span className="text-muted-foreground text-[11px]">Account Status</span>
                   <p className="text-foreground mt-0.5 font-semibold">
-                    {selectedUser.is_suspended ? 'Suspended' : 'Active'}
+                    {selectedUser.is_suspended
+                      ? 'Suspended'
+                      : selectedUser.deletion_scheduled_for
+                        ? `Pending Deletion (${dateShort(selectedUser.deletion_scheduled_for)})`
+                        : selectedUser.disabled_at
+                          ? 'Disabled by User'
+                          : 'Active'}
                   </p>
                 </div>
                 <div>

@@ -22,6 +22,8 @@ export const PUBLIC_PRODUCT_WHERE: Prisma.ProductWhereInput = {
   seller: {
     user: {
       is_suspended: false,
+      disabled_at: null,
+      deletion_scheduled_for: null,
     },
   },
 };
@@ -37,6 +39,8 @@ export interface VisibilityCheckProduct {
   seller?: {
     user?: {
       is_suspended?: boolean | null;
+      disabled_at?: Date | string | null;
+      deletion_scheduled_for?: Date | string | null;
     } | null;
   } | null;
 }
@@ -49,7 +53,12 @@ export function isPubliclyVisibleProduct(
   if (!(PUBLIC_PRODUCT_STATUSES as readonly string[]).includes(status)) {
     return false;
   }
-  if (product.seller?.user?.is_suspended === true) {
+  const owner = product.seller?.user;
+  if (
+    owner?.is_suspended === true ||
+    Boolean(owner?.disabled_at) ||
+    Boolean(owner?.deletion_scheduled_for)
+  ) {
     return false;
   }
   return true;

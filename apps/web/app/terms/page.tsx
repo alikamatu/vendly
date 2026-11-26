@@ -88,7 +88,7 @@ export default function TermsPage() {
                 </div>
                 <p>
                   While Verndly enforces rigorous merchant vetting, identity verification, catalog
-                  guidelines, and 7-day buyer protection, Verndly is not a party to the underlying
+                  guidelines, and 3-day buyer protection, Verndly is not a party to the underlying
                   commercial contract between Buyer and Seller, does not take legal title to
                   merchant merchandise, and does not hold physical custody of goods in transit.
                 </p>
@@ -287,7 +287,7 @@ export default function TermsPage() {
                       confirmation; and
                     </li>
                     <li>
-                      The statutory 7-day buyer protection inspection window expires without an
+                      The statutory 3-day buyer protection inspection window expires without an
                       unresolved dispute.
                     </li>
                   </ol>
@@ -377,13 +377,13 @@ export default function TermsPage() {
             ),
           },
           {
-            title: '7-Day Buyer Protection, Returns & Refunds',
+            title: '3-Day Buyer Protection, Returns & Refunds',
             badge: 'Consumer Rights',
             body: (
               <>
                 <p>
-                  Every transaction completed on Verndly is backed by our comprehensive 7-Day Buyer
-                  Protection Policy. Buyers are entitled to open a return request within seven (7)
+                  Every transaction completed on Verndly is backed by our comprehensive 3-Day Buyer
+                  Protection Policy. Buyers are entitled to open a return request within three (3)
                   calendar days of delivery if:
                 </p>
                 <ul className="list-disc space-y-1.5 pl-5 text-xs md:text-sm">

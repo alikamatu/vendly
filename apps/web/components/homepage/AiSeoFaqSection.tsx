@@ -41,7 +41,7 @@ export default function AiSeoFaqSection({ faqs }: AiSeoFaqSectionProps) {
               With <strong>Verndly AI</strong>, shoppers search naturally by budget, category, or
               occasion across Electronics, Fashion, Home &amp; Kitchen, Beauty &amp; Personal Care,
               Jewelry &amp; Watches, and 10+ other curated categories — while every checkout via MTN
-              Mobile Money, Telecel Cash, AirtelTigo Money, or bank card is protected by 7-day
+              Mobile Money, Telecel Cash, AirtelTigo Money, or bank card is protected by 3-day
               Paystack escrow.
             </p>
             <p>
@@ -58,7 +58,7 @@ export default function AiSeoFaqSection({ faqs }: AiSeoFaqSectionProps) {
               href="/buyer-protection"
               className="bg-surface text-foreground hover:bg-foreground hover:text-background rounded-full px-4 py-2 text-xs font-semibold transition-colors"
             >
-              7-Day Escrow Guide
+              3-Day Escrow Guide
             </Link>
             <Link
               href="/stores"

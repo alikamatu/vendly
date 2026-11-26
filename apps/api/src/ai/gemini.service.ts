@@ -1244,7 +1244,7 @@ export class GeminiService {
       'Draft clean, natural, honest storefront copy from the seller’s notes.',
       'Strict rules:',
       '1. bio: 2–3 clear, friendly sentences (80–300 chars) explaining what the store offers, where it operates (if provided), and why buyers can shop with confidence. No buzzword fluff or ALL CAPS.',
-      '2. delivery_policies: 2–3 concise sentences (80–360 chars) covering dispatch timing, coverage area, and reassuring buyers that orders are protected by Verndly’s 7-day escrow.',
+      '2. delivery_policies: 2–3 concise sentences (80–360 chars) covering dispatch timing, coverage area, and reassuring buyers that orders are protected by Verndly’s 3-day escrow.',
       '3. business_hours: clean formatted operating hours (e.g. "Mon–Sat: 9:00 AM – 6:00 PM"). Use what the seller mentioned, or a sensible standard Ghana retail schedule if not specified.',
       '4. service_area: choose ONE of SAME_CITY, NEARBY_STATES, NATIONWIDE only if clearly implied; otherwise null.',
       '5. avg_delivery_time: choose ONE of SAME_DAY, NEXT_DAY, TWO_TO_THREE_DAYS, FOUR_TO_SEVEN_DAYS, MORE_THAN_ONE_WEEK only if clearly implied; otherwise null.',
@@ -1455,7 +1455,7 @@ export class GeminiService {
       '1. store_name: If the seller already gave a store_name or clear website brand name, preserve/clean it in Title Case (2–5 words). Otherwise invent a natural, credible brand name fitting what they sell.',
       '2. bio: 2–3 friendly, specific sentences (90–280 chars) describing what they sell, where they operate, and quality buyers can expect. Never use ALL CAPS or buzzwords.',
       '3. business_hours: Clean operating schedule (e.g. "Mon – Sat: 8:30 AM – 6:00 PM").',
-      '4. delivery_policies: 1–2 concise sentences (60–220 chars) covering dispatch speed, pickup/courier options, and noting 7-day Paystack escrow protection.',
+      '4. delivery_policies: 1–2 concise sentences (60–220 chars) covering dispatch speed, pickup/courier options, and noting 3-day Paystack escrow protection.',
       `5. inferred_city: Pick the matching Ghana city if mentioned or implied (prefer one of: ${sampleCities || 'Accra, Kumasi, Tema, Takoradi, Tamale, Cape Coast'}), otherwise "".`,
       '6. inferred_region: Matching Ghana region if known (e.g. "Greater Accra", "Ashanti"), otherwise "".',
       '7. area: Specific neighborhood/campus/landmark if mentioned (e.g. "East Legon", "Osu", "KNUST"), otherwise "".',
@@ -1619,7 +1619,7 @@ export class GeminiService {
         cleanText(obj.business_hours, 140) || 'Mon – Sat: 8:30 AM – 6:00 PM',
       delivery_policies:
         cleanText(obj.delivery_policies, 400) ||
-        'Orders dispatch promptly via courier or store pickup, protected by Verndly 7-day Paystack escrow.',
+        'Orders dispatch promptly via courier or store pickup, protected by Verndly 3-day Paystack escrow.',
       whatsapp_number,
       matched_location,
       area: cleanText(obj.area, 80),

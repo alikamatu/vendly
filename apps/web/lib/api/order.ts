@@ -86,6 +86,15 @@ export const orderApi = {
     return res.data;
   },
 
+  async confirmDelivery(token: string, orderId: string) {
+    const res = await api.post<{ message: string; status: string }>(
+      `/orders/${orderId}/confirm-delivery`,
+      undefined,
+      { token },
+    );
+    return res.data;
+  },
+
   async createReturnRequest(
     token: string,
     orderId: string,

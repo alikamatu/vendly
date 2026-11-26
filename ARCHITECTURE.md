@@ -85,13 +85,14 @@ The Web Storefront uses Next.js 16+ App Router with Tailwind CSS v4:
 1. **Buyer** adds products to cart or opens the right-sidebar Buy Now drawer (`QuickCheckoutModal`).
 2. **Ownership Check**: Both the web UI (`lib/utils/ownership.ts`) and backend (`OrderService.createOrder`) reject attempts by a seller to purchase their own listings (`403 Forbidden`).
 3. **Checkout** initializes a Paystack transaction via `/payments/initialize` or `/orders`.
-4. **Paystack Webhook** (`/webhooks/paystack`) verifies the raw-body HMAC-SHA512 signature with `crypto.timingSafeEqual`, atomically dedupes on `payment_logs.event_id`, records the `Transaction` & `PaymentLedgerEntry`, updates order state, and deducts stock.
+4. **Paystack Webhook** (`/webhooks/paystack`) verifies the raw-body HMAC-SHA512 signature with `crypto.timingSafeEqual`, atomically dedupes on `payment_logs.event_id`, records the `Transaction` & `PaymentLedgerEntry`, credits `pending_balance` (escrow hold), updates order state, and deducts stock.
+5. **3-Day Escrow Inspection & Release**: When an order is marked `DELIVERED`, funds remain held in escrow for the 3-day buyer inspection window (`escrow_release_days = 3` default). Escrow releases immediately if the buyer confirms receipt (`POST /orders/:id/confirm-delivery`), or automatically via the hourly `@Cron` sweep (`OrderService.sweepMaturedEscrowOrders` / `POST /cron/escrow/release`) once 3 days pass without an open return request.
 
 ### 5. Seller Verification, 2FA & Return Flows
 
 - **Seller Verification**: User submits documents (`POST /auth/submit-verification`) → API creates `AdminApproval` and fires Resend email + Arkesel SMS admin alerts → Admin approves via `/admin/approve/:id` → role elevated to `SELLER` and `SellerProfile` created.
 - **2FA**: Supports TOTP (QR secret + hashed backup codes) and SMS OTP via Arkesel; login issues a temporary challenge token until 2FA succeeds.
-- **Returns**: Buyer submits a `ReturnRequest` within the escrow window; seller/admin reviews and transitions status (`Approved`, `Rejected`, `Refunded`).
+- **Returns**: Buyer submits a `ReturnRequest` within the 3-day post-delivery escrow window; seller/admin reviews and transitions status (`Approved`, `Rejected`, `Refunded`).
 
 ---
 

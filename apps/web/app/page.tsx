@@ -13,7 +13,7 @@ import { getProductPath } from '@/lib/product-slug';
 export const metadata = buildMetadata({
   title: 'Verndly — Ghana’s AI-Native Marketplace for Verified Stores',
   description:
-    'Shop verified independent stores across Ghana with Verndly AI, or launch your online storefront in seconds with zero monthly rent and 7-day Paystack escrow protection.',
+    'Shop verified independent stores across Ghana with Verndly AI, or launch your online storefront in seconds with zero monthly rent and 3-day Paystack escrow protection.',
   path: '/',
   keywords: [
     'Ghana marketplace',
@@ -27,6 +27,8 @@ export const metadata = buildMetadata({
     'Verndly',
   ],
 });
+
+export const revalidate = 300;
 
 export default async function HomePage() {
   const [products, categories, brands, topProVendors] = await Promise.all([

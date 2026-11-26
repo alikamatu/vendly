@@ -3,7 +3,11 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
-import { AuthController } from './auth.controller';
+import {
+  AuthController,
+  AccountLifecycleCronController,
+} from './auth.controller';
+import { AccountLifecycleService } from './account-lifecycle.service';
 import { AdminService } from './admin.service';
 import { AdminController } from './admin.controller';
 import { PrismaModule } from '../prisma/prisma.module';
@@ -17,6 +21,7 @@ import { LoopsModule } from '../loops/loops.module';
 
 @Module({
   imports: [
+    ConfigModule,
     PrismaModule,
     EmailModule,
     LoopsModule,
@@ -32,8 +37,19 @@ import { LoopsModule } from '../loops/loops.module';
       }),
     }),
   ],
-  controllers: [AuthController, AdminController],
-  providers: [AuthService, AdminService, JwtStrategy, SmsClient, OAuthService],
-  exports: [AuthService, JwtStrategy],
+  controllers: [
+    AuthController,
+    AccountLifecycleCronController,
+    AdminController,
+  ],
+  providers: [
+    AuthService,
+    AccountLifecycleService,
+    AdminService,
+    JwtStrategy,
+    SmsClient,
+    OAuthService,
+  ],
+  exports: [AuthService, AccountLifecycleService, JwtStrategy],
 })
 export class AuthModule {}

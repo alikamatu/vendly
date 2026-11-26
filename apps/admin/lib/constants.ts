@@ -13,6 +13,7 @@ import {
   Bell,
   Settings,
   Mail,
+  Flag,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -83,6 +84,12 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
         href: '/returns',
         icon: RotateCcw,
         badgeKey: 'pendingReturns',
+      },
+      {
+        title: 'Reports',
+        href: '/reports',
+        icon: Flag,
+        badgeKey: 'openReports',
       },
       {
         title: 'Reviews',

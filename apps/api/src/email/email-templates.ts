@@ -199,7 +199,7 @@ export const getWelcomeEmail = (
               <td style="padding: 8px 0; vertical-align: top;">
                 <strong class="email-title" style="font-size: 13.5px; color: #0f172a;">Curated Marketplace & Buyer Protection</strong>
                 <p class="email-muted" style="margin: 3px 0 0; font-size: 12.5px; line-height: 1.6; color: #64748b;">
-                  Shop directly from independently verified merchants with end-to-end order tracking and a 7-day return guarantee.
+                  Shop directly from independently verified merchants with end-to-end order tracking and a 3-day return guarantee.
                 </p>
               </td>
             </tr>
@@ -1297,4 +1297,118 @@ export const getNewsletterWelcomeEmail = (
       ${P(`Thanks for subscribing to the Verndly newsletter. We'll keep you posted with the latest updates, special deals, and tips to grow your business.`)}
       ${button('Start exploring', `${links.baseUrl}/products`)}
     `,
+  });
+
+// 17. Account disabled (self-service reversible pause)
+export const getAccountDisabledEmail = (
+  name: string,
+  isSeller: boolean,
+  links: EmailLinks = { baseUrl: 'https://verndly.com' },
+) =>
+  emailShell({
+    title: 'Your Verndly account has been disabled',
+    preheader:
+      'Your account is paused and hidden. Sign back in anytime to reactivate it.',
+    category: 'Account Notice',
+    content: `
+      <div style="margin-bottom: 18px;">${statusPill('Account Disabled', 'warning')}</div>
+      ${eyebrow('Verndly Account • Status Update')}
+      ${H1('Your account has been disabled')}
+      ${P(`Hello ${escape(name.split(' ')[0] || name)},`)}
+      ${P(
+        isSeller
+          ? `Your Verndly seller account is now paused. Your storefront and all product listings have been hidden from buyers so no new orders can be placed.`
+          : `Your Verndly account is now paused as requested.`,
+      )}
+      ${P(`Changed your mind? Simply sign back in anytime and click <strong>Reactivate Account</strong> to restore everything immediately.`)}
+      ${button('Sign in to reactivate', `${links.baseUrl}/login`)}
+    `,
+    footerNote:
+      'If you did not disable your account, reset your password immediately and contact support@verndly.com.',
+  });
+
+// 18. Seller account deletion scheduled (14-day grace period)
+export const getAccountDeletionScheduledEmail = (
+  name: string,
+  scheduledFor: Date | string,
+  productCount: number,
+  links: EmailLinks = { baseUrl: 'https://verndly.com' },
+) =>
+  emailShell({
+    title: 'Your Verndly seller account is scheduled for deletion',
+    preheader: `Permanent deletion is scheduled for ${formatDate(scheduledFor)}. Sign in before then to cancel.`,
+    category: 'Account Deletion Notice',
+    content: `
+      <div style="margin-bottom: 18px;">${statusPill('Deletion Scheduled', 'error')}</div>
+      ${eyebrow('Verndly Account • 14-Day Grace Period')}
+      ${H1('Your account deletion is scheduled')}
+      ${P(`Hello ${escape(name.split(' ')[0] || name)},`)}
+      ${P(`We received your request to permanently delete your Verndly seller account. Your storefront and listings are now hidden from the marketplace.`)}
+      ${card(
+        `
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+          ${kvRow('Grace period', '14 calendar days')}
+          ${kvRow('Permanent deletion date', `<strong>${escape(formatDate(scheduledFor))}</strong>`)}
+          ${kvRow('Products queued for deletion', `${productCount} listing${productCount === 1 ? '' : 's'}`)}
+          ${kvRow('Storefront status', 'Hidden immediately')}
+        </table>
+      `,
+        '#dc2626',
+      )}
+      ${P(`On <strong>${escape(formatDate(scheduledFor))}</strong>, all of your seller products will be permanently deleted, your store handle will be retired, and your account data will be removed.`)}
+      ${P(`If you change your mind before that date, sign in and cancel the deletion request from your settings.`)}
+      ${button('Cancel deletion request', `${links.baseUrl}/dashboard/settings/data`)}
+    `,
+    footerNote:
+      'If you did not request account deletion, sign in immediately to cancel and contact support@verndly.com.',
+  });
+
+// 19. 3-day pre-deletion reminder (Day 11)
+export const getAccountDeletionReminderEmail = (
+  name: string,
+  scheduledFor: Date | string,
+  daysRemaining: number,
+  links: EmailLinks = { baseUrl: 'https://verndly.com' },
+) =>
+  emailShell({
+    title: `Reminder: Your Verndly account will be deleted in ${daysRemaining} days`,
+    preheader: `Permanent deletion runs on ${formatDate(scheduledFor)}. Cancel anytime before then.`,
+    category: 'Final Reminder',
+    content: `
+      <div style="margin-bottom: 18px;">${statusPill(`${daysRemaining} Days Remaining`, 'error')}</div>
+      ${eyebrow('Verndly Account • Final Reminder')}
+      ${H1(`Your account will be deleted on ${formatDate(scheduledFor)}`)}
+      ${P(`Hello ${escape(name.split(' ')[0] || name)},`)}
+      ${P(`This is a reminder that your Verndly seller account and all associated product listings are scheduled for permanent deletion on <strong>${escape(formatDate(scheduledFor))}</strong>.`)}
+      ${P(`Once completed, all product listings are permanently deleted and cannot be recovered. If you would like to keep your store, sign in before the deadline and cancel your request.`)}
+      ${button('Keep my account', `${links.baseUrl}/dashboard/settings/data`)}
+    `,
+    footerNote:
+      'Need help? Contact our Accra support desk at support@verndly.com.',
+  });
+
+// 20. Account permanently deleted confirmation
+export const getAccountDeletedEmail = (
+  name: string,
+  isSeller: boolean,
+  links: EmailLinks = { baseUrl: 'https://verndly.com' },
+) =>
+  emailShell({
+    title: 'Your Verndly account has been permanently deleted',
+    preheader: 'Your account deletion is now complete.',
+    category: 'Account Confirmation',
+    content: `
+      <div style="margin-bottom: 18px;">${statusPill('Deleted', 'neutral' as any)}</div>
+      ${eyebrow('Verndly Account • Deletion Complete')}
+      ${H1('Your account has been deleted')}
+      ${P(`Hello ${escape(name.split(' ')[0] || name)},`)}
+      ${P(
+        isSeller
+          ? `Your Verndly seller account deletion is now complete. All of your product listings have been permanently deleted, your store link has been retired, and your personal details have been removed.`
+          : `Your Verndly account has been permanently deleted and your personal details have been removed.`,
+      )}
+      ${P(`Where past orders or payouts exist, minimal anonymized accounting records are retained as required by Ghanaian law. You are welcome to create a new account with this email address anytime in the future.`)}
+      ${secondaryButton('Visit Verndly', links.baseUrl)}
+    `,
+    footerNote: 'Thank you for being part of Verndly.',
   });

@@ -1,9 +1,4 @@
-import {
-  IsOptional,
-  IsString,
-  IsNumberString,
-  IsIn,
-} from 'class-validator';
+import { IsOptional, IsString, IsNumberString, IsIn } from 'class-validator';
 
 export const ADMIN_ORDER_STATUSES = [
   'PENDING',
@@ -11,6 +6,7 @@ export const ADMIN_ORDER_STATUSES = [
   'PROCESSING',
   'SHIPPED',
   'DELIVERED',
+  'COMPLETED',
   'CANCELLED',
   'REFUNDED',
 ] as const;
@@ -52,7 +48,7 @@ export class AdminOrderListQueryDto {
 }
 
 export class AdminUpdateOrderStatusDto {
-  @IsIn(ADMIN_ORDER_STATUSES as unknown as string[])
+  @IsIn(ADMIN_ORDER_STATUSES)
   status!: AdminOrderStatus;
 
   @IsOptional()
