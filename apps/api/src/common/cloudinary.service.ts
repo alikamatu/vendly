@@ -6,6 +6,11 @@ import {
   UploadApiErrorResponse,
 } from 'cloudinary';
 
+/** In-memory upload. Matches Multer memory storage without depending on its global types. */
+export interface CloudinaryUpload {
+  buffer: Buffer;
+}
+
 @Injectable()
 export class CloudinaryService {
   constructor(private configService: ConfigService) {
@@ -17,7 +22,7 @@ export class CloudinaryService {
   }
 
   async uploadImage(
-    file: Express.Multer.File,
+    file: CloudinaryUpload,
     folder: string = 'vendly',
     options: { vectorize?: boolean; quality?: string } = {},
   ): Promise<UploadApiResponse | UploadApiErrorResponse> {
@@ -51,18 +56,78 @@ export class CloudinaryService {
     });
   }
 
+  private detectImageMimeFromBuffer(buffer: Buffer): string | null {
+    if (buffer.length < 12) return null;
+    // JPEG: FF D8 FF
+    if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
+      return 'image/jpeg';
+    }
+    // PNG: 89 50 4E 47 0D 0A 1A 0A
+    if (
+      buffer[0] === 0x89 &&
+      buffer[1] === 0x50 &&
+      buffer[2] === 0x4e &&
+      buffer[3] === 0x47
+    ) {
+      return 'image/png';
+    }
+    // GIF: GIF87a / GIF89a
+    if (buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46) {
+      return 'image/gif';
+    }
+    // WebP: RIFF....WEBP
+    if (
+      buffer[0] === 0x52 &&
+      buffer[1] === 0x49 &&
+      buffer[2] === 0x46 &&
+      buffer[3] === 0x46 &&
+      buffer[8] === 0x57 &&
+      buffer[9] === 0x45 &&
+      buffer[10] === 0x42 &&
+      buffer[11] === 0x50
+    ) {
+      return 'image/webp';
+    }
+    // AVIF / HEIC: ....ftypavif / ftypheic
+    if (
+      buffer[4] === 0x66 &&
+      buffer[5] === 0x74 &&
+      buffer[6] === 0x79 &&
+      buffer[7] === 0x70
+    ) {
+      return 'image/avif';
+    }
+    return null;
+  }
+
   /**
-   * Safely downloads a remote HTTPS image (e.g. from WhatsApp / Meta CDN)
-   * and mirrors it into Verndly's Cloudinary bucket so expiring CDN URLs
-   * never break imported product listings.
+   * Safely downloads a remote HTTPS image (from storefronts, Shopify, WooCommerce,
+   * WhatsApp / Meta CDN, etc.) and mirrors it into Verndly's Cloudinary bucket so
+   * hotlink rules or expiring URLs never break imported product listings.
    */
   async uploadImageFromUrl(
     imageUrl: string,
     folder: string = 'vendly_products',
   ): Promise<UploadApiResponse | UploadApiErrorResponse> {
+    const cleanedInput = (imageUrl || '').trim().replace(/&amp;/gi, '&');
+
     let parsed: URL;
     try {
-      parsed = new URL(imageUrl);
+      const normalized = cleanedInput.startsWith('//')
+        ? `https:${cleanedInput}`
+        : cleanedInput;
+      parsed = new URL(normalized);
+      if (parsed.protocol === 'http:') {
+        parsed.protocol = 'https:';
+      }
+      // Unwrap Next.js /_next/image?url=... wrapper if present
+      if (parsed.pathname === '/_next/image') {
+        const inner = parsed.searchParams.get('url');
+        if (inner) {
+          parsed = new URL(inner, parsed.origin);
+          if (parsed.protocol === 'http:') parsed.protocol = 'https:';
+        }
+      }
     } catch {
       throw new Error('Invalid image URL');
     }
@@ -71,14 +136,18 @@ export class CloudinaryService {
       throw new Error('Only HTTPS image URLs are supported');
     }
 
-    const host = parsed.hostname.toLowerCase();
+    const host = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, '');
     if (
+      !host ||
+      !host.includes('.') ||
       host === 'localhost' ||
       host === '127.0.0.1' ||
       host === '0.0.0.0' ||
       host === '::1' ||
       host.endsWith('.local') ||
       host.endsWith('.internal') ||
+      host.endsWith('.localhost') ||
+      /^127\./.test(host) ||
       /^10\./.test(host) ||
       /^192\.168\./.test(host) ||
       /^169\.254\./.test(host) ||
@@ -88,49 +157,62 @@ export class CloudinaryService {
     }
 
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 12_000);
+    const timer = setTimeout(() => controller.abort(), 14_000);
     try {
       const response = await fetch(parsed.toString(), {
         signal: controller.signal,
+        redirect: 'follow',
         headers: {
           'User-Agent':
-            'Mozilla/5.0 (compatible; VerndlyBot/1.0; +https://verndly.com)',
-          Accept: 'image/*,*/*;q=0.8',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+          Accept:
+            'image/webp,image/jpeg,image/png,image/avif,image/*;q=0.9,*/*;q=0.5',
+          Referer: `${parsed.origin}/`,
         },
       });
-      if (!response.ok) {
-        throw new Error(`Remote image fetch failed (${response.status})`);
-      }
 
-      const contentType = (
-        response.headers.get('content-type') || ''
-      ).toLowerCase();
-      if (!contentType.startsWith('image/')) {
-        throw new Error('Remote URL did not return an image');
+      if (!response.ok) {
+        // Fallback to Cloudinary remote URL upload when origin blocks server fetch (e.g. 403/406/429)
+        if ([401, 403, 406, 429].includes(response.status)) {
+          return await cloudinary.uploader.upload(parsed.toString(), {
+            folder,
+            quality: 'auto',
+            fetch_format: 'auto',
+          });
+        }
+        throw new Error(`Remote image fetch failed (${response.status})`);
       }
 
       const arrayBuffer = await response.arrayBuffer();
       if (arrayBuffer.byteLength === 0) {
         throw new Error('Remote image is empty');
       }
-      if (arrayBuffer.byteLength > 8 * 1024 * 1024) {
-        throw new Error('Remote image exceeds 8 MB limit');
+      if (arrayBuffer.byteLength > 15 * 1024 * 1024) {
+        throw new Error('Remote image exceeds 15 MB limit');
       }
 
-      const fakeFile = {
-        buffer: Buffer.from(arrayBuffer),
-        mimetype: contentType.split(';')[0],
-        originalname: 'whatsapp-import.jpg',
-      } as Express.Multer.File;
+      const buffer = Buffer.from(arrayBuffer);
+      const headerMime = (response.headers.get('content-type') || '')
+        .split(';')[0]
+        .trim()
+        .toLowerCase();
+      const sniffedMime = this.detectImageMimeFromBuffer(buffer);
+      const effectiveMime = headerMime.startsWith('image/')
+        ? headerMime
+        : sniffedMime;
 
-      return await this.uploadImage(fakeFile, folder);
+      if (!effectiveMime || effectiveMime === 'image/svg+xml') {
+        throw new Error('Remote URL did not return a valid product photo');
+      }
+
+      return await this.uploadImage({ buffer }, folder);
     } finally {
       clearTimeout(timer);
     }
   }
 
   async uploadVideo(
-    file: Express.Multer.File,
+    file: CloudinaryUpload,
     folder: string = 'vendly_videos',
   ): Promise<UploadApiResponse | UploadApiErrorResponse> {
     return new Promise((resolve, reject) => {

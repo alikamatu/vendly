@@ -17,6 +17,7 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import Alert from '@/components/ui/Alert';
+import { isOwnStore } from '@/lib/utils/ownership';
 import { useCart } from '@/lib/contexts/cart-context';
 import { useAuth } from '@/lib/contexts/auth-context';
 import { storeApi } from '@/lib/api/store';
@@ -191,6 +192,10 @@ export default function CheckoutPage() {
 
   const submitOrder = async () => {
     if (!token || !group) return;
+    if (isOwnStore(user, { store_link: group.storeLink })) {
+      setError('You cannot purchase products from your own store.');
+      return;
+    }
     if (!formValid) {
       setError(
         fieldErrors.customerName ||

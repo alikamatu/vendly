@@ -17,6 +17,7 @@ export interface WhatsAppPreviewItem {
   status: 'active' | 'draft';
   source_url?: string;
   source_screenshot_index?: number;
+  image_box_2d?: [number, number, number, number] | null;
 }
 
 export interface WhatsAppPreviewResponse {

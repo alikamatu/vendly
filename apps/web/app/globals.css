@@ -243,3 +243,204 @@ body::-webkit-scrollbar {
   width: 0px !important;
   height: 0px !important;
 }
+
+/* Apple-like alerts. Shared by the inline <Alert> and the top toast stack. */
+.verndly-alert {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: max-content;
+  max-width: min(280px, calc(100vw - 24px));
+  margin-inline: auto;
+  padding: 4px 10px 4px 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-background) 86%, transparent);
+  color: var(--color-foreground);
+  border: 1px solid color-mix(in srgb, var(--color-foreground) 8%, transparent);
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  backdrop-filter: saturate(180%) blur(18px);
+  -webkit-backdrop-filter: saturate(180%) blur(18px);
+  font-size: 12px;
+  line-height: 1.25;
+  letter-spacing: -0.011em;
+  pointer-events: auto;
+}
+
+[data-theme='dark'] .verndly-alert {
+  background: color-mix(in srgb, #1c1c1e 84%, transparent);
+  box-shadow:
+    0 14px 36px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.verndly-alert-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.verndly-alert-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  color: var(--color-foreground);
+}
+
+.verndly-alert-desc {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--color-muted);
+}
+
+.verndly-alert-glyph {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.verndly-alert-mark {
+  flex-shrink: 0;
+}
+
+[data-theme='dark'] .verndly-alert-mark-success rect {
+  fill: rgba(74, 222, 128, 0.14);
+}
+[data-theme='dark'] .verndly-alert-mark-success path {
+  stroke: #4ade80;
+}
+[data-theme='dark'] .verndly-alert-mark-error rect {
+  fill: rgba(248, 113, 113, 0.14);
+}
+[data-theme='dark'] .verndly-alert-mark-error path {
+  stroke: #f87171;
+}
+[data-theme='dark'] .verndly-alert-mark-warning rect {
+  fill: rgba(251, 191, 36, 0.14);
+}
+[data-theme='dark'] .verndly-alert-mark-warning path {
+  stroke: #fbbf24;
+}
+[data-theme='dark'] .verndly-alert-mark-info rect {
+  fill: rgba(255, 255, 255, 0.08);
+}
+[data-theme='dark'] .verndly-alert-mark-info path {
+  stroke: #f5f5f5;
+}
+
+.verndly-alert-close {
+  display: inline-flex;
+  height: 22px;
+  width: 22px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-muted);
+  cursor: pointer;
+}
+
+.verndly-alert-close:hover {
+  background: color-mix(in srgb, var(--color-foreground) 6%, transparent);
+  color: var(--color-foreground);
+}
+
+[data-sonner-toaster] {
+  z-index: 200 !important;
+  --width: 100%;
+  width: 100% !important;
+  font-family: inherit !important;
+  pointer-events: none;
+}
+
+[data-sonner-toaster][data-x-position='center'] {
+  left: 0 !important;
+  transform: none !important;
+}
+
+[data-sonner-toast].verndly-alert {
+  left: 50%;
+  width: max-content !important;
+  translate: -50% 0;
+  pointer-events: auto;
+}
+
+/* Kinetic motion-graphics animations for Verndly AI working state */
+@keyframes verndly-orb-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(0, -7px, 0) scale(1.03);
+  }
+}
+
+@keyframes verndly-pill-pop {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes verndly-word-reveal {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 115%, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes verndly-char-in {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 3px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes verndly-caret-blink {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  55%,
+  100% {
+    opacity: 0.15;
+  }
+}
+
+.verndly-orb-float {
+  animation: verndly-orb-float 2.4s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+.verndly-pill-pop {
+  animation: verndly-pill-pop 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.verndly-word-reveal {
+  display: inline-block;
+  animation: verndly-word-reveal 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.verndly-char-in {
+  display: inline;
+  animation: verndly-char-in 160ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.verndly-caret {
+  animation: verndly-caret-blink 900ms ease-in-out infinite;
+}

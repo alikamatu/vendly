@@ -44,11 +44,11 @@ const MARKETPLACE_PILLARS = [
   },
   {
     Icon: Percent,
-    title: 'Flat 4% Seller Fee',
+    title: 'Zero Monthly Rent',
     description:
-      'Keep 96% of every sale with Paystack included — compared to up to 20% commission plus shipping deductions elsewhere.',
-    href: '/blog/ghana-marketplace-seller-fees-vs-verndly',
-    cta: 'Compare fees',
+      'Open your verified storefront with zero setup fees and no monthly subscriptions — built for growing Ghanaian brands.',
+    href: '/sell',
+    cta: 'Start selling',
   },
   {
     Icon: Store,
@@ -241,7 +241,7 @@ export default function HomeView({ initialData }: { initialData?: InitialHomeDat
                 href="/sell"
                 className="bg-foreground text-background inline-flex items-center gap-2 rounded-full px-5 py-3 text-xs font-medium transition-opacity hover:opacity-90"
               >
-                Sell at 4% flat
+                Start selling
                 <ArrowRight className="h-3.5 w-3.5" />
               </Link>
             </div>

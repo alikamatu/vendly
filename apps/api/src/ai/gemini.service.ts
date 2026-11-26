@@ -33,6 +33,11 @@ const FALLBACK_GEMINI_MODELS = [
   'gemini-3.5-flash-lite',
   'gemini-3.8-flash',
 ] as const;
+const FAST_GEMINI_MODELS = [
+  'gemini-3.5-flash-lite',
+  'gemini-3.5-flash',
+  'gemini-3.6-flash',
+] as const;
 const AI_STUDIO_API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
 const VERTEX_EXPRESS_API_BASE =
   'https://aiplatform.googleapis.com/v1/publishers/google';
@@ -54,6 +59,12 @@ interface GeminiGenerateOptions {
   parts: GeminiPart[];
   responseSchema: Record<string, unknown>;
   temperature?: number;
+  /** Prefer lowest-latency Flash Lite model chain for instant search UX */
+  fast?: boolean;
+  /** Override per-model abort timeout in milliseconds */
+  timeoutMs?: number;
+  /** Optional cap on output tokens for compact JSON responses */
+  maxOutputTokens?: number;
 }
 
 const VALID_CONDITIONS: readonly AiProductCondition[] = [
@@ -305,6 +316,22 @@ export function normalizeBulkAnalysis(
   return normalized;
 }
 
+export function normalizeImageBox2d(
+  raw: unknown,
+): [number, number, number, number] | null {
+  if (!Array.isArray(raw) || raw.length !== 4) return null;
+  const nums = raw.map((v) => Number(v));
+  if (nums.some((n) => !Number.isFinite(n))) return null;
+  const clamp = (n: number) => Math.max(0, Math.min(1000, Math.round(n)));
+  const ymin = clamp(nums[0]);
+  const xmin = clamp(nums[1]);
+  const ymax = clamp(nums[2]);
+  const xmax = clamp(nums[3]);
+  // Require a meaningful photo area (at least 2.5% width and height)
+  if (ymax - ymin < 25 || xmax - xmin < 25) return null;
+  return [ymin, xmin, ymax, xmax];
+}
+
 export function normalizeSingleAnalysis(
   raw: unknown,
   availableCategories: string[],
@@ -449,8 +476,13 @@ export class GeminiService {
       });
     }
 
-    const candidates = this.getCandidateModels();
-    const primaryModel = this.getModel();
+    const candidates = options.fast
+      ? Array.from(
+          new Set([...FAST_GEMINI_MODELS, ...this.getCandidateModels()]),
+        )
+      : this.getCandidateModels();
+    const primaryModel = options.fast ? FAST_GEMINI_MODELS[0] : this.getModel();
+    const perModelTimeout = options.timeoutMs ?? PER_MODEL_TIMEOUT_MS;
     const requestBody = JSON.stringify({
       systemInstruction: {
         parts: [{ text: options.systemInstruction }],
@@ -465,6 +497,9 @@ export class GeminiService {
         ...(options.temperature !== undefined
           ? { temperature: options.temperature }
           : {}),
+        ...(options.maxOutputTokens !== undefined
+          ? { maxOutputTokens: options.maxOutputTokens }
+          : {}),
         responseMimeType: 'application/json',
         responseSchema: options.responseSchema,
       },
@@ -476,7 +511,7 @@ export class GeminiService {
       const model = candidates[i];
       const endpoint = this.resolveEndpoint(model, apiKey);
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), PER_MODEL_TIMEOUT_MS);
+      const timer = setTimeout(() => controller.abort(), perModelTimeout);
 
       try {
         const response = await fetch(endpoint, {
@@ -806,6 +841,7 @@ export class GeminiService {
       '6. Provide 3 to 5 lowercase search tags.',
       '7. Set source_screenshot_index to the 0-based index of the screenshot where the product appears most clearly.',
       '8. Set in_stock to false only if WhatsApp explicitly marks the item out of stock or unavailable; otherwise true.',
+      '9. Set image_box_2d to [ymin, xmin, ymax, xmax] (4 integers on a 0 to 1000 normalized scale, where 0 is top/left and 1000 is bottom/right) tightly framing ONLY that product’s photo or thumbnail inside the screenshot at source_screenshot_index — EXCLUDING WhatsApp headers, status bars, titles, prices, and buttons. If no product photo is visible for that item, set image_box_2d to null.',
     ].join('\n');
 
     const parts: GeminiPart[] = [
@@ -857,6 +893,11 @@ export class GeminiService {
               tags: { type: 'ARRAY', items: { type: 'STRING' } },
               in_stock: { type: 'BOOLEAN' },
               source_screenshot_index: { type: 'INTEGER' },
+              image_box_2d: {
+                type: 'ARRAY',
+                items: { type: 'INTEGER' },
+                nullable: true,
+              },
             },
           },
         },
@@ -912,6 +953,7 @@ export class GeminiService {
         tags: normalizeTags(item.tags),
         in_stock: item.in_stock !== false,
         source_screenshot_index,
+        image_box_2d: normalizeImageBox2d(item.image_box_2d),
       });
     }
 
@@ -979,6 +1021,9 @@ export class GeminiService {
       parts: [{ text: `Buyer request: "${cleanQuery}"` }],
       responseSchema,
       temperature: 0.1,
+      fast: true,
+      timeoutMs: 4_500,
+      maxOutputTokens: 240,
     });
 
     return normalizeBuyerSearchPlan(raw, categories);

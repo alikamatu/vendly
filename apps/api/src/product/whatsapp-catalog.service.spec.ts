@@ -1,4 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
+import { normalizeImageBox2d } from '../ai/gemini.service';
 import {
   extractProductsFromWhatsAppHtml,
   normalizeWhatsAppInputToUrls,
@@ -122,6 +123,39 @@ describe('WhatsAppCatalogService & parsers', () => {
         image_urls: ['https://mmg.whatsapp.net/bag.jpg'],
       });
     });
+
+    it('extracts real WhatsApp product OG tags ("<Title> from <Shop> on WhatsApp.", &#xb7; entity, fbcdn image, and category)', () => {
+      const fullCategories = [
+        'Art & Crafts',
+        'Beauty & Personal Care',
+        'Electronics',
+        'Fashion',
+      ];
+      const html = `
+        <html><head>
+          <meta property="og:title" content="VIBES BY FARIIS PARFUM from Dzimatperfumery on WhatsApp." />
+          <meta property="og:description" content="100 ML EAU DE PARFUM &#xb7; GHS250.00" />
+          <meta property="og:image" content="https://scontent.xx.fbcdn.net/v/t45.5328-9/900566313_n.jpg?oh=abc&amp;oe=123" />
+        </head></html>
+      `;
+      const items = extractProductsFromWhatsAppHtml(
+        html,
+        'https://wa.me/p/28689873557358340/233532713074',
+        fullCategories,
+      );
+      expect(items).toHaveLength(1);
+      expect(items[0]).toMatchObject({
+        title: 'VIBES BY FARIIS PARFUM',
+        description: '100 ML EAU DE PARFUM',
+        price: 250,
+        currency: 'GHS',
+        category: 'Beauty & Personal Care',
+        image_urls: [
+          'https://scontent.xx.fbcdn.net/v/t45.5328-9/900566313_n.jpg?oh=abc&oe=123',
+        ],
+        status: 'active',
+      });
+    });
   });
 
   describe('parseMetaCatalogCsv', () => {
@@ -218,6 +252,76 @@ describe('WhatsAppCatalogService & parsers', () => {
           }),
         }),
       );
+    });
+  });
+
+  describe('previewFromScreenshots & normalizeImageBox2d', () => {
+    it('validates and clamps normalized [ymin, xmin, ymax, xmax] product photo bounding boxes', () => {
+      expect(normalizeImageBox2d([120, 40, 460, 380])).toEqual([
+        120, 40, 460, 380,
+      ]);
+      expect(normalizeImageBox2d([-10, 0, 1050, 500])).toEqual([
+        0, 0, 1000, 500,
+      ]);
+      // Reject degenerate or inverted boxes
+      expect(normalizeImageBox2d([500, 100, 400, 300])).toBeNull();
+      expect(normalizeImageBox2d([100, 100, 110, 110])).toBeNull();
+      expect(normalizeImageBox2d(null)).toBeNull();
+    });
+
+    it('preserves image_box_2d and source_screenshot_index from Gemini vision results', async () => {
+      const mockPrisma = {
+        category: {
+          findMany: jest
+            .fn()
+            .mockResolvedValue([{ name: 'Fashion' }, { name: 'Electronics' }]),
+        },
+      };
+      const mockGemini = {
+        parseWhatsAppCatalogScreenshots: jest.fn().mockResolvedValue({
+          products: [
+            {
+              title: 'Kente Oversized Hoodie',
+              description: 'Heavyweight cotton hoodie with woven Kente trim.',
+              price: 350,
+              original_price: null,
+              currency: 'GHS',
+              category: 'Fashion',
+              condition: 'new',
+              brand: '',
+              tags: ['hoodie', 'kente'],
+              in_stock: true,
+              source_screenshot_index: 0,
+              image_box_2d: [180, 45, 420, 290],
+            },
+          ],
+          model: 'gemini-3.6-flash',
+          totalScreenshots: 1,
+        }),
+      };
+
+      const service = new WhatsAppCatalogService(
+        mockPrisma as any,
+        {} as any,
+        {} as any,
+        mockGemini as any,
+      );
+
+      const res = await service.previewFromScreenshots([
+        {
+          originalname: 'catalog.png',
+          mimetype: 'image/png',
+          buffer: Buffer.from([1, 2, 3]),
+          size: 3,
+        } as Express.Multer.File,
+      ]);
+
+      expect(res.items).toHaveLength(1);
+      expect(res.items[0]).toMatchObject({
+        title: 'Kente Oversized Hoodie',
+        source_screenshot_index: 0,
+        image_box_2d: [180, 45, 420, 290],
+      });
     });
   });
 });

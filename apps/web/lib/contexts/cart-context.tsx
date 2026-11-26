@@ -1,6 +1,9 @@
 'use client';
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
+import { useAuth } from '@/lib/contexts/auth-context';
+import { isOwnStore } from '@/lib/utils/ownership';
 
 export interface CartItem {
   productId: string;
@@ -97,6 +100,7 @@ interface CartContextValue {
 const CartContext = createContext<CartContextValue | null>(null);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
   const [items, setItems] = useState<CartState>([]);
   const [hydrated, setHydrated] = useState(false);
 
@@ -110,16 +114,23 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     saveCart(items);
   }, [items, hydrated]);
 
-  const addItem = useCallback((item: Omit<CartItem, 'quantity'>) => {
-    const key = cartKey(item.productId, item.variantId ?? null);
-    setItems((prev) => {
-      const existing = prev.find((i) => itemKey(i) === key);
-      if (existing) {
-        return prev.map((i) => (itemKey(i) === key ? { ...i, quantity: i.quantity + 1 } : i));
+  const addItem = useCallback(
+    (item: Omit<CartItem, 'quantity'>) => {
+      if (isOwnStore(user, { store_link: item.storeLink })) {
+        toast.error('You cannot purchase your own product.');
+        return;
       }
-      return [...prev, { ...item, quantity: 1 }];
-    });
-  }, []);
+      const key = cartKey(item.productId, item.variantId ?? null);
+      setItems((prev) => {
+        const existing = prev.find((i) => itemKey(i) === key);
+        if (existing) {
+          return prev.map((i) => (itemKey(i) === key ? { ...i, quantity: i.quantity + 1 } : i));
+        }
+        return [...prev, { ...item, quantity: 1 }];
+      });
+    },
+    [user],
+  );
 
   const removeItem = useCallback((key: string) => {
     setItems((prev) => prev.filter((i) => itemKey(i) !== key && i.productId !== key));

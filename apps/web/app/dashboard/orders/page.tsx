@@ -23,6 +23,7 @@ import {
 import Link from 'next/link';
 import Card from '@/components/ui/Card';
 import Select from '@/components/ui/Select';
+import Alert from '@/components/ui/Alert';
 import { useAuth } from '@/lib/contexts/auth-context';
 import { orderApi } from '@/lib/api/order';
 import { useRealtimeOrders } from '@/hooks/useRealtimeOrders';
@@ -337,12 +338,7 @@ export default function StoreOrdersPage() {
         </div>
       </div>
 
-      {error && (
-        <div className="flex items-center gap-2 rounded-2xl bg-red-500/10 px-3.5 py-3 text-xs text-red-600">
-          <AlertCircle className="h-4 w-4 shrink-0" />
-          {error}
-        </div>
-      )}
+      {error && <Alert variant="error" message={error} onDismiss={() => setError(null)} />}
 
       <div className="space-y-2">
         <AnimatePresence mode="popLayout">

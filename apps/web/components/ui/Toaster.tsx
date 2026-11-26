@@ -2,27 +2,35 @@
 
 import React from 'react';
 import { Toaster as SonnerToaster } from 'sonner';
-import { useTheme } from '@/lib/contexts/theme';
+import { AlertGlyph, type AlertVariant } from '@/components/ui/Alert';
+
+const icon = (variant: AlertVariant) => <AlertGlyph variant={variant} />;
 
 export default function Toaster() {
-  const { theme } = useTheme();
-
   return (
     <SonnerToaster
-      theme={theme as 'light' | 'dark'}
-      position="top-right"
-      richColors
-      closeButton
+      theme="light"
+      position="top-center"
+      offset={14}
+      gap={8}
+      visibleToasts={3}
+      duration={4200}
+      closeButton={false}
+      icons={{
+        success: icon('success'),
+        error: icon('error'),
+        warning: icon('warning'),
+        info: icon('info'),
+        loading: icon('info'),
+      }}
       toastOptions={{
-        className:
-          '!border !border-border/80 !shadow-lg !rounded-2xl !p-4 !font-sans !text-xs sm:!text-sm',
+        unstyled: true,
         classNames: {
-          actionButton:
-            '!rounded-xl !text-xs !font-semibold !px-3.5 !py-2 !bg-secondary !text-white active:!scale-95 !transition-transform !duration-150',
-          cancelButton:
-            '!rounded-xl !text-xs !font-medium !px-3.5 !py-2 !bg-surface !text-foreground/80 hover:!text-foreground active:!scale-95 !transition-transform !duration-150',
-          closeButton:
-            '!border-0 !bg-surface/80 hover:!bg-surface !text-foreground/60 hover:!text-foreground !rounded-lg active:!scale-90 !transition-all',
+          toast: 'verndly-alert',
+          title: 'verndly-alert-title',
+          description: 'verndly-alert-desc',
+          content: 'verndly-alert-copy',
+          icon: 'verndly-alert-glyph',
         },
       }}
     />

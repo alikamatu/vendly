@@ -7,6 +7,8 @@ import Link from 'next/link';
 import Card from '@/components/ui/Card';
 import { useCart } from '@/lib/contexts/cart-context';
 import { useFavorites } from '@/lib/contexts/favorite-context';
+import { useAuth } from '@/lib/contexts/auth-context';
+import { isOwnStore } from '@/lib/utils/ownership';
 import { getProductPath } from '@/lib/product-slug';
 import { toast } from 'sonner';
 
@@ -43,12 +45,14 @@ function computeDiscount(price: string | number, original?: string | number | nu
 export default function ProductCard({ product, index }: ProductCardProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const { addItem } = useCart();
+  const { user } = useAuth();
   const { toggleFavorite, isFavorited } = useFavorites();
   const [added, setAdded] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [logoError, setLogoError] = useState(false);
 
+  const isOwnProduct = isOwnStore(user, product.seller);
   const favorited = isFavorited(String(product.id));
 
   const handleToggleFavorite = (e: React.MouseEvent) => {
@@ -61,6 +65,10 @@ export default function ProductCard({ product, index }: ProductCardProps) {
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (isOwnProduct) {
+      toast.error('You cannot purchase your own product.');
+      return;
+    }
     addItem({
       productId: String(product.id),
       title: product.title,
@@ -176,34 +184,36 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                 : 'opacity-100 group-hover/media:translate-y-0 group-hover:translate-y-0 group-hover/media:opacity-100 group-hover:opacity-100 sm:translate-y-2 sm:opacity-0'
             }`}
           >
-            <MotionButton
-              type="button"
-              aria-label="Add to cart"
-              onClick={handleAddToCart}
-              whileHover={{ scale: 1.08 }}
-              whileTap={{ scale: 0.92 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-              className={`flex items-center justify-center rounded-full border-0 p-2 shadow-none transition-all duration-200 sm:p-2.5 ${
-                added
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-surface hover:bg-surface/85 text-foreground'
-              }`}
-            >
-              {added ? (
-                <MotionSpan
-                  key="checked"
-                  initial={{ scale: 0, rotate: -20 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{ type: 'spring', stiffness: 500, damping: 15 }}
-                >
-                  <Check className="h-3.5 w-3.5 stroke-[2.5] text-white" />
-                </MotionSpan>
-              ) : (
-                <MotionSpan key="cart" initial={{ scale: 0.8 }} animate={{ scale: 1 }}>
-                  <ShoppingCart className="text-foreground h-3.5 w-3.5" />
-                </MotionSpan>
-              )}
-            </MotionButton>
+            {!isOwnProduct && (
+              <MotionButton
+                type="button"
+                aria-label="Add to cart"
+                onClick={handleAddToCart}
+                whileHover={{ scale: 1.08 }}
+                whileTap={{ scale: 0.92 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                className={`flex items-center justify-center rounded-full border-0 p-2 shadow-none transition-all duration-200 sm:p-2.5 ${
+                  added
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-surface hover:bg-surface/85 text-foreground'
+                }`}
+              >
+                {added ? (
+                  <MotionSpan
+                    key="checked"
+                    initial={{ scale: 0, rotate: -20 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ type: 'spring', stiffness: 500, damping: 15 }}
+                  >
+                    <Check className="h-3.5 w-3.5 stroke-[2.5] text-white" />
+                  </MotionSpan>
+                ) : (
+                  <MotionSpan key="cart" initial={{ scale: 0.8 }} animate={{ scale: 1 }}>
+                    <ShoppingCart className="text-foreground h-3.5 w-3.5" />
+                  </MotionSpan>
+                )}
+              </MotionButton>
+            )}
 
             <MotionButton
               type="button"

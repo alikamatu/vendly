@@ -20,6 +20,7 @@ import Header from '@/components/layout/Header';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
+import Alert from '@/components/ui/Alert';
 import { useAuth } from '@/lib/contexts/auth-context';
 import { orderApi } from '@/lib/api/order';
 import { launchPaystackInline } from '@/lib/paystack';
@@ -67,7 +68,6 @@ export default function BuyerOrdersPage() {
   useEffect(() => {
     if (isAuthLoading) return;
     if (token) {
-       
       fetchOrders();
     } else {
       setIsLoading(false);
@@ -243,12 +243,7 @@ export default function BuyerOrdersPage() {
           </div>
         </div>
 
-        {error && (
-          <div className="mb-8 flex items-center gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-red-500">
-            <AlertCircle className="h-4 w-4" />
-            <p className="text-[10px] font-medium uppercase tracking-wider">{error}</p>
-          </div>
-        )}
+        {error && <Alert variant="error" message={error} onDismiss={() => setError(null)} />}
 
         {isVerifying && (
           <div className="bg-primary/10 text-primary border-primary/20 mb-8 flex items-center gap-3 rounded-2xl border p-4">

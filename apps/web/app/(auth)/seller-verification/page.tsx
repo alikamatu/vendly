@@ -140,7 +140,7 @@ export default function SellerVerificationPage() {
         {/* Helpful link back to seller overview */}
         <div className="text-muted flex flex-wrap items-center justify-between gap-4 text-xs">
           <p>
-            Want to compare Verndly&apos;s flat 4% fee before applying?{' '}
+            Want to learn more about selling on Verndly before applying?{' '}
             <Link href="/sell" className="text-foreground underline underline-offset-2">
               See full seller overview
             </Link>

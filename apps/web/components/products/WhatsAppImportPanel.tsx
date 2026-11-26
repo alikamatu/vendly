@@ -29,6 +29,8 @@ import {
 } from '@/lib/api/whatsapp-import';
 import VerndlyAiIcon from '@/components/ai/VerndlyAiIcon';
 import VerndlyAiOverlay from '@/components/ai/VerndlyAiOverlay';
+import RemoteProductThumb from '@/components/products/RemoteProductThumb';
+import Alert from '@/components/ui/Alert';
 
 type ImportMethod = 'screenshots' | 'link' | 'meta';
 
@@ -46,6 +48,96 @@ interface CategoryOption {
 }
 
 const SPRING_TAB = { type: 'spring' as const, stiffness: 420, damping: 34 };
+
+function loadImageElement(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error('Failed to decode screenshot image'));
+    img.src = src;
+  });
+}
+
+async function cropProductPhotoFromScreenshot(
+  screenshotFile: File,
+  box: [number, number, number, number] | null | undefined,
+  singleItemInScreenshot: boolean,
+  title: string,
+  idx: number,
+): Promise<{ file: File; previewUrl: string } | null> {
+  const safeBase =
+    title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 40) || `product-${idx + 1}`;
+
+  const hasValidBox =
+    Array.isArray(box) &&
+    box.length === 4 &&
+    box.every((n) => typeof n === 'number' && Number.isFinite(n)) &&
+    box[2] - box[0] >= 25 &&
+    box[3] - box[1] >= 25;
+
+  if (!hasValidBox) {
+    if (!singleItemInScreenshot) return null;
+    const copy = new File([screenshotFile], `${safeBase}-whatsapp.jpg`, {
+      type: screenshotFile.type || 'image/jpeg',
+    });
+    return { file: copy, previewUrl: URL.createObjectURL(copy) };
+  }
+
+  const tempUrl = URL.createObjectURL(screenshotFile);
+  try {
+    const img = await loadImageElement(tempUrl);
+    const natW = img.naturalWidth;
+    const natH = img.naturalHeight;
+    if (natW < 16 || natH < 16) return null;
+
+    const [ymin, xmin, ymax, xmax] = box;
+    const sx = Math.max(0, Math.floor((xmin / 1000) * natW));
+    const sy = Math.max(0, Math.floor((ymin / 1000) * natH));
+    const sw = Math.max(16, Math.min(natW - sx, Math.ceil(((xmax - xmin) / 1000) * natW)));
+    const sh = Math.max(16, Math.min(natH - sy, Math.ceil(((ymax - ymin) / 1000) * natH)));
+
+    // Keep native crisp resolution, upscale tiny catalog list thumbnails gently to >= 400px, cap at 1400px
+    const maxDim = Math.max(sw, sh);
+    const scale = maxDim < 400 ? Math.min(2.5, 400 / maxDim) : maxDim > 1400 ? 1400 / maxDim : 1;
+    const outW = Math.max(16, Math.round(sw * scale));
+    const outH = Math.max(16, Math.round(sh * scale));
+
+    const canvas = document.createElement('canvas');
+    canvas.width = outW;
+    canvas.height = outH;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, outW, outH);
+
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, 'image/jpeg', 0.92),
+    );
+    if (!blob || blob.size === 0) return null;
+
+    const croppedFile = new File([blob], `${safeBase}-whatsapp.jpg`, {
+      type: 'image/jpeg',
+    });
+    return {
+      file: croppedFile,
+      previewUrl: URL.createObjectURL(croppedFile),
+    };
+  } catch {
+    if (!singleItemInScreenshot) return null;
+    const copy = new File([screenshotFile], `${safeBase}-whatsapp.jpg`, {
+      type: screenshotFile.type || 'image/jpeg',
+    });
+    return { file: copy, previewUrl: URL.createObjectURL(copy) };
+  } finally {
+    URL.revokeObjectURL(tempUrl);
+  }
+}
 
 const METHODS: Array<{
   id: ImportMethod;
@@ -166,7 +258,68 @@ export default function WhatsAppImportPanel({ embedded = false }: { embedded?: b
       );
 
       const res = await whatsappImportApi.previewScreenshots(token, compressed);
-      appendPreviewItems(res.items, res.warnings);
+
+      // Count how many extracted products came from each screenshot to guide safe crop fallback
+      const countPerScreenshot = new Map<number, number>();
+      for (const it of res.items) {
+        const idx =
+          typeof it.source_screenshot_index === 'number' &&
+          it.source_screenshot_index >= 0 &&
+          it.source_screenshot_index < batch.length
+            ? it.source_screenshot_index
+            : 0;
+        countPerScreenshot.set(idx, (countPerScreenshot.get(idx) || 0) + 1);
+      }
+
+      setWarnings(res.warnings);
+      setCommitResult(null);
+
+      if (res.items.length > 0) {
+        const editableWithCrops: EditableImportItem[] = await Promise.all(
+          res.items.map(async (item, idx) => {
+            const ssIdx =
+              typeof item.source_screenshot_index === 'number' &&
+              item.source_screenshot_index >= 0 &&
+              item.source_screenshot_index < batch.length
+                ? item.source_screenshot_index
+                : 0;
+            const sourceFile = batch[ssIdx];
+            const cropped = sourceFile
+              ? await cropProductPhotoFromScreenshot(
+                  sourceFile,
+                  item.image_box_2d,
+                  (countPerScreenshot.get(ssIdx) || 0) === 1,
+                  item.title,
+                  idx,
+                )
+              : null;
+
+            const localFiles = cropped ? [cropped.file] : [];
+            const localPreviews = cropped ? [cropped.previewUrl] : [];
+            const hasPhoto = localFiles.length > 0 || item.image_urls.length > 0;
+            const readyToPublish =
+              hasPhoto &&
+              item.price !== null &&
+              item.price > 0 &&
+              item.description.trim().length >= 20;
+
+            return {
+              ...item,
+              selected: true,
+              priceText: item.price !== null && item.price > 0 ? String(item.price) : '',
+              stockText: String(item.quantity_available ?? 1),
+              status: readyToPublish ? 'active' : item.status,
+              localFiles,
+              localPreviews,
+            };
+          }),
+        );
+
+        setItems((prev) => [...prev, ...editableWithCrops]);
+        toast.success(
+          `Found ${editableWithCrops.length} product${editableWithCrops.length === 1 ? '' : 's'} — review and import below.`,
+        );
+      }
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : 'Verndly AI could not read those screenshots.';
@@ -470,7 +623,7 @@ export default function WhatsAppImportPanel({ embedded = false }: { embedded?: b
         isOpen={isExtracting && method === 'screenshots'}
         messages={[
           extractLabel || 'Reading your WhatsApp Business catalog screenshots…',
-          'Extracting product names, GH₵ prices, and descriptions…',
+          'Cropping each product photo and reading GH₵ prices…',
           'Matching Verndly categories and preparing your review queue…',
         ]}
         subtitle="Hang tight — your imported items will appear right below for review."
@@ -586,8 +739,8 @@ export default function WhatsAppImportPanel({ embedded = false }: { embedded?: b
                 </h2>
                 <p className="text-muted text-xs leading-relaxed sm:text-sm">
                   Open WhatsApp Business → Catalog, take screenshots as you scroll through your
-                  items, and drop up to 10 screenshots here. Verndly AI extracts every product name,
-                  GH₵ price, description, and category automatically.
+                  items, and drop up to 10 screenshots here. Verndly AI crops each product photo and
+                  extracts its name, GH₵ price, description, and category automatically.
                 </p>
               </div>
             </div>
@@ -787,27 +940,28 @@ export default function WhatsAppImportPanel({ embedded = false }: { embedded?: b
 
         {/* Warnings / fallback guidance */}
         {warnings.length > 0 && (
-          <div className="mt-4 space-y-2 rounded-2xl bg-amber-500/10 p-4 text-xs text-amber-700 dark:text-amber-300">
-            {warnings.map((w, i) => (
-              <div key={i} className="flex items-start gap-2">
-                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                <p className="leading-relaxed">{w}</p>
-              </div>
-            ))}
+          <>
+            <Alert
+              variant="warning"
+              message={warnings.join(' ')}
+              onDismiss={() => setWarnings([])}
+            />
             {method === 'link' && (
-              <button
-                type="button"
-                onClick={() => {
-                  setMethod('screenshots');
-                  setWarnings([]);
-                }}
-                className="bg-background text-foreground mt-1 inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-semibold"
-              >
-                <VerndlyAiIcon size={16} />
-                <span>Switch to Screenshots (Verndly AI)</span>
-              </button>
+              <div className="mt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMethod('screenshots');
+                    setWarnings([]);
+                  }}
+                  className="bg-background text-foreground inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-semibold"
+                >
+                  <VerndlyAiIcon size={16} />
+                  <span>Switch to Screenshots (Verndly AI)</span>
+                </button>
+              </div>
             )}
-          </div>
+          </>
         )}
       </section>
 
@@ -917,12 +1071,7 @@ export default function WhatsAppImportPanel({ embedded = false }: { embedded?: b
                             key={`${item.tempId}-thumb-${i}`}
                             className="bg-background relative h-16 w-16 overflow-hidden rounded-2xl"
                           >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={src}
-                              alt={item.title}
-                              className="h-full w-full object-cover"
-                            />
+                            <RemoteProductThumb src={src} alt={item.title} token={token} />
                             {item.localPreviews.length > 0 && (
                               <button
                                 type="button"
@@ -992,11 +1141,17 @@ export default function WhatsAppImportPanel({ embedded = false }: { embedded?: b
                             {categories.length === 0 ? (
                               <option value={item.category}>{item.category}</option>
                             ) : (
-                              categories.map((c) => (
-                                <option key={c.id} value={c.name}>
-                                  {c.name}
-                                </option>
-                              ))
+                              <>
+                                {!categories.some((c) => c.name === item.category) &&
+                                  item.category && (
+                                    <option value={item.category}>{item.category}</option>
+                                  )}
+                                {categories.map((c) => (
+                                  <option key={c.id} value={c.name}>
+                                    {c.name}
+                                  </option>
+                                ))}
+                              </>
                             )}
                           </select>
                         </div>

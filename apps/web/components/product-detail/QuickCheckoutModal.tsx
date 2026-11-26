@@ -5,9 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
   ShoppingBag,
-  ShieldCheck,
-  CheckCircle2,
-  AlertCircle,
   Truck,
   Store,
   CreditCard,
@@ -15,8 +12,6 @@ import {
   Minus,
   Plus,
   ArrowRight,
-  ExternalLink,
-  MapPin,
   Lock,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -29,6 +24,8 @@ import Select from '@/components/ui/Select';
 import PaymentProcessingModal from '@/components/orders/PaymentProcessingModal';
 import { sanitizePhoneNumber, validatePhoneNumber } from '@/lib/utils/phone';
 import { toast } from 'sonner';
+import Alert from '@/components/ui/Alert';
+import { isOwnStore } from '@/lib/utils/ownership';
 
 const MotionDiv = motion.div as any;
 
@@ -165,6 +162,15 @@ export default function QuickCheckoutModal({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, isSubmitting, onClose]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [isOpen]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -172,6 +178,11 @@ export default function QuickCheckoutModal({
     if (!isAuthenticated || !token) {
       toast.error('Please sign in to complete fast purchase.');
       router.push(`/login?redirect=${encodeURIComponent(`/product/${product.id}?buyNow=1`)}`);
+      return;
+    }
+
+    if (isOwnStore(user, product.seller)) {
+      setError('You cannot purchase your own product.');
       return;
     }
 
@@ -276,37 +287,34 @@ export default function QuickCheckoutModal({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-end justify-center p-0 sm:items-center sm:p-4">
+        <div className="fixed inset-0 z-[100] flex items-stretch justify-end">
           <MotionDiv
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             onClick={() => !isSubmitting && onClose()}
-            className="fixed inset-0 bg-black/60"
+            className="fixed inset-0 bg-black/50"
             aria-hidden="true"
           />
 
           <MotionDiv
             role="dialog"
             aria-modal="true"
-            initial={{ y: '100%', opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: '100%', opacity: 0 }}
-            transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-            className="bg-background text-foreground relative z-10 flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-[2.5rem] border-0 shadow-none sm:max-w-lg sm:rounded-[2.5rem]"
+            aria-label="Quick Checkout"
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 32, stiffness: 340 }}
+            className="bg-background text-foreground relative z-10 flex h-[100dvh] w-full max-w-[440px] flex-col overflow-hidden border-0 shadow-none sm:rounded-l-3xl"
           >
-            <div className="flex justify-center pb-1 pt-3 sm:hidden">
-              <div className="bg-muted/40 h-1 w-10 rounded-full" />
-            </div>
-
-            <div className="flex items-center justify-between border-0 px-6 pb-3 pt-3 sm:pt-6">
-              <div className="flex items-center gap-2">
-                <div className="bg-foreground/5 text-foreground flex h-7 w-7 items-center justify-center rounded-full">
+            <div className="flex shrink-0 items-center justify-between border-0 px-5 pb-3 pt-5 sm:px-6 sm:pt-6">
+              <div className="flex items-center gap-2.5">
+                <div className="bg-foreground/5 text-foreground flex h-8 w-8 items-center justify-center rounded-full">
                   <ShoppingBag className="h-3.5 w-3.5" />
                 </div>
                 <div>
-                  <h2 className="text-foreground text-sm font-semibold uppercase tracking-wider">
+                  <h2 className="text-foreground text-sm font-semibold tracking-tight">
                     Quick Checkout
                   </h2>
                   <p className="text-muted text-[11px]">Fast 1-step direct purchase</p>
@@ -323,7 +331,7 @@ export default function QuickCheckoutModal({
               </button>
             </div>
 
-            <div className="space-y-5 overflow-y-auto px-6 py-2">
+            <div className="no-scrollbar flex-1 space-y-4 overflow-y-auto px-5 py-2 sm:px-6">
               <div className="bg-surface flex items-center gap-3.5 rounded-2xl border-0 p-4 shadow-none">
                 <img
                   src={imageThumbnail}
@@ -371,12 +379,7 @@ export default function QuickCheckoutModal({
                 </div>
               </div>
 
-              {error && (
-                <div className="flex items-center gap-2 rounded-2xl border-0 bg-red-500/10 p-3 text-xs text-red-600 shadow-none dark:text-red-400">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                  <span>{error}</span>
-                </div>
-              )}
+              {error && <Alert variant="error" message={error} onDismiss={() => setError(null)} />}
 
               {!isAuthenticated && (
                 <div className="bg-surface space-y-3 rounded-2xl border-0 p-4 shadow-none">
@@ -602,7 +605,7 @@ export default function QuickCheckoutModal({
               </div>
             </div>
 
-            <div className="bg-background border-0 p-4 shadow-none sm:p-6">
+            <div className="bg-background shrink-0 border-0 px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 shadow-none sm:px-6 sm:pb-6 sm:pt-4">
               <button
                 type="button"
                 onClick={handleSubmit}

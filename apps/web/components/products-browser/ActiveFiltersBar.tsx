@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import React from "react";
-import { X } from "lucide-react";
-import type { ActiveChip } from "@/hooks/useProductsBrowser";
+import React from 'react';
+import { X } from 'lucide-react';
+import type { ActiveChip } from '@/hooks/useProductsBrowser';
 
 interface ActiveFiltersBarProps {
   chips: ActiveChip[];
@@ -12,23 +12,23 @@ interface ActiveFiltersBarProps {
 export default function ActiveFiltersBar({ chips, onClearAll }: ActiveFiltersBarProps) {
   if (chips.length === 0) return null;
   return (
-    <div className="flex items-center flex-wrap gap-2">
+    <div className="flex flex-wrap items-center gap-1.5">
       {chips.map((chip) => (
         <button
           key={chip.key}
           type="button"
           onClick={chip.onClear}
-          className="group inline-flex items-center gap-1.5 px-3 h-8 rounded-full bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/25 text-[var(--color-accent)] text-[11px] font-normal transition-all hover:bg-[var(--color-accent)]/15"
+          className="bg-surface text-foreground hover:bg-foreground/[0.08] group inline-flex h-7 items-center gap-1.5 rounded-full px-3 text-[11px] font-medium transition-colors"
         >
-          <span className="truncate max-w-[160px]">{chip.label}</span>
-          <X className="w-3 h-3 opacity-70 group-hover:opacity-100" />
+          <span className="max-w-[160px] truncate">{chip.label}</span>
+          <X className="text-muted group-hover:text-foreground h-3 w-3" />
         </button>
       ))}
       {chips.length > 1 && (
         <button
           type="button"
           onClick={onClearAll}
-          className="text-[11px] font-normal text-[var(--color-muted)] hover:text-[var(--color-foreground)] underline underline-offset-2 ml-1"
+          className="text-muted hover:text-foreground ml-1 text-[11px] font-medium transition-colors"
         >
           Clear all
         </button>

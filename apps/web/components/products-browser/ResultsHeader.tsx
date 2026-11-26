@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import React from "react";
-import { SlidersHorizontal } from "lucide-react";
-import Spinner from "@/components/ui/Spinner";
-import SortDropdown from "./SortDropdown";
-import ViewToggle, { type ViewMode } from "./ViewToggle";
-import type { BrowseSort } from "@/lib/api/product";
+import React from 'react';
+import { SlidersHorizontal } from 'lucide-react';
+import Spinner from '@/components/ui/Spinner';
+import SortDropdown from './SortDropdown';
+import ViewToggle, { type ViewMode } from './ViewToggle';
+import type { BrowseSort } from '@/lib/api/product';
 
 interface ResultsHeaderProps {
   total: number;
@@ -15,6 +15,7 @@ interface ResultsHeaderProps {
   view: ViewMode;
   onViewChange: (v: ViewMode) => void;
   onOpenFilters: () => void;
+  activeFilterCount?: number;
 }
 
 export default function ResultsHeader({
@@ -25,26 +26,39 @@ export default function ResultsHeader({
   view,
   onViewChange,
   onOpenFilters,
+  activeFilterCount = 0,
 }: ResultsHeaderProps) {
   return (
-    <div className="flex items-center justify-between gap-3 flex-wrap">
-      <p className="text-[12px] text-[var(--color-muted)] inline-flex items-center gap-2">
-        <span className="font-medium text-[var(--color-foreground)] tabular-nums">
-          {total.toLocaleString()}
-        </span>
-        product{total === 1 ? "" : "s"}
-        {isRefreshing && <Spinner size="xs" />}
-      </p>
-
-      <div className="flex items-center gap-2 ml-auto">
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex items-center gap-2">
         <button
           type="button"
           onClick={onOpenFilters}
-          className="lg:hidden inline-flex items-center gap-1.5 h-10 px-3.5 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] text-[12px] font-normal text-[var(--color-foreground)] hover:border-[var(--color-accent)]/40 transition-colors"
+          className={`inline-flex h-10 items-center gap-2 rounded-xl px-3.5 text-xs font-semibold transition-colors ${
+            activeFilterCount > 0
+              ? 'bg-foreground text-background'
+              : 'bg-surface text-foreground hover:bg-foreground/[0.08]'
+          }`}
         >
-          <SlidersHorizontal className="w-3.5 h-3.5" />
-          Filters
+          <SlidersHorizontal className="h-3.5 w-3.5" />
+          <span>Filters</span>
+          {activeFilterCount > 0 && (
+            <span className="bg-background text-foreground inline-flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-bold">
+              {activeFilterCount}
+            </span>
+          )}
         </button>
+
+        <p className="text-muted inline-flex items-center gap-1.5 text-xs">
+          <span className="text-foreground font-semibold tabular-nums">
+            {total.toLocaleString()}
+          </span>
+          <span className="hidden sm:inline">product{total === 1 ? '' : 's'}</span>
+          {isRefreshing && <Spinner size="xs" />}
+        </p>
+      </div>
+
+      <div className="ml-auto flex items-center gap-2">
         <SortDropdown value={sort} onChange={onSortChange} />
         <div className="hidden sm:block">
           <ViewToggle value={view} onChange={onViewChange} />

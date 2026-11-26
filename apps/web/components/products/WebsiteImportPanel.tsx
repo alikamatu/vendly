@@ -22,6 +22,8 @@ import { websiteImportApi, WebsiteImportMode } from '@/lib/api/website-import';
 import type { WhatsAppCommitResult, WhatsAppPreviewItem } from '@/lib/api/whatsapp-import';
 import VerndlyAiIcon from '@/components/ai/VerndlyAiIcon';
 import VerndlyAiOverlay from '@/components/ai/VerndlyAiOverlay';
+import RemoteProductThumb from '@/components/products/RemoteProductThumb';
+import Alert from '@/components/ui/Alert';
 
 interface EditableWebsiteItem extends WhatsAppPreviewItem {
   selected: boolean;
@@ -161,7 +163,8 @@ export default function WebsiteImportPanel() {
     setItems((prev) =>
       prev.map((item) => {
         if (item.tempId !== tempId) return item;
-        const remaining = Math.max(0, 3 - item.localFiles.length);
+        const usedSlots = item.image_urls.length + item.localFiles.length;
+        const remaining = Math.max(0, 3 - usedSlots);
         const toAdd = files.slice(0, remaining);
         const previews = toAdd.map((f) => URL.createObjectURL(f));
         return {
@@ -170,6 +173,19 @@ export default function WebsiteImportPanel() {
           localPreviews: [...item.localPreviews, ...previews],
         };
       }),
+    );
+  };
+
+  const handleRemoveRemotePhoto = (tempId: string, idx: number) => {
+    setItems((prev) =>
+      prev.map((item) =>
+        item.tempId === tempId
+          ? {
+              ...item,
+              image_urls: item.image_urls.filter((_, i) => i !== idx),
+            }
+          : item,
+      ),
     );
   };
 
@@ -256,8 +272,32 @@ export default function WebsiteImportPanel() {
       for (let i = 0; i < withLocalPhotos.length; i++) {
         const item = withLocalPhotos[i];
         try {
+          // Preserve any remote website photos alongside newly attached local files (up to 3 total)
+          const remoteBlobsAsFiles: File[] = [];
+          for (let rIdx = 0; rIdx < item.image_urls.length; rIdx++) {
+            if (remoteBlobsAsFiles.length + item.localFiles.length >= 3) break;
+            try {
+              const blob = await websiteImportApi.fetchProxiedImageBlob(
+                token,
+                item.image_urls[rIdx],
+              );
+              const ext = blob.type.includes('png')
+                ? 'png'
+                : blob.type.includes('webp')
+                  ? 'webp'
+                  : 'jpg';
+              remoteBlobsAsFiles.push(
+                new File([blob], `website-photo-${rIdx + 1}.${ext}`, {
+                  type: blob.type || 'image/jpeg',
+                }),
+              );
+            } catch {
+              // ignore unfetchable remote image when local photo is already attached
+            }
+          }
+
           const compressedFiles = await Promise.all(
-            item.localFiles.map(async (f) => {
+            [...remoteBlobsAsFiles, ...item.localFiles].slice(0, 3).map(async (f) => {
               try {
                 const c = await imageCompression(f, {
                   maxSizeMB: 1,
@@ -438,14 +478,7 @@ export default function WebsiteImportPanel() {
         )}
 
         {warnings.length > 0 && (
-          <div className="space-y-2 rounded-2xl bg-amber-500/10 p-4 text-xs text-amber-700 dark:text-amber-300">
-            {warnings.map((w, i) => (
-              <div key={i} className="flex items-start gap-2">
-                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                <p className="leading-relaxed">{w}</p>
-              </div>
-            ))}
-          </div>
+          <Alert variant="warning" message={warnings.join(' ')} onDismiss={() => setWarnings([])} />
         )}
       </section>
 
@@ -514,8 +547,7 @@ export default function WebsiteImportPanel() {
 
           <div className="space-y-3">
             {items.map((item) => {
-              const displayThumbs =
-                item.localPreviews.length > 0 ? item.localPreviews : item.image_urls;
+              const totalPhotos = item.image_urls.length + item.localPreviews.length;
 
               return (
                 <div
@@ -550,31 +582,48 @@ export default function WebsiteImportPanel() {
                       </button>
 
                       <div className="flex flex-wrap items-center gap-2">
-                        {displayThumbs.slice(0, 3).map((src, i) => (
+                        {item.image_urls.slice(0, 3).map((src, i) => (
                           <div
-                            key={`${item.tempId}-thumb-${i}`}
+                            key={`${item.tempId}-remote-${src}-${i}`}
                             className="bg-background relative h-16 w-16 overflow-hidden rounded-2xl"
                           >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={src}
-                              alt={item.title}
-                              className="h-full w-full object-cover"
-                            />
-                            {item.localPreviews.length > 0 && (
+                            <RemoteProductThumb src={src} alt={item.title} token={token} />
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveRemotePhoto(item.tempId, i)}
+                              aria-label="Remove website photo"
+                              className="bg-foreground/80 text-background absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))}
+
+                        {item.localPreviews
+                          .slice(0, Math.max(0, 3 - item.image_urls.length))
+                          .map((src, i) => (
+                            <div
+                              key={`${item.tempId}-local-${i}`}
+                              className="bg-background relative h-16 w-16 overflow-hidden rounded-2xl"
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={src}
+                                alt={item.title}
+                                className="h-full w-full object-cover"
+                              />
                               <button
                                 type="button"
                                 onClick={() => handleRemoveLocalPhoto(item.tempId, i)}
-                                aria-label="Remove photo"
+                                aria-label="Remove uploaded photo"
                                 className="bg-foreground/80 text-background absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full"
                               >
                                 <X className="h-3 w-3" />
                               </button>
-                            )}
-                          </div>
-                        ))}
+                            </div>
+                          ))}
 
-                        {item.localFiles.length < 3 && (
+                        {totalPhotos < 3 && (
                           <button
                             type="button"
                             onClick={() => itemFileInputRefs.current[item.tempId]?.click()}
@@ -646,11 +695,17 @@ export default function WebsiteImportPanel() {
                             {categories.length === 0 ? (
                               <option value={item.category}>{item.category}</option>
                             ) : (
-                              categories.map((c) => (
-                                <option key={c.id} value={c.name}>
-                                  {c.name}
-                                </option>
-                              ))
+                              <>
+                                {!categories.some((c) => c.name === item.category) &&
+                                  item.category && (
+                                    <option value={item.category}>{item.category}</option>
+                                  )}
+                                {categories.map((c) => (
+                                  <option key={c.id} value={c.name}>
+                                    {c.name}
+                                  </option>
+                                ))}
+                              </>
                             )}
                           </select>
                         </div>

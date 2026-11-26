@@ -1,17 +1,14 @@
-"use client";
+'use client';
 
-import React, { useEffect, useState } from "react";
-import { ChevronDown, RefreshCcw } from "lucide-react";
-import Spinner from "@/components/ui/Spinner";
-import Select from "@/components/ui/Select";
-import type { ProductsBrowserState } from "@/hooks/useProductsBrowser";
-import {
-  SERVICE_AREA_LABEL,
-  DELIVERY_TIME_LABEL,
-} from "@/hooks/useProductsBrowser";
-import type { HomeCategory } from "@/hooks/useHomeData";
-import type { ServiceAreaFilter, DeliveryTimeFilter } from "@/lib/api/product";
-import { onboardingApi, type LocationCity } from "@/lib/api/onboarding";
+import React, { useEffect, useState } from 'react';
+import { ChevronDown, RefreshCcw } from 'lucide-react';
+import Spinner from '@/components/ui/Spinner';
+import Select from '@/components/ui/Select';
+import type { ProductsBrowserState } from '@/hooks/useProductsBrowser';
+import { SERVICE_AREA_LABEL, DELIVERY_TIME_LABEL } from '@/hooks/useProductsBrowser';
+import type { HomeCategory } from '@/hooks/useHomeData';
+import type { ServiceAreaFilter, DeliveryTimeFilter } from '@/lib/api/product';
+import { onboardingApi, type LocationCity } from '@/lib/api/onboarding';
 
 interface FiltersPanelProps {
   state: ProductsBrowserState;
@@ -22,7 +19,7 @@ interface FiltersPanelProps {
   compact?: boolean;
 }
 
-const CONDITION_OPTIONS = ["new", "refurbished", "used_like_new", "used_good", "used_fair"];
+const CONDITION_OPTIONS = ['new', 'refurbished', 'used_like_new', 'used_good', 'used_fair'];
 
 export default function FiltersPanel({
   state,
@@ -32,31 +29,19 @@ export default function FiltersPanel({
   compact = false,
 }: FiltersPanelProps) {
   return (
-    <div className={`space-y-${compact ? "4" : "5"}`}>
+    <div className={`space-y-${compact ? '4' : '5'}`}>
       <Group title="Quick filters">
-        <ToggleRow
-          label="In stock only"
-          checked={state.inStock}
-          onChange={state.setInStock}
-        />
-        <ToggleRow
-          label="On sale"
-          checked={state.hasDiscount}
-          onChange={state.setHasDiscount}
-        />
-        <ToggleRow
-          label="With video"
-          checked={state.hasVideo}
-          onChange={state.setHasVideo}
-        />
+        <ToggleRow label="In stock only" checked={state.inStock} onChange={state.setInStock} />
+        <ToggleRow label="On sale" checked={state.hasDiscount} onChange={state.setHasDiscount} />
+        <ToggleRow label="With video" checked={state.hasVideo} onChange={state.setHasVideo} />
       </Group>
 
       <Group title="Category">
         <Select
-          value={state.category ?? ""}
+          value={state.category ?? ''}
           onChange={(val) => state.setCategory(val || null)}
           options={[
-            { value: "", label: "All categories" },
+            { value: '', label: 'All categories' },
             ...categories.map((c) => ({ value: c.name, label: c.name })),
           ]}
           size="sm"
@@ -66,10 +51,10 @@ export default function FiltersPanel({
       {brands.length > 0 && (
         <Group title="Brand">
           <Select
-            value={state.brand ?? ""}
+            value={state.brand ?? ''}
             onChange={(val) => state.setBrand(val || null)}
             options={[
-              { value: "", label: "All brands" },
+              { value: '', label: 'All brands' },
               ...brands.map((b) => ({ value: b, label: b })),
             ]}
             size="sm"
@@ -78,11 +63,7 @@ export default function FiltersPanel({
       )}
 
       <Group title="Price (GH₵)">
-        <PriceRange
-          min={state.minPrice}
-          max={state.maxPrice}
-          onChange={state.setPrice}
-        />
+        <PriceRange min={state.minPrice} max={state.maxPrice} onChange={state.setPrice} />
       </Group>
 
       <Group title="Condition">
@@ -94,13 +75,13 @@ export default function FiltersPanel({
                 key={c}
                 type="button"
                 onClick={() => state.setCondition(active ? null : c)}
-                className={`text-left px-3 h-9 rounded-lg border text-[11px] font-normal capitalize transition-colors ${
+                className={`h-9 rounded-xl px-3 text-left text-[11px] font-medium capitalize transition-colors ${
                   active
-                    ? "border-[var(--color-accent)] bg-[var(--color-accent)]/10 text-[var(--color-accent)]"
-                    : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-foreground)] hover:border-[var(--color-accent)]/40"
+                    ? 'bg-foreground text-background'
+                    : 'bg-surface text-foreground hover:bg-foreground/[0.08]'
                 }`}
               >
-                {c.replace(/_/g, " ")}
+                {c.replace(/_/g, ' ')}
               </button>
             );
           })}
@@ -118,9 +99,9 @@ export default function FiltersPanel({
       <button
         type="button"
         onClick={state.clearAll}
-        className="inline-flex items-center gap-1.5 text-[11px] font-normal text-[var(--color-muted)] hover:text-[var(--color-foreground)] transition-colors"
+        className="inline-flex items-center gap-1.5 text-[11px] font-normal text-[var(--color-muted)] transition-colors hover:text-[var(--color-foreground)]"
       >
-        <RefreshCcw className="w-3 h-3" />
+        <RefreshCcw className="h-3 w-3" />
         Reset filters
       </button>
     </div>
@@ -165,10 +146,10 @@ function LocationFilter({ state }: { state: ProductsBrowserState }) {
   return (
     <div className="space-y-2">
       <Select
-        value={state.region ?? ""}
+        value={state.region ?? ''}
         onChange={(val) => state.setRegion(val || null)}
         options={[
-          { value: "", label: "Any region" },
+          { value: '', label: 'Any region' },
           ...regions.map((r) => ({ value: r, label: r })),
         ]}
         disabled={loadingRegions}
@@ -176,14 +157,14 @@ function LocationFilter({ state }: { state: ProductsBrowserState }) {
         size="sm"
       />
       <Select
-        value={state.cityId ?? ""}
+        value={state.cityId ?? ''}
         onChange={(val) => state.setCityId(val || null)}
         options={[
-          { value: "", label: state.region ? "Any city" : "Pick a region first" },
+          { value: '', label: state.region ? 'Any city' : 'Pick a region first' },
           ...cities.map((c) => ({ value: c.id, label: c.city })),
         ]}
         disabled={!state.region || loadingCities}
-        placeholder={state.region ? "Any city" : "Pick a region first"}
+        placeholder={state.region ? 'Any city' : 'Pick a region first'}
         size="sm"
       />
     </div>
@@ -194,21 +175,21 @@ function DeliveryFilter({ state }: { state: ProductsBrowserState }) {
   return (
     <div className="space-y-3">
       <div className="space-y-1.5">
-        <p className="text-[10px] font-normal text-[var(--color-muted)] uppercase tracking-wider px-0.5">
+        <p className="px-0.5 text-[10px] font-normal uppercase tracking-wider text-[var(--color-muted)]">
           Service area
         </p>
         <div className="grid grid-cols-1 gap-1.5">
-          {(["SAME_CITY", "NEARBY_STATES", "NATIONWIDE"] as ServiceAreaFilter[]).map((sa) => {
+          {(['SAME_CITY', 'NEARBY_STATES', 'NATIONWIDE'] as ServiceAreaFilter[]).map((sa) => {
             const active = state.serviceArea === sa;
             return (
               <button
                 key={sa}
                 type="button"
                 onClick={() => state.setServiceArea(active ? null : sa)}
-                className={`text-left px-3 h-9 rounded-lg border text-[11px] font-normal transition-colors ${
+                className={`h-9 rounded-xl px-3 text-left text-[11px] font-medium transition-colors ${
                   active
-                    ? "border-[var(--color-accent)] bg-[var(--color-accent)]/10 text-[var(--color-accent)]"
-                    : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-foreground)] hover:border-[var(--color-accent)]/40"
+                    ? 'bg-foreground text-background'
+                    : 'bg-surface text-foreground hover:bg-foreground/[0.08]'
                 }`}
               >
                 {SERVICE_AREA_LABEL[sa]}
@@ -219,21 +200,23 @@ function DeliveryFilter({ state }: { state: ProductsBrowserState }) {
       </div>
 
       <div className="space-y-1.5">
-        <p className="text-[10px] font-normal text-[var(--color-muted)] uppercase tracking-wider px-0.5">
+        <p className="px-0.5 text-[10px] font-normal uppercase tracking-wider text-[var(--color-muted)]">
           Average delivery
         </p>
         <Select
-          value={state.deliveryTime ?? ""}
+          value={state.deliveryTime ?? ''}
           onChange={(val) => state.setDeliveryTime((val || null) as DeliveryTimeFilter | null)}
           options={[
-            { value: "", label: "Any delivery time" },
-            ...([
-              "SAME_DAY",
-              "NEXT_DAY",
-              "TWO_TO_THREE_DAYS",
-              "FOUR_TO_SEVEN_DAYS",
-              "MORE_THAN_ONE_WEEK",
-            ] as DeliveryTimeFilter[]).map((d) => ({
+            { value: '', label: 'Any delivery time' },
+            ...(
+              [
+                'SAME_DAY',
+                'NEXT_DAY',
+                'TWO_TO_THREE_DAYS',
+                'FOUR_TO_SEVEN_DAYS',
+                'MORE_THAN_ONE_WEEK',
+              ] as DeliveryTimeFilter[]
+            ).map((d) => ({
               value: d,
               label: DELIVERY_TIME_LABEL[d],
             })),
@@ -246,16 +229,16 @@ function DeliveryFilter({ state }: { state: ProductsBrowserState }) {
 }
 
 const fieldClass =
-  "w-full h-10 px-3 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] text-[12px] text-[var(--color-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30 focus:border-[var(--color-accent)]/50 transition-all appearance-none cursor-pointer";
+  'w-full h-10 px-3 rounded-xl bg-surface text-xs text-foreground placeholder:text-muted/60 outline-none transition-colors';
 
 function Group({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <details open className="group/details">
-      <summary className="list-none cursor-pointer flex items-center justify-between gap-2 pb-2 select-none">
+      <summary className="flex cursor-pointer select-none list-none items-center justify-between gap-2 pb-2">
         <span className="text-[10px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
           {title}
         </span>
-        <ChevronDown className="w-3.5 h-3.5 text-[var(--color-muted)] transition-transform group-open/details:rotate-180" />
+        <ChevronDown className="h-3.5 w-3.5 text-[var(--color-muted)] transition-transform group-open/details:rotate-180" />
       </summary>
       <div className="space-y-2 pt-1">{children}</div>
     </details>
@@ -272,11 +255,11 @@ function ToggleRow({
   onChange: (v: boolean) => void;
 }) {
   return (
-    <label className="flex items-center justify-between gap-3 py-1.5 cursor-pointer">
+    <label className="flex cursor-pointer items-center justify-between gap-3 py-1.5">
       <span className="text-[12px] text-[var(--color-foreground)]">{label}</span>
       <span
-        className={`relative inline-flex w-9 h-5 rounded-full transition-colors ${
-          checked ? "bg-[var(--color-accent)]" : "bg-[var(--color-border)]"
+        className={`relative inline-flex h-5 w-9 rounded-full transition-colors ${
+          checked ? 'bg-[var(--color-accent)]' : 'bg-[var(--color-border)]'
         }`}
       >
         <input
@@ -287,7 +270,7 @@ function ToggleRow({
         />
         <span
           className={`absolute top-0.5 h-4 w-4 rounded-full bg-[var(--color-background)] transition-transform ${
-            checked ? "translate-x-4" : "translate-x-0.5"
+            checked ? 'translate-x-4' : 'translate-x-0.5'
           }`}
         />
       </span>
@@ -304,20 +287,20 @@ function PriceRange({
   max: number | null;
   onChange: (min: number | null, max: number | null) => void;
 }) {
-  const [draftMin, setDraftMin] = useState<string>(min != null ? String(min) : "");
-  const [draftMax, setDraftMax] = useState<string>(max != null ? String(max) : "");
+  const [draftMin, setDraftMin] = useState<string>(min != null ? String(min) : '');
+  const [draftMax, setDraftMax] = useState<string>(max != null ? String(max) : '');
 
   // Reflect external clears
   useEffect(() => {
-    setDraftMin(min != null ? String(min) : "");
+    setDraftMin(min != null ? String(min) : '');
   }, [min]);
   useEffect(() => {
-    setDraftMax(max != null ? String(max) : "");
+    setDraftMax(max != null ? String(max) : '');
   }, [max]);
 
   function commit() {
-    const a = draftMin === "" ? null : Number(draftMin);
-    const b = draftMax === "" ? null : Number(draftMax);
+    const a = draftMin === '' ? null : Number(draftMin);
+    const b = draftMax === '' ? null : Number(draftMax);
     onChange(
       Number.isFinite(a as number) ? (a as number) : null,
       Number.isFinite(b as number) ? (b as number) : null,
@@ -333,10 +316,10 @@ function PriceRange({
         value={draftMin}
         onChange={(e) => setDraftMin(e.target.value)}
         onBlur={commit}
-        onKeyDown={(e) => e.key === "Enter" && commit()}
+        onKeyDown={(e) => e.key === 'Enter' && commit()}
         className={fieldClass}
       />
-      <span className="text-[var(--color-muted)] text-xs">—</span>
+      <span className="text-xs text-[var(--color-muted)]">—</span>
       <input
         type="number"
         inputMode="numeric"
@@ -344,7 +327,7 @@ function PriceRange({
         value={draftMax}
         onChange={(e) => setDraftMax(e.target.value)}
         onBlur={commit}
-        onKeyDown={(e) => e.key === "Enter" && commit()}
+        onKeyDown={(e) => e.key === 'Enter' && commit()}
         className={fieldClass}
       />
     </div>

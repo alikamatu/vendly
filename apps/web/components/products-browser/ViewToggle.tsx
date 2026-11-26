@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import React from "react";
-import { LayoutGrid, List } from "lucide-react";
+import React from 'react';
+import { LayoutGrid, List } from 'lucide-react';
 
-export type ViewMode = "grid" | "list";
+export type ViewMode = 'grid' | 'list';
 
 interface ViewToggleProps {
   value: ViewMode;
@@ -15,10 +15,10 @@ export default function ViewToggle({ value, onChange }: ViewToggleProps) {
     <div
       role="radiogroup"
       aria-label="View mode"
-      className="inline-flex items-center p-0.5 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]"
+      className="bg-surface inline-flex items-center rounded-xl p-1"
     >
-      {(["grid", "list"] as ViewMode[]).map((mode) => {
-        const Icon = mode === "grid" ? LayoutGrid : List;
+      {(['grid', 'list'] as ViewMode[]).map((mode) => {
+        const Icon = mode === 'grid' ? LayoutGrid : List;
         const active = value === mode;
         return (
           <button
@@ -27,14 +27,12 @@ export default function ViewToggle({ value, onChange }: ViewToggleProps) {
             role="radio"
             aria-checked={active}
             onClick={() => onChange(mode)}
-            className={`inline-flex items-center justify-center w-9 h-9 rounded-lg transition-colors ${
-              active
-                ? "bg-[var(--color-background)] text-[var(--color-foreground)] shadow-sm"
-                : "text-[var(--color-muted)] hover:text-[var(--color-foreground)]"
+            className={`inline-flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+              active ? 'bg-background text-foreground' : 'text-muted hover:text-foreground'
             }`}
             aria-label={`${mode} view`}
           >
-            <Icon className="w-3.5 h-3.5" />
+            <Icon className="h-3.5 w-3.5" />
           </button>
         );
       })}

@@ -9,6 +9,8 @@ import {
   type ReviewSort,
   type ReviewSummary as Summary,
 } from '@/lib/api/review';
+import { toast } from 'sonner';
+import Alert from '@/components/ui/Alert';
 import { ReviewSummary } from './review-summary';
 import { ReviewCard } from './review-card';
 import { WriteReviewModal, type WriteReviewSubmit } from './write-review-modal';
@@ -118,7 +120,7 @@ export function ProductReviewsSection({ productId, productTitle, sellerUserId }:
     if (!user) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setEligible([]);
-       
+
       setMyWritten([]);
       return;
     }
@@ -169,7 +171,7 @@ export function ProductReviewsSection({ productId, productTitle, sellerUserId }:
       setMyWritten((prev) => prev.filter((x) => x.id !== r.id));
       await refreshSummary();
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Could not delete');
+      toast.error(e instanceof Error ? e.message : 'Could not delete');
     }
   }
 
@@ -188,9 +190,9 @@ export function ProductReviewsSection({ productId, productTitle, sellerUserId }:
   ) {
     try {
       await api.flag(r.id, reason, notes);
-      alert('Thanks. Our team will review this report.');
+      toast.success('Thanks. Our team will review this report.');
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Could not submit report');
+      toast.error(e instanceof Error ? e.message : 'Could not submit report');
     }
   }
 
@@ -281,9 +283,7 @@ export function ProductReviewsSection({ productId, productTitle, sellerUserId }:
         <SortMenu sort={sort} onChange={setSort} />
       </div>
 
-      {error && (
-        <p className="rounded-lg bg-red-500/10 px-3 py-2 text-[12.5px] text-red-600">{error}</p>
-      )}
+      {error && <Alert variant="error" message={error} onDismiss={() => setError(null)} />}
 
       <div className="space-y-3">
         {items.map((r) => (

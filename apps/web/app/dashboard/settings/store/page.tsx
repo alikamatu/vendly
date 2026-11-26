@@ -40,6 +40,7 @@ import { onboardingApi, LocationCity } from '@/lib/api/onboarding';
 import { toast } from 'sonner';
 import VerndlyAiIcon from '@/components/ai/VerndlyAiIcon';
 import VerndlyAiOverlay from '@/components/ai/VerndlyAiOverlay';
+import Alert from '@/components/ui/Alert';
 
 /* ─── iOS-style toggle ──────────────────────────────────────────────── */
 function IOSToggle({ enabled, onChange }: { enabled: boolean; onChange: (v: boolean) => void }) {
@@ -388,45 +389,9 @@ export default function StoreSettingsPage() {
         </p>
       </div>
 
-      <AnimatePresence>
-        {message && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.25 }}
-            className="mb-6 flex items-center gap-3 rounded-2xl border p-4"
-            style={{
-              backgroundColor:
-                message.type === 'success'
-                  ? 'color-mix(in srgb, var(--color-accent) 5%, transparent)'
-                  : 'color-mix(in srgb, #ef4444 5%, transparent)',
-              borderColor:
-                message.type === 'success'
-                  ? 'color-mix(in srgb, var(--color-accent) 20%, transparent)'
-                  : 'color-mix(in srgb, #ef4444 20%, transparent)',
-              color: message.type === 'success' ? 'var(--color-accent)' : '#ef4444',
-            }}
-          >
-            <div
-              className="rounded-xl p-1.5"
-              style={{
-                backgroundColor:
-                  message.type === 'success'
-                    ? 'color-mix(in srgb, var(--color-accent) 10%, transparent)'
-                    : 'color-mix(in srgb, #ef4444 10%, transparent)',
-              }}
-            >
-              {message.type === 'success' ? (
-                <Check className="h-3.5 w-3.5" />
-              ) : (
-                <Info className="h-3.5 w-3.5" />
-              )}
-            </div>
-            <p className="text-[11px] font-normal uppercase tracking-tight">{message.text}</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {message && (
+        <Alert variant={message.type} message={message.text} onDismiss={() => setMessage(null)} />
+      )}
 
       <VerndlyAiOverlay
         isOpen={isDraftingStore}

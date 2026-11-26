@@ -54,7 +54,7 @@ export default function ModernHero() {
                     size="lg"
                     className="group w-full rounded-xl border-none px-8 shadow-none sm:w-auto"
                   >
-                    Start selling — 4% fee
+                    Start selling
                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                   </Button>
                 </Link>

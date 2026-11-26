@@ -1,4 +1,4 @@
-import { api } from './index';
+import { API_URL, api } from './index';
 import type {
   WhatsAppCommitItemInput,
   WhatsAppCommitResult,
@@ -26,6 +26,19 @@ export const websiteImportApi = {
       { token },
     );
     return res.data;
+  },
+
+  async fetchProxiedImageBlob(token: string, imageUrl: string): Promise<Blob> {
+    const endpoint = `${API_URL}/products/website-import/image-proxy?url=${encodeURIComponent(imageUrl)}`;
+    const res = await fetch(endpoint, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!res.ok) {
+      throw new Error(`Image proxy returned ${res.status}`);
+    }
+    return res.blob();
   },
 
   async commit(token: string, items: WhatsAppCommitItemInput[]): Promise<WhatsAppCommitResult> {

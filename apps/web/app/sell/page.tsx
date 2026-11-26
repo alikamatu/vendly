@@ -220,13 +220,13 @@ export default function SellPage() {
 
           <h1 className="text-foreground text-4xl font-medium leading-[1.06] tracking-tight sm:text-5xl md:text-6xl">
             A verified store for your brand.{' '}
-            <span className="text-muted">Flat 4% fee. Paid via escrow.</span>
+            <span className="text-muted">Zero setup cost. Paid via escrow.</span>
           </h1>
 
           <p className="text-muted max-w-2xl text-base leading-relaxed md:text-lg">
-            Stop losing 20% to legacy marketplace commissions or chasing unpaid Instagram DMs.
-            Verndly gives Ghanaian entrepreneurs a clean storefront, Paystack escrow checkout, and
-            seller-configured delivery — while you keep 96% of every sale.
+            Stop chasing unpaid Instagram DMs. Verndly gives Ghanaian entrepreneurs a clean
+            storefront, Paystack escrow checkout, and seller-configured delivery — built to help
+            your brand grow.
           </p>
 
           <div className="flex flex-col items-stretch gap-3 pt-2 sm:flex-row sm:items-center">
@@ -409,7 +409,7 @@ export default function SellPage() {
               Turn browsers into verified, paid orders.
             </h2>
             <p className="text-sm leading-relaxed opacity-75">
-              Free storefront setup. Flat 4% fee all-in. Paystack escrow on every transaction.
+              Free storefront setup. Verified badge. Paystack escrow on every transaction.
             </p>
           </div>
           <div className="flex shrink-0 flex-col gap-3 sm:flex-row">

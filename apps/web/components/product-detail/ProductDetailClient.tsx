@@ -22,6 +22,8 @@ import { productApi } from '@/lib/api/product';
 import Button from '@/components/ui/Button';
 import { useCart } from '@/lib/contexts/cart-context';
 import { useFavorites } from '@/lib/contexts/favorite-context';
+import { useAuth } from '@/lib/contexts/auth-context';
+import { isOwnStore } from '@/lib/utils/ownership';
 import PriceBlock from '@/components/product-detail/PriceBlock';
 import SellerCard from '@/components/product-detail/SellerCard';
 import RelatedProducts from '@/components/product-detail/RelatedProducts';
@@ -53,10 +55,15 @@ export default function ProductDetailClient({
   const params = useParams();
   const id = productId || (params?.id as string);
   const { addItem } = useCart();
+  const { user } = useAuth();
   const { toggleFavorite, isFavorited } = useFavorites();
   const [product, setProduct] = useState<any>(initialProduct);
   const [isLoading, setIsLoading] = useState(!initialProduct);
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
+  const [swipeDirection, setSwipeDirection] = useState<1 | -1>(1);
+  const [dragOffsetX, setDragOffsetX] = useState(0);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const didSwipeRef = useRef(false);
   const { record: recordRecentlyViewed } = useRecentlyViewed();
   const [addedFeedback, setAddedFeedback] = useState(false);
   const [selectedVariantAttrs, setSelectedVariantAttrs] = useState<Record<string, string>>({});
@@ -157,12 +164,19 @@ export default function ProductDetailClient({
   const effectiveStock = matchedVariant
     ? matchedVariant.quantity_available
     : product?.quantity_available;
-  const canPurchase = hasVariants
-    ? !!matchedVariant && matchedVariant.quantity_available > 0
-    : typeof product?.quantity_available !== 'number' || product.quantity_available > 0;
+  const isOwner = useMemo(() => isOwnStore(user, product?.seller), [user, product?.seller]);
+  const canPurchase =
+    !isOwner &&
+    (hasVariants
+      ? !!matchedVariant && matchedVariant.quantity_available > 0
+      : typeof product?.quantity_available !== 'number' || product.quantity_available > 0);
 
   const handleAddToCart = () => {
     if (!product?.seller) return;
+    if (isOwner) {
+      toast.error('You cannot purchase your own product.');
+      return;
+    }
     if (hasVariants && !matchedVariant) return;
     const price =
       typeof effectivePrice === 'number' ? String(effectivePrice) : (effectivePrice ?? '0');
@@ -183,15 +197,19 @@ export default function ProductDetailClient({
 
   // Auto-open Quick Checkout if returning from auth redirect (?buyNow=1)
   useEffect(() => {
-    if (typeof window === 'undefined' || !product) return;
+    if (typeof window === 'undefined' || !product || isOwner) return;
     const sp = new URLSearchParams(window.location.search);
     if (sp.get('buyNow') === '1') {
       setIsQuickCheckoutOpen(true);
     }
-  }, [product]);
+  }, [product, isOwner]);
 
   const handleBuyNow = () => {
     if (!product?.seller) return;
+    if (isOwner) {
+      toast.error('You cannot purchase your own product.');
+      return;
+    }
     if (hasVariants && !matchedVariant) {
       toast.error('Please select all product options first.');
       return;
@@ -255,7 +273,70 @@ export default function ProductDetailClient({
     setIsShareModalOpen(true);
   };
 
+  const goToNextMedia = () => {
+    if (mediaItems.length <= 1) return;
+    setSwipeDirection(1);
+    setCurrentMediaIndex((prev) => (prev < mediaItems.length - 1 ? prev + 1 : 0));
+  };
+
+  const goToPrevMedia = () => {
+    if (mediaItems.length <= 1) return;
+    setSwipeDirection(-1);
+    setCurrentMediaIndex((prev) => (prev > 0 ? prev - 1 : mediaItems.length - 1));
+  };
+
+  const goToMediaIndex = (idx: number) => {
+    if (idx === currentMediaIndex) return;
+    setSwipeDirection(idx > currentMediaIndex ? 1 : -1);
+    setCurrentMediaIndex(idx);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (mediaItems.length <= 1 || e.touches.length !== 1) return;
+    const t = e.touches[0];
+    touchStartRef.current = { x: t.clientX, y: t.clientY };
+    didSwipeRef.current = false;
+    setDragOffsetX(0);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!touchStartRef.current || mediaItems.length <= 1 || e.touches.length !== 1) return;
+    const t = e.touches[0];
+    const dx = t.clientX - touchStartRef.current.x;
+    const dy = t.clientY - touchStartRef.current.y;
+    // Only engage horizontal drag when swipe is clearly more horizontal than vertical
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 8) {
+      didSwipeRef.current = true;
+      setDragOffsetX(Math.max(-120, Math.min(120, dx * 0.55)));
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!touchStartRef.current || mediaItems.length <= 1) {
+      setDragOffsetX(0);
+      return;
+    }
+    const t = e.changedTouches[0];
+    const dx = t ? t.clientX - touchStartRef.current.x : 0;
+    const dy = t ? t.clientY - touchStartRef.current.y : 0;
+    touchStartRef.current = null;
+    setDragOffsetX(0);
+
+    if (Math.abs(dx) >= 42 && Math.abs(dx) > Math.abs(dy)) {
+      didSwipeRef.current = true;
+      if (dx < 0) {
+        goToNextMedia();
+      } else {
+        goToPrevMedia();
+      }
+    }
+  };
+
   const togglePlay = () => {
+    if (didSwipeRef.current) {
+      didSwipeRef.current = false;
+      return;
+    }
     if (videoRef.current) {
       if (videoRef.current.paused) {
         videoRef.current.play();
@@ -330,62 +411,86 @@ export default function ProductDetailClient({
       </div>
 
       <main className="mx-auto grid max-w-7xl gap-8 px-4 pt-6 md:grid-cols-2 md:px-8 md:pt-10 lg:gap-16">
-        {/* Left: Media Carousel (images + video) */}
+        {/* Left: Media Carousel (images + video, swipeable on mobile) */}
         <div className="space-y-6">
-          <div className="bg-surface group relative aspect-[4/5] overflow-hidden rounded-[2.5rem] md:aspect-square">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={`${currentMedia?.type}-${currentMediaIndex}`}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="h-full w-full"
-              >
-                {currentMedia?.type === 'video' ? (
-                  <div className="relative h-full w-full cursor-pointer" onClick={togglePlay}>
-                    <video
-                      ref={videoRef}
-                      src={currentMedia.url}
+          <div
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={() => {
+              touchStartRef.current = null;
+              setDragOffsetX(0);
+            }}
+            className="bg-surface group relative aspect-[4/5] touch-pan-y select-none overflow-hidden rounded-[2.5rem] md:aspect-square"
+          >
+            <div
+              style={{
+                transform: dragOffsetX ? `translate3d(${dragOffsetX}px, 0, 0)` : undefined,
+                transition: dragOffsetX ? 'none' : 'transform 180ms ease-out',
+              }}
+              className="h-full w-full"
+            >
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={`${currentMedia?.type}-${currentMediaIndex}`}
+                  initial={{ opacity: 0.4, x: swipeDirection * 28 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0.4, x: swipeDirection * -28 }}
+                  transition={{ duration: 0.2, ease: 'easeOut' }}
+                  className="h-full w-full"
+                >
+                  {currentMedia?.type === 'video' ? (
+                    <div className="relative h-full w-full cursor-pointer" onClick={togglePlay}>
+                      <video
+                        ref={videoRef}
+                        src={currentMedia.url}
+                        className="h-full w-full object-cover"
+                        autoPlay
+                        muted
+                        loop
+                        playsInline
+                      />
+                    </div>
+                  ) : (
+                    <img
+                      src={
+                        currentMedia?.type === 'image'
+                          ? currentMedia.url
+                          : '/placeholder-product.png'
+                      }
+                      alt={product.title}
+                      draggable={false}
+                      /* LCP: main product image — load eagerly + flag high
+                         fetch priority so the browser dispatches it before
+                         any below-the-fold work. */
+                      loading={currentMediaIndex === 0 ? 'eager' : 'lazy'}
+                      fetchPriority={currentMediaIndex === 0 ? 'high' : undefined}
+                      decoding="async"
                       className="h-full w-full object-cover"
-                      autoPlay
-                      muted
-                      loop
-                      playsInline
                     />
-                  </div>
-                ) : (
-                  <img
-                    src={
-                      currentMedia?.type === 'image' ? currentMedia.url : '/placeholder-product.png'
-                    }
-                    alt={product.title}
-                    /* LCP: main product image — load eagerly + flag high
-                       fetch priority so the browser dispatches it before
-                       any below-the-fold work. */
-                    loading={currentMediaIndex === 0 ? 'eager' : 'lazy'}
-                    fetchPriority={currentMediaIndex === 0 ? 'high' : undefined}
-                    decoding="async"
-                    className="h-full w-full object-cover"
-                  />
-                )}
-              </motion.div>
-            </AnimatePresence>
+                  )}
+                </motion.div>
+              </AnimatePresence>
+            </div>
 
             {mediaItems.length > 1 && (
               <>
+                <span className="pointer-events-none absolute right-4 top-4 rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-medium tabular-nums text-white sm:hidden">
+                  {currentMediaIndex + 1} / {mediaItems.length}
+                </span>
                 <button
-                  onClick={() =>
-                    setCurrentMediaIndex((prev) => (prev > 0 ? prev - 1 : mediaItems.length - 1))
-                  }
-                  className="absolute left-4 top-1/2 -translate-y-1/2 rounded-2xl bg-white/90 p-3 text-black opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
+                  type="button"
+                  aria-label="Previous image"
+                  onClick={goToPrevMedia}
+                  className="absolute left-4 top-1/2 hidden -translate-y-1/2 rounded-2xl bg-white/90 p-3 text-black opacity-0 shadow-lg transition-opacity group-hover:opacity-100 sm:flex"
                 >
                   <ChevronLeft className="h-5 w-5" />
                 </button>
                 <button
-                  onClick={() =>
-                    setCurrentMediaIndex((prev) => (prev < mediaItems.length - 1 ? prev + 1 : 0))
-                  }
-                  className="absolute right-4 top-1/2 -translate-y-1/2 rounded-2xl bg-white/90 p-3 text-black opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
+                  type="button"
+                  aria-label="Next image"
+                  onClick={goToNextMedia}
+                  className="absolute right-4 top-1/2 hidden -translate-y-1/2 rounded-2xl bg-white/90 p-3 text-black opacity-0 shadow-lg transition-opacity group-hover:opacity-100 sm:flex"
                 >
                   <ChevronRight className="h-5 w-5" />
                 </button>
@@ -393,16 +498,21 @@ export default function ProductDetailClient({
             )}
 
             {/* Media indicators */}
-            <div className="absolute inset-x-0 bottom-6 flex justify-center gap-2">
-              {mediaItems.map((_, idx) => (
-                <div
-                  key={idx}
-                  className={`h-1.5 rounded-full transition-all duration-300 ${
-                    idx === currentMediaIndex ? 'w-8 bg-white' : 'w-1.5 bg-white/50'
-                  }`}
-                />
-              ))}
-            </div>
+            {mediaItems.length > 1 && (
+              <div className="absolute inset-x-0 bottom-5 flex justify-center gap-2">
+                {mediaItems.map((_, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    aria-label={`View media ${idx + 1}`}
+                    onClick={() => goToMediaIndex(idx)}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${
+                      idx === currentMediaIndex ? 'w-8 bg-white' : 'w-1.5 bg-white/50'
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Thumbnails (images + video) */}
@@ -410,7 +520,7 @@ export default function ProductDetailClient({
             {mediaItems.map((item, idx) => (
               <button
                 key={idx}
-                onClick={() => setCurrentMediaIndex(idx)}
+                onClick={() => goToMediaIndex(idx)}
                 className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl border-2 transition-all ${
                   idx === currentMediaIndex
                     ? 'border-primary scale-105'
@@ -581,51 +691,74 @@ export default function ProductDetailClient({
           )}
 
           {/* Actions (Mobile-first side-by-side, ergonomic sizing, proper contrast) */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-            className="flex flex-row gap-2.5 pt-4 sm:gap-3"
-          >
-            <Button
-              variant="secondary"
-              onClick={handleAddToCart}
-              disabled={!canPurchase}
-              className="border-border/80 bg-surface/90 text-foreground hover:bg-surface sm:h-13 group h-12 flex-1 gap-2 rounded-xl border text-xs font-semibold tracking-wide shadow-sm transition-all active:scale-[0.98] sm:rounded-2xl sm:text-sm"
+          {isOwner ? (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="bg-surface flex flex-col gap-3 rounded-2xl p-4 sm:flex-row sm:items-center sm:justify-between"
             >
-              {addedFeedback ? (
-                <motion.span
-                  key="added"
-                  initial={{ scale: 0.9 }}
-                  animate={{ scale: 1 }}
-                  className="flex items-center justify-center gap-1.5 font-semibold text-emerald-600 dark:text-emerald-400"
-                >
-                  <Check className="h-4 w-4" />
-                  <span className="truncate">Added!</span>
-                </motion.span>
-              ) : (
-                <motion.span
-                  key="add"
-                  initial={{ scale: 0.9 }}
-                  animate={{ scale: 1 }}
-                  className="flex items-center justify-center gap-1.5"
-                >
-                  <ShoppingCart className="text-muted group-hover:text-foreground h-4 w-4 shrink-0 transition-colors" />
-                  <span className="truncate">Add to Cart</span>
-                </motion.span>
-              )}
-            </Button>
+              <div className="space-y-0.5">
+                <p className="text-foreground text-xs font-semibold">This is your listing</p>
+                <p className="text-muted text-[11px]">
+                  Sellers cannot purchase their own products.
+                </p>
+              </div>
+              <Button
+                variant="primary"
+                onClick={() => router.push(`/dashboard/products/${product.id}`)}
+                className="bg-foreground text-background hover:bg-foreground/90 h-10 shrink-0 rounded-xl px-4 text-xs font-semibold"
+              >
+                Manage Product
+              </Button>
+            </motion.div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="flex flex-row gap-2.5 pt-4 sm:gap-3"
+            >
+              <Button
+                variant="secondary"
+                onClick={handleAddToCart}
+                disabled={!canPurchase}
+                className="border-border/80 bg-surface/90 text-foreground hover:bg-surface sm:h-13 group h-12 flex-1 gap-2 rounded-xl border text-xs font-semibold tracking-wide shadow-sm transition-all active:scale-[0.98] sm:rounded-2xl sm:text-sm"
+              >
+                {addedFeedback ? (
+                  <motion.span
+                    key="added"
+                    initial={{ scale: 0.9 }}
+                    animate={{ scale: 1 }}
+                    className="flex items-center justify-center gap-1.5 font-semibold text-emerald-600 dark:text-emerald-400"
+                  >
+                    <Check className="h-4 w-4" />
+                    <span className="truncate">Added!</span>
+                  </motion.span>
+                ) : (
+                  <motion.span
+                    key="add"
+                    initial={{ scale: 0.9 }}
+                    animate={{ scale: 1 }}
+                    className="flex items-center justify-center gap-1.5"
+                  >
+                    <ShoppingCart className="text-muted group-hover:text-foreground h-4 w-4 shrink-0 transition-colors" />
+                    <span className="truncate">Add to Cart</span>
+                  </motion.span>
+                )}
+              </Button>
 
-            <Button
-              variant="primary"
-              onClick={handleBuyNow}
-              disabled={!canPurchase}
-              className="border-foreground/10 bg-foreground text-background hover:bg-foreground/90 sm:h-13 h-12 flex-1 gap-2 rounded-xl border text-xs font-semibold tracking-wide shadow-md transition-all active:scale-[0.98] sm:rounded-2xl sm:text-sm"
-            >
-              <Zap className="h-4 w-4 shrink-0 fill-current" />
-              <span className="truncate">{canPurchase ? 'Buy Now' : 'Out of Stock'}</span>
-            </Button>
-          </motion.div>
+              <Button
+                variant="primary"
+                onClick={handleBuyNow}
+                disabled={!canPurchase}
+                className="border-foreground/10 bg-foreground text-background hover:bg-foreground/90 sm:h-13 h-12 flex-1 gap-2 rounded-xl border text-xs font-semibold tracking-wide shadow-md transition-all active:scale-[0.98] sm:rounded-2xl sm:text-sm"
+              >
+                <Zap className="h-4 w-4 shrink-0 fill-current" />
+                <span className="truncate">{canPurchase ? 'Buy Now' : 'Out of Stock'}</span>
+              </Button>
+            </motion.div>
+          )}
         </div>
       </main>
 
@@ -685,29 +818,41 @@ export default function ProductDetailClient({
 
             {/* Action buttons on the right */}
             <div className="flex flex-1 items-center gap-2">
-              <Button
-                variant="secondary"
-                onClick={handleAddToCart}
-                disabled={!canPurchase}
-                className="border-border/80 bg-surface/90 text-foreground hover:bg-surface group h-11 flex-1 gap-1.5 rounded-xl border px-2 text-xs font-semibold shadow-sm transition-all active:scale-95"
-              >
-                {addedFeedback ? (
-                  <Check className="h-4 w-4 text-emerald-500" />
-                ) : (
-                  <ShoppingCart className="text-muted group-hover:text-foreground h-4 w-4" />
-                )}
-                <span className="truncate">{addedFeedback ? 'Added' : 'Add to Cart'}</span>
-              </Button>
+              {isOwner ? (
+                <Button
+                  variant="primary"
+                  onClick={() => router.push(`/dashboard/products/${product.id}`)}
+                  className="bg-foreground text-background hover:bg-foreground/90 h-11 flex-1 rounded-xl px-4 text-xs font-semibold"
+                >
+                  Manage Your Product
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    variant="secondary"
+                    onClick={handleAddToCart}
+                    disabled={!canPurchase}
+                    className="border-border/80 bg-surface/90 text-foreground hover:bg-surface group h-11 flex-1 gap-1.5 rounded-xl border px-2 text-xs font-semibold shadow-sm transition-all active:scale-95"
+                  >
+                    {addedFeedback ? (
+                      <Check className="h-4 w-4 text-emerald-500" />
+                    ) : (
+                      <ShoppingCart className="text-muted group-hover:text-foreground h-4 w-4" />
+                    )}
+                    <span className="truncate">{addedFeedback ? 'Added' : 'Add to Cart'}</span>
+                  </Button>
 
-              <Button
-                variant="primary"
-                onClick={handleBuyNow}
-                disabled={!canPurchase}
-                className="border-foreground/10 bg-foreground text-background hover:bg-foreground/90 h-11 flex-[1.3] gap-1.5 rounded-xl border px-3 text-xs font-semibold shadow-md transition-all active:scale-95"
-              >
-                <Zap className="h-3.5 w-3.5 shrink-0 fill-current" />
-                <span className="truncate">{canPurchase ? 'Buy Now' : 'Out of Stock'}</span>
-              </Button>
+                  <Button
+                    variant="primary"
+                    onClick={handleBuyNow}
+                    disabled={!canPurchase}
+                    className="border-foreground/10 bg-foreground text-background hover:bg-foreground/90 h-11 flex-[1.3] gap-1.5 rounded-xl border px-3 text-xs font-semibold shadow-md transition-all active:scale-95"
+                  >
+                    <Zap className="h-3.5 w-3.5 shrink-0 fill-current" />
+                    <span className="truncate">{canPurchase ? 'Buy Now' : 'Out of Stock'}</span>
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>

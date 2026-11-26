@@ -171,9 +171,19 @@ export interface BuyerSearchResponse {
   usedAi: boolean;
 }
 
+const CATEGORY_CACHE_TTL_MS = 5 * 60 * 1000;
+const PLAN_CACHE_TTL_MS = 5 * 60 * 1000;
+const PLAN_CACHE_MAX = 200;
+const AI_SEARCH_BUDGET_MS = 5_000;
+
 @Injectable()
 export class BuyerSearchService {
   private readonly logger = new Logger(BuyerSearchService.name);
+  private categoryCache: { names: string[]; expiresAt: number } | null = null;
+  private readonly planCache = new Map<
+    string,
+    { plan: AiBuyerSearchPlan; usedAi: boolean; expiresAt: number }
+  >();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -181,12 +191,48 @@ export class BuyerSearchService {
   ) {}
 
   private async getCategoryNames(): Promise<string[]> {
+    if (this.categoryCache && this.categoryCache.expiresAt > Date.now()) {
+      return this.categoryCache.names;
+    }
     const categories = await this.prisma.category.findMany({
       select: { name: true },
       orderBy: { name: 'asc' },
     });
     const names = categories.map((c) => c.name).filter(Boolean);
-    return names.length > 0 ? names : ['General'];
+    const resolved = names.length > 0 ? names : ['General'];
+    this.categoryCache = {
+      names: resolved,
+      expiresAt: Date.now() + CATEGORY_CACHE_TTL_MS,
+    };
+    return resolved;
+  }
+
+  private getCachedPlan(
+    key: string,
+  ): { plan: AiBuyerSearchPlan; usedAi: boolean } | null {
+    const entry = this.planCache.get(key);
+    if (!entry) return null;
+    if (entry.expiresAt <= Date.now()) {
+      this.planCache.delete(key);
+      return null;
+    }
+    return { plan: entry.plan, usedAi: entry.usedAi };
+  }
+
+  private setCachedPlan(
+    key: string,
+    plan: AiBuyerSearchPlan,
+    usedAi: boolean,
+  ): void {
+    if (this.planCache.size >= PLAN_CACHE_MAX) {
+      const oldestKey = this.planCache.keys().next().value;
+      if (oldestKey) this.planCache.delete(oldestKey);
+    }
+    this.planCache.set(key, {
+      plan,
+      usedAi,
+      expiresAt: Date.now() + PLAN_CACHE_TTL_MS,
+    });
   }
 
   private buildWhereClause(
@@ -305,22 +351,36 @@ export class BuyerSearchService {
 
     const limit = Math.min(Math.max(1, Math.trunc(Number(rawLimit) || 12)), 24);
     const categories = await this.getCategoryNames();
+    const cacheKey = query.toLowerCase().replace(/\s+/g, ' ');
 
     let plan: AiBuyerSearchPlan;
     let usedAi = true;
 
-    if (this.geminiService.isConfigured()) {
+    const cached = this.getCachedPlan(cacheKey);
+    if (cached) {
+      plan = cached.plan;
+      usedAi = cached.usedAi;
+    } else if (this.geminiService.isConfigured()) {
+      let budgetTimer: NodeJS.Timeout | undefined;
       try {
-        plan = await this.geminiService.parseBuyerSearchQuery(
-          query,
-          categories,
-        );
+        plan = await Promise.race([
+          this.geminiService.parseBuyerSearchQuery(query, categories),
+          new Promise<never>((_, reject) => {
+            budgetTimer = setTimeout(
+              () => reject(new Error('AI_SEARCH_BUDGET_EXCEEDED')),
+              AI_SEARCH_BUDGET_MS,
+            );
+          }),
+        ]);
+        this.setCachedPlan(cacheKey, plan, true);
       } catch (err) {
         this.logger.warn(
           `Verndly AI buyer search fell back to deterministic parser: ${(err as Error)?.message}`,
         );
         usedAi = false;
         plan = extractFallbackSearchPlan(query, categories);
+      } finally {
+        if (budgetTimer) clearTimeout(budgetTimer);
       }
     } else {
       usedAi = false;

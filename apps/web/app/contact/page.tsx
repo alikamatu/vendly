@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Mail, MessageSquare, Phone, MapPin, Clock, Send, CheckCircle2 } from 'lucide-react';
+import { Mail, MessageSquare, Phone, MapPin, Clock, Send } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { contactApi } from '@/lib/api/contact';
 import { SUPPORT_CONTACT } from '@/lib/contact';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import Button from '@/components/ui/Button';
+import Alert from '@/components/ui/Alert';
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
@@ -93,10 +94,11 @@ export default function ContactPage() {
           noValidate
         >
           {submitted && (
-            <div className="flex items-center gap-2 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-3.5 text-xs font-medium text-emerald-600">
-              <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
-              Message sent — we'll be in touch soon.
-            </div>
+            <Alert
+              variant="success"
+              message="Message sent — we'll be in touch soon."
+              onDismiss={() => setSubmitted(false)}
+            />
           )}
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

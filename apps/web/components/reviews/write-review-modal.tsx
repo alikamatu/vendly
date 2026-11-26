@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
+import Alert from '@/components/ui/Alert';
 import { RatingInput } from './rating-input';
 
 export type WriteReviewSubmit = {
@@ -37,9 +38,9 @@ export function WriteReviewModal({
     if (open) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setRating(initial?.rating ?? 0);
-       
+
       setTitle(initial?.title ?? '');
-       
+
       setBody(initial?.body ?? '');
     }
   }, [open, initial?.rating, initial?.title, initial?.body]);
@@ -130,11 +131,7 @@ export function WriteReviewModal({
             </div>
           </div>
 
-          {error && (
-            <p className="rounded-lg bg-red-500/10 px-3 py-2 text-[12.5px] text-red-600 dark:text-red-400">
-              {error}
-            </p>
-          )}
+          {error && <Alert variant="error" message={error} />}
 
           <div className="flex items-center justify-end gap-2 pt-1">
             <button

@@ -53,6 +53,8 @@ export interface AiWhatsAppCatalogItem {
   tags: string[];
   in_stock: boolean;
   source_screenshot_index: number;
+  /** Normalized [ymin, xmin, ymax, xmax] (0..1000) bounding box of the product photo inside the screenshot */
+  image_box_2d?: [number, number, number, number] | null;
 }
 
 export interface AiWhatsAppScreenshotsResult {

@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import React, { useEffect, useRef, useState } from 'react';
 import Portal from '@/components/common/Portal';
 import VerndlyAiIcon from './VerndlyAiIcon';
 
@@ -10,42 +9,120 @@ export interface VerndlyAiOverlayProps {
   isOpen: boolean;
   /** Rotating step-by-step messages explaining what Verndly AI is doing */
   messages?: string[];
-  /** Optional subtitle shown beneath the active status message */
+  /** Kept optional for caller compatibility; minimal UI shows avatar + white motion pill */
   subtitle?: string;
 }
 
 const DEFAULT_MESSAGES = [
-  'Looking closely at your photos…',
-  'Distinguishing items and matching angles…',
-  'Writing clean titles, descriptions, and categories…',
+  'Looking closely at your request…',
+  'Finding the best matches on Verndly…',
+  'Putting everything together…',
 ];
 
-const EASE_SMOOTH = [0.22, 1, 0.36, 1] as const;
-
 /**
- * Full-screen centered Verndly AI working state:
- * - Softly fading radial background (no CSS blur, borders, or shadows)
- * - Floating, expressive 3D-styled `red-700` Verndly AI orb in the center
- * - Smoothly cycling status messages telling the user what Verndly AI is doing
+ * Modern, ultra-minimal centered Verndly AI working state:
+ * - Clean dimmed backdrop (no blur, borders, or shadows)
+ * - Floating expressive 3D-styled `red-700` Verndly AI avatar
+ * - Crisp pure-white pill with buttery character-by-character typing motion
+ *   and a soft breathing red-700 caret so Verndly AI feels genuinely alive.
  */
 export default function VerndlyAiOverlay({
   isOpen,
   messages = DEFAULT_MESSAGES,
-  subtitle,
 }: VerndlyAiOverlayProps) {
   const [msgIndex, setMsgIndex] = useState(0);
+  const [typedLength, setTypedLength] = useState(0);
+  const [phase, setPhase] = useState<'typing' | 'holding' | 'clearing'>('typing');
+  const [exiting, setExiting] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const wasOpenRef = useRef(false);
   const safeMessages = messages.length > 0 ? messages : DEFAULT_MESSAGES;
 
-  // Cycle through status messages while open
+  // Manage smooth CSS fade-in and guaranteed unmount on close
   useEffect(() => {
-    if (!isOpen || safeMessages.length <= 1) return;
-    const timer = setInterval(() => {
-      setMsgIndex((prev) => (prev + 1) % safeMessages.length);
-    }, 2300);
-    return () => clearInterval(timer);
-  }, [isOpen, safeMessages.length]);
+    if (isOpen) {
+      wasOpenRef.current = true;
+      const raf = requestAnimationFrame(() => {
+        setVisible(true);
+        setExiting(false);
+        setMsgIndex(0);
+        setTypedLength(0);
+        setPhase('typing');
+      });
+      return () => cancelAnimationFrame(raf);
+    }
 
-  // Lock page scroll while overlay is active
+    if (!wasOpenRef.current) return;
+    wasOpenRef.current = false;
+
+    const hideRaf = requestAnimationFrame(() => {
+      setVisible(false);
+      setExiting(true);
+    });
+    const unmountTimer = setTimeout(() => {
+      setExiting(false);
+      setMsgIndex(0);
+      setTypedLength(0);
+      setPhase('typing');
+    }, 220);
+
+    return () => {
+      cancelAnimationFrame(hideRaf);
+      clearTimeout(unmountTimer);
+    };
+  }, [isOpen]);
+
+  const activeMessage = safeMessages[msgIndex % safeMessages.length];
+
+  // Smooth conversational typing -> brief hold -> crisp backspace -> next message
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (phase === 'typing') {
+      if (typedLength < activeMessage.length) {
+        const nextChar = activeMessage[typedLength];
+        const delay =
+          nextChar === ',' || nextChar === '.' || nextChar === '…'
+            ? 85
+            : nextChar === ' '
+              ? 18
+              : 24;
+        const t = setTimeout(() => {
+          setTypedLength((len) => len + 1);
+        }, delay);
+        return () => clearTimeout(t);
+      }
+
+      if (safeMessages.length <= 1) return;
+      const holdTimer = setTimeout(() => {
+        setPhase('holding');
+      }, 1150);
+      return () => clearTimeout(holdTimer);
+    }
+
+    if (phase === 'holding') {
+      const clearTimer = setTimeout(() => {
+        setPhase('clearing');
+      }, 160);
+      return () => clearTimeout(clearTimer);
+    }
+
+    // phase === 'clearing'
+    if (typedLength > 0) {
+      const eraseTimer = setTimeout(() => {
+        setTypedLength((len) => Math.max(0, len - 3));
+      }, 16);
+      return () => clearTimeout(eraseTimer);
+    }
+
+    const nextTimer = setTimeout(() => {
+      setMsgIndex((prev) => (prev + 1) % safeMessages.length);
+      setPhase('typing');
+    }, 110);
+    return () => clearTimeout(nextTimer);
+  }, [isOpen, phase, typedLength, activeMessage, safeMessages.length]);
+
+  // Lock page scroll strictly while open and always restore on close
   useEffect(() => {
     if (!isOpen) return;
     const prevOverflow = document.body.style.overflow;
@@ -55,110 +132,52 @@ export default function VerndlyAiOverlay({
     };
   }, [isOpen]);
 
-  const activeMessage = safeMessages[msgIndex % safeMessages.length];
+  if (!isOpen && !exiting) {
+    return null;
+  }
+
+  const visibleChars = Array.from(activeMessage).slice(0, typedLength);
 
   return (
     <Portal>
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            key="verndly-ai-overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.32, ease: EASE_SMOOTH }}
-            style={{
-              background:
-                'radial-gradient(circle at 50% 46%, rgba(10, 10, 12, 0.88) 0%, rgba(10, 10, 12, 0.74) 52%, rgba(10, 10, 12, 0.56) 100%)',
-            }}
-            className="fixed inset-0 z-[130] flex select-none flex-col items-center justify-center px-6 text-center"
+      <div
+        aria-hidden={!isOpen}
+        className={`fixed inset-0 z-[130] flex select-none flex-col items-center justify-center bg-black/55 px-6 text-center transition-opacity duration-200 ${
+          isOpen && visible ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
+        }`}
+      >
+        <div className="flex flex-col items-center gap-5">
+          {/* Floating expressive Verndly AI Avatar */}
+          <div
+            className={`verndly-orb-float transition-transform duration-300 ${
+              isOpen && visible ? 'scale-100' : 'scale-90'
+            }`}
           >
-            {/* Moving Centerpiece Character + Fading Ambient Pulse Rings */}
-            <div className="relative flex h-36 w-36 items-center justify-center">
-              <motion.span
-                animate={{ scale: [0.85, 1.6], opacity: [0.28, 0] }}
-                transition={{
-                  duration: 2.4,
-                  repeat: Infinity,
-                  ease: 'easeOut',
-                }}
-                className="pointer-events-none absolute h-24 w-24 rounded-full bg-red-700"
+            <VerndlyAiIcon size={86} mood="working" />
+          </div>
+
+          {/* Pure-White Live Typing Pill */}
+          <div role="status" aria-live="polite" className="max-w-[min(90vw,420px)]">
+            <div className="verndly-pill-pop inline-flex min-h-[42px] items-center gap-2.5 rounded-full bg-white px-5 py-2.5 text-neutral-950 transition-all duration-200">
+              <span
+                className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-red-700"
+                aria-hidden="true"
               />
-              <motion.span
-                animate={{ scale: [0.85, 1.4], opacity: [0.2, 0] }}
-                transition={{
-                  duration: 2.4,
-                  delay: 0.9,
-                  repeat: Infinity,
-                  ease: 'easeOut',
-                }}
-                className="pointer-events-none absolute h-24 w-24 rounded-full bg-red-700"
-              />
-
-              <motion.div
-                initial={{ scale: 0.78, y: 12, opacity: 0 }}
-                animate={{
-                  scale: 1,
-                  opacity: 1,
-                  y: [0, -8, 0],
-                  rotate: [-2, 2, -2],
-                }}
-                exit={{ scale: 0.85, y: 8, opacity: 0 }}
-                transition={{
-                  scale: { duration: 0.35, ease: EASE_SMOOTH },
-                  opacity: { duration: 0.25 },
-                  y: { duration: 2.6, repeat: Infinity, ease: 'easeInOut' },
-                  rotate: { duration: 3.4, repeat: Infinity, ease: 'easeInOut' },
-                }}
-                className="relative z-10"
-              >
-                <VerndlyAiIcon size={92} mood="working" />
-              </motion.div>
+              <span className="text-left text-[13px] font-semibold leading-snug tracking-[-0.02em] sm:text-sm">
+                {visibleChars.map((ch, idx) => (
+                  <span key={`${msgIndex}-${idx}`} className="verndly-char-in">
+                    {ch}
+                  </span>
+                ))}
+                <span
+                  aria-hidden="true"
+                  className="verndly-caret ml-0.5 inline-block h-[1.05em] w-[2px] translate-y-[2px] rounded-full bg-red-700"
+                />
+              </span>
             </div>
-
-            {/* Brand Name & Live Step-by-Step Messaging */}
-            <div role="status" aria-live="polite" className="mt-4 max-w-sm space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-red-400">
-                Verndly AI
-              </p>
-
-              <div className="flex min-h-[52px] items-center justify-center">
-                <AnimatePresence mode="wait">
-                  <motion.p
-                    key={activeMessage}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    transition={{ duration: 0.24, ease: EASE_SMOOTH }}
-                    className="text-base font-semibold leading-snug text-white sm:text-lg"
-                  >
-                    {activeMessage}
-                  </motion.p>
-                </AnimatePresence>
-              </div>
-
-              {subtitle && <p className="text-xs leading-relaxed text-white/65">{subtitle}</p>}
-
-              {/* Subtle animated step dots */}
-              {safeMessages.length > 1 && (
-                <div className="flex items-center justify-center gap-1.5 pt-2">
-                  {safeMessages.map((_, idx) => {
-                    const active = idx === msgIndex % safeMessages.length;
-                    return (
-                      <span
-                        key={idx}
-                        className={`h-1.5 rounded-full transition-all duration-300 ${
-                          active ? 'w-5 bg-red-600' : 'w-1.5 bg-white/25'
-                        }`}
-                      />
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+        </div>
+      </div>
     </Portal>
   );
 }

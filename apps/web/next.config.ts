@@ -38,7 +38,7 @@ const csp = [
   "child-src 'self' blob:",
   `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com ${VERCEL_LIVE}`,
   "font-src 'self' data: https://fonts.gstatic.com",
-  `img-src 'self' data: blob: ${CLOUDINARY} https://lh3.googleusercontent.com https://verndly.com https://verndly.market ${VERCEL_LIVE}`,
+  `img-src 'self' data: blob: https: ${API_HOST} ${CLOUDINARY} https://lh3.googleusercontent.com https://verndly.com https://verndly.market ${VERCEL_LIVE}`,
   // `media-src` governs <video>/<audio>/<source>. Without it, Cloudinary
   // video URLs silently fall back to `default-src 'self'` and the browser
   // blocks them with no visible UI — videos just don't play.

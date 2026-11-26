@@ -96,8 +96,8 @@ const TRUST_METRICS = [
   },
   {
     Icon: Percent,
-    title: 'Transparent 4% Fee',
-    desc: 'Fair platform fee for sellers, zero buyer surcharges',
+    title: 'Zero Buyer Surcharges',
+    desc: 'No hidden checkout fees for buyers, free store setup for sellers',
   },
   {
     Icon: UserCheck,

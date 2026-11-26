@@ -119,7 +119,9 @@ export default function BlogPage() {
             <p className="font-mono text-[11px] uppercase tracking-wider text-[var(--color-accent)]">
               For Sellers
             </p>
-            <h3 className="text-2xl font-medium tracking-tight">Sell on Verndly at 4% flat.</h3>
+            <h3 className="text-2xl font-medium tracking-tight">
+              Launch your verified store on Verndly.
+            </h3>
             <p className="text-muted text-sm leading-relaxed">
               Verified store badge, Paystack processing included, and protection from fake MoMo
               screenshots and POD no-shows.

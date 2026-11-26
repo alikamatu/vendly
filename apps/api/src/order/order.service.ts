@@ -38,6 +38,10 @@ export class OrderService {
       throw new NotFoundException('Store not found');
     }
 
+    if (seller.user_id === userId) {
+      throw new ForbiddenException('You cannot purchase your own products.');
+    }
+
     const buyer = await this.prisma.user.findUnique({
       where: { id: userId },
     });

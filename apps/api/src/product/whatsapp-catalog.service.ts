@@ -9,6 +9,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CloudinaryService } from '../common/cloudinary.service';
 import { AuditLogService } from '../audit/audit-log.service';
 import { GeminiService } from '../ai/gemini.service';
+import { matchCategoryName } from './category-matcher';
 
 type Decimal = Prisma.Decimal;
 const Decimal = Prisma.Decimal;
@@ -51,6 +52,7 @@ export interface WhatsAppPreviewItem {
   status: 'active' | 'draft';
   source_url?: string;
   source_screenshot_index?: number;
+  image_box_2d?: [number, number, number, number] | null;
 }
 
 export interface WhatsAppPreviewResponse {
@@ -201,7 +203,19 @@ export function parsePriceValue(raw: string | number | undefined | null): {
   else if (/\bEUR\b|€/i.test(text)) currency = 'EUR';
   else if (/GH[S₵¢]|₵/i.test(text)) currency = 'GHS';
 
-  const match = text.replace(/,/g, '').match(/(\d+(?:\.\d{1,2})?)/);
+  const normalized = text.replace(/,/g, '');
+  // Prefer a currency-anchored amount so volumes/sizes like "100 ML · GHS250.00" never grab "100"
+  const currencyAnchored =
+    normalized.match(
+      /(?:GH[S₵¢]|USD|NGN|GBP|EUR|₵|₦|£|€|\$)\s*(\d+(?:\.\d{1,2})?)/i,
+    ) ||
+    normalized.match(/(\d+(?:\.\d{1,2})?)\s*(?:GH[S₵¢]|USD|NGN|GBP|EUR)\b/i);
+
+  const match =
+    currencyAnchored ||
+    (/^\s*\d+(?:\.\d{1,2})?\s*$/.test(normalized)
+      ? normalized.match(/(\d+(?:\.\d{1,2})?)/)
+      : null);
   if (!match) return { amount: null, currency };
   const amount = Number.parseFloat(match[1]);
   if (!Number.isFinite(amount) || amount <= 0) {
@@ -212,39 +226,20 @@ export function parsePriceValue(raw: string | number | undefined | null): {
 
 function decodeHtmlEntities(input: string): string {
   return input
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex: string) =>
+      String.fromCodePoint(parseInt(hex, 16)),
+    )
+    .replace(/&#(\d+);/g, (_, dec: string) =>
+      String.fromCodePoint(parseInt(dec, 10)),
+    )
     .replace(/&amp;/g, '&')
     .replace(/&quot;/g, '"')
     .replace(/&#39;|&apos;/g, "'")
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
-    .replace(/&#x27;/g, "'")
-    .replace(/&#x2F;/g, '/')
+    .replace(/&nbsp;/gi, ' ')
     .replace(/\s+/g, ' ')
     .trim();
-}
-
-function matchCategory(
-  rawCategory: string | undefined | null,
-  availableCategories: string[],
-): string {
-  const fallback = availableCategories[0] || 'General';
-  if (!rawCategory || !rawCategory.trim()) return fallback;
-  const parts = rawCategory
-    .split(/[>/,|]/)
-    .map((p) => p.trim().toLowerCase())
-    .filter(Boolean);
-
-  for (const part of parts) {
-    const exact = availableCategories.find((c) => c.toLowerCase() === part);
-    if (exact) return exact;
-  }
-  for (const part of parts) {
-    const partial = availableCategories.find(
-      (c) => c.toLowerCase().includes(part) || part.includes(c.toLowerCase()),
-    );
-    if (partial) return partial;
-  }
-  return fallback;
 }
 
 function normalizeConditionValue(
@@ -276,11 +271,21 @@ function isGenericWhatsAppTitle(title: string): boolean {
     !lower ||
     lower === 'whatsapp' ||
     lower === 'whatsapp business' ||
+    lower === 'whatsapp.com' ||
     lower === 'share on whatsapp' ||
     lower.startsWith('view catalog') ||
     lower.startsWith('open whatsapp') ||
-    lower.includes('on whatsapp')
+    /^view\s+.+?\s+catalog(?:\s+on\s+whatsapp)?\.?$/i.test(lower) ||
+    /^chat\s+on\s+whatsapp/i.test(lower)
   );
+}
+
+function cleanWhatsAppProductTitle(rawTitle: string): string {
+  return rawTitle
+    .replace(/\s+from\s+.+?\s+on\s+WhatsApp\.?$/i, '')
+    .replace(/\s+on\s+WhatsApp\.?$/i, '')
+    .replace(/\s*[-|•·]\s*WhatsApp.*$/i, '')
+    .trim();
 }
 
 /**
@@ -292,7 +297,6 @@ export function extractProductsFromWhatsAppHtml(
   sourceUrl: string,
   availableCategories: string[],
 ): WhatsAppPreviewItem[] {
-  const fallbackCategory = availableCategories[0] || 'General';
   const items: WhatsAppPreviewItem[] = [];
   const seenTitles = new Set<string>();
 
@@ -373,7 +377,12 @@ export function extractProductsFromWhatsAppHtml(
           price: priceObj.amount,
           original_price: null,
           currency,
-          category: matchCategory(node.category, availableCategories),
+          category: matchCategoryName(node.category, availableCategories, {
+            title,
+            description,
+            brand: brandName,
+            url: sourceUrl,
+          }),
           condition: normalizeConditionValue(
             offers?.itemCondition || node.condition,
           ),
@@ -396,9 +405,14 @@ export function extractProductsFromWhatsAppHtml(
 
   // 2. Fallback to OpenGraph meta tags (works cleanly for individual wa.me/p/... links)
   if (items.length === 0) {
+    const titleTagMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+    const pageTitle = titleTagMatch?.[1]
+      ? decodeHtmlEntities(titleTagMatch[1])
+      : '';
     const ogTitle =
       extractMetaContent(html, 'og:title') ||
-      extractMetaContent(html, 'twitter:title');
+      extractMetaContent(html, 'twitter:title') ||
+      pageTitle;
     const ogDesc =
       extractMetaContent(html, 'og:description') ||
       extractMetaContent(html, 'description');
@@ -406,13 +420,28 @@ export function extractProductsFromWhatsAppHtml(
     const ogPriceAmount = extractMetaContent(html, 'product:price:amount');
     const ogPriceCurrency = extractMetaContent(html, 'product:price:currency');
 
-    const cleanedTitle = ogTitle.replace(/\s*[-|•]\s*WhatsApp.*$/i, '').trim();
+    const cleanedTitle = cleanWhatsAppProductTitle(ogTitle);
 
     if (cleanedTitle && !isGenericWhatsAppTitle(cleanedTitle)) {
-      // Price may be in product:price:amount OR embedded inside og:description (e.g. "GHS 250.00 · ...")
+      // Price may be in product:price:amount OR embedded inside og:description (e.g. "100 ML EAU DE PARFUM · GHS250.00" or "GHS 250.00 · ...")
       const fromMeta = parsePriceValue(ogPriceAmount);
       const fromDesc =
         fromMeta.amount !== null ? fromMeta : parsePriceValue(ogDesc);
+
+      // Strip the redundant price segment from og:description when separated by middot/bullet
+      const cleanedDesc = ogDesc
+        .split(/\s*[·•|]\s*/)
+        .map((seg) => seg.trim())
+        .filter(
+          (seg) =>
+            seg.length > 0 &&
+            !/^(?:GH[S₵¢]|USD|NGN|GBP|EUR|\$|₵|₦|£|€)?\s*[\d,]+(?:\.\d{1,2})?\s*(?:GH[S₵¢]|USD|NGN|GBP|EUR)?$/i.test(
+              seg,
+            ),
+        )
+        .join(' · ')
+        .trim();
+      const finalDescription = cleanedDesc || ogDesc;
 
       const validImage =
         ogImage &&
@@ -424,17 +453,26 @@ export function extractProductsFromWhatsAppHtml(
       pushUnique({
         tempId: `wa_og_${Date.now()}`,
         title: cleanedTitle,
-        description: ogDesc,
+        description: finalDescription,
         price: fromDesc.amount,
         original_price: null,
         currency: (ogPriceCurrency || fromDesc.currency || 'GHS').toUpperCase(),
-        category: fallbackCategory,
+        category: matchCategoryName('', availableCategories, {
+          title: cleanedTitle,
+          description: finalDescription,
+          url: sourceUrl,
+        }),
         condition: 'new',
         quantity_available: 1,
         brand: '',
         tags: [],
         image_urls: validImage,
-        status: 'draft',
+        status:
+          fromDesc.amount &&
+          validImage.length > 0 &&
+          finalDescription.length >= 20
+            ? 'active'
+            : 'draft',
         source_url: sourceUrl,
       });
     }
@@ -641,9 +679,15 @@ export function parseMetaCatalogCsv(
       price,
       original_price,
       currency,
-      category: matchCategory(
+      category: matchCategoryName(
         categoryCol >= 0 ? row[categoryCol] : undefined,
         availableCategories,
+        {
+          title,
+          description: descCol >= 0 ? (row[descCol] || '').trim() : '',
+          brand: brandCol >= 0 ? (row[brandCol] || '').trim() : '',
+          tags,
+        },
       ),
       condition: normalizeConditionValue(
         conditionCol >= 0 ? row[conditionCol] : undefined,
@@ -686,6 +730,83 @@ export class WhatsAppCatalogService {
     return names.length > 0 ? names : ['General'];
   }
 
+  private buildWhatsAppFetchCandidates(url: string): string[] {
+    const candidates: string[] = [];
+    try {
+      const parsed = new URL(url);
+      const path = parsed.pathname.replace(/\/+$/, '');
+      const prodMatch = path.match(/^\/p\/([^/]+)\/([^/]+)$/i);
+      if (prodMatch) {
+        // Direct www.whatsapp.com/product URL avoids an extra redirect hop on wa.me
+        candidates.push(
+          `https://www.whatsapp.com/product/${encodeURIComponent(prodMatch[1])}/${encodeURIComponent(prodMatch[2])}/?app_absent=0`,
+        );
+      }
+      const catMatch = path.match(/^\/c\/([^/]+)$/i);
+      if (catMatch) {
+        candidates.push(
+          `https://www.whatsapp.com/catalog/${encodeURIComponent(catMatch[1])}/?app_absent=0`,
+        );
+      }
+    } catch {
+      // fall through to original URL
+    }
+    if (!candidates.includes(url)) {
+      candidates.push(url);
+    }
+    return candidates;
+  }
+
+  private async fetchWhatsAppPageHtml(
+    url: string,
+  ): Promise<
+    { html: string; status: number } | { html: null; status: number }
+  > {
+    const candidateUrls = this.buildWhatsAppFetchCandidates(url);
+    // Meta's WhatsApp link-preview edge returns HTTP 400 to generic desktop Chrome UAs without
+    // full Sec-Fetch browser fingerprints, whereas official link-preview UAs receive HTTP 200 OG HTML.
+    const userAgents = [
+      'WhatsApp/2.24.6.77',
+      'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
+    ];
+
+    let lastStatus = 0;
+
+    for (const targetUrl of candidateUrls) {
+      for (const ua of userAgents) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+        try {
+          const res = await fetch(targetUrl, {
+            signal: controller.signal,
+            redirect: 'follow',
+            headers: {
+              'User-Agent': ua,
+              Accept:
+                'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+              'Accept-Language': 'en-US,en;q=0.9',
+            },
+          });
+          lastStatus = res.status;
+          if (res.ok) {
+            const html = await res.text();
+            if (html.length > 100) {
+              return { html, status: res.status };
+            }
+          }
+        } catch (err) {
+          this.logger.warn(
+            `WhatsApp link fetch failed for ${targetUrl} (${ua}): ${(err as Error)?.message}`,
+          );
+        } finally {
+          clearTimeout(timer);
+        }
+      }
+    }
+
+    return { html: null, status: lastStatus };
+  }
+
   async previewFromLinks(rawInput: string): Promise<WhatsAppPreviewResponse> {
     const urls = normalizeWhatsAppInputToUrls(rawInput);
     const categories = await this.getCategoryNames();
@@ -693,48 +814,29 @@ export class WhatsAppCatalogService {
     const warnings: string[] = [];
 
     for (const url of urls) {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-      try {
-        const res = await fetch(url, {
-          signal: controller.signal,
-          redirect: 'follow',
-          headers: {
-            'User-Agent':
-              'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-            Accept:
-              'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.9',
-          },
-        });
-
-        if (!res.ok) {
-          warnings.push(`WhatsApp returned HTTP ${res.status} for ${url}.`);
-          continue;
-        }
-
-        const html = await res.text();
-        const extracted = extractProductsFromWhatsAppHtml(
-          html,
-          url,
-          categories,
-        );
-        if (extracted.length > 0) {
-          allItems.push(...extracted);
+      const result = await this.fetchWhatsAppPageHtml(url);
+      if (!result.html) {
+        if (result.status > 0) {
+          warnings.push(`WhatsApp returned HTTP ${result.status} for ${url}.`);
         } else {
           warnings.push(
-            `WhatsApp restricted public catalog scraping for ${url}. Paste individual product links (wa.me/p/...) or upload catalog screenshots for Verndly AI to extract every item instantly.`,
+            `Could not reach ${url}. Try uploading WhatsApp catalog screenshots with Verndly AI instead.`,
           );
         }
-      } catch (err) {
-        this.logger.warn(
-          `WhatsApp link fetch failed for ${url}: ${(err as Error)?.message}`,
-        );
+        continue;
+      }
+
+      const extracted = extractProductsFromWhatsAppHtml(
+        result.html,
+        url,
+        categories,
+      );
+      if (extracted.length > 0) {
+        allItems.push(...extracted);
+      } else {
         warnings.push(
-          `Could not reach ${url}. Try uploading WhatsApp catalog screenshots with Verndly AI instead.`,
+          `WhatsApp restricted public catalog scraping for ${url}. Paste individual product links (wa.me/p/...) or upload catalog screenshots for Verndly AI to extract every item instantly.`,
         );
-      } finally {
-        clearTimeout(timer);
       }
     }
 
@@ -770,6 +872,7 @@ export class WhatsAppCatalogService {
       image_urls: [],
       status: 'draft',
       source_screenshot_index: p.source_screenshot_index,
+      image_box_2d: p.image_box_2d ?? null,
     }));
 
     const warnings: string[] = [];
@@ -902,9 +1005,15 @@ export class WhatsAppCatalogService {
             typeof p.currency === 'string' && p.currency.trim()
               ? p.currency.trim().toUpperCase()
               : basePrice.currency,
-          category: matchCategory(
+          category: matchCategoryName(
             typeof p.category === 'string' ? p.category : undefined,
             categories,
+            {
+              title,
+              description:
+                typeof p.description === 'string' ? p.description.trim() : '',
+              brand: typeof p.brand === 'string' ? p.brand.trim() : '',
+            },
           ),
           condition: normalizeConditionValue(
             typeof p.condition === 'string' ? p.condition : undefined,

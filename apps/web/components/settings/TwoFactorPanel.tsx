@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import React, { useEffect, useState } from "react";
-import { QRCodeSVG } from "qrcode.react";
+import React, { useEffect, useState } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 import {
   Shield,
   ShieldCheck,
@@ -10,31 +10,32 @@ import {
   Copy,
   CheckCircle2,
   Key,
-} from "lucide-react";
-import Card from "@/components/ui/Card";
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
-import Spinner from "@/components/ui/Spinner";
-import { authApi } from "@/lib/api/auth";
-import { useAuth } from "@/lib/contexts/auth-context";
+} from 'lucide-react';
+import Card from '@/components/ui/Card';
+import Button from '@/components/ui/Button';
+import Input from '@/components/ui/Input';
+import Spinner from '@/components/ui/Spinner';
+import Alert from '@/components/ui/Alert';
+import { authApi } from '@/lib/api/auth';
+import { useAuth } from '@/lib/contexts/auth-context';
 
 type Stage =
-  | "loading"
-  | "off"
-  | "choose-method"
-  | "setup-qr"
-  | "setup-verify"
-  | "sms-phone"
-  | "sms-verify"
-  | "show-codes"
-  | "on"
-  | "disabling";
+  | 'loading'
+  | 'off'
+  | 'choose-method'
+  | 'setup-qr'
+  | 'setup-verify'
+  | 'sms-phone'
+  | 'sms-verify'
+  | 'show-codes'
+  | 'on'
+  | 'disabling';
 
-type Method = "TOTP" | "SMS";
+type Method = 'TOTP' | 'SMS';
 
 export default function TwoFactorPanel() {
   const { token } = useAuth();
-  const [stage, setStage] = useState<Stage>("loading");
+  const [stage, setStage] = useState<Stage>('loading');
   const [status, setStatus] = useState<{
     enabled: boolean;
     method: Method;
@@ -42,34 +43,32 @@ export default function TwoFactorPanel() {
     backup_codes_remaining: number;
     phone_hint: string | null;
   } | null>(null);
-  const [chosenMethod, setChosenMethod] = useState<Method>("TOTP");
-  const [phoneInput, setPhoneInput] = useState("");
-  const [smsCode, setSmsCode] = useState("");
+  const [chosenMethod, setChosenMethod] = useState<Method>('TOTP');
+  const [phoneInput, setPhoneInput] = useState('');
+  const [smsCode, setSmsCode] = useState('');
   const [phoneHintForSetup, setPhoneHintForSetup] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const [setupData, setSetupData] = useState<{ secret: string; otpauth_url: string } | null>(
-    null,
-  );
-  const [verifyCode, setVerifyCode] = useState("");
+  const [setupData, setSetupData] = useState<{ secret: string; otpauth_url: string } | null>(null);
+  const [verifyCode, setVerifyCode] = useState('');
   const [backupCodes, setBackupCodes] = useState<string[]>([]);
   const [copiedSecret, setCopiedSecret] = useState(false);
   const [copiedCodes, setCopiedCodes] = useState(false);
 
-  const [disablePassword, setDisablePassword] = useState("");
-  const [disableCode, setDisableCode] = useState("");
-  const [regenPassword, setRegenPassword] = useState("");
+  const [disablePassword, setDisablePassword] = useState('');
+  const [disableCode, setDisableCode] = useState('');
+  const [regenPassword, setRegenPassword] = useState('');
 
   const refreshStatus = async () => {
     if (!token) return;
     try {
       const s = await authApi.twoFactorStatus(token);
       setStatus(s);
-      setStage(s.enabled ? "on" : "off");
+      setStage(s.enabled ? 'on' : 'off');
     } catch (e: any) {
-      setError(e?.message || "Failed to load 2FA status");
-      setStage("off");
+      setError(e?.message || 'Failed to load 2FA status');
+      setStage('off');
     }
   };
 
@@ -80,7 +79,7 @@ export default function TwoFactorPanel() {
 
   const beginEnrolment = () => {
     setError(null);
-    setStage("choose-method");
+    setStage('choose-method');
   };
 
   const startSetup = async () => {
@@ -90,9 +89,9 @@ export default function TwoFactorPanel() {
     try {
       const data = await authApi.twoFactorSetup(token);
       setSetupData(data);
-      setStage("setup-qr");
+      setStage('setup-qr');
     } catch (e: any) {
-      setError(e?.message || "Failed to start setup");
+      setError(e?.message || 'Failed to start setup');
     } finally {
       setBusy(false);
     }
@@ -106,9 +105,9 @@ export default function TwoFactorPanel() {
     try {
       const res = await authApi.twoFactorSmsSetup(token, phoneInput);
       setPhoneHintForSetup(res.phone_hint);
-      setStage("sms-verify");
+      setStage('sms-verify');
     } catch (e: any) {
-      setError(e?.message || "Failed to send code");
+      setError(e?.message || 'Failed to send code');
     } finally {
       setBusy(false);
     }
@@ -122,11 +121,11 @@ export default function TwoFactorPanel() {
     try {
       const res = await authApi.twoFactorSmsEnable(token, smsCode);
       setBackupCodes(res.backup_codes);
-      setSmsCode("");
-      setPhoneInput("");
-      setStage("show-codes");
+      setSmsCode('');
+      setPhoneInput('');
+      setStage('show-codes');
     } catch (e: any) {
-      setError(e?.message || "Invalid code");
+      setError(e?.message || 'Invalid code');
     } finally {
       setBusy(false);
     }
@@ -140,11 +139,11 @@ export default function TwoFactorPanel() {
     try {
       const res = await authApi.twoFactorEnable(token, verifyCode);
       setBackupCodes(res.backup_codes);
-      setVerifyCode("");
+      setVerifyCode('');
       setSetupData(null);
-      setStage("show-codes");
+      setStage('show-codes');
     } catch (e: any) {
-      setError(e?.message || "Invalid code");
+      setError(e?.message || 'Invalid code');
     } finally {
       setBusy(false);
     }
@@ -160,11 +159,11 @@ export default function TwoFactorPanel() {
         password: disablePassword,
         totp_code: disableCode || undefined,
       });
-      setDisablePassword("");
-      setDisableCode("");
+      setDisablePassword('');
+      setDisableCode('');
       await refreshStatus();
     } catch (e: any) {
-      setError(e?.message || "Failed to disable");
+      setError(e?.message || 'Failed to disable');
     } finally {
       setBusy(false);
     }
@@ -177,20 +176,20 @@ export default function TwoFactorPanel() {
     try {
       const res = await authApi.twoFactorRegenerateBackup(token, regenPassword);
       setBackupCodes(res.backup_codes);
-      setRegenPassword("");
-      setStage("show-codes");
+      setRegenPassword('');
+      setStage('show-codes');
       await refreshStatus();
     } catch (e: any) {
-      setError(e?.message || "Failed to regenerate codes");
+      setError(e?.message || 'Failed to regenerate codes');
     } finally {
       setBusy(false);
     }
   };
 
-  const copy = async (text: string, target: "secret" | "codes") => {
+  const copy = async (text: string, target: 'secret' | 'codes') => {
     try {
       await navigator.clipboard.writeText(text);
-      if (target === "secret") {
+      if (target === 'secret') {
         setCopiedSecret(true);
         setTimeout(() => setCopiedSecret(false), 1500);
       } else {
@@ -202,9 +201,9 @@ export default function TwoFactorPanel() {
     }
   };
 
-  if (stage === "loading") {
+  if (stage === 'loading') {
     return (
-      <Card className="p-8 flex items-center justify-center">
+      <Card className="flex items-center justify-center p-8">
         <Spinner size="md" />
       </Card>
     );
@@ -212,8 +211,8 @@ export default function TwoFactorPanel() {
 
   const header = (
     <div className="flex items-center gap-3 px-2">
-      <div className="p-2 rounded-xl bg-purple-500/10 text-purple-500">
-        <Smartphone className="w-4 h-4" />
+      <div className="rounded-xl bg-purple-500/10 p-2 text-purple-500">
+        <Smartphone className="h-4 w-4" />
       </div>
       <h3 className="text-sm font-medium uppercase">Two-Factor Auth</h3>
     </div>
@@ -223,22 +222,18 @@ export default function TwoFactorPanel() {
     <section className="space-y-4">
       {header}
 
-      {error && (
-        <Card className="p-4 border-red-500/30 bg-red-500/5 flex items-center gap-2 text-red-600 text-xs">
-          <AlertTriangle className="w-4 h-4" /> {error}
-        </Card>
-      )}
+      {error && <Alert variant="error" message={error} onDismiss={() => setError(null)} />}
 
       {/* Off → CTA */}
-      {stage === "off" && (
-        <Card className="p-6 md:p-8 flex items-center justify-between">
+      {stage === 'off' && (
+        <Card className="flex items-center justify-between p-6 md:p-8">
           <div className="space-y-1">
-            <p className="text-sm font-medium flex items-center gap-2">
-              <Shield className="w-4 h-4 text-muted" /> Not enabled
+            <p className="flex items-center gap-2 text-sm font-medium">
+              <Shield className="text-muted h-4 w-4" /> Not enabled
             </p>
-            <p className="text-[11px] text-muted leading-relaxed max-w-md">
-              Add a 6-digit code to every sign-in via an authenticator app or
-              SMS. Recommended for any seller handling payouts.
+            <p className="text-muted max-w-md text-[11px] leading-relaxed">
+              Add a 6-digit code to every sign-in via an authenticator app or SMS. Recommended for
+              any seller handling payouts.
             </p>
           </div>
           <Button onClick={beginEnrolment} disabled={busy}>
@@ -248,56 +243,56 @@ export default function TwoFactorPanel() {
       )}
 
       {/* Choose method */}
-      {stage === "choose-method" && (
-        <Card className="p-6 md:p-8 space-y-4">
+      {stage === 'choose-method' && (
+        <Card className="space-y-4 p-6 md:p-8">
           <div>
             <p className="text-sm font-medium">Choose a method</p>
-            <p className="text-[11px] text-muted mt-1">
+            <p className="text-muted mt-1 text-[11px]">
               You can change this later by disabling and re-enrolling.
             </p>
           </div>
-          <div className="grid sm:grid-cols-2 gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <button
               type="button"
-              onClick={() => setChosenMethod("TOTP")}
-              className={`text-left p-4 rounded-xl border transition ${
-                chosenMethod === "TOTP"
-                  ? "border-accent bg-accent/5"
-                  : "border-border/60 hover:border-foreground/40"
+              onClick={() => setChosenMethod('TOTP')}
+              className={`rounded-xl border p-4 text-left transition ${
+                chosenMethod === 'TOTP'
+                  ? 'border-accent bg-accent/5'
+                  : 'border-border/60 hover:border-foreground/40'
               }`}
             >
               <div className="flex items-center gap-2 text-sm font-medium">
-                <Smartphone className="w-4 h-4" /> Authenticator app
+                <Smartphone className="h-4 w-4" /> Authenticator app
               </div>
-              <div className="text-[11px] text-muted mt-1">
+              <div className="text-muted mt-1 text-[11px]">
                 Works offline. Google Authenticator, Authy, 1Password, etc.
               </div>
             </button>
             <button
               type="button"
-              onClick={() => setChosenMethod("SMS")}
-              className={`text-left p-4 rounded-xl border transition ${
-                chosenMethod === "SMS"
-                  ? "border-accent bg-accent/5"
-                  : "border-border/60 hover:border-foreground/40"
+              onClick={() => setChosenMethod('SMS')}
+              className={`rounded-xl border p-4 text-left transition ${
+                chosenMethod === 'SMS'
+                  ? 'border-accent bg-accent/5'
+                  : 'border-border/60 hover:border-foreground/40'
               }`}
             >
               <div className="flex items-center gap-2 text-sm font-medium">
-                <Key className="w-4 h-4" /> SMS code
+                <Key className="h-4 w-4" /> SMS code
               </div>
-              <div className="text-[11px] text-muted mt-1">
+              <div className="text-muted mt-1 text-[11px]">
                 We text a 6-digit code each time you sign in.
               </div>
             </button>
           </div>
           <div className="flex justify-end gap-2 pt-1">
-            <Button variant="ghost" onClick={() => setStage("off")}>
+            <Button variant="ghost" onClick={() => setStage('off')}>
               Cancel
             </Button>
             <Button
               onClick={() => {
-                if (chosenMethod === "TOTP") startSetup();
-                else setStage("sms-phone");
+                if (chosenMethod === 'TOTP') startSetup();
+                else setStage('sms-phone');
               }}
               disabled={busy}
             >
@@ -308,34 +303,33 @@ export default function TwoFactorPanel() {
       )}
 
       {/* SMS: phone entry */}
-      {stage === "sms-phone" && (
-        <Card className="p-6 md:p-8 space-y-4">
+      {stage === 'sms-phone' && (
+        <Card className="space-y-4 p-6 md:p-8">
           <form onSubmit={startSmsSetup} className="space-y-4">
             <div>
               <p className="text-sm font-medium">Phone number</p>
-              <p className="text-[11px] text-muted mt-1">
-                In international (E.164) format, e.g. <code>+233201234567</code>.
-                We&apos;ll text a 6-digit code to verify.
+              <p className="text-muted mt-1 text-[11px]">
+                In international (E.164) format, e.g. <code>+233201234567</code>. We&apos;ll text a
+                6-digit code to verify.
               </p>
             </div>
             <Input
               label="Phone"
               type="tel"
               value={phoneInput}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setPhoneInput(e.target.value)
-              }
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPhoneInput(e.target.value)}
               placeholder="+233201234567"
             />
             <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setStage("choose-method")}
-              >
+              <Button type="button" variant="ghost" onClick={() => setStage('choose-method')}>
                 Back
               </Button>
-              <Button type="submit" isLoading={busy} loadingText="Sending…" disabled={!phoneInput.trim()}>
+              <Button
+                type="submit"
+                isLoading={busy}
+                loadingText="Sending…"
+                disabled={!phoneInput.trim()}
+              >
                 Send code
               </Button>
             </div>
@@ -344,13 +338,13 @@ export default function TwoFactorPanel() {
       )}
 
       {/* SMS: verify */}
-      {stage === "sms-verify" && (
-        <Card className="p-6 md:p-8 space-y-4">
+      {stage === 'sms-verify' && (
+        <Card className="space-y-4 p-6 md:p-8">
           <form onSubmit={completeSmsEnable} className="space-y-4">
             <div>
               <p className="text-sm font-medium">Verify your phone</p>
-              <p className="text-[11px] text-muted mt-1">
-                Enter the 6-digit code we sent to {phoneHintForSetup || "your phone"}.
+              <p className="text-muted mt-1 text-[11px]">
+                Enter the 6-digit code we sent to {phoneHintForSetup || 'your phone'}.
               </p>
             </div>
             <Input
@@ -358,21 +352,20 @@ export default function TwoFactorPanel() {
               type="text"
               inputMode="numeric"
               value={smsCode}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setSmsCode(e.target.value)
-              }
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSmsCode(e.target.value)}
               placeholder="123456"
               icon={<Key size={18} />}
             />
             <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setStage("sms-phone")}
-              >
+              <Button type="button" variant="ghost" onClick={() => setStage('sms-phone')}>
                 Back
               </Button>
-              <Button type="submit" isLoading={busy} loadingText="Verifying…" disabled={smsCode.length < 6}>
+              <Button
+                type="submit"
+                isLoading={busy}
+                loadingText="Verifying…"
+                disabled={smsCode.length < 6}
+              >
                 Enable SMS 2FA
               </Button>
             </div>
@@ -381,41 +374,41 @@ export default function TwoFactorPanel() {
       )}
 
       {/* Setup: scan QR */}
-      {stage === "setup-qr" && setupData && (
-        <Card className="p-6 md:p-8 space-y-5">
+      {stage === 'setup-qr' && setupData && (
+        <Card className="space-y-5 p-6 md:p-8">
           <div>
             <p className="text-sm font-medium">Scan with your authenticator app</p>
-            <p className="text-[11px] text-muted mt-1">
+            <p className="text-muted mt-1 text-[11px]">
               Google Authenticator, Authy, 1Password, Bitwarden, etc.
             </p>
           </div>
-          <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
-            <div className="bg-white p-3 rounded-xl">
+          <div className="flex flex-col items-center gap-6 md:flex-row md:items-start">
+            <div className="rounded-xl bg-white p-3">
               <QRCodeSVG value={setupData.otpauth_url} size={176} />
             </div>
-            <div className="flex-1 space-y-3 min-w-0">
+            <div className="min-w-0 flex-1 space-y-3">
               <div>
-                <p className="text-[10px] uppercase tracking-wider text-muted mb-1">
+                <p className="text-muted mb-1 text-[10px] uppercase tracking-wider">
                   Or paste the secret manually
                 </p>
                 <div className="flex items-center gap-2">
-                  <code className="text-xs font-mono bg-surface px-2 py-1 rounded border border-border/60 truncate">
+                  <code className="bg-surface border-border/60 truncate rounded border px-2 py-1 font-mono text-xs">
                     {setupData.secret}
                   </code>
                   <button
-                    onClick={() => copy(setupData.secret, "secret")}
-                    className="p-1.5 rounded hover:bg-surface text-muted"
+                    onClick={() => copy(setupData.secret, 'secret')}
+                    className="hover:bg-surface text-muted rounded p-1.5"
                     aria-label="Copy secret"
                   >
                     {copiedSecret ? (
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
                     ) : (
-                      <Copy className="w-3.5 h-3.5" />
+                      <Copy className="h-3.5 w-3.5" />
                     )}
                   </button>
                 </div>
               </div>
-              <Button onClick={() => setStage("setup-verify")} className="w-full md:w-auto">
+              <Button onClick={() => setStage('setup-verify')} className="w-full md:w-auto">
                 I&apos;ve added the account
               </Button>
             </div>
@@ -424,35 +417,34 @@ export default function TwoFactorPanel() {
       )}
 
       {/* Setup: verify */}
-      {stage === "setup-verify" && (
-        <Card className="p-6 md:p-8 space-y-4">
+      {stage === 'setup-verify' && (
+        <Card className="space-y-4 p-6 md:p-8">
           <form onSubmit={completeEnable} className="space-y-4">
             <div>
               <p className="text-sm font-medium">Verify your authenticator</p>
-              <p className="text-[11px] text-muted mt-1">
+              <p className="text-muted mt-1 text-[11px]">
                 Enter the 6-digit code shown in your authenticator app.
               </p>
             </div>
             <Input
               label="Code"
               value={verifyCode}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setVerifyCode(e.target.value)
-              }
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVerifyCode(e.target.value)}
               type="text"
               inputMode="numeric"
               placeholder="123456"
               icon={<Key size={18} />}
             />
-            <div className="flex gap-2 justify-end">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setStage("setup-qr")}
-              >
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="ghost" onClick={() => setStage('setup-qr')}>
                 Back
               </Button>
-              <Button type="submit" isLoading={busy} loadingText="Verifying…" disabled={verifyCode.length < 6}>
+              <Button
+                type="submit"
+                isLoading={busy}
+                loadingText="Verifying…"
+                disabled={verifyCode.length < 6}
+              >
                 Enable 2FA
               </Button>
             </div>
@@ -461,39 +453,39 @@ export default function TwoFactorPanel() {
       )}
 
       {/* Backup codes one-time display */}
-      {stage === "show-codes" && (
-        <Card className="p-6 md:p-8 space-y-4">
+      {stage === 'show-codes' && (
+        <Card className="space-y-4 p-6 md:p-8">
           <div>
-            <p className="text-sm font-medium flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-500" /> Save your backup codes
+            <p className="flex items-center gap-2 text-sm font-medium">
+              <ShieldCheck className="h-4 w-4 text-emerald-500" /> Save your backup codes
             </p>
-            <p className="text-[11px] text-muted mt-1 max-w-md">
-              Store these somewhere safe. Each code works once if you lose access
-              to your authenticator. <strong>You won&apos;t see them again.</strong>
+            <p className="text-muted mt-1 max-w-md text-[11px]">
+              Store these somewhere safe. Each code works once if you lose access to your
+              authenticator. <strong>You won&apos;t see them again.</strong>
             </p>
           </div>
           <div className="grid grid-cols-2 gap-2 font-mono text-sm">
             {backupCodes.map((c) => (
               <div
                 key={c}
-                className="px-3 py-2 rounded border border-border/60 bg-surface text-center"
+                className="border-border/60 bg-surface rounded border px-3 py-2 text-center"
               >
                 {c}
               </div>
             ))}
           </div>
-          <div className="flex justify-between items-center gap-2">
+          <div className="flex items-center justify-between gap-2">
             <button
-              onClick={() => copy(backupCodes.join("\n"), "codes")}
-              className="text-xs text-accent hover:underline flex items-center gap-1"
+              onClick={() => copy(backupCodes.join('\n'), 'codes')}
+              className="text-accent flex items-center gap-1 text-xs hover:underline"
             >
               {copiedCodes ? (
                 <>
-                  <CheckCircle2 className="w-3.5 h-3.5" /> Copied
+                  <CheckCircle2 className="h-3.5 w-3.5" /> Copied
                 </>
               ) : (
                 <>
-                  <Copy className="w-3.5 h-3.5" /> Copy all
+                  <Copy className="h-3.5 w-3.5" /> Copy all
                 </>
               )}
             </button>
@@ -503,38 +495,38 @@ export default function TwoFactorPanel() {
       )}
 
       {/* On — show status + disable/regenerate controls */}
-      {stage === "on" && status && (
+      {stage === 'on' && status && (
         <>
-          <Card className="p-6 md:p-8 flex items-center justify-between">
+          <Card className="flex items-center justify-between p-6 md:p-8">
             <div className="space-y-1">
-              <p className="text-sm font-medium flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-emerald-500" /> Enabled
-                <span className="text-[10px] uppercase tracking-wider text-muted ml-1">
-                  {status.method === "SMS" ? "SMS" : "Authenticator"}
+              <p className="flex items-center gap-2 text-sm font-medium">
+                <ShieldCheck className="h-4 w-4 text-emerald-500" /> Enabled
+                <span className="text-muted ml-1 text-[10px] uppercase tracking-wider">
+                  {status.method === 'SMS' ? 'SMS' : 'Authenticator'}
                 </span>
               </p>
-              <p className="text-[11px] text-muted">
-                {status.method === "SMS" && status.phone_hint
+              <p className="text-muted text-[11px]">
+                {status.method === 'SMS' && status.phone_hint
                   ? `SMS to ${status.phone_hint} · `
-                  : ""}
+                  : ''}
                 {status.backup_codes_remaining} backup code
-                {status.backup_codes_remaining === 1 ? "" : "s"} remaining
+                {status.backup_codes_remaining === 1 ? '' : 's'} remaining
                 {status.verified_at
                   ? ` · enabled ${new Date(status.verified_at).toLocaleDateString()}`
-                  : ""}
+                  : ''}
               </p>
             </div>
-            <Button variant="secondary" onClick={() => setStage("disabling")}>
+            <Button variant="secondary" onClick={() => setStage('disabling')}>
               Disable
             </Button>
           </Card>
 
-          <Card className="p-6 md:p-8 space-y-3">
+          <Card className="space-y-3 p-6 md:p-8">
             <p className="text-sm font-medium">Regenerate backup codes</p>
-            <p className="text-[11px] text-muted">
+            <p className="text-muted text-[11px]">
               Invalidates your existing codes and issues a fresh set.
             </p>
-            <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
               <Input
                 type="password"
                 placeholder="Current password"
@@ -557,14 +549,13 @@ export default function TwoFactorPanel() {
         </>
       )}
 
-      {stage === "disabling" && (
-        <Card className="p-6 md:p-8 space-y-4">
+      {stage === 'disabling' && (
+        <Card className="space-y-4 p-6 md:p-8">
           <form onSubmit={doDisable} className="space-y-4">
             <div>
               <p className="text-sm font-medium">Disable 2FA</p>
-              <p className="text-[11px] text-muted mt-1">
-                Confirm with your password and a current 6-digit code (or backup
-                code).
+              <p className="text-muted mt-1 text-[11px]">
+                Confirm with your password and a current 6-digit code (or backup code).
               </p>
             </div>
             <Input
@@ -580,16 +571,10 @@ export default function TwoFactorPanel() {
               label="Authenticator or backup code"
               inputMode="numeric"
               value={disableCode}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setDisableCode(e.target.value)
-              }
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDisableCode(e.target.value)}
             />
-            <div className="flex gap-2 justify-end">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setStage("on")}
-              >
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="ghost" onClick={() => setStage('on')}>
                 Cancel
               </Button>
               <Button
@@ -597,7 +582,7 @@ export default function TwoFactorPanel() {
                 isLoading={busy}
                 loadingText="Disabling…"
                 disabled={!disablePassword || !disableCode}
-                className="bg-red-500 hover:bg-red-600 text-white"
+                className="bg-red-500 text-white hover:bg-red-600"
               >
                 Disable 2FA
               </Button>

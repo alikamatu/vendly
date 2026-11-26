@@ -1,4 +1,14 @@
-import { Body, Controller, Post, Request, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  Request,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
+import type { Response } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/guards/roles.decorator';
@@ -19,6 +29,16 @@ export class WebsiteImportController {
     const mode: WebsiteImportMode =
       body?.mode === 'single' || body?.mode === 'catalog' ? body.mode : 'auto';
     return this.websiteImport.previewWebsite(body?.url || '', mode);
+  }
+
+  @Get('image-proxy')
+  async proxyImage(@Query('url') url: string, @Res() res: Response) {
+    const { buffer, contentType } =
+      await this.websiteImport.fetchProxiedPreviewImage(url || '');
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'private, max-age=3600');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.send(buffer);
   }
 
   @Post('commit')

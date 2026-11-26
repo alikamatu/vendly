@@ -1,12 +1,11 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
+import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import {
   ArrowLeft,
   TrendingUp,
   TrendingDown,
-  AlertCircle,
   Eye,
   ShoppingBag,
   Users as UsersIcon,
@@ -15,7 +14,7 @@ import {
   Percent,
   Award,
   ArrowUpRight,
-} from "lucide-react";
+} from 'lucide-react';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -24,8 +23,8 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-} from "recharts";
-import { useAuth } from "@/lib/contexts/auth-context";
+} from 'recharts';
+import { useAuth } from '@/lib/contexts/auth-context';
 import {
   analyticsApi,
   AnalyticsApiError,
@@ -34,8 +33,9 @@ import {
   TopProduct,
   FunnelStage,
   Range,
-} from "@/lib/api/analytics";
-import { Sparkles, Zap, BarChart3 } from "lucide-react";
+} from '@/lib/api/analytics';
+import { Sparkles, Zap, BarChart3 } from 'lucide-react';
+import Alert from '@/components/ui/Alert';
 
 /**
  * Seller analytics dashboard.
@@ -46,24 +46,24 @@ import { Sparkles, Zap, BarChart3 } from "lucide-react";
  */
 
 const RANGES: { value: Range; label: string }[] = [
-  { value: "7d", label: "7 days" },
-  { value: "30d", label: "30 days" },
-  { value: "90d", label: "90 days" },
-  { value: "12mo", label: "12 months" },
+  { value: '7d', label: '7 days' },
+  { value: '30d', label: '30 days' },
+  { value: '90d', label: '90 days' },
+  { value: '12mo', label: '12 months' },
 ];
 
-const CURRENCY = "GH₵";
+const CURRENCY = 'GH₵';
 const fmtMoney = (n: number) =>
   `${CURRENCY}${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 const fmtNum = (n: number) => n.toLocaleString();
 
 export default function SellerAnalyticsPage() {
   const { token } = useAuth();
-  const [range, setRange] = useState<Range>("30d");
+  const [range, setRange] = useState<Range>('30d');
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
   const [series, setSeries] = useState<RevenuePoint[]>([]);
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
-  const [sort, setSort] = useState<"units" | "revenue" | "views">("units");
+  const [sort, setSort] = useState<'units' | 'revenue' | 'views'>('units');
   const [funnel, setFunnel] = useState<FunnelStage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -89,13 +89,10 @@ export default function SellerAnalyticsPage() {
       setTopProducts(tp);
       setFunnel(fn.stages);
     } catch (err: any) {
-      if (
-        err instanceof AnalyticsApiError &&
-        (err.code === "PRO_REQUIRED" || err.status === 403)
-      ) {
+      if (err instanceof AnalyticsApiError && (err.code === 'PRO_REQUIRED' || err.status === 403)) {
         setProRequired(true);
       } else {
-        setError(err.message || "Failed to load analytics");
+        setError(err.message || 'Failed to load analytics');
       }
     } finally {
       setIsLoading(false);
@@ -119,14 +116,12 @@ export default function SellerAnalyticsPage() {
         <div className="mt-4 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <TrendingUp className="text-red-500 h-5 w-5" />
-              <h1 className="text-foreground text-2xl font-medium tracking-tight">
-                Analytics
-              </h1>
+              <TrendingUp className="h-5 w-5 text-red-500" />
+              <h1 className="text-foreground text-2xl font-medium tracking-tight">Analytics</h1>
             </div>
             <p className="text-muted mt-1 max-w-xl text-sm">
-              How your store is doing — revenue, orders, what&apos;s selling,
-              and where buyers fall off. Updated every time you refresh.
+              How your store is doing — revenue, orders, what&apos;s selling, and where buyers fall
+              off. Updated every time you refresh.
             </p>
           </div>
           <div className="border-border bg-surface flex gap-1 rounded-full border p-1">
@@ -135,9 +130,7 @@ export default function SellerAnalyticsPage() {
                 key={r.value}
                 onClick={() => setRange(r.value)}
                 className={`rounded-full px-4 py-1.5 text-[11px] font-medium transition-colors ${
-                  range === r.value
-                    ? "bg-red-500 text-white"
-                    : "text-muted hover:text-foreground"
+                  range === r.value ? 'bg-red-500 text-white' : 'text-muted hover:text-foreground'
                 }`}
               >
                 {r.label}
@@ -155,212 +148,191 @@ export default function SellerAnalyticsPage() {
         <ProUpsell />
       ) : (
         <>
-          {error && (
-            <div className="border-border/40 bg-surface flex items-start gap-3 rounded-2xl border p-4">
-              <AlertCircle className="text-red-500 mt-0.5 h-4 w-4 shrink-0" />
-              <div className="flex-1">
-                <p className="text-foreground text-sm">{error}</p>
-                <button
-                  onClick={load}
-                  className="text-red-500 mt-1 text-xs underline"
-                >
-                  Try again
-                </button>
+          {error && <Alert variant="error" message={error} onDismiss={() => setError(null)} />}
+
+          {isLoading && !overview ? (
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                <div
+                  key={i}
+                  className="border-border/30 bg-surface/40 h-28 animate-pulse rounded-2xl border"
+                />
+              ))}
+            </div>
+          ) : overview ? (
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              <Kpi
+                label="Revenue"
+                value={fmtMoney(overview.kpis.revenue.value)}
+                delta={overview.kpis.revenue.deltaPct}
+                icon={<DollarSign className="h-4 w-4" />}
+                accent
+              />
+              <Kpi
+                label="Orders"
+                value={fmtNum(overview.kpis.orders.value)}
+                delta={overview.kpis.orders.deltaPct}
+                icon={<ShoppingBag className="h-4 w-4" />}
+              />
+              <Kpi
+                label="Units sold"
+                value={fmtNum(overview.kpis.units.value)}
+                delta={overview.kpis.units.deltaPct}
+                icon={<Package className="h-4 w-4" />}
+              />
+              <Kpi
+                label="Avg order"
+                value={fmtMoney(overview.kpis.averageOrderValue.value)}
+                icon={<Award className="h-4 w-4" />}
+              />
+              <Kpi
+                label="Unique buyers"
+                value={fmtNum(overview.kpis.uniqueBuyers.value)}
+                icon={<UsersIcon className="h-4 w-4" />}
+              />
+              <Kpi
+                label="Total views"
+                value={fmtNum(overview.kpis.totalViews.value)}
+                icon={<Eye className="h-4 w-4" />}
+                subtle="Lifetime"
+              />
+              <Kpi
+                label="Conversion"
+                value={`${overview.kpis.conversionPct.value}%`}
+                icon={<Percent className="h-4 w-4" />}
+                subtle="Orders / lifetime views"
+              />
+              <Kpi
+                label="Products live"
+                value={fmtNum(overview.kpis.totalProducts.value)}
+                icon={<Package className="h-4 w-4" />}
+              />
+            </div>
+          ) : null}
+
+          <div className="border-border/40 bg-surface/40 rounded-3xl border p-6">
+            <div className="mb-6 flex items-center justify-between">
+              <div>
+                <h2 className="text-foreground text-sm font-medium uppercase tracking-wider">
+                  Revenue over time
+                </h2>
+                <p className="text-muted text-xs">
+                  Daily paid-order revenue across the selected range.
+                </p>
               </div>
             </div>
-          )}
-
-      {isLoading && !overview ? (
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-            <div
-              key={i}
-              className="border-border/30 bg-surface/40 h-28 animate-pulse rounded-2xl border"
-            />
-          ))}
-        </div>
-      ) : overview ? (
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <Kpi
-            label="Revenue"
-            value={fmtMoney(overview.kpis.revenue.value)}
-            delta={overview.kpis.revenue.deltaPct}
-            icon={<DollarSign className="h-4 w-4" />}
-            accent
-          />
-          <Kpi
-            label="Orders"
-            value={fmtNum(overview.kpis.orders.value)}
-            delta={overview.kpis.orders.deltaPct}
-            icon={<ShoppingBag className="h-4 w-4" />}
-          />
-          <Kpi
-            label="Units sold"
-            value={fmtNum(overview.kpis.units.value)}
-            delta={overview.kpis.units.deltaPct}
-            icon={<Package className="h-4 w-4" />}
-          />
-          <Kpi
-            label="Avg order"
-            value={fmtMoney(overview.kpis.averageOrderValue.value)}
-            icon={<Award className="h-4 w-4" />}
-          />
-          <Kpi
-            label="Unique buyers"
-            value={fmtNum(overview.kpis.uniqueBuyers.value)}
-            icon={<UsersIcon className="h-4 w-4" />}
-          />
-          <Kpi
-            label="Total views"
-            value={fmtNum(overview.kpis.totalViews.value)}
-            icon={<Eye className="h-4 w-4" />}
-            subtle="Lifetime"
-          />
-          <Kpi
-            label="Conversion"
-            value={`${overview.kpis.conversionPct.value}%`}
-            icon={<Percent className="h-4 w-4" />}
-            subtle="Orders / lifetime views"
-          />
-          <Kpi
-            label="Products live"
-            value={fmtNum(overview.kpis.totalProducts.value)}
-            icon={<Package className="h-4 w-4" />}
-          />
-        </div>
-      ) : null}
-
-      <div className="border-border/40 bg-surface/40 rounded-3xl border p-6">
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h2 className="text-foreground text-sm font-medium uppercase tracking-wider">
-              Revenue over time
-            </h2>
-            <p className="text-muted text-xs">
-              Daily paid-order revenue across the selected range.
-            </p>
+            {isLoading && series.length === 0 ? (
+              <div className="border-border/30 bg-surface h-56 animate-pulse rounded-2xl border" />
+            ) : (
+              <RevenueChart points={series} />
+            )}
           </div>
-        </div>
-        {isLoading && series.length === 0 ? (
-          <div className="border-border/30 bg-surface h-56 animate-pulse rounded-2xl border" />
-        ) : (
-          <RevenueChart points={series} />
-        )}
-      </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="border-border/40 bg-surface/40 lg:col-span-2 rounded-3xl border p-6">
-          <div className="mb-4 flex items-center justify-between gap-2">
-            <div>
-              <h2 className="text-foreground text-sm font-medium uppercase tracking-wider">
-                Top products
-              </h2>
-              <p className="text-muted text-xs">
-                Best performers in the selected range.
-              </p>
-            </div>
-            <div className="border-border bg-surface flex gap-1 rounded-full border p-1">
-              {(["units", "revenue", "views"] as const).map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setSort(s)}
-                  className={`rounded-full px-3 py-1 text-[10px] font-medium capitalize transition-colors ${
-                    sort === s
-                      ? "bg-foreground text-background"
-                      : "text-muted hover:text-foreground"
-                  }`}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
-          {isLoading && topProducts.length === 0 ? (
-            <div className="space-y-2">
-              {[1, 2, 3, 4].map((i) => (
-                <div
-                  key={i}
-                  className="border-border/30 bg-surface h-14 animate-pulse rounded-xl border"
-                />
-              ))}
-            </div>
-          ) : topProducts.length === 0 ? (
-            <EmptyBlock
-              icon={<Package className="h-8 w-8" />}
-              title="No sales in this range yet"
-              hint="Once orders land, your best sellers surface here."
-            />
-          ) : (
-            <div className="space-y-2">
-              {topProducts.map((p, idx) => (
-                <Link
-                  key={p.id}
-                  href={`/dashboard/products/${p.id}`}
-                  className="border-border/40 bg-surface hover:bg-surface/70 group flex items-center gap-3 rounded-2xl border p-3 transition-colors"
-                >
-                  <span className="text-muted w-5 text-center text-[11px] font-medium">
-                    {idx + 1}
-                  </span>
-                  {p.image_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={p.image_url}
-                      alt=""
-                      className="bg-surface-dark h-10 w-10 rounded-xl object-cover"
+          <div className="grid gap-4 lg:grid-cols-3">
+            <div className="border-border/40 bg-surface/40 rounded-3xl border p-6 lg:col-span-2">
+              <div className="mb-4 flex items-center justify-between gap-2">
+                <div>
+                  <h2 className="text-foreground text-sm font-medium uppercase tracking-wider">
+                    Top products
+                  </h2>
+                  <p className="text-muted text-xs">Best performers in the selected range.</p>
+                </div>
+                <div className="border-border bg-surface flex gap-1 rounded-full border p-1">
+                  {(['units', 'revenue', 'views'] as const).map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => setSort(s)}
+                      className={`rounded-full px-3 py-1 text-[10px] font-medium capitalize transition-colors ${
+                        sort === s
+                          ? 'bg-foreground text-background'
+                          : 'text-muted hover:text-foreground'
+                      }`}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {isLoading && topProducts.length === 0 ? (
+                <div className="space-y-2">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div
+                      key={i}
+                      className="border-border/30 bg-surface h-14 animate-pulse rounded-xl border"
                     />
-                  ) : (
-                    <div className="bg-surface-dark h-10 w-10 rounded-xl" />
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="text-foreground truncate text-sm font-normal">
-                      {p.title}
-                    </p>
-                    <p className="text-muted text-[11px]">
-                      {fmtNum(p.units)} sold · {fmtNum(p.views)} views
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-foreground text-sm font-medium">
-                      {fmtMoney(p.revenue)}
-                    </p>
-                    <p className="text-muted text-[10px]">in range</p>
-                  </div>
-                  <ArrowUpRight className="text-muted group-hover:text-foreground h-4 w-4" />
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="border-border/40 bg-surface/40 rounded-3xl border p-6">
-          <div className="mb-4">
-            <h2 className="text-foreground text-sm font-medium uppercase tracking-wider">
-              Buyer funnel
-            </h2>
-            <p className="text-muted text-xs">
-              Where shoppers drop off between view and buy.
-            </p>
-          </div>
-          {isLoading && funnel.length === 0 ? (
-            <div className="space-y-2">
-              {[1, 2, 3, 4].map((i) => (
-                <div
-                  key={i}
-                  className="border-border/30 bg-surface h-14 animate-pulse rounded-xl border"
+                  ))}
+                </div>
+              ) : topProducts.length === 0 ? (
+                <EmptyBlock
+                  icon={<Package className="h-8 w-8" />}
+                  title="No sales in this range yet"
+                  hint="Once orders land, your best sellers surface here."
                 />
-              ))}
+              ) : (
+                <div className="space-y-2">
+                  {topProducts.map((p, idx) => (
+                    <Link
+                      key={p.id}
+                      href={`/dashboard/products/${p.id}`}
+                      className="border-border/40 bg-surface hover:bg-surface/70 group flex items-center gap-3 rounded-2xl border p-3 transition-colors"
+                    >
+                      <span className="text-muted w-5 text-center text-[11px] font-medium">
+                        {idx + 1}
+                      </span>
+                      {p.image_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={p.image_url}
+                          alt=""
+                          className="bg-surface-dark h-10 w-10 rounded-xl object-cover"
+                        />
+                      ) : (
+                        <div className="bg-surface-dark h-10 w-10 rounded-xl" />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="text-foreground truncate text-sm font-normal">{p.title}</p>
+                        <p className="text-muted text-[11px]">
+                          {fmtNum(p.units)} sold · {fmtNum(p.views)} views
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-foreground text-sm font-medium">{fmtMoney(p.revenue)}</p>
+                        <p className="text-muted text-[10px]">in range</p>
+                      </div>
+                      <ArrowUpRight className="text-muted group-hover:text-foreground h-4 w-4" />
+                    </Link>
+                  ))}
+                </div>
+              )}
             </div>
-          ) : funnel.length === 0 ? (
-            <EmptyBlock
-              icon={<TrendingUp className="h-8 w-8" />}
-              title="No funnel data yet"
-              hint="Funnel needs at least one paid order."
-            />
-          ) : (
-            <Funnel stages={funnel} />
-          )}
-        </div>
-      </div>
+
+            <div className="border-border/40 bg-surface/40 rounded-3xl border p-6">
+              <div className="mb-4">
+                <h2 className="text-foreground text-sm font-medium uppercase tracking-wider">
+                  Buyer funnel
+                </h2>
+                <p className="text-muted text-xs">Where shoppers drop off between view and buy.</p>
+              </div>
+              {isLoading && funnel.length === 0 ? (
+                <div className="space-y-2">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div
+                      key={i}
+                      className="border-border/30 bg-surface h-14 animate-pulse rounded-xl border"
+                    />
+                  ))}
+                </div>
+              ) : funnel.length === 0 ? (
+                <EmptyBlock
+                  icon={<TrendingUp className="h-8 w-8" />}
+                  title="No funnel data yet"
+                  hint="Funnel needs at least one paid order."
+                />
+              ) : (
+                <Funnel stages={funnel} />
+              )}
+            </div>
+          </div>
         </>
       )}
     </div>
@@ -376,57 +348,50 @@ function ProUpsell() {
   const features = [
     {
       icon: <BarChart3 className="h-4 w-4" />,
-      title: "Revenue, orders, conversion",
-      desc: "Live KPIs across 7-day, 30-day, 90-day, and 12-month windows.",
+      title: 'Revenue, orders, conversion',
+      desc: 'Live KPIs across 7-day, 30-day, 90-day, and 12-month windows.',
     },
     {
       icon: <TrendingUp className="h-4 w-4" />,
-      title: "Best-sellers + funnel",
-      desc: "See which products convert, where buyers fall off, and who repeats.",
+      title: 'Best-sellers + funnel',
+      desc: 'See which products convert, where buyers fall off, and who repeats.',
     },
     {
       icon: <Sparkles className="h-4 w-4" />,
-      title: "Branded share cards",
-      desc: "Portrait-mode product cards ready for Instagram and TikTok.",
+      title: 'Branded share cards',
+      desc: 'Portrait-mode product cards ready for Instagram and TikTok.',
     },
     {
       icon: <Zap className="h-4 w-4" />,
-      title: "Priority verification + support",
-      desc: "Get verified in 24h. Skip the queue, get help by WhatsApp.",
+      title: 'Priority verification + support',
+      desc: 'Get verified in 24h. Skip the queue, get help by WhatsApp.',
     },
   ];
   return (
     <div className="border-border/40 bg-surface/50 rounded-[2.5rem] border p-8 md:p-12">
-      <div className="flex flex-col items-center gap-6 text-center max-w-xl mx-auto">
-        <div className="bg-red-500 text-white rounded-2xl px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest flex items-center gap-1.5 shadow-lg shadow-red-500/20">
+      <div className="mx-auto flex max-w-xl flex-col items-center gap-6 text-center">
+        <div className="flex items-center gap-1.5 rounded-2xl bg-red-500 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-white shadow-lg shadow-red-500/20">
           <Sparkles className="h-3 w-3" /> Pro feature
         </div>
         <div className="space-y-3">
-          <h2 className="text-foreground text-2xl md:text-3xl font-medium tracking-tight">
+          <h2 className="text-foreground text-2xl font-medium tracking-tight md:text-3xl">
             Unlock seller analytics
           </h2>
-          <p className="text-muted text-sm md:text-base leading-relaxed">
-            Pro sellers get the full insights stack — revenue trends, top
-            products, conversion, and the buyer funnel. Without it,
-            you&apos;re guessing.
+          <p className="text-muted text-sm leading-relaxed md:text-base">
+            Pro sellers get the full insights stack — revenue trends, top products, conversion, and
+            the buyer funnel. Without it, you&apos;re guessing.
           </p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full mt-2">
+        <div className="mt-2 grid w-full grid-cols-1 gap-3 md:grid-cols-2">
           {features.map((f) => (
             <div
               key={f.title}
-              className="bg-background/60 border-border/40 rounded-2xl border p-4 text-left flex items-start gap-3"
+              className="bg-background/60 border-border/40 flex items-start gap-3 rounded-2xl border p-4 text-left"
             >
-              <div className="bg-red-500/10 text-red-500 rounded-xl p-2 shrink-0">
-                {f.icon}
-              </div>
+              <div className="shrink-0 rounded-xl bg-red-500/10 p-2 text-red-500">{f.icon}</div>
               <div className="min-w-0">
-                <p className="text-foreground text-sm font-medium">
-                  {f.title}
-                </p>
-                <p className="text-muted text-xs mt-0.5 leading-snug">
-                  {f.desc}
-                </p>
+                <p className="text-foreground text-sm font-medium">{f.title}</p>
+                <p className="text-muted mt-0.5 text-xs leading-snug">{f.desc}</p>
               </div>
             </div>
           ))}
@@ -446,7 +411,6 @@ function ProUpsell() {
   );
 }
 
-
 function Kpi({
   label,
   value,
@@ -462,24 +426,20 @@ function Kpi({
   accent?: boolean;
   subtle?: string;
 }) {
-  const showDelta = typeof delta === "number";
+  const showDelta = typeof delta === 'number';
   const positive = (delta ?? 0) >= 0;
   return (
     <div
       className={`border-border/40 rounded-2xl border p-4 ${
-        accent ? "bg-red-500/5" : "bg-surface/40"
+        accent ? 'bg-red-500/5' : 'bg-surface/40'
       }`}
     >
       <div className="mb-3 flex items-center justify-between">
-        <div className={`${accent ? "text-red-500" : "text-muted"}`}>
-          {icon}
-        </div>
+        <div className={`${accent ? 'text-red-500' : 'text-muted'}`}>{icon}</div>
         {showDelta && (
           <span
             className={`flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-medium ${
-              positive
-                ? "bg-emerald-500/10 text-emerald-500"
-                : "bg-red-500/10 text-red-500"
+              positive ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'
             }`}
           >
             {positive ? (
@@ -491,15 +451,9 @@ function Kpi({
           </span>
         )}
       </div>
-      <p className="text-foreground text-xl font-medium tracking-tight">
-        {value}
-      </p>
-      <p className="text-muted mt-1 text-[10px] font-medium uppercase tracking-wider">
-        {label}
-      </p>
-      {subtle && (
-        <p className="text-muted/70 mt-1 text-[9px] italic">{subtle}</p>
-      )}
+      <p className="text-foreground text-xl font-medium tracking-tight">{value}</p>
+      <p className="text-muted mt-1 text-[10px] font-medium uppercase tracking-wider">{label}</p>
+      {subtle && <p className="text-muted/70 mt-1 text-[9px] italic">{subtle}</p>}
     </div>
   );
 }
@@ -520,8 +474,8 @@ function RevenueChart({ points }: { points: RevenuePoint[] }) {
   const data = points.map((p) => ({
     ...p,
     label: new Date(p.date).toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
+      month: 'short',
+      day: 'numeric',
     }),
   }));
 
@@ -535,25 +489,30 @@ function RevenueChart({ points }: { points: RevenuePoint[] }) {
               <stop offset="100%" stopColor="#ef4444" stopOpacity={0} />
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="2 4" stroke="currentColor" opacity={0.1} vertical={false} />
+          <CartesianGrid
+            strokeDasharray="2 4"
+            stroke="currentColor"
+            opacity={0.1}
+            vertical={false}
+          />
           <XAxis
             dataKey="label"
-            tick={{ fontSize: 10, fill: "currentColor", opacity: 0.6 }}
+            tick={{ fontSize: 10, fill: 'currentColor', opacity: 0.6 }}
             tickLine={false}
-            axisLine={{ stroke: "currentColor", opacity: 0.15 }}
+            axisLine={{ stroke: 'currentColor', opacity: 0.15 }}
             minTickGap={28}
           />
           <YAxis
-            tick={{ fontSize: 10, fill: "currentColor", opacity: 0.6 }}
+            tick={{ fontSize: 10, fill: 'currentColor', opacity: 0.6 }}
             tickLine={false}
-            axisLine={{ stroke: "currentColor", opacity: 0.15 }}
+            axisLine={{ stroke: 'currentColor', opacity: 0.15 }}
             tickFormatter={(v) =>
               v >= 1000 ? `${CURRENCY}${(v / 1000).toFixed(1)}k` : `${CURRENCY}${v}`
             }
             width={56}
           />
           <Tooltip
-            cursor={{ stroke: "#ef4444", strokeOpacity: 0.3, strokeWidth: 1 }}
+            cursor={{ stroke: '#ef4444', strokeOpacity: 0.3, strokeWidth: 1 }}
             content={<ChartTooltip />}
           />
           <Area
@@ -562,7 +521,7 @@ function RevenueChart({ points }: { points: RevenuePoint[] }) {
             stroke="#ef4444"
             strokeWidth={2}
             fill="url(#revFill)"
-            activeDot={{ r: 4, fill: "#ef4444", stroke: "#fff", strokeWidth: 2 }}
+            activeDot={{ r: 4, fill: '#ef4444', stroke: '#fff', strokeWidth: 2 }}
           />
         </AreaChart>
       </ResponsiveContainer>
@@ -584,10 +543,10 @@ function ChartTooltip({
   return (
     <div className="border-border bg-background rounded-xl border px-3 py-2 shadow-md">
       <p className="text-muted text-[10px] uppercase tracking-widest">{label}</p>
-      <p className="text-foreground mt-1 text-sm font-medium">
-        {fmtMoney(p.revenue)}
+      <p className="text-foreground mt-1 text-sm font-medium">{fmtMoney(p.revenue)}</p>
+      <p className="text-muted text-[10px]">
+        {p.orders} {p.orders === 1 ? 'order' : 'orders'}
       </p>
-      <p className="text-muted text-[10px]">{p.orders} {p.orders === 1 ? "order" : "orders"}</p>
     </div>
   );
 }
@@ -599,10 +558,7 @@ function Funnel({ stages }: { stages: FunnelStage[] }) {
       {stages.map((s, i) => {
         const widthPct = (s.value / max) * 100;
         const prev = i > 0 ? stages[i - 1].value : null;
-        const dropPct =
-          prev !== null && prev > 0
-            ? ((prev - s.value) / prev) * 100
-            : null;
+        const dropPct = prev !== null && prev > 0 ? ((prev - s.value) / prev) * 100 : null;
         return (
           <div key={s.key}>
             <div className="mb-1 flex items-center justify-between text-[11px]">
@@ -610,21 +566,17 @@ function Funnel({ stages }: { stages: FunnelStage[] }) {
               <span className="text-muted">
                 {fmtNum(s.value)}
                 {dropPct !== null && dropPct > 0 && (
-                  <span className="text-red-500 ml-2">
-                    -{dropPct.toFixed(0)}%
-                  </span>
+                  <span className="ml-2 text-red-500">-{dropPct.toFixed(0)}%</span>
                 )}
               </span>
             </div>
             <div className="bg-surface relative h-6 overflow-hidden rounded-lg">
               <div
-                className="bg-red-500 h-full rounded-lg transition-all"
+                className="h-full rounded-lg bg-red-500 transition-all"
                 style={{ width: `${widthPct}%` }}
               />
             </div>
-            {s.note && (
-              <p className="text-muted/70 mt-1 text-[10px] italic">{s.note}</p>
-            )}
+            {s.note && <p className="text-muted/70 mt-1 text-[10px] italic">{s.note}</p>}
           </div>
         );
       })}
