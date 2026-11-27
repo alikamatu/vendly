@@ -102,6 +102,7 @@ import Toaster from '../components/ui/Toaster';
 import PwaInstallPrompt from '../components/pwa/PwaInstallPrompt';
 import VerndlyAiAssistant from '../components/ai/VerndlyAiAssistant';
 import AccountStatusBanner from '../components/account/AccountStatusBanner';
+import CookieConsentBanner from '../components/cookies/CookieConsentBanner';
 
 export default function RootLayout({
   children,
@@ -149,6 +150,7 @@ export default function RootLayout({
                     <Toaster />
                     <VerndlyAiAssistant />
                     <PwaInstallPrompt />
+                    <CookieConsentBanner />
                   </StoreGuard>
                 </CartProvider>
               </FavoriteProvider>

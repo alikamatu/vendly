@@ -81,6 +81,62 @@ export class ProductController {
     return this.productService.getCategories();
   }
 
+  @Get('top-selling-categories')
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(300_000) // 5 minutes
+  async getTopSellingCategories(
+    @Query('limit') limit?: string,
+    @Query('products_per_category') productsPerCategory?: string,
+  ) {
+    const parsedLimit = limit
+      ? Math.min(20, Math.max(1, parseInt(limit, 10) || 10))
+      : 10;
+    const parsedPerCat = productsPerCategory
+      ? Math.min(20, Math.max(0, parseInt(productsPerCategory, 10) || 10))
+      : 10;
+    return this.productService.getTopSellingCategories(
+      parsedLimit,
+      parsedPerCat,
+    );
+  }
+
+  @Get('recommendations')
+  async getRecommendations(
+    @Query('categories') categories?: string,
+    @Query('subcategories') subcategories?: string,
+    @Query('brands') brands?: string,
+    @Query('tags') tags?: string,
+    @Query('exclude') exclude?: string,
+    @Query('min_price') minPrice?: string,
+    @Query('max_price') maxPrice?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const splitCsv = (val?: string) =>
+      val
+        ? val
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean)
+            .slice(0, 15)
+        : [];
+    const parseNum = (val?: string) => {
+      if (!val) return undefined;
+      const n = Number(val);
+      return Number.isFinite(n) && n >= 0 ? n : undefined;
+    };
+
+    return this.productService.getPersonalizedRecommendations({
+      categories: splitCsv(categories),
+      subcategories: splitCsv(subcategories),
+      brands: splitCsv(brands),
+      tags: splitCsv(tags),
+      exclude: splitCsv(exclude),
+      minPrice: parseNum(minPrice),
+      maxPrice: parseNum(maxPrice),
+      limit: limit ? Math.min(30, Math.max(1, parseInt(limit, 10) || 12)) : 12,
+    });
+  }
+
   @Get('search')
   @UseInterceptors(CacheInterceptor)
   async searchProducts(@Query('q') q: string) {

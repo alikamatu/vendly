@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Eye, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { getProductPath } from '@/lib/product-slug';
 
@@ -38,10 +38,7 @@ export default function RecentlyViewed({
     <section className={`space-y-4 ${className}`}>
       <div className="flex items-end justify-between">
         <div>
-          <div className="text-muted flex items-center gap-1.5 text-[10px] uppercase tracking-[0.15em]">
-            <Eye className="h-3.5 w-3.5" />
-            Recently viewed
-          </div>
+          <div className="text-muted text-[10px] uppercase tracking-[0.15em]">Recently viewed</div>
           <h2
             className={
               isCompact

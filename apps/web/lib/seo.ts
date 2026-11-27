@@ -3,16 +3,17 @@
  * shared metadata builders. Override the URL in production by setting
  * `NEXT_PUBLIC_SITE_URL`.
  */
-import type { Metadata } from "next";
+import type { Metadata } from 'next';
 
-export const SITE_URL = (
-  process.env.NEXT_PUBLIC_SITE_URL || "https://verndly.com"
-).replace(/\/$/, "");
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://verndly.com').replace(
+  /\/$/,
+  '',
+);
 
-export const SITE_NAME = "Verndly";
+export const SITE_NAME = 'Verndly';
 
 export const SITE_DESCRIPTION =
-  "Discover and shop from trusted, verified independent businesses and young entrepreneurs — all in one place.";
+  'Discover and shop from trusted, verified independent businesses and young entrepreneurs — all in one place.';
 
 /**
  * Default OG image is generated dynamically by `app/opengraph-image.tsx`.
@@ -24,7 +25,7 @@ const DEFAULT_OG_IMAGE = `${SITE_URL}/opengraph-image`;
 export function absoluteUrl(path: string): string {
   if (!path) return SITE_URL;
   if (/^https?:\/\//i.test(path)) return path;
-  return `${SITE_URL}${path.startsWith("/") ? "" : "/"}${path}`;
+  return `${SITE_URL}${path.startsWith('/') ? '' : '/'}${path}`;
 }
 
 /**
@@ -36,8 +37,11 @@ export function buildMetadata(opts: {
   description?: string;
   path?: string;
   image?: string;
+  imageWidth?: number;
+  imageHeight?: number;
+  imageType?: string;
   noindex?: boolean;
-  type?: "website" | "article" | "product";
+  type?: 'website' | 'article' | 'product';
   keywords?: string[];
 }): Metadata {
   const url = opts.path ? absoluteUrl(opts.path) : SITE_URL;
@@ -56,22 +60,30 @@ export function buildMetadata(opts: {
           googleBot: {
             index: true,
             follow: true,
-            "max-image-preview": "large",
-            "max-snippet": -1,
-            "max-video-preview": -1,
+            'max-image-preview': 'large',
+            'max-snippet': -1,
+            'max-video-preview': -1,
           },
         },
     openGraph: {
-      type: (opts.type === "product" ? "website" : opts.type) || "website",
+      type: (opts.type === 'product' ? 'website' : opts.type) || 'website',
       title: opts.title,
       description,
       url,
       siteName: SITE_NAME,
-      images: [{ url: image, width: 1200, height: 630, alt: opts.title }],
-      locale: "en_US",
+      images: [
+        {
+          url: image,
+          width: opts.imageWidth ?? 1200,
+          height: opts.imageHeight ?? 630,
+          alt: opts.title,
+          type: opts.imageType,
+        },
+      ],
+      locale: 'en_US',
     },
     twitter: {
-      card: "summary_large_image",
+      card: 'summary_large_image',
       title: opts.title,
       description,
       images: [image],

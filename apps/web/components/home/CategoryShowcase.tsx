@@ -1,11 +1,10 @@
-"use client";
+'use client';
 
-import React from "react";
-import Link from "next/link";
-import { Sparkles } from "lucide-react";
-import SectionHeader from "./SectionHeader";
-import FeaturedCategories from "./FeaturedCategories";
-import type { HomeCategory, HomeProduct } from "@/hooks/useHomeData";
+import React from 'react';
+import Link from 'next/link';
+import SectionHeader from './SectionHeader';
+import FeaturedCategories from './FeaturedCategories';
+import type { HomeCategory, HomeProduct } from '@/hooks/useHomeData';
 
 interface CategoryShowcaseProps {
   categories: HomeCategory[];
@@ -23,23 +22,17 @@ function CategoryShowcase({
   if (!categories.length) return null;
 
   return (
-    <section className="max-w-7xl mx-auto px-4 md:px-8 pt-12 md:pt-16 pb-6 space-y-8 md:space-y-10 relative z-10">
+    <section className="relative z-10 mx-auto max-w-7xl space-y-8 px-4 pb-6 pt-12 md:space-y-10 md:px-8 md:pt-16">
       <SectionHeader
-        eyebrow={
-          <>
-            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-            Browse the catalog
-          </>
-        }
+        eyebrow="Browse the catalog"
         title="Shop by category"
         description="A curated catalog from verified young entrepreneurs and small businesses."
         action={
           <Link
             href="/categories"
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-[var(--color-surface,theme(colors.muted.DEFAULT))] border border-border hover:bg-primary/10 hover:border-primary/30 text-xs font-normal transition-all group"
+            className="border-border hover:bg-primary/10 hover:border-primary/30 group inline-flex items-center gap-2 rounded-full border bg-[var(--color-surface,theme(colors.muted.DEFAULT))] px-5 py-3 text-xs font-normal transition-all"
           >
             <span>View all categories</span>
-            <Sparkles className="w-3.5 h-3.5 text-primary group-hover:scale-110 transition-transform" />
           </Link>
         }
       />

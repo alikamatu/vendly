@@ -965,6 +965,372 @@ export class ProductService {
     });
   }
 
+  /**
+   * Returns the top N most-selling categories ranked by actual non-cancelled order
+   * volume (units sold + order count), blended with active in-stock inventory and
+   * views so new/growing categories still populate a rich Top 10 list.
+   */
+  async getTopSellingCategories(limit = 10, productsPerCategory = 10) {
+    const [categoriesMeta, activeProducts, orderItems] = await Promise.all([
+      this.prisma.category.findMany({
+        select: { id: true, name: true, description: true, image_url: true },
+      }),
+      this.prisma.product.findMany({
+        where: PUBLIC_IN_STOCK_PRODUCT_WHERE,
+        include: {
+          seller: {
+            select: {
+              store_name: true,
+              logo_url: true,
+              store_link: true,
+              is_seller_verified: true,
+              user: { select: { is_pro: true, pro_expires_at: true } },
+            },
+          },
+        },
+        orderBy: [
+          { is_featured: 'desc' },
+          { views_count: 'desc' },
+          { created_at: 'desc' },
+        ],
+        take: 400,
+      }),
+      this.prisma.orderItem.findMany({
+        where: {
+          product_id: { not: null },
+          order: {
+            status: { notIn: ['CANCELLED', 'REFUNDED', 'AWAITING_PAYMENT'] },
+          },
+        },
+        select: {
+          quantity: true,
+          order_id: true,
+          product: { select: { category: true } },
+        },
+      }),
+    ]);
+
+    const metaByName = new Map<
+      string,
+      {
+        id: string;
+        name: string;
+        description: string | null;
+        image_url: string | null;
+      }
+    >();
+    for (const c of categoriesMeta) {
+      metaByName.set(c.name.toLowerCase(), c);
+    }
+
+    type Bucket = {
+      name: string;
+      id: string | null;
+      description: string | null;
+      image_url: string | null;
+      units_sold: number;
+      order_ids: Set<string>;
+      views_total: number;
+      subcategories: Map<string, number>;
+      products: any[];
+    };
+
+    const buckets = new Map<string, Bucket>();
+    const ensureBucket = (rawName: string): Bucket => {
+      const clean = rawName.trim();
+      const key = clean.toLowerCase();
+      let bucket = buckets.get(key);
+      if (!bucket) {
+        const meta = metaByName.get(key);
+        bucket = {
+          name: meta?.name || clean,
+          id: meta?.id || null,
+          description: meta?.description || null,
+          image_url: meta?.image_url || null,
+          units_sold: 0,
+          order_ids: new Set(),
+          views_total: 0,
+          subcategories: new Map(),
+          products: [],
+        };
+        buckets.set(key, bucket);
+      }
+      return bucket;
+    };
+
+    for (const p of activeProducts) {
+      if (!p.category) continue;
+      const bucket = ensureBucket(p.category);
+      bucket.views_total += p.views_count || 0;
+      const attrs = (p.attributes || {}) as Record<string, any>;
+      if (typeof attrs.subcategory === 'string' && attrs.subcategory.trim()) {
+        const sub = attrs.subcategory.trim();
+        bucket.subcategories.set(sub, (bucket.subcategories.get(sub) || 0) + 1);
+      }
+      bucket.products.push(p);
+    }
+
+    for (const item of orderItems) {
+      const cat = item.product?.category;
+      if (!cat) continue;
+      const bucket = ensureBucket(cat);
+      bucket.units_sold += item.quantity || 1;
+      bucket.order_ids.add(item.order_id);
+    }
+
+    const now = Date.now();
+    const isProSeller = (p: any) => {
+      const u = p?.seller?.user;
+      if (!u?.is_pro) return false;
+      if (!u.pro_expires_at) return true;
+      return new Date(u.pro_expires_at).getTime() > now;
+    };
+
+    const ranked = Array.from(buckets.values())
+      .filter((b) => b.products.length > 0)
+      .sort((a, b) => {
+        const scoreA =
+          a.units_sold * 120 +
+          a.order_ids.size * 45 +
+          a.products.length * 6 +
+          Math.min(a.views_total, 800) * 0.15;
+        const scoreB =
+          b.units_sold * 120 +
+          b.order_ids.size * 45 +
+          b.products.length * 6 +
+          Math.min(b.views_total, 800) * 0.15;
+        return scoreB - scoreA;
+      })
+      .slice(0, limit);
+
+    return ranked.map((b, idx) => {
+      // Prioritize Pro sellers, featured items, and popularity inside each category rail
+      const sortedProducts = [...b.products].sort((a, c) => {
+        const proDiff = Number(isProSeller(c)) - Number(isProSeller(a));
+        if (proDiff !== 0) return proDiff;
+        const featDiff =
+          Number(Boolean(c.is_featured)) - Number(Boolean(a.is_featured));
+        if (featDiff !== 0) return featDiff;
+        return (c.views_count || 0) - (a.views_count || 0);
+      });
+
+      const sample =
+        productsPerCategory > 0
+          ? attachProductSlugs(
+              sortedProducts.slice(0, productsPerCategory).map((p) => {
+                const { seller, ...rest } = p;
+                return {
+                  ...rest,
+                  seller: {
+                    store_name: seller.store_name,
+                    logo_url: seller.logo_url,
+                    store_link: seller.store_link,
+                    is_seller_verified: seller.is_seller_verified,
+                  },
+                };
+              }),
+            )
+          : [];
+
+      const topSubcategories = Array.from(b.subcategories.entries())
+        .sort((x, y) => y[1] - x[1])
+        .slice(0, 6)
+        .map(([name, count]) => ({ name, count }));
+
+      const fallbackImg = sortedProducts[0]?.image_urls?.[0] || null;
+      return {
+        rank: idx + 1,
+        id: b.id,
+        name: b.name,
+        description: b.description,
+        image_url: b.image_url || fallbackImg,
+        units_sold: b.units_sold,
+        order_count: b.order_ids.size,
+        product_count: b.products.length,
+        views_total: b.views_total,
+        subcategories: topSubcategories,
+        products: sample,
+      };
+    });
+  }
+
+  /**
+   * Cookie-driven personalized recommendations engine.
+   * Accepts lightweight, anonymous shopping-habit signals (categories, subcategories,
+   * brands, tags, price comfort range) and scores active in-stock products.
+   */
+  async getPersonalizedRecommendations(params: {
+    categories?: string[];
+    subcategories?: string[];
+    brands?: string[];
+    tags?: string[];
+    exclude?: string[];
+    minPrice?: number;
+    maxPrice?: number;
+    limit?: number;
+  }) {
+    const limit = params.limit ?? 12;
+    const cats = (params.categories || []).map((s) => s.toLowerCase());
+    const subs = (params.subcategories || []).map((s) => s.toLowerCase());
+    const brands = (params.brands || []).map((s) => s.toLowerCase());
+    const tags = (params.tags || []).map((s) => s.toLowerCase());
+    const excludeSet = new Set(params.exclude || []);
+
+    const hasSignals =
+      cats.length > 0 ||
+      subs.length > 0 ||
+      brands.length > 0 ||
+      tags.length > 0;
+
+    const candidates = await this.prisma.product.findMany({
+      where: PUBLIC_IN_STOCK_PRODUCT_WHERE,
+      include: {
+        seller: {
+          select: {
+            store_name: true,
+            logo_url: true,
+            store_link: true,
+            is_seller_verified: true,
+            user: { select: { is_pro: true, pro_expires_at: true } },
+          },
+        },
+      },
+      orderBy: [
+        { is_featured: 'desc' },
+        { views_count: 'desc' },
+        { created_at: 'desc' },
+      ],
+      take: 250,
+    });
+
+    const now = Date.now();
+    const isPro = (p: any) => {
+      const u = p?.seller?.user;
+      if (!u?.is_pro) return false;
+      if (!u.pro_expires_at) return true;
+      return new Date(u.pro_expires_at).getTime() > now;
+    };
+
+    const scored = candidates
+      .filter((p) => !excludeSet.has(p.id))
+      .map((p) => {
+        let score = 0;
+        const pCat = (p.category || '').toLowerCase();
+        const attrs = (p.attributes || {}) as Record<string, any>;
+        const pSub =
+          typeof attrs.subcategory === 'string'
+            ? attrs.subcategory.toLowerCase()
+            : '';
+        const pBrand = (p.brand || '').toLowerCase();
+        const pTags = (p.tags || []).map((t) => t.toLowerCase());
+        const pTitle = (p.title || '').toLowerCase();
+        const pPrice = Number(p.price || 0);
+
+        if (pSub) {
+          const subIdx = subs.findIndex(
+            (s) => s === pSub || pSub.includes(s) || s.includes(pSub),
+          );
+          if (subIdx !== -1) {
+            score += Math.max(24, 52 - subIdx * 7);
+          }
+        }
+
+        if (pCat) {
+          const catIdx = cats.findIndex(
+            (c) => c === pCat || pCat.includes(c) || c.includes(pCat),
+          );
+          if (catIdx !== -1) {
+            score += Math.max(15, 36 - catIdx * 5);
+          }
+        }
+
+        if (pBrand) {
+          const brandIdx = brands.findIndex((b) => b === pBrand);
+          if (brandIdx !== -1) {
+            score += Math.max(12, 24 - brandIdx * 3);
+          }
+        }
+
+        if (tags.length > 0) {
+          let tagHits = 0;
+          for (const t of tags) {
+            if (
+              pTags.some((pt) => pt.includes(t) || t.includes(pt)) ||
+              pTitle.includes(t) ||
+              (pSub && pSub.includes(t))
+            ) {
+              tagHits++;
+            }
+          }
+          score += Math.min(36, tagHits * 12);
+        }
+
+        if (
+          params.minPrice !== undefined &&
+          params.maxPrice !== undefined &&
+          params.maxPrice > 0 &&
+          pPrice >= params.minPrice * 0.65 &&
+          pPrice <= params.maxPrice * 1.45
+        ) {
+          score += 10;
+        }
+
+        // Quality & freshness tie-breakers
+        if (isPro(p)) score += 8;
+        if (p.is_featured) score += 5;
+        score += Math.min(8, Math.log10((p.views_count || 0) + 1) * 3);
+        score += Math.min(5, Number(p.rating_avg || 0));
+
+        return { product: p, score };
+      })
+      .sort((a, b) => b.score - a.score);
+
+    const topItems = scored.slice(0, limit).map(({ product }) => {
+      const { seller, ...rest } = product;
+      return {
+        ...rest,
+        seller: {
+          store_name: seller.store_name,
+          logo_url: seller.logo_url,
+          store_link: seller.store_link,
+          is_seller_verified: seller.is_seller_verified,
+        },
+      };
+    });
+
+    const primarySub = params.subcategories?.[0] || null;
+    const primaryCat = params.categories?.[0] || null;
+    const primaryBrand = params.brands?.[0] || null;
+
+    let focusLabel: string | null = null;
+    let focusType: 'subcategory' | 'category' | 'brand' | null = null;
+    let headline = 'Picked just for you';
+
+    if (hasSignals) {
+      if (primarySub) {
+        focusLabel = primarySub;
+        focusType = 'subcategory';
+        headline = `${primarySub} picked just for you`;
+      } else if (primaryCat) {
+        focusLabel = primaryCat;
+        focusType = 'category';
+        headline = `${primaryCat} picked just for you`;
+      } else if (primaryBrand) {
+        focusLabel = primaryBrand;
+        focusType = 'brand';
+        headline = `${primaryBrand} picks just for you`;
+      }
+    }
+
+    return {
+      personalized: hasSignals,
+      focus_label: focusLabel,
+      focus_type: focusType,
+      headline,
+      items: attachProductSlugs(topItems),
+    };
+  }
+
   async getProductsBySeller(userId: string) {
     return this.prisma.product.findMany({
       where: {

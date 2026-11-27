@@ -1,4 +1,28 @@
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1000';
+const CONFIGURED_API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1000';
+
+/**
+ * Resolves the API base URL. When running locally on a LAN IP (e.g. testing
+ * `http://192.168.x.x:3000` from a phone) while `NEXT_PUBLIC_API_URL` is set
+ * to `http://localhost:1000`, swaps `localhost` for the active LAN hostname.
+ */
+export function resolveApiUrl(): string {
+  if (typeof window === 'undefined') return CONFIGURED_API_URL;
+  try {
+    const parsed = new URL(CONFIGURED_API_URL);
+    const isConfiguredLocal = parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1';
+    const pageHost = window.location.hostname;
+    const isPageLocal = pageHost === 'localhost' || pageHost === '127.0.0.1';
+    if (isConfiguredLocal && pageHost && !isPageLocal) {
+      parsed.hostname = pageHost;
+      return parsed.toString().replace(/\/$/, '');
+    }
+  } catch {
+    // Fall back to configured URL
+  }
+  return CONFIGURED_API_URL;
+}
+
+export const API_URL = CONFIGURED_API_URL;
 
 /**
  * Translates HTTP / network failures into messages a non-technical user can
@@ -63,7 +87,7 @@ async function request<T>(
 ): Promise<{ data: T }> {
   const form = isFormData(body);
   const jsonMethod = method === 'POST' || method === 'PUT' || method === 'PATCH';
-  const response = await fetch(`${API_URL}${url}`, {
+  const response = await fetch(`${resolveApiUrl()}${url}`, {
     ...(method === 'GET' ? {} : { method }),
     headers: {
       ...(jsonMethod && !form ? { 'Content-Type': 'application/json' } : {}),

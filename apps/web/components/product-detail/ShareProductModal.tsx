@@ -2,133 +2,77 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Share2, Copy, Check, Download, MessageCircle, Send, Sparkles } from 'lucide-react';
+import { X, Share2, Copy, Check, MessageCircle, Send } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  productShareDetails,
+  productShareImagePath,
+  shareProduct,
+  type ShareableProduct,
+} from '@/lib/share/product-share';
 
-const MotionDiv = motion.div as any;
+const MotionDiv = motion.div as React.ComponentType<
+  React.ComponentProps<typeof motion.div> & { children?: React.ReactNode }
+>;
 
 interface ShareProductModalProps {
   isOpen: boolean;
   onClose: () => void;
-  product: {
-    id: string;
-    title: string;
-    price: string | number;
-    image_urls?: string[];
-    seller?: {
-      store_name?: string;
-      store_link?: string;
-    };
+  product: ShareableProduct & {
+    price?: string | number | null;
+    image_urls?: string[] | null;
   };
+}
+
+function formatPrice(price?: string | number | null): string | null {
+  const value = parseFloat(String(price ?? ''));
+  if (!Number.isFinite(value)) return null;
+  return `GH₵ ${value.toLocaleString('en-GH', { maximumFractionDigits: 0 })}`;
 }
 
 export default function ShareProductModal({ isOpen, onClose, product }: ShareProductModalProps) {
   const [copied, setCopied] = useState(false);
-  const [downloading, setDownloading] = useState(false);
+  const [sharing, setSharing] = useState(false);
 
-  const productUrl = typeof window !== 'undefined' ? window.location.href : '';
-  const imageUrl = product.image_urls?.[0] || '/placeholder-product.png';
-  const studioCardUrl = `/api/cards/product/${encodeURIComponent(String(product.id))}?theme=light&format=portrait`;
-  const shareText = `Check out ${product.title} on Verndly! GH₵ ${parseFloat(String(product.price)).toLocaleString()}`;
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  const { title, store, url } = productShareDetails(product, origin);
+  const price = formatPrice(product.price);
+  const fallbackSrc = product.image_urls?.[0];
+  const sharedSrc = productShareImagePath(String(product.id));
+  const [failedId, setFailedId] = useState<string | null>(null);
+  const previewSrc = failedId === String(product.id) && fallbackSrc ? fallbackSrc : sharedSrc;
+  const canNativeShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
 
   const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(productUrl);
+      await navigator.clipboard.writeText(url);
       setCopied(true);
-      toast.success('Product link copied to clipboard!');
+      toast.success('Link copied');
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error('Failed to copy link.');
+      toast.error('Could not copy the link.');
     }
   };
 
-  const handleDownloadCard = async () => {
-    setDownloading(true);
+  const handleShare = async () => {
+    setSharing(true);
     try {
-      const res = await fetch(studioCardUrl);
-      if (!res.ok) throw new Error('Card render failed');
-      const blob = await res.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = blobUrl;
-      a.download = `${product.title?.replace(/[^a-zA-Z0-9]/g, '_') || 'product'}-verndly-card.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(blobUrl);
-      toast.success('Studio product card saved!');
-    } catch {
-      window.open(studioCardUrl, '_blank');
+      const result = await shareProduct(product);
+      if (result === 'shared') onClose();
+      else if (result === 'unavailable') toast.error('Could not share this product.');
     } finally {
-      setDownloading(false);
+      setSharing(false);
     }
   };
 
-  const handleWhatsAppShare = () => {
-    const text = `${shareText}\n${productUrl}`;
-    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
-  };
-
-  const handleTwitterShare = () => {
-    window.open(
-      `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(productUrl)}`,
-      '_blank',
-    );
-  };
-
-  const handleTelegramShare = () => {
-    window.open(
-      `https://t.me/share/url?url=${encodeURIComponent(productUrl)}&text=${encodeURIComponent(shareText)}`,
-      '_blank',
-    );
-  };
-
-  const handleNativeShare = async () => {
-    if (typeof navigator === 'undefined' || !navigator.share) return;
-    try {
-      // Try sharing with studio product card PNG first
-      if ((navigator as any).canShare) {
-        try {
-          const res = await fetch(studioCardUrl);
-          if (res.ok) {
-            const blob = await res.blob();
-            const file = new File(
-              [blob],
-              `${product.title?.replace(/[^a-zA-Z0-9]/g, '_') || 'product'}-verndly-card.png`,
-              { type: 'image/png' },
-            );
-            if ((navigator as any).canShare({ files: [file] })) {
-              await (navigator as any).share({
-                title: product.title,
-                text: shareText,
-                url: productUrl,
-                files: [file],
-              });
-              return;
-            }
-          }
-        } catch {
-          // Fall through to text share
-        }
-      }
-
-      await navigator.share({
-        title: product.title,
-        text: shareText,
-        url: productUrl,
-      });
-    } catch (err: any) {
-      if (err.name !== 'AbortError') {
-        toast.error('Could not share link.');
-      }
-    }
+  const openShareWindow = (href: string) => {
+    window.open(href, '_blank', 'noopener,noreferrer');
   };
 
   return (
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-[100] flex items-end justify-center p-0 sm:items-center sm:p-4">
-          {/* Strictly solid backdrop (borderless, shadowless, NO blur) */}
           <MotionDiv
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -139,144 +83,117 @@ export default function ShareProductModal({ isOpen, onClose, product }: SharePro
             aria-hidden="true"
           />
 
-          {/* Modal Container: Mobile-first bottom sheet, centered on desktop */}
-          {/* Strictly borderless, shadowless, NO blur style */}
           <MotionDiv
             role="dialog"
             aria-modal="true"
+            aria-labelledby="share-product-title"
             initial={{ y: '100%', opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}
             transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-            className="bg-background text-foreground relative z-10 w-full overflow-hidden rounded-t-[2.5rem] border-0 shadow-none sm:max-w-md sm:rounded-[2.5rem]"
+            className="bg-background text-foreground relative z-10 w-full overflow-hidden rounded-t-[2.5rem] sm:max-w-sm sm:rounded-[2.5rem]"
           >
-            {/* Mobile drag bar */}
             <div className="flex justify-center pb-1 pt-3 sm:hidden">
               <div className="bg-muted/40 h-1 w-10 rounded-full" />
             </div>
 
-            {/* Header */}
-            <div className="flex items-center justify-between border-0 px-6 pb-2 pt-3 sm:pt-6">
-              <div className="flex items-center gap-2">
-                <div className="bg-foreground/5 text-foreground flex h-7 w-7 items-center justify-center rounded-full">
-                  <Share2 className="h-3.5 w-3.5" />
-                </div>
-                <h2 className="text-foreground text-sm font-semibold uppercase tracking-wider">
-                  Share Product
-                </h2>
-              </div>
+            <div className="flex items-center justify-end px-4 pt-3 sm:pt-4">
               <button
                 type="button"
                 onClick={onClose}
                 aria-label="Close"
-                className="bg-surface hover:bg-surface/80 text-foreground rounded-full border-0 p-2 shadow-none transition-colors"
+                className="bg-surface text-foreground rounded-full p-2 transition-colors"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            {/* Content */}
-            <div className="space-y-4 p-6">
-              {/* Product Preview Card with High-Res Image */}
-              <div className="bg-surface flex items-center gap-3.5 rounded-2xl border-0 p-3.5 shadow-none">
+            <div className="space-y-5 px-6 pb-6">
+              <div className="flex flex-col items-center text-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={imageUrl}
-                  alt={product.title}
-                  className="bg-background h-16 w-16 shrink-0 rounded-xl border-0 object-cover"
+                  src={previewSrc}
+                  alt=""
+                  onError={() => {
+                    if (fallbackSrc) setFailedId(String(product.id));
+                  }}
+                  className="bg-surface h-56 w-56 rounded-2xl object-cover"
                 />
-                <div className="min-w-0 flex-1 space-y-1">
-                  <h3 className="text-foreground line-clamp-1 text-xs font-medium uppercase tracking-tight">
-                    {product.title}
-                  </h3>
-                  <p className="text-primary text-xs font-semibold">
-                    GH₵ {parseFloat(String(product.price)).toLocaleString()}
-                  </p>
-                  {product.seller?.store_link && (
-                    <p className="text-muted text-[10px]">@{product.seller.store_link}</p>
-                  )}
-                </div>
+                <h2
+                  id="share-product-title"
+                  className="text-foreground mt-4 line-clamp-2 text-lg font-semibold tracking-tight"
+                >
+                  {title}
+                </h2>
+                {store && <p className="text-muted mt-1 text-sm">{store}</p>}
+                {price && <p className="text-foreground mt-1 text-sm font-medium">{price}</p>}
               </div>
 
-              {/* One-Click Copy Link Box */}
-              <div className="bg-surface flex items-center justify-between gap-2 rounded-2xl border-0 p-3 shadow-none">
-                <p className="text-muted flex-1 truncate font-mono text-xs">{productUrl}</p>
+              <div className="space-y-2">
+                {canNativeShare && (
+                  <button
+                    type="button"
+                    onClick={handleShare}
+                    disabled={sharing}
+                    className="bg-foreground text-background flex h-12 w-full items-center justify-center gap-2 rounded-full text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-60"
+                  >
+                    <Share2 className="h-4 w-4" />
+                    {sharing ? 'Preparing…' : 'Share'}
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={handleCopyLink}
-                  className="bg-foreground text-background flex shrink-0 items-center gap-1.5 rounded-xl border-0 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider shadow-none transition-opacity hover:opacity-90"
+                  className="bg-surface text-foreground flex h-12 w-full items-center justify-center gap-2 rounded-full text-sm font-semibold"
                 >
-                  {copied ? (
-                    <>
-                      <Check className="h-3.5 w-3.5" />
-                      <span>Copied</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-3.5 w-3.5" />
-                      <span>Copy</span>
-                    </>
-                  )}
+                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  {copied ? 'Copied' : 'Copy link'}
                 </button>
               </div>
 
-              {/* Social Channels (Borderless & Shadowless) */}
               <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
-                  onClick={handleWhatsAppShare}
-                  className="bg-surface hover:bg-surface/80 text-foreground flex flex-col items-center gap-1.5 rounded-2xl border-0 p-3 shadow-none transition-colors"
+                  onClick={() =>
+                    openShareWindow(
+                      `https://api.whatsapp.com/send?text=${encodeURIComponent(`${title}\n${url}`)}`,
+                    )
+                  }
+                  className="bg-surface text-foreground flex flex-col items-center gap-1.5 rounded-2xl p-3"
                 >
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600">
                     <MessageCircle className="h-4 w-4" />
-                  </div>
+                  </span>
                   <span className="text-[11px] font-medium">WhatsApp</span>
                 </button>
-
                 <button
                   type="button"
-                  onClick={handleTwitterShare}
-                  className="bg-surface hover:bg-surface/80 text-foreground flex flex-col items-center gap-1.5 rounded-2xl border-0 p-3 shadow-none transition-colors"
+                  onClick={() =>
+                    openShareWindow(
+                      `https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`,
+                    )
+                  }
+                  className="bg-surface text-foreground flex flex-col items-center gap-1.5 rounded-2xl p-3"
                 >
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sky-500/10 text-sky-600">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-sky-500/10 text-sky-600">
                     <Send className="h-4 w-4" />
-                  </div>
-                  <span className="text-[11px] font-medium">X / Twitter</span>
+                  </span>
+                  <span className="text-[11px] font-medium">X</span>
                 </button>
-
                 <button
                   type="button"
-                  onClick={handleTelegramShare}
-                  className="bg-surface hover:bg-surface/80 text-foreground flex flex-col items-center gap-1.5 rounded-2xl border-0 p-3 shadow-none transition-colors"
+                  onClick={() =>
+                    openShareWindow(
+                      `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`,
+                    )
+                  }
+                  className="bg-surface text-foreground flex flex-col items-center gap-1.5 rounded-2xl p-3"
                 >
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/10 text-blue-600">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/10 text-blue-600">
                     <Send className="h-4 w-4" />
-                  </div>
+                  </span>
                   <span className="text-[11px] font-medium">Telegram</span>
                 </button>
-              </div>
-
-              {/* Actions: Save Studio Card / Native Share */}
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={handleDownloadCard}
-                  disabled={downloading}
-                  className="bg-surface hover:bg-surface/80 text-foreground flex h-11 w-full items-center justify-center gap-2 rounded-xl border-0 text-xs font-medium shadow-none transition-colors"
-                >
-                  <Download className="h-3.5 w-3.5" />
-                  <span>{downloading ? 'Saving...' : 'Save Studio Card'}</span>
-                </button>
-
-                {typeof navigator !== 'undefined' && (navigator as any).share && (
-                  <button
-                    type="button"
-                    onClick={handleNativeShare}
-                    className="bg-foreground text-background flex h-11 w-full items-center justify-center gap-2 rounded-xl border-0 text-xs font-semibold uppercase tracking-wider shadow-none transition-opacity hover:opacity-90"
-                  >
-                    <Share2 className="h-3.5 w-3.5" />
-                    <span>More Apps</span>
-                  </button>
-                )}
               </div>
             </div>
           </MotionDiv>

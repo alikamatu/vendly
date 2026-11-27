@@ -3,6 +3,11 @@
 // `.client.config.ts` file is loaded automatically by @sentry/nextjs on
 // the browser side — only server/edge need this manual hook.
 export async function register() {
+  // Skip Sentry server/edge instrumentation in local dev unless explicitly enabled
+  // so `next dev` cold starts and route compiles stay fast and never stall.
+  if (process.env.NODE_ENV !== 'production' && process.env.SENTRY_DEV !== 'true') {
+    return;
+  }
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     await import('./sentry.server.config');
   }

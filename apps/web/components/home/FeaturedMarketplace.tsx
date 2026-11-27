@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import ProductCard from '@/components/products/ProductCard';
 import { filterRailProducts } from '@/lib/product-visibility';
 import type { HomeProduct } from '@/hooks/useHomeData';
@@ -20,13 +20,9 @@ export default function FeaturedMarketplace({ products, limit = 10 }: FeaturedMa
   return (
     <section className="space-y-6">
       <div className="flex items-center justify-between gap-4">
-        <div className="flex flex-1 items-center gap-3">
-          <h2 className="text-primary flex items-center gap-2 text-[10px] font-medium uppercase tracking-wider">
-            <Sparkles className="h-3 w-3" />
-            Featured Marketplace
-          </h2>
-          <div className="bg-border/60 h-px flex-1" />
-        </div>
+        <h2 className="text-primary text-[10px] font-medium uppercase tracking-wider">
+          Featured Marketplace
+        </h2>
         <Link
           href="/products"
           className="text-muted hover:text-foreground inline-flex shrink-0 items-center gap-1 text-xs font-semibold transition-colors"

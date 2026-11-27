@@ -12,6 +12,9 @@ import { COVERAGE_COPY } from '@/lib/copy/coverage';
 import { sortByRecent } from '@/lib/home/discount';
 import { filterRailProducts } from '@/lib/product-visibility';
 import CategoryShowcase from './CategoryShowcase';
+import TopSellingCategories from './TopSellingCategories';
+import PersonalizedRecommendations from './PersonalizedRecommendations';
+import HomeCategorySections from './HomeCategorySections';
 import FeaturedMarketplace from './FeaturedMarketplace';
 import BrandSectionsList from './BrandSectionsList';
 import RecentProducts from './RecentProducts';
@@ -19,6 +22,7 @@ import RecentlyViewed from './RecentlyViewed';
 import TopDeals from './TopDeals';
 import TopProVendors from './TopProVendors';
 import EmptyResults from './EmptyResults';
+import { recordShoppingHabit } from '@/lib/cookies/shopping-habits';
 
 const FEATURED_LIMIT = 10;
 const PRODUCTS_PER_BRAND = 10;
@@ -78,7 +82,8 @@ const FEATURED_CATEGORIES_LINKS = [
 
 export default function HomeView({ initialData }: { initialData?: InitialHomeData }) {
   const router = useRouter();
-  const { products, categories, brands, topProVendors, isLoading } = useHomeData(initialData);
+  const { products, categories, brands, topProVendors, topSellingCategories, isLoading } =
+    useHomeData(initialData);
 
   const railProducts = useMemo(() => filterRailProducts(products), [products]);
 
@@ -115,6 +120,7 @@ export default function HomeView({ initialData }: { initialData?: InitialHomeDat
         goToProducts();
         return;
       }
+      recordShoppingHabit('browse_category', { category: name });
       goToProducts({ category: name });
     },
     [goToProducts],
@@ -139,6 +145,8 @@ export default function HomeView({ initialData }: { initialData?: InitialHomeDat
         onSelect={handleCategorySelect}
       />
 
+      <TopSellingCategories categories={topSellingCategories} />
+
       {topProVendors.some((v) => Boolean(v.logo_url && v.logo_url.trim())) && (
         <section className="relative z-10 mx-auto max-w-7xl px-4 py-8 md:px-8 md:py-12">
           <TopProVendors vendors={topProVendors} />
@@ -151,9 +159,22 @@ export default function HomeView({ initialData }: { initialData?: InitialHomeDat
       >
         <FeaturedMarketplace products={featured} limit={FEATURED_LIMIT} />
 
+        <PersonalizedRecommendations
+          fallbackProducts={railProducts}
+          topSellingCategories={topSellingCategories}
+          limit={10}
+        />
+
         {!hasResults && products.length > 0 && <EmptyResults onClear={() => undefined} />}
 
         <RecentlyViewed limit={12} />
+
+        <HomeCategorySections
+          topSellingCategories={topSellingCategories}
+          allProducts={railProducts}
+          sectionCount={3}
+          productsPerSection={10}
+        />
 
         <BrandSectionsList
           products={railProducts}

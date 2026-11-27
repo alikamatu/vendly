@@ -6,6 +6,7 @@ import {
   fetchCategoriesServer,
   fetchHomeProductsServer,
   fetchTopProVendorsServer,
+  fetchTopSellingCategoriesServer,
 } from '@/lib/server-api';
 import { filterRailProducts } from '@/lib/product-visibility';
 import { getProductPath } from '@/lib/product-slug';
@@ -31,11 +32,12 @@ export const metadata = buildMetadata({
 export const revalidate = 300;
 
 export default async function HomePage() {
-  const [products, categories, brands, topProVendors] = await Promise.all([
+  const [products, categories, brands, topProVendors, topSellingCategories] = await Promise.all([
     fetchHomeProductsServer(48),
     fetchCategoriesServer(),
     fetchBrandsServer(),
     fetchTopProVendorsServer(6),
+    fetchTopSellingCategoriesServer(10, 10),
   ]);
 
   const inStockProducts = filterRailProducts(products);
@@ -64,6 +66,7 @@ export default async function HomePage() {
           categories,
           brands,
           topProVendors,
+          topSellingCategories,
         }}
       />
     </>

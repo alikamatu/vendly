@@ -2,7 +2,7 @@
 
 import React, { useMemo } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Clock } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import ProductGridSection from './ProductGridSection';
 import { sortByRecent } from '@/lib/home/discount';
 import { filterRailProducts } from '@/lib/product-visibility';
@@ -23,12 +23,7 @@ export default function RecentProducts({ products, limit = 20 }: RecentProductsP
   return (
     <ProductGridSection
       products={recent}
-      eyebrow={
-        <>
-          <Clock className="h-3.5 w-3.5" />
-          Just In
-        </>
-      }
+      eyebrow="Just In"
       title="Recently Added"
       description={`The freshest ${recent.length} products on the platform.`}
       action={

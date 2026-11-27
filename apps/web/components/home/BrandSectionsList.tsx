@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { Sparkles } from 'lucide-react';
 import SectionHeader from './SectionHeader';
 import BrandSection from './BrandSection';
 import { groupByBrand } from '@/lib/home/brand-grouping';
@@ -42,12 +41,7 @@ export default function BrandSectionsList({
   return (
     <section className="relative space-y-12 py-4">
       <SectionHeader
-        eyebrow={
-          <>
-            <Sparkles className="h-3.5 w-3.5 animate-pulse" />
-            Shop by Brand
-          </>
-        }
+        eyebrow="Shop by Brand"
         title="Top Verndly Brands"
         description="Explore highly-rated brands chosen by independent sellers, ranked by what's in stock right now."
       />

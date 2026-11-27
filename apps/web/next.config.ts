@@ -38,12 +38,12 @@ const csp = [
   "child-src 'self' blob:",
   `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com ${VERCEL_LIVE}`,
   "font-src 'self' data: https://fonts.gstatic.com",
-  `img-src 'self' data: blob: https: ${API_HOST} ${CLOUDINARY} https://lh3.googleusercontent.com https://verndly.com https://verndly.market ${VERCEL_LIVE}`,
+  `img-src 'self' data: blob: https:${isProd ? '' : ' http:'} ${API_HOST} ${CLOUDINARY} https://lh3.googleusercontent.com https://verndly.com https://verndly.market ${VERCEL_LIVE}`,
   // `media-src` governs <video>/<audio>/<source>. Without it, Cloudinary
   // video URLs silently fall back to `default-src 'self'` and the browser
   // blocks them with no visible UI — videos just don't play.
   `media-src 'self' data: blob: ${CLOUDINARY}`,
-  `connect-src 'self' ${API_HOST} https://api.verndly.com https://www.api.verndly.com https://vendly-lfr6.onrender.com ${CLOUDINARY} ${PAYSTACK} ${SENTRY_INGEST} ${VERCEL_LIVE} ${VERCEL_LIVE_WS}${isProd ? '' : ' ws: http://localhost:* https://localhost:*'}`,
+  `connect-src 'self' ${API_HOST} https://api.verndly.com https://www.api.verndly.com https://vendly-lfr6.onrender.com ${CLOUDINARY} ${PAYSTACK} ${SENTRY_INGEST} ${VERCEL_LIVE} ${VERCEL_LIVE_WS}${isProd ? '' : ' ws: wss: http://localhost:* https://localhost:* http://127.0.0.1:* http://192.168.*:* http://10.*:* http://172.*:*'}`,
   `frame-src 'self' ${PAYSTACK} ${VERCEL_LIVE}`,
   "object-src 'none'",
   "base-uri 'self'",
@@ -95,6 +95,10 @@ const nextConfig: NextConfig = {
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
 
+  // Allow LAN / local-network devices (phones, tablets, other laptops) to load
+  // dev chunks & HMR without Next.js 16 stalling or blocking cross-origin dev requests.
+  allowedDevOrigins: ['localhost', '127.0.0.1', '*.local', '192.168.*.*', '10.*.*.*', '172.16.*.*'],
+
   // Explicit turbopack root avoids multiple lockfile confusion in monorepos
   turbopack: {
     root: path.resolve(__dirname, '../../'),
@@ -126,25 +130,26 @@ const nextConfig: NextConfig = {
   },
 };
 
-// Wrap with Sentry. The wrapper is safe even without a DSN — it just
-// turns into a no-op for source-map upload at build time. Source-map
-// upload requires SENTRY_AUTH_TOKEN + SENTRY_ORG + SENTRY_PROJECT in the
-// build environment (set on Vercel, not committed).
-export default withSentryConfig(nextConfig, {
-  // Suppress the SDK's noisy build-time logs unless explicitly enabled.
-  silent: !process.env.SENTRY_DEBUG,
+// Wrap with Sentry in production builds only. Skipping Sentry's build-time
+// instrumentation wrapper in local `next dev` prevents Turbopack dev compile
+// stalls and cuts cold-start time significantly.
+export default isProd
+  ? withSentryConfig(nextConfig, {
+      // Suppress the SDK's noisy build-time logs unless explicitly enabled.
+      silent: !process.env.SENTRY_DEBUG,
 
-  // Vercel build env supplies these; locally they're absent and the
-  // wrapper skips upload + cleanly logs a one-line warning.
-  org: process.env.SENTRY_ORG,
-  project: process.env.SENTRY_PROJECT,
-  authToken: process.env.SENTRY_AUTH_TOKEN,
+      // Vercel build env supplies these; locally they're absent and the
+      // wrapper skips upload + cleanly logs a one-line warning.
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      authToken: process.env.SENTRY_AUTH_TOKEN,
 
-  // Hide source maps from the public bundle (uploaded to Sentry only in prod).
-  sourcemaps: { disable: !isProd, deleteSourcemapsAfterUpload: true },
+      // Hide source maps from the public bundle (uploaded to Sentry only in prod).
+      sourcemaps: { disable: !isProd, deleteSourcemapsAfterUpload: true },
 
-  // Tunnel route lets us proxy Sentry traffic through our domain so it
-  // sidesteps ad-blockers. /monitoring/* is reserved here; if a real
-  // route conflicts later, change this string.
-  tunnelRoute: '/monitoring',
-});
+      // Tunnel route lets us proxy Sentry traffic through our domain so it
+      // sidesteps ad-blockers. /monitoring/* is reserved here; if a real
+      // route conflicts later, change this string.
+      tunnelRoute: '/monitoring',
+    })
+  : nextConfig;

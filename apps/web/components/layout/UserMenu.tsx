@@ -88,6 +88,7 @@ export default function UserMenu() {
 
   const isSeller = user.role === 'SELLER';
   const isAdmin = user.role === 'ADMIN';
+  const showBecomeSeller = !isSeller && !isAdmin;
 
   const sidebarVariants = {
     hidden: { x: '100%', opacity: 0.5 },
@@ -137,6 +138,12 @@ export default function UserMenu() {
           show: true,
         },
         {
+          label: 'Become a Seller',
+          href: '/seller-verification',
+          icon: Store,
+          show: showBecomeSeller,
+        },
+        {
           label: 'Activity Log',
           href: '/dashboard/settings/activity',
           icon: Activity,
@@ -155,6 +162,12 @@ export default function UserMenu() {
           href: isSeller ? '/dashboard/settings/profile' : '/account/profile',
           icon: User,
           show: true,
+        },
+        {
+          label: 'Become a Seller',
+          href: '/seller-verification',
+          icon: Store,
+          show: showBecomeSeller,
         },
         {
           label: 'Dashboard',

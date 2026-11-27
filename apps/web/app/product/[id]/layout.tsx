@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
-import { buildMetadata, SITE_URL } from '@/lib/seo';
+import { buildMetadata } from '@/lib/seo';
+import { productShareImagePath } from '@/lib/share/product-share';
 import { getPublicBrand } from '@/lib/brand-guard';
 import { isPubliclyVisible } from '@/lib/product-visibility';
 import { buildProductSlug, getProductPath } from '@/lib/product-slug';
@@ -45,9 +46,10 @@ export async function generateMetadata({
     title: product.title,
     description: description || `Shop ${product.title} on Verndly.`,
     path: canonicalPath,
-    image:
-      product.image_urls?.[0] ||
-      `${SITE_URL}/api/cards/product/${encodeURIComponent(String(product.id))}?format=landscape`,
+    image: productShareImagePath(String(product.id)),
+    imageWidth: 1080,
+    imageHeight: 1080,
+    imageType: 'image/jpeg',
     type: 'product',
     keywords: [product.title, product.category, publicBrand, 'Verndly'].filter(Boolean) as string[],
   });

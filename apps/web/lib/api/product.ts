@@ -69,6 +69,28 @@ export interface BrowseProductsResponse {
   meta: { total: number; page: number; limit: number; totalPages: number };
 }
 
+export interface TopSellingCategory {
+  rank: number;
+  id: string | null;
+  name: string;
+  description?: string | null;
+  image_url?: string | null;
+  units_sold: number;
+  order_count: number;
+  product_count: number;
+  views_total: number;
+  subcategories: Array<{ name: string; count: number }>;
+  products: BrowseProduct[];
+}
+
+export interface PersonalizedRecommendationsResponse {
+  personalized: boolean;
+  focus_label: string | null;
+  focus_type: 'subcategory' | 'category' | 'brand' | null;
+  headline: string;
+  items: BrowseProduct[];
+}
+
 export interface CreateProductInput {
   title: string;
   description?: string;
@@ -186,6 +208,41 @@ export const productApi = {
       await api.get<{ id: string; name: string; image_url?: string | null; fields: any[] }[]>(
         '/products/categories',
       );
+    return res.data;
+  },
+
+  async getTopSellingCategories(
+    limit = 10,
+    productsPerCategory = 10,
+  ): Promise<TopSellingCategory[]> {
+    const res = await api.get<TopSellingCategory[]>(
+      `/products/top-selling-categories?limit=${limit}&products_per_category=${productsPerCategory}`,
+    );
+    return Array.isArray(res.data) ? res.data : [];
+  },
+
+  async getRecommendations(params: {
+    categories?: string[];
+    subcategories?: string[];
+    brands?: string[];
+    tags?: string[];
+    exclude?: string[];
+    minPrice?: number;
+    maxPrice?: number;
+    limit?: number;
+  }): Promise<PersonalizedRecommendationsResponse> {
+    const qs = new URLSearchParams();
+    if (params.categories?.length) qs.set('categories', params.categories.join(','));
+    if (params.subcategories?.length) qs.set('subcategories', params.subcategories.join(','));
+    if (params.brands?.length) qs.set('brands', params.brands.join(','));
+    if (params.tags?.length) qs.set('tags', params.tags.join(','));
+    if (params.exclude?.length) qs.set('exclude', params.exclude.join(','));
+    if (params.minPrice !== undefined) qs.set('min_price', String(params.minPrice));
+    if (params.maxPrice !== undefined) qs.set('max_price', String(params.maxPrice));
+    if (params.limit !== undefined) qs.set('limit', String(params.limit));
+    const res = await api.get<PersonalizedRecommendationsResponse>(
+      `/products/recommendations?${qs.toString()}`,
+    );
     return res.data;
   },
 

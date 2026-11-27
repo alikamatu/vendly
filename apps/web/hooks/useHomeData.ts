@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { productApi } from '@/lib/api/product';
+import { productApi, type TopSellingCategory } from '@/lib/api/product';
 import { storeApi, TopProVendor } from '@/lib/api/store';
 
 export interface HomeCategory {
@@ -43,6 +43,7 @@ export interface InitialHomeData {
   categories?: HomeCategory[];
   brands?: HomeBrand[];
   topProVendors?: TopProVendor[];
+  topSellingCategories?: TopSellingCategory[];
 }
 
 interface HomeData {
@@ -50,6 +51,7 @@ interface HomeData {
   categories: HomeCategory[];
   brands: HomeBrand[];
   topProVendors: TopProVendor[];
+  topSellingCategories: TopSellingCategory[];
   isLoading: boolean;
   error: string | null;
   reload: () => void;
@@ -61,6 +63,9 @@ export function useHomeData(initial?: InitialHomeData): HomeData {
   const [categories, setCategories] = useState<HomeCategory[]>(initial?.categories ?? []);
   const [brands, setBrands] = useState<HomeBrand[]>(initial?.brands ?? []);
   const [topProVendors, setTopProVendors] = useState<TopProVendor[]>(initial?.topProVendors ?? []);
+  const [topSellingCategories, setTopSellingCategories] = useState<TopSellingCategory[]>(
+    initial?.topSellingCategories ?? [],
+  );
   // Never block SSR with a full-screen loading spinner when server data was handed down.
   const [isLoading, setIsLoading] = useState(!hasInitial);
   const [error, setError] = useState<string | null>(null);
@@ -75,17 +80,19 @@ export function useHomeData(initial?: InitialHomeData): HomeData {
 
     (async () => {
       try {
-        const [p, c, b, v] = await Promise.all([
+        const [p, c, b, v, tsc] = await Promise.all([
           productApi.getProducts(),
           productApi.getCategories(),
           productApi.getBrands(),
           storeApi.getTopProVendors(6).catch(() => [] as TopProVendor[]),
+          productApi.getTopSellingCategories(10, 10).catch(() => [] as TopSellingCategory[]),
         ]);
         if (cancelled) return;
         if (Array.isArray(p) && p.length > 0) setProducts(p as HomeProduct[]);
         if (Array.isArray(c) && c.length > 0) setCategories(c as HomeCategory[]);
         if (Array.isArray(b) && b.length > 0) setBrands(b as HomeBrand[]);
         if (Array.isArray(v) && v.length > 0) setTopProVendors(v);
+        if (Array.isArray(tsc) && tsc.length > 0) setTopSellingCategories(tsc);
       } catch (err: any) {
         if (cancelled) return;
         setError(err?.message || 'Failed to load');
@@ -104,6 +111,7 @@ export function useHomeData(initial?: InitialHomeData): HomeData {
     categories,
     brands,
     topProVendors,
+    topSellingCategories,
     isLoading,
     error,
     reload: () => setTick((t) => t + 1),

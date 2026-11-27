@@ -33,6 +33,17 @@ export async function fetchCategoriesServer<T = any[]>(): Promise<T> {
   return (Array.isArray(data) ? data : []) as T;
 }
 
+export async function fetchTopSellingCategoriesServer<T = any[]>(
+  limit = 10,
+  productsPerCategory = 10,
+): Promise<T> {
+  const data = await safeFetch<any>(
+    `/products/top-selling-categories?limit=${limit}&products_per_category=${productsPerCategory}`,
+    [],
+  );
+  return (Array.isArray(data) ? data : []) as T;
+}
+
 export async function fetchBrandsServer<T = any[]>(): Promise<T> {
   const data = await safeFetch<any>('/brands', []);
   return (Array.isArray(data) ? data : []) as T;

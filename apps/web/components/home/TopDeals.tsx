@@ -2,7 +2,7 @@
 
 import React, { useMemo } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Tag } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import ProductGridSection from './ProductGridSection';
 import { filterByMinDiscount, getDiscountPercent } from '@/lib/home/discount';
 import { filterRailProducts } from '@/lib/product-visibility';
@@ -29,12 +29,7 @@ export default function TopDeals({ products, minDiscount = 20, limit = 20 }: Top
   return (
     <ProductGridSection
       products={deals}
-      eyebrow={
-        <>
-          <Tag className="h-3.5 w-3.5" />
-          Save more
-        </>
-      }
+      eyebrow="Save more"
       title={`Top Deals · ${minDiscount}% off or more`}
       description="Limited-time markdowns from verified sellers."
       action={

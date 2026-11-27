@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, Crown } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import SectionHeader from './SectionHeader';
 import VendorCard from './VendorCard';
 import type { TopProVendor } from '@/lib/api/store';
@@ -69,12 +69,7 @@ export default function TopProVendors({ vendors }: TopProVendorsProps) {
   return (
     <section className="space-y-6 md:space-y-8">
       <SectionHeader
-        eyebrow={
-          <>
-            <Crown className="h-3.5 w-3.5" />
-            Top Pro Vendors
-          </>
-        }
+        eyebrow="Top Pro Vendors"
         title="Featured Pro sellers in Accra"
         description={proDescription}
         action={

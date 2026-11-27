@@ -40,6 +40,7 @@ import Header from '@/components/layout/Header';
 import { RatingStars } from '@/components/reviews/rating-stars';
 import { ProductReviewsSection } from '@/components/reviews/product-reviews-section';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
+import { recordShoppingHabit } from '@/lib/cookies/shopping-habits';
 import VariantPicker, {
   matchVariant,
   type ProductVariant as Variant,
@@ -49,6 +50,7 @@ import ShareProductModal from '@/components/product-detail/ShareProductModal';
 import ReportModal from '@/components/report/ReportModal';
 import { isProductTrending } from '@/lib/product-badges';
 import { getProductPath } from '@/lib/product-slug';
+import { shareProduct } from '@/lib/share/product-share';
 import { toast } from 'sonner';
 
 type MediaItem = { type: 'image'; url: string } | { type: 'video'; url: string };
@@ -114,7 +116,34 @@ export default function ProductDetailClient({
       storeName: product.seller?.store_name ?? null,
       storeLink: product.seller?.store_link ?? null,
     });
-  }, [product?.id, product?.title, product?.price, recordRecentlyViewed]);
+    const rawAttrs =
+      typeof product.attributes === 'string'
+        ? (() => {
+            try {
+              return JSON.parse(product.attributes);
+            } catch {
+              return {};
+            }
+          })()
+        : product.attributes || {};
+    recordShoppingHabit('view_product', {
+      productId: String(product.id),
+      category: product.category,
+      subcategory: typeof rawAttrs?.subcategory === 'string' ? rawAttrs.subcategory : null,
+      brand: product.brand,
+      tags: Array.isArray(product.tags) ? product.tags : [],
+      price: product.price,
+    });
+  }, [
+    product?.id,
+    product?.title,
+    product?.price,
+    product?.category,
+    product?.brand,
+    product?.attributes,
+    product?.tags,
+    recordRecentlyViewed,
+  ]);
 
   const mediaItems: MediaItem[] = useMemo(() => {
     if (!product) return [];
@@ -225,6 +254,16 @@ export default function ProductDetailClient({
       logoUrl: product.seller.logo_url ?? null,
     });
     if (added) {
+      const attrsObj =
+        typeof product.attributes === 'object' && product.attributes ? product.attributes : {};
+      recordShoppingHabit('add_to_cart', {
+        productId: String(product.id),
+        category: product.category,
+        subcategory: typeof attrsObj.subcategory === 'string' ? attrsObj.subcategory : null,
+        brand: product.brand,
+        tags: Array.isArray(product.tags) ? product.tags : [],
+        price,
+      });
       setAddedFeedback(true);
       setTimeout(() => setAddedFeedback(false), 2000);
     }
@@ -258,57 +297,27 @@ export default function ProductDetailClient({
 
   const handleToggleFavorite = () => {
     if (!product?.id) return;
+    const wasFavorited = isFavorited(String(product.id));
     toggleFavorite(String(product.id));
-    toast.success(
-      isFavorited(String(product.id)) ? 'Removed from favorites' : 'Saved to favorites',
-    );
+    if (!wasFavorited) {
+      const attrsObj =
+        typeof product.attributes === 'object' && product.attributes ? product.attributes : {};
+      recordShoppingHabit('favorite', {
+        productId: String(product.id),
+        category: product.category,
+        subcategory: typeof attrsObj.subcategory === 'string' ? attrsObj.subcategory : null,
+        brand: product.brand,
+        tags: Array.isArray(product.tags) ? product.tags : [],
+        price: product.price,
+      });
+    }
+    toast.success(wasFavorited ? 'Removed from favorites' : 'Saved to favorites');
   };
 
   const handleShare = async () => {
-    if (typeof window === 'undefined') return;
-    const url = product
-      ? `${window.location.origin}${getProductPath(product)}`
-      : window.location.href;
-    const imageUrl = product?.image_urls?.[0];
-    const title = product?.title ?? 'Verndly product';
-    const text = `Check out ${title} on Verndly! GH₵${product?.price}`;
-
-    if (typeof navigator !== 'undefined' && (navigator as any).share) {
-      if (imageUrl && (navigator as any).canShare) {
-        try {
-          const res = await fetch(imageUrl);
-          if (res.ok) {
-            const blob = await res.blob();
-            const mimeType = blob.type || 'image/jpeg';
-            const ext = mimeType.split('/')[1] || 'jpg';
-            const file = new File([blob], `${title.replace(/[^a-zA-Z0-9]/g, '_')}.${ext}`, {
-              type: mimeType,
-            });
-            if ((navigator as any).canShare({ files: [file] })) {
-              await (navigator as any).share({
-                title,
-                text,
-                url,
-                files: [file],
-              });
-              toast.success('Shared successfully!');
-              return;
-            }
-          }
-        } catch {
-          // Fall through to standard share
-        }
-      }
-
-      try {
-        await (navigator as any).share({ title, text, url });
-        toast.success('Shared successfully!');
-        return;
-      } catch (err: any) {
-        if (err.name === 'AbortError') return;
-      }
-    }
-
+    if (!product) return;
+    const result = await shareProduct(product);
+    if (result === 'shared' || result === 'cancelled') return;
     setIsShareModalOpen(true);
   };
 

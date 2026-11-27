@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { recordShoppingHabit } from '@/lib/cookies/shopping-habits';
 import {
   productApi,
   BrowseProductsParams,
@@ -224,6 +225,24 @@ export function useProductsBrowser(
     router,
     searchParamsKey,
   ]);
+
+  // Learn shopper preferences in lightweight first-party cookies when browsing categories/search
+  useEffect(() => {
+    if (committedSearch && committedSearch.trim().length >= 2) {
+      recordShoppingHabit('search', {
+        query: committedSearch,
+        category: category || null,
+        subcategory: subcategory || null,
+        brand: brand || null,
+      });
+    } else if (category || subcategory || brand) {
+      recordShoppingHabit('browse_category', {
+        category: category || null,
+        subcategory: subcategory || null,
+        brand: brand || null,
+      });
+    }
+  }, [committedSearch, category, subcategory, brand]);
 
   // Fetch & Endless Scroll Accumulation
   const hasServerInitial = Boolean(initialServer?.data && initialServer.data.length > 0);
