@@ -1,6 +1,7 @@
 import { api } from './index';
 
 export type BrowseSort =
+  | 'featured'
   | 'newest'
   | 'oldest'
   | 'price_asc'
@@ -19,6 +20,7 @@ export type DeliveryTimeFilter =
 export interface BrowseProductsParams {
   search?: string;
   category?: string;
+  subcategory?: string;
   brand?: string;
   min_price?: number;
   max_price?: number;
@@ -50,6 +52,7 @@ export interface BrowseProduct {
   views_count?: number;
   category: string;
   brand?: string | null;
+  attributes?: Record<string, any> | null;
   image_urls: string[];
   video_url?: string | null;
   tags: string[];

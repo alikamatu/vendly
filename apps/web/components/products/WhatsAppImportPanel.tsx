@@ -30,6 +30,7 @@ import {
 import VerndlyAiIcon from '@/components/ai/VerndlyAiIcon';
 import VerndlyAiOverlay from '@/components/ai/VerndlyAiOverlay';
 import RemoteProductThumb from '@/components/products/RemoteProductThumb';
+import ImportItemSpecsEditor from '@/components/products/ImportItemSpecsEditor';
 import Alert from '@/components/ui/Alert';
 
 type ImportMethod = 'screenshots' | 'link' | 'meta';
@@ -519,10 +520,12 @@ export default function WhatsAppImportPanel({ embedded = false }: { embedded?: b
             original_price: item.original_price,
             currency: item.currency || 'GHS',
             category: item.category || categories[0]?.name || 'General',
+            subcategory: item.subcategory || item.attributes?.subcategory || undefined,
             condition: item.condition,
             quantity_available: parseInt(item.stockText || '1', 10) || 1,
             brand: item.brand.trim() || undefined,
             tags: item.tags,
+            attributes: item.attributes,
             image_urls: item.image_urls,
             status: item.status,
           })),
@@ -567,6 +570,10 @@ export default function WhatsAppImportPanel({ embedded = false }: { embedded?: b
               category: item.category || categories[0]?.name || 'General',
               brand: item.brand.trim() || undefined,
               tags: item.tags,
+              attributes: {
+                ...(item.attributes || {}),
+                ...(item.subcategory ? { subcategory: item.subcategory } : {}),
+              },
             },
             compressedFiles,
           );
@@ -1221,6 +1228,14 @@ export default function WhatsAppImportPanel({ embedded = false }: { embedded?: b
                           </div>
                         </div>
                       </div>
+
+                      <ImportItemSpecsEditor
+                        category={item.category}
+                        subcategory={item.subcategory}
+                        tags={item.tags}
+                        attributes={item.attributes}
+                        onChange={(patch) => updateItem(item.tempId, patch)}
+                      />
                     </div>
                   </div>
                 </div>

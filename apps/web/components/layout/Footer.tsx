@@ -36,7 +36,7 @@ interface FooterLink {
 
 const SHOP_LINKS: FooterLink[] = [
   { label: 'Ask Verndly AI', href: '#verndly-ai', onClick: () => openVerndlyAi() },
-  { label: 'All Products', href: '/products' },
+  { label: 'Shop', href: '/products' },
   { label: 'Categories', href: '/categories' },
   { label: 'Verified Stores', href: '/stores' },
   { label: 'Top Deals', href: '/products?has_discount=1' },

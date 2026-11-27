@@ -4,16 +4,31 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, Package, Plus, ShoppingBag, Menu } from 'lucide-react';
+import {
+  LayoutDashboard,
+  Package,
+  Plus,
+  ShoppingBag,
+  Menu,
+  ShieldAlert,
+  ArrowRight,
+} from 'lucide-react';
 import Sidebar from '@/components/dashboard/Sidebar';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import { useAuth } from '@/lib/contexts/auth-context';
 
 const EASE_SMOOTH = [0.22, 1, 0.36, 1] as const;
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { user } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const isUnverifiedStore =
+    user?.role === 'SELLER' &&
+    Boolean(user.seller_profile) &&
+    user.seller_profile?.is_seller_verified === false;
 
   const getTitle = (path: string) => {
     if (path === '/dashboard') return 'Overview';
@@ -83,6 +98,36 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         <div className="flex min-h-dvh flex-col lg:ml-64">
           <DashboardHeader title={getTitle(pathname)} onMenuToggle={() => setIsSidebarOpen(true)} />
+
+          {isUnverifiedStore && (
+            <div className="mx-auto w-full max-w-[1440px] px-4 pt-3 sm:px-6 lg:px-8">
+              <div className="flex flex-col gap-3 rounded-2xl bg-amber-500/10 px-4 py-3 text-amber-950 sm:flex-row sm:items-center sm:justify-between dark:text-amber-100">
+                <div className="flex items-start gap-2.5 sm:items-center">
+                  <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 sm:mt-0 dark:text-amber-400" />
+                  <p className="text-xs leading-relaxed">
+                    <strong className="font-semibold">
+                      {user?.approval_status === 'PENDING'
+                        ? 'Seller verification under review — orders paused.'
+                        : 'Seller verification required to receive orders.'}
+                    </strong>{' '}
+                    You can set up your storefront and upload products now, but buyers cannot check
+                    out until your verification is approved.
+                  </p>
+                </div>
+                <Link
+                  href="/seller-verification"
+                  className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-full bg-amber-600 px-3.5 text-[11px] font-semibold text-white transition-opacity hover:opacity-90"
+                >
+                  <span>
+                    {user?.approval_status === 'PENDING'
+                      ? 'View verification status'
+                      : 'Complete verification'}
+                  </span>
+                  <ArrowRight className="h-3 w-3" />
+                </Link>
+              </div>
+            </div>
+          )}
 
           <main
             className={`mx-auto w-full max-w-[1440px] flex-1 px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-7 ${

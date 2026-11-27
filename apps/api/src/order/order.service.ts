@@ -75,6 +75,13 @@ export class OrderService {
       );
     }
 
+    // Hard-coded backend guard: unverified stores cannot receive orders
+    if (!seller.is_seller_verified) {
+      throw new ForbiddenException(
+        'This store has not completed seller verification and cannot receive orders yet.',
+      );
+    }
+
     if (seller.user_id === userId) {
       throw new ForbiddenException('You cannot purchase your own products.');
     }
@@ -99,11 +106,33 @@ export class OrderService {
 
     const requiresPaystack = isUpfrontRequired || isUpfrontRequested;
 
-    // 2. Fetch products + any referenced variants and calculate total.
-    const productIds = dto.items.map((item) => item.productId);
-    const variantIds = dto.items
-      .map((i) => i.variantId)
-      .filter((v): v is string => Boolean(v));
+    // 2. Validate item quantities and fetch products + any referenced variants.
+    if (!Array.isArray(dto.items) || dto.items.length === 0) {
+      throw new BadRequestException('Order must contain at least one item.');
+    }
+
+    for (const item of dto.items) {
+      if (
+        typeof item.quantity !== 'number' ||
+        !Number.isInteger(item.quantity) ||
+        item.quantity < 1
+      ) {
+        throw new BadRequestException(
+          'Item quantity must be a whole number of at least 1.',
+        );
+      }
+    }
+
+    const productIds = Array.from(
+      new Set(dto.items.map((item) => item.productId)),
+    );
+    const variantIds = Array.from(
+      new Set(
+        dto.items
+          .map((i) => i.variantId)
+          .filter((v): v is string => Boolean(v)),
+      ),
+    );
 
     const [products, variants] = await Promise.all([
       (this.prisma.product as any).findMany({
@@ -120,6 +149,24 @@ export class OrderService {
       throw new BadRequestException(
         'One or more products not found or do not belong to this store',
       );
+    }
+
+    // Aggregate total requested quantity per variant and per non-variant product
+    // so duplicate lines in the same order cannot bypass available stock checks.
+    const requestedVariantQty = new Map<string, number>();
+    const requestedProductQty = new Map<string, number>();
+    for (const item of dto.items) {
+      if (item.variantId) {
+        requestedVariantQty.set(
+          item.variantId,
+          (requestedVariantQty.get(item.variantId) || 0) + item.quantity,
+        );
+      } else {
+        requestedProductQty.set(
+          item.productId,
+          (requestedProductQty.get(item.productId) || 0) + item.quantity,
+        );
+      }
     }
 
     let totalAmount = new Prisma.Decimal(0);
@@ -153,29 +200,29 @@ export class OrderService {
             'Selected variant is no longer available',
           );
         }
+        const totalRequestedForVariant =
+          requestedVariantQty.get(item.variantId) ?? item.quantity;
         if (variant.quantity_available <= 0) {
           throw new BadRequestException(`${product.title} is out of stock.`);
         }
-        if (variant.quantity_available < item.quantity) {
+        if (variant.quantity_available < totalRequestedForVariant) {
           throw new BadRequestException(
-            `Only ${variant.quantity_available} of this variant available`,
+            `Only ${variant.quantity_available} of "${product.title}" available in stock.`,
           );
         }
         if (variant.price) unitPrice = variant.price;
         variantId = variant.id;
       } else {
-        // Product-level stock check. Without this, a buyer could place an
-        // order on a product whose `quantity_available` is already 0 or
-        // negative — the unconditional decrement below would drive it
-        // further negative. Validate up front so the seller sees a
-        // 4xx rather than a corrupted inventory count.
+        // Product-level stock check (using aggregated total across duplicate lines).
+        const totalRequestedForProduct =
+          requestedProductQty.get(item.productId) ?? item.quantity;
         if (typeof product.quantity_available === 'number') {
           if (product.quantity_available <= 0) {
             throw new BadRequestException(`${product.title} is out of stock.`);
           }
-          if (product.quantity_available < item.quantity) {
+          if (product.quantity_available < totalRequestedForProduct) {
             throw new BadRequestException(
-              `Only ${product.quantity_available} of "${product.title}" left.`,
+              `Only ${product.quantity_available} of "${product.title}" available in stock.`,
             );
           }
         }
@@ -235,39 +282,36 @@ export class OrderService {
       // Update quantity available only if it's NOT a Paystack order (e.g. COD).
       // For Paystack, we deduct ONLY after successful payment verification.
       //
-      // Guard against negative stock under race conditions: we run the
-      // decrement scoped to rows where the current quantity is still
-      // >= the requested amount. If `updateMany` reports zero rows
-      // updated, another concurrent order claimed the last units in the
-      // window between our validation above and this write — fail the
-      // transaction with a clean 4xx instead of letting the count slip
-      // into negative territory.
+      // Guard against negative stock under race conditions: run the atomic
+      // decrement on aggregated totals scoped to rows where current quantity
+      // is still >= the requested amount.
       if (!requiresPaystack) {
-        for (const item of dto.items) {
-          if (item.variantId) {
-            const updated = await (tx as any).productVariant.updateMany({
-              where: {
-                id: item.variantId,
-                quantity_available: { gte: item.quantity },
-              },
-              data: { quantity_available: { decrement: item.quantity } },
-            });
-            if (updated.count === 0) {
-              throw new BadRequestException(
-                'Sorry — someone else just bought the last of that item.',
-              );
-            }
-          } else {
-            const updated = await tx.product.updateMany({
-              where: {
-                id: item.productId,
-                quantity_available: { gte: item.quantity },
-              },
-              data: { quantity_available: { decrement: item.quantity } },
-            });
-            if (updated.count === 0) {
-              throw new BadRequestException('Sorry — that item just sold out.');
-            }
+        for (const [vId, totalQty] of requestedVariantQty.entries()) {
+          const updated = await (tx as any).productVariant.updateMany({
+            where: {
+              id: vId,
+              quantity_available: { gte: totalQty },
+            },
+            data: { quantity_available: { decrement: totalQty } },
+          });
+          if (updated.count === 0) {
+            throw new BadRequestException(
+              'Sorry — someone else just bought the last of that item.',
+            );
+          }
+        }
+        for (const [pId, totalQty] of requestedProductQty.entries()) {
+          const updated = await tx.product.updateMany({
+            where: {
+              id: pId,
+              quantity_available: { gte: totalQty },
+            },
+            data: { quantity_available: { decrement: totalQty } },
+          });
+          if (updated.count === 0) {
+            throw new BadRequestException(
+              'Sorry — that item just sold out or has insufficient stock.',
+            );
           }
         }
       }
@@ -1003,25 +1047,45 @@ export class OrderService {
     const orderNumber = `ORD-${orderId.slice(-6).toUpperCase()}`;
 
     if (dto.payment_status === 'PAID') {
-      // Finalize inventory if not already finalized
-      await this.prisma
-        .$transaction(async (tx) => {
-          for (const item of order.items) {
-            if (item.variant_id) {
-              await tx.productVariant.update({
-                where: { id: item.variant_id },
-                data: { quantity_available: { decrement: item.quantity } },
-              });
+      // Finalize inventory ONLY when transitioning from AWAITING_PAYMENT
+      // (COD orders already decremented stock atomically at order creation).
+      if (order.status === 'AWAITING_PAYMENT') {
+        await this.prisma
+          .$transaction(async (tx) => {
+            for (const item of order.items) {
+              if (item.variant_id) {
+                const updatedVar = await tx.productVariant.updateMany({
+                  where: {
+                    id: item.variant_id,
+                    quantity_available: { gte: item.quantity },
+                  },
+                  data: { quantity_available: { decrement: item.quantity } },
+                });
+                if (updatedVar.count === 0) {
+                  await tx.productVariant.update({
+                    where: { id: item.variant_id },
+                    data: { quantity_available: 0 },
+                  });
+                }
+              } else if (item.product_id) {
+                const updatedProd = await tx.product.updateMany({
+                  where: {
+                    id: item.product_id,
+                    quantity_available: { gte: item.quantity },
+                  },
+                  data: { quantity_available: { decrement: item.quantity } },
+                });
+                if (updatedProd.count === 0) {
+                  await tx.product.update({
+                    where: { id: item.product_id },
+                    data: { quantity_available: 0 },
+                  });
+                }
+              }
             }
-            if (item.product_id) {
-              await tx.product.update({
-                where: { id: item.product_id },
-                data: { quantity_available: { decrement: item.quantity } },
-              });
-            }
-          }
-        })
-        .catch(() => {});
+          })
+          .catch(() => {});
+      }
 
       // Settle ledger, 4% platform fee and vendor balance records
       await this.paymentsService
@@ -1439,6 +1503,12 @@ export class OrderService {
     const seller = order.items[0]?.product?.seller;
     if (!seller) {
       throw new NotFoundException('Seller profile not found');
+    }
+
+    if (!seller.is_seller_verified) {
+      throw new ForbiddenException(
+        'This store has not completed seller verification and cannot receive orders yet.',
+      );
     }
 
     const reference = `ORD_${order.id}_${Date.now()}`;

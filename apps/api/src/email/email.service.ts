@@ -603,6 +603,69 @@ export class EmailService {
       );
     }
   }
+
+  async sendPayoutChangeOtpEmail(args: {
+    to: string;
+    fullName: string;
+    storeName: string;
+    code: string;
+    bankName: string;
+    maskedAccount: string;
+    expiresMinutes?: number;
+  }) {
+    const first = escapeHtml((args.fullName || 'there').split(' ')[0]);
+    const mins = args.expiresMinutes ?? 10;
+    const html = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 520px; margin: 0 auto; color: #111827; line-height: 1.6;">
+        <p style="font-size: 14px;">Hi ${first},</p>
+        <p style="font-size: 14px;">We received a request to update the payout account for <strong>${escapeHtml(args.storeName)}</strong> on Verndly:</p>
+        <div style="background: #f9fafb; border-radius: 12px; padding: 14px 16px; margin: 16px 0; font-size: 13px;">
+          <div><strong>Provider / Bank:</strong> ${escapeHtml(args.bankName)}</div>
+          <div><strong>Account / MoMo:</strong> ${escapeHtml(args.maskedAccount)}</div>
+        </div>
+        <p style="font-size: 14px;">Enter this verification code to confirm the change:</p>
+        <div style="background: #111827; color: #ffffff; border-radius: 12px; padding: 16px; text-align: center; font-size: 28px; font-weight: 700; letter-spacing: 8px; margin: 18px 0;">
+          ${escapeHtml(args.code)}
+        </div>
+        <p style="font-size: 12px; color: #6b7280;">This code expires in ${mins} minutes and can only be used once. If you did not request this payout change, ignore this email and change your Verndly password immediately.</p>
+      </div>
+    `;
+    await this.deliver(
+      args.to,
+      `Verndly verification code: ${args.code} (Payout account update)`,
+      html,
+      'payout-change-otp',
+    );
+  }
+
+  async sendPayoutDetailsChangedAlertEmail(args: {
+    to: string;
+    fullName: string;
+    storeName: string;
+    bankName: string;
+    maskedAccount: string;
+    subaccountSynced: boolean;
+  }) {
+    const first = escapeHtml((args.fullName || 'there').split(' ')[0]);
+    const html = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 520px; margin: 0 auto; color: #111827; line-height: 1.6;">
+        <p style="font-size: 14px;">Hi ${first},</p>
+        <p style="font-size: 14px;">Your verified payout destination for <strong>${escapeHtml(args.storeName)}</strong> has been updated.</p>
+        <div style="background: #f9fafb; border-radius: 12px; padding: 14px 16px; margin: 16px 0; font-size: 13px;">
+          <div><strong>Provider / Bank:</strong> ${escapeHtml(args.bankName)}</div>
+          <div><strong>Account / MoMo:</strong> ${escapeHtml(args.maskedAccount)}</div>
+          <div><strong>Paystack Subaccount:</strong> ${args.subaccountSynced ? 'Synced & Active' : 'Queued for automatic sync'}</div>
+        </div>
+        <p style="font-size: 12px; color: #b91c1c;"><strong>Didn't make this change?</strong> Contact Verndly Support immediately at ${escapeHtml(this.replyToAddress)} so we can freeze your payouts and secure your store.</p>
+      </div>
+    `;
+    await this.deliver(
+      args.to,
+      `Security alert: Payout details updated for ${args.storeName}`,
+      html,
+      'payout-change-alert',
+    );
+  }
 }
 
 function escapeHtml(s: string) {

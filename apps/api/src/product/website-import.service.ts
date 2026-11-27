@@ -8,6 +8,10 @@ import {
   WhatsAppPreviewItem,
 } from './whatsapp-catalog.service';
 import { GENERIC_CATEGORY_TOKENS, matchCategoryName } from './category-matcher';
+import {
+  ALL_SUBCATEGORY_NAMES,
+  normalizeProductAttributes,
+} from './category-taxonomy';
 
 export {
   matchCategoryName,
@@ -1779,7 +1783,9 @@ export class WebsiteImportService {
       '2. Extract the exact product name and exact numeric selling price shown on the page (if a higher original/crossed-out price is also shown, put it in original_price). If no price is shown for an item on a single product page, set price to null.',
       '3. Write a concise, factual product description (40–300 chars) describing the product itself — never the website’s general meta description.',
       `4. Pick the closest category from: ${categories.join(', ')}.`,
-      '5. Match each product with its exact `[IMG: https://...]` URL that appears directly above, inside, or beside that product card in the Structured Page Content.',
+      `5. Pick the closest subcategory from this list when applicable (or ""): ${ALL_SUBCATEGORY_NAMES.join(', ')}.`,
+      '6. Extract tags (3–6 lowercase search keywords), plus color, material, size, warranty, sku, dimensions (length/width/height/unit), and weight (value/unit) if mentioned on the page; never fabricate measurements.',
+      '7. Match each product with its exact `[IMG: https://...]` URL that appears directly above, inside, or beside that product card in the Structured Page Content.',
     ].join('\n');
 
     const responseSchema = {
@@ -1798,11 +1804,35 @@ export class WebsiteImportService {
               original_price: { type: 'NUMBER', nullable: true },
               currency: { type: 'STRING' },
               category: { type: 'STRING' },
+              subcategory: { type: 'STRING' },
               condition: {
                 type: 'STRING',
                 enum: ['new', 'used', 'refurbished'],
               },
               brand: { type: 'STRING' },
+              color: { type: 'STRING' },
+              material: { type: 'STRING' },
+              size: { type: 'STRING' },
+              warranty: { type: 'STRING' },
+              sku: { type: 'STRING' },
+              dimensions: {
+                type: 'OBJECT',
+                nullable: true,
+                properties: {
+                  length: { type: 'NUMBER', nullable: true },
+                  width: { type: 'NUMBER', nullable: true },
+                  height: { type: 'NUMBER', nullable: true },
+                  unit: { type: 'STRING' },
+                },
+              },
+              weight: {
+                type: 'OBJECT',
+                nullable: true,
+                properties: {
+                  value: { type: 'NUMBER', nullable: true },
+                  unit: { type: 'STRING' },
+                },
+              },
               tags: { type: 'ARRAY', items: { type: 'STRING' } },
               image_urls: { type: 'ARRAY', items: { type: 'STRING' } },
             },
@@ -1873,6 +1903,39 @@ export class WebsiteImportService {
               : [];
 
         const desc = asString(p.description).trim().slice(0, 900);
+        const parsedTags = Array.isArray(p.tags)
+          ? p.tags
+              .map((t) => asString(t).trim().toLowerCase())
+              .filter(Boolean)
+              .slice(0, 6)
+          : [];
+        const matchedCategory = matchCategoryName(
+          typeof p.category === 'string' ? p.category : undefined,
+          categories,
+          {
+            title,
+            description: desc,
+            tags: parsedTags,
+            brand: asString(p.brand),
+            url: pageUrl.toString(),
+          },
+        );
+        const attributes = normalizeProductAttributes(
+          {
+            subcategory:
+              typeof p.subcategory === 'string' ? p.subcategory : undefined,
+            color: typeof p.color === 'string' ? p.color : undefined,
+            material: typeof p.material === 'string' ? p.material : undefined,
+            size: typeof p.size === 'string' ? p.size : undefined,
+            warranty: typeof p.warranty === 'string' ? p.warranty : undefined,
+            sku: typeof p.sku === 'string' ? p.sku : undefined,
+            dimensions: p.dimensions,
+            weight: p.weight,
+          },
+          matchedCategory,
+          { title, description: desc, tags: parsedTags },
+        );
+
         items.push({
           tempId: `web_ai_${i}_${Date.now()}`,
           title,
@@ -1880,29 +1943,18 @@ export class WebsiteImportService {
           price,
           original_price: orig,
           currency: asString(p.currency, 'GHS').trim().toUpperCase() || 'GHS',
-          category: matchCategoryName(
-            typeof p.category === 'string' ? p.category : undefined,
-            categories,
-            {
-              title,
-              description: desc,
-              tags: Array.isArray(p.tags) ? p.tags.map((t) => asString(t)) : [],
-              brand: asString(p.brand),
-              url: pageUrl.toString(),
-            },
-          ),
+          category: matchedCategory,
+          ...(attributes.subcategory
+            ? { subcategory: attributes.subcategory }
+            : {}),
           condition:
             p.condition === 'used' || p.condition === 'refurbished'
               ? p.condition
               : 'new',
           quantity_available: 1,
           brand: asString(p.brand).trim().slice(0, 60),
-          tags: Array.isArray(p.tags)
-            ? p.tags
-                .map((t) => asString(t).trim().toLowerCase())
-                .filter(Boolean)
-                .slice(0, 6)
-            : [],
+          tags: parsedTags,
+          ...(Object.keys(attributes).length > 0 ? { attributes } : {}),
           image_urls: finalImages,
           status:
             price && finalImages.length > 0 && desc.length >= 20

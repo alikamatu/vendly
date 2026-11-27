@@ -42,6 +42,58 @@ export const storeApi = {
     return res.data;
   },
 
+  async resolvePayoutAccount(token: string, bankCode: string, accountNumber: string) {
+    const qs = new URLSearchParams({
+      bank_code: bankCode,
+      account_number: accountNumber,
+    });
+    const res = await api.get<{
+      verified: boolean;
+      account_name: string | null;
+      account_number: string;
+      bank_code: string;
+      warning?: string;
+    }>(`/payments/resolve-account?${qs.toString()}`, { token });
+    return res.data;
+  },
+
+  async requestPayoutChangeVerification(
+    token: string,
+    payload: { bank_name?: string; bank_code: string; account_number: string },
+  ) {
+    const res = await api.post<{
+      sent: boolean;
+      masked_email: string;
+      expires_in_seconds: number;
+      totp_available: boolean;
+      resolved_account_name: string | null;
+      message: string;
+    }>('/stores/payout-details/request-verification', payload, { token });
+    return res.data;
+  },
+
+  async confirmPayoutChange(
+    token: string,
+    payload: {
+      code: string;
+      method?: 'EMAIL_OTP' | 'TOTP';
+      bank_name?: string;
+      bank_code?: string;
+      account_number?: string;
+    },
+  ) {
+    const res = await api.post<{
+      message: string;
+      bank_name: string;
+      bank_code: string;
+      account_number: string;
+      paystack_subaccount_code: string | null;
+      subaccount_status: string;
+      subaccount_warning?: string | null;
+    }>('/stores/payout-details/confirm', payload, { token });
+    return res.data;
+  },
+
   async getStoreStats(token: string) {
     const res = await api.get<{ stats: any[]; recentOrders: any[]; financials?: any }>(
       '/stores/stats',

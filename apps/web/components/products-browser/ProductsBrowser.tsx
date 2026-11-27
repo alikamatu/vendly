@@ -1,8 +1,8 @@
 'use client';
 
-import React, { Suspense, useCallback, useEffect, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { SlidersHorizontal, X } from 'lucide-react';
+import { Loader2, RotateCcw, SlidersHorizontal, X } from 'lucide-react';
 import { toast } from 'sonner';
 import Header from '@/components/layout/Header';
 import ProductCard from '@/components/products/ProductCard';
@@ -14,6 +14,7 @@ import { productApi, type BrowseSort } from '@/lib/api/product';
 import { aiApi, type AiBuyerSearchResponse } from '@/lib/api/ai';
 import { isBrandAllowedPublicly } from '@/lib/brand-guard';
 import { getProductPath } from '@/lib/product-slug';
+import { POPULAR_SUBTABS, getSubtabsForCategory } from '@/lib/catalog-subcategories';
 import type { HomeCategory } from '@/hooks/useHomeData';
 import type { ViewMode } from './ViewToggle';
 
@@ -21,7 +22,6 @@ import VerndlyAiShopBar from './VerndlyAiShopBar';
 import ActiveFiltersBar from './ActiveFiltersBar';
 import MobileFilterDrawer from './MobileFilterDrawer';
 import ResultsHeader from './ResultsHeader';
-import Pagination from './Pagination';
 import EmptyState from './EmptyState';
 import ProductListRow from './ProductListRow';
 
@@ -30,6 +30,28 @@ const AI_QUICK_PROMPTS = [
   { label: 'Best deals', query: 'best discounted products on sale' },
   { label: 'Gift ideas', query: 'thoughtful gift ideas under 400 cedis' },
 ];
+
+function computeViewportColumns(width: number): number {
+  if (width >= 1536) return 6; // 2xl
+  if (width >= 1024) return 5; // lg
+  if (width >= 768) return 4; // md
+  if (width >= 640) return 3; // sm
+  return 2;
+}
+
+function useMasonryColumnCount(): number {
+  const [columnCount, setColumnCount] = useState(2);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const update = () => setColumnCount(computeViewportColumns(window.innerWidth));
+    update();
+    window.addEventListener('resize', update, { passive: true });
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
+  return columnCount;
+}
 
 function ProductsBrowserInner({
   initialData,
@@ -43,6 +65,8 @@ function ProductsBrowserInner({
   const state = useProductsBrowser(initialData);
   const [view, setView] = useState<ViewMode>('grid');
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const columnCount = useMasonryColumnCount();
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   // Verndly AI Personal Shopper state
   const [isAskingAi, setIsAskingAi] = useState(false);
@@ -87,13 +111,43 @@ function ProductsBrowserInner({
     } catch {}
   }, [view]);
 
-  // Scroll to top when page changes
+  // Auto-loading endless scroll observer
   useEffect(() => {
-    if (typeof window !== 'undefined' && state.page > 1) {
-      const el = document.getElementById('products-top');
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (
+      aiResult ||
+      !state.hasMore ||
+      state.isLoading ||
+      state.isRefreshing ||
+      state.isLoadingMore ||
+      Boolean(state.loadMoreError)
+    ) {
+      return;
     }
-  }, [state.page]);
+
+    const node = sentinelRef.current;
+    if (!node || typeof IntersectionObserver === 'undefined') return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          state.loadMore();
+        }
+      },
+      { root: null, rootMargin: '600px 0px', threshold: 0 },
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [
+    aiResult,
+    state.hasMore,
+    state.isLoading,
+    state.isRefreshing,
+    state.isLoadingMore,
+    state.loadMoreError,
+    state.loadMore,
+    state.data.length,
+  ]);
 
   const handleAskVerndlyAi = useCallback(async (prompt: string) => {
     const clean = prompt.trim();
@@ -135,14 +189,40 @@ function ProductsBrowserInner({
     state.setCategory(catName);
   };
 
+  const handleSelectSubcategory = (subName: string | null) => {
+    setAiResult(null);
+    state.setSubcategory(subName);
+  };
+
+  const activeCategorySubtabs = useMemo(
+    () => (state.category ? getSubtabsForCategory(state.category) : []),
+    [state.category],
+  );
+
   const handleClearAll = () => {
     setAiResult(null);
     state.clearAll();
   };
 
-  const displayedProducts = aiResult ? (aiResult.products as any[]) : state.data;
+  const displayedProducts = useMemo(
+    () => (aiResult ? (aiResult.products as any[]) : state.data),
+    [aiResult, state.data],
+  );
   const displayedTotal = aiResult ? aiResult.total : state.meta.total;
   const showEmpty = !state.isLoading && !isAskingAi && displayedProducts.length === 0;
+
+  // Row-first masonry columns: preserves left-to-right Pro-first ranking AND prevents
+  // existing cards from jumping between columns when endless scroll appends new batches.
+  const masonryColumns = useMemo(() => {
+    const cols: Array<Array<{ product: any; idx: number }>> = Array.from(
+      { length: columnCount },
+      () => [],
+    );
+    displayedProducts.forEach((product, idx) => {
+      cols[idx % columnCount].push({ product, idx });
+    });
+    return cols;
+  }, [displayedProducts, columnCount]);
 
   return (
     <div className="bg-background min-h-screen">
@@ -249,6 +329,70 @@ function ProductsBrowserInner({
           })}
         </div>
 
+        {/* Subcategory Subtabs Strip: Shows scoped subtabs for selected category, or Popular Subtabs on "All" */}
+        {!aiResult && (
+          <div
+            aria-label="Subcategory tabs"
+            className="no-scrollbar flex items-center gap-1.5 overflow-x-auto pb-0.5"
+          >
+            {state.category && activeCategorySubtabs.length > 0 ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => handleSelectSubcategory(null)}
+                  className={`inline-flex h-7 shrink-0 items-center rounded-full px-3 text-[11px] font-semibold transition-colors ${
+                    !state.subcategory
+                      ? 'bg-foreground/12 text-foreground'
+                      : 'text-muted hover:bg-surface hover:text-foreground'
+                  }`}
+                >
+                  All {state.category}
+                </button>
+                {activeCategorySubtabs.map((sub) => {
+                  const active = state.subcategory === sub;
+                  return (
+                    <button
+                      key={sub}
+                      type="button"
+                      onClick={() => handleSelectSubcategory(active ? null : sub)}
+                      className={`inline-flex h-7 shrink-0 items-center rounded-full px-3 text-[11px] font-medium transition-colors ${
+                        active
+                          ? 'bg-foreground text-background font-semibold'
+                          : 'bg-surface/70 text-muted hover:bg-surface hover:text-foreground'
+                      }`}
+                    >
+                      {sub}
+                    </button>
+                  );
+                })}
+              </>
+            ) : !state.category ? (
+              <>
+                <span className="text-muted shrink-0 pr-1 text-[10px] font-semibold uppercase tracking-wider">
+                  Shop by
+                </span>
+                {POPULAR_SUBTABS.map((sub) => {
+                  const active = state.subcategory === sub.label;
+                  return (
+                    <button
+                      key={sub.label}
+                      type="button"
+                      onClick={() => handleSelectSubcategory(active ? null : sub.label)}
+                      className={`inline-flex h-7 shrink-0 items-center rounded-full px-3 text-[11px] font-medium transition-colors ${
+                        active
+                          ? 'bg-foreground text-background font-semibold'
+                          : 'bg-surface/70 text-muted hover:bg-surface hover:text-foreground'
+                      }`}
+                    >
+                      {sub.label}
+                    </button>
+                  );
+                })}
+              </>
+            ) : null}
+          </div>
+        )}
+
         {/* Active Verndly AI Curated Strip */}
         {aiResult && (
           <div className="bg-surface flex flex-col gap-3 rounded-2xl px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
@@ -319,10 +463,12 @@ function ProductsBrowserInner({
         ) : showEmpty ? (
           <EmptyState onReset={handleClearAll} />
         ) : view === 'grid' ? (
-          <div className="columns-2 gap-3 sm:columns-3 sm:gap-4 md:columns-4 lg:columns-5 2xl:columns-6">
-            {displayedProducts.map((product, idx) => (
-              <div key={product.id} className="mb-3 break-inside-avoid sm:mb-4">
-                <ProductCard product={product} index={idx} />
+          <div className="grid grid-cols-2 items-start gap-1.5 sm:grid-cols-3 sm:gap-2 md:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-6">
+            {masonryColumns.map((col, colIdx) => (
+              <div key={colIdx} className="flex flex-col gap-1.5 sm:gap-2">
+                {col.map(({ product, idx }) => (
+                  <ProductCard key={product.id} product={product} index={idx % 8} />
+                ))}
               </div>
             ))}
           </div>
@@ -334,12 +480,36 @@ function ProductsBrowserInner({
           </div>
         )}
 
+        {/* Auto-Loading Endless Scroll Sentinel & Feed Status */}
         {!aiResult && !state.isLoading && state.data.length > 0 && (
-          <Pagination
-            page={state.page}
-            totalPages={state.meta.totalPages}
-            onChange={state.setPage}
-          />
+          <div className="flex flex-col items-center justify-center pt-6">
+            <div ref={sentinelRef} className="h-1 w-full" aria-hidden="true" />
+
+            {state.isLoadingMore ? (
+              <div
+                role="status"
+                aria-live="polite"
+                className="bg-surface text-muted inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-medium"
+              >
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <span>Loading more products…</span>
+              </div>
+            ) : state.loadMoreError ? (
+              <button
+                type="button"
+                onClick={state.retryLoadMore}
+                className="bg-surface text-foreground hover:bg-foreground/[0.08] inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold transition-colors"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                <span>Couldn’t load more — tap to retry</span>
+              </button>
+            ) : !state.hasMore ? (
+              <p className="text-muted text-xs">
+                Showing all {state.data.length.toLocaleString()}{' '}
+                {state.data.length === 1 ? 'product' : 'products'}
+              </p>
+            ) : null}
+          </div>
         )}
       </main>
 

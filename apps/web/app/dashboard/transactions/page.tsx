@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import React, { useEffect, useState } from "react";
-import Link from "next/link";
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import {
   ArrowLeft,
   Loader2,
@@ -18,22 +18,22 @@ import {
   Check,
   RefreshCw,
   ExternalLink,
-} from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { useAuth } from "@/lib/contexts/auth-context";
-import { paymentApi } from "@/lib/api/payment";
-import Card from "@/components/ui/Card";
-import Button from "@/components/ui/Button";
-import Select from "@/components/ui/Select";
-import clsx from "@/utils/clsx";
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '@/lib/contexts/auth-context';
+import { paymentApi } from '@/lib/api/payment';
+import Card from '@/components/ui/Card';
+import Button from '@/components/ui/Button';
+import Select from '@/components/ui/Select';
+import clsx from '@/utils/clsx';
 
 export default function SellerTransactionsPage() {
   const { token } = useAuth();
   const [items, setItems] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"ALL" | "SUCCESS" | "PENDING" | "FAILED">("ALL");
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'SUCCESS' | 'PENDING' | 'FAILED'>('ALL');
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const load = async () => {
@@ -44,7 +44,7 @@ export default function SellerTransactionsPage() {
       const res = await paymentApi.getTransactions(token, { page: 1, limit: 100 });
       setItems(res?.items || []);
     } catch (err: any) {
-      setError(err.message || "Failed to load transactions.");
+      setError(err.message || 'Failed to load transactions.');
     } finally {
       setIsLoading(false);
     }
@@ -68,32 +68,35 @@ export default function SellerTransactionsPage() {
       tx.payer?.name?.toLowerCase().includes(q) ||
       tx.order?.customer_name?.toLowerCase().includes(q);
 
-    const matchesStatus = statusFilter === "ALL" || tx.status === statusFilter;
+    const matchesStatus = statusFilter === 'ALL' || tx.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
-  const successful = items.filter((t) => t.status === "SUCCESS");
-  const totalGross = successful.reduce((sum, t) => sum + (t.gross_amount || Number(t.amount) || 0), 0);
+  const successful = items.filter((t) => t.status === 'SUCCESS');
+  const totalGross = successful.reduce(
+    (sum, t) => sum + (t.gross_amount || Number(t.amount) || 0),
+    0,
+  );
   const totalFees = totalGross * 0.04;
   const totalNet = totalGross * 0.96;
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto pb-20">
+    <div className="mx-auto max-w-7xl space-y-8 pb-20">
       {/* Header & Sub-nav */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div className="space-y-1">
           <div className="flex items-center gap-2.5">
             <Link
               href="/dashboard"
-              className="w-8 h-8 rounded-xl bg-surface/60 hover:bg-surface flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+              className="bg-surface/60 hover:bg-surface text-muted-foreground hover:text-foreground flex h-8 w-8 items-center justify-center rounded-xl transition-colors"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="h-4 w-4" />
             </Link>
-            <h1 className="text-xl font-bold uppercase tracking-tight text-foreground">
+            <h1 className="text-foreground text-xl font-bold uppercase tracking-tight">
               Transactions &amp; Fees
             </h1>
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-muted-foreground text-xs">
             Complete breakdown of sales revenue, 4% platform fees, and net payouts.
           </p>
         </div>
@@ -101,12 +104,19 @@ export default function SellerTransactionsPage() {
         {/* Quick Tabs to Payouts */}
         <div className="flex items-center gap-2">
           <Link href="/dashboard/transactions">
-            <Button size="sm" className="h-9 px-4 rounded-xl text-xs font-semibold bg-primary text-primary-foreground shadow-none">
+            <Button
+              size="sm"
+              className="bg-primary text-primary-foreground h-9 rounded-xl px-4 text-xs font-semibold shadow-none"
+            >
               Transactions
             </Button>
           </Link>
           <Link href="/dashboard/payouts">
-            <Button variant="secondary" size="sm" className="h-9 px-4 rounded-xl text-xs font-semibold">
+            <Button
+              variant="secondary"
+              size="sm"
+              className="h-9 rounded-xl px-4 text-xs font-semibold"
+            >
               Payouts
             </Button>
           </Link>
@@ -114,105 +124,95 @@ export default function SellerTransactionsPage() {
             onClick={load}
             variant="secondary"
             size="sm"
-            className="h-9 w-9 p-0 rounded-xl flex items-center justify-center"
+            className="flex h-9 w-9 items-center justify-center rounded-xl p-0"
             title="Refresh Transactions"
           >
-            <RefreshCw className={clsx("w-3.5 h-3.5", isLoading && "animate-spin")} />
+            <RefreshCw className={clsx('h-3.5 w-3.5', isLoading && 'animate-spin')} />
           </Button>
         </div>
       </div>
 
-      {/* 4% Fee Policy Transparency Banner */}
-      <div className="p-4 rounded-2xl border border-primary/20 bg-primary/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-        <div className="flex items-start sm:items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-            <Percent className="w-4 h-4" />
-          </div>
-          <div>
-            <span className="font-semibold text-foreground">Transparent 4% Platform Fee: </span>
-            <span className="text-muted-foreground">
-              Verndly charges a flat 4% platform commission on completed orders. You keep 96% net, disbursed straight to your bank or mobile money account.
-            </span>
-          </div>
-        </div>
-        <Link href="/dashboard/settings/terms" className="text-[11px] font-semibold text-primary hover:underline shrink-0">
-          View Terms
-        </Link>
-      </div>
-
       {/* Financial Metrics Summary */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-5 rounded-2xl bg-surface/40 border-0 shadow-none space-y-1.5" hoverEffect={false}>
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <Card
+          className="bg-surface/40 space-y-1.5 rounded-2xl border-0 p-5 shadow-none"
+          hoverEffect={false}
+        >
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <span className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wider">
               Net Earnings (96%)
             </span>
-            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600">
-              <TrendingUp className="w-4 h-4" />
+            <div className="rounded-xl bg-emerald-500/10 p-2 text-emerald-600">
+              <TrendingUp className="h-4 w-4" />
             </div>
           </div>
-          <p className="text-xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
+          <p className="font-mono text-xl font-bold text-emerald-600 dark:text-emerald-400">
             GH₵ {totalNet.toFixed(2)}
           </p>
-          <p className="text-[10px] text-muted-foreground">Your actual take-home revenue</p>
+          <p className="text-muted-foreground text-[10px]">Your actual take-home revenue</p>
         </Card>
 
-        <Card className="p-5 rounded-2xl bg-surface/40 border-0 shadow-none space-y-1.5" hoverEffect={false}>
+        <Card
+          className="bg-surface/40 space-y-1.5 rounded-2xl border-0 p-5 shadow-none"
+          hoverEffect={false}
+        >
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <span className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wider">
               Gross Sales (100%)
             </span>
-            <div className="p-2 rounded-xl bg-blue-500/10 text-blue-600">
-              <CreditCard className="w-4 h-4" />
+            <div className="rounded-xl bg-blue-500/10 p-2 text-blue-600">
+              <CreditCard className="h-4 w-4" />
             </div>
           </div>
-          <p className="text-xl font-bold font-mono text-foreground">
-            GH₵ {totalGross.toFixed(2)}
-          </p>
-          <p className="text-[10px] text-muted-foreground">Total customer order sum</p>
+          <p className="text-foreground font-mono text-xl font-bold">GH₵ {totalGross.toFixed(2)}</p>
+          <p className="text-muted-foreground text-[10px]">Total customer order sum</p>
         </Card>
 
-        <Card className="p-5 rounded-2xl bg-surface/40 border-0 shadow-none space-y-1.5" hoverEffect={false}>
+        <Card
+          className="bg-surface/40 space-y-1.5 rounded-2xl border-0 p-5 shadow-none"
+          hoverEffect={false}
+        >
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <span className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wider">
               Platform Fee (4%)
             </span>
-            <div className="p-2 rounded-xl bg-purple-500/10 text-purple-600">
-              <Percent className="w-4 h-4" />
+            <div className="rounded-xl bg-purple-500/10 p-2 text-purple-600">
+              <Percent className="h-4 w-4" />
             </div>
           </div>
-          <p className="text-xl font-bold font-mono text-purple-600 dark:text-purple-400">
+          <p className="font-mono text-xl font-bold text-purple-600 dark:text-purple-400">
             -GH₵ {totalFees.toFixed(2)}
           </p>
-          <p className="text-[10px] text-muted-foreground">Automated platform commission</p>
+          <p className="text-muted-foreground text-[10px]">Automated platform commission</p>
         </Card>
 
-        <Card className="p-5 rounded-2xl bg-surface/40 border-0 shadow-none space-y-1.5" hoverEffect={false}>
+        <Card
+          className="bg-surface/40 space-y-1.5 rounded-2xl border-0 p-5 shadow-none"
+          hoverEffect={false}
+        >
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <span className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wider">
               Completed Sales
             </span>
-            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-600">
-              <CheckCircle2 className="w-4 h-4" />
+            <div className="rounded-xl bg-amber-500/10 p-2 text-amber-600">
+              <CheckCircle2 className="h-4 w-4" />
             </div>
           </div>
-          <p className="text-xl font-bold font-mono text-foreground">
-            {successful.length}
-          </p>
-          <p className="text-[10px] text-muted-foreground">Successfully processed orders</p>
+          <p className="text-foreground font-mono text-xl font-bold">{successful.length}</p>
+          <p className="text-muted-foreground text-[10px]">Successfully processed orders</p>
         </Card>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+      <div className="flex flex-col items-center justify-between gap-3 pt-2 sm:flex-row">
         <div className="relative w-full sm:w-80">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+          <Search className="text-muted-foreground pointer-events-none absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Search Reference, Paystack ID, Customer..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-10 pl-9 pr-4 rounded-xl bg-surface/60 border-0 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary/30 font-medium"
+            className="bg-surface/60 text-foreground placeholder:text-muted-foreground focus:ring-primary/30 h-10 w-full rounded-xl border-0 pl-9 pr-4 text-xs font-medium outline-none focus:ring-1"
           />
         </div>
 
@@ -233,28 +233,29 @@ export default function SellerTransactionsPage() {
 
       {/* Transactions List */}
       {isLoading ? (
-        <div className="py-20 flex flex-col items-center justify-center gap-3">
-          <Loader2 className="w-8 h-8 text-primary animate-spin" />
-          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+        <div className="flex flex-col items-center justify-center gap-3 py-20">
+          <Loader2 className="text-primary h-8 w-8 animate-spin" />
+          <p className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
             Loading your transactions...
           </p>
         </div>
       ) : error ? (
-        <div className="p-8 rounded-2xl bg-red-500/10 border border-red-500/20 text-center space-y-3">
-          <AlertCircle className="w-8 h-8 text-red-500 mx-auto" />
+        <div className="space-y-3 rounded-2xl border border-red-500/20 bg-red-500/10 p-8 text-center">
+          <AlertCircle className="mx-auto h-8 w-8 text-red-500" />
           <p className="text-xs font-semibold text-red-600">{error}</p>
           <Button onClick={load} size="sm" variant="secondary" className="rounded-xl">
             Retry
           </Button>
         </div>
       ) : filteredItems.length === 0 ? (
-        <div className="py-20 text-center space-y-3 rounded-3xl bg-surface/20 border-0">
-          <CreditCard className="w-12 h-12 text-muted-foreground/30 mx-auto" />
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            {searchQuery ? "No matching transactions found" : "No transactions recorded yet"}
+        <div className="bg-surface/20 space-y-3 rounded-3xl border-0 py-20 text-center">
+          <CreditCard className="text-muted-foreground/30 mx-auto h-12 w-12" />
+          <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
+            {searchQuery ? 'No matching transactions found' : 'No transactions recorded yet'}
           </p>
-          <p className="text-[11px] text-muted-foreground">
-            When buyers place orders in your store, their payment logs and 4% fee breakdowns will appear here.
+          <p className="text-muted-foreground text-[11px]">
+            When buyers place orders in your store, their payment logs and 4% fee breakdowns will
+            appear here.
           </p>
         </div>
       ) : (
@@ -264,8 +265,8 @@ export default function SellerTransactionsPage() {
               const gross = Number(tx.gross_amount ?? tx.amount ?? 0);
               const fee = Number(tx.platform_fee ?? (gross * 0.04).toFixed(2));
               const net = Number(tx.net_amount ?? (gross - fee).toFixed(2));
-              const isCash = tx.provider === "CASH" || tx.provider === "CASH_ON_DELIVERY";
-              const customerName = tx.payer?.name || tx.order?.customer_name || "Customer";
+              const isCash = tx.provider === 'CASH' || tx.provider === 'CASH_ON_DELIVERY';
+              const customerName = tx.payer?.name || tx.order?.customer_name || 'Customer';
 
               return (
                 <motion.div
@@ -274,27 +275,31 @@ export default function SellerTransactionsPage() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -6 }}
                   transition={{ delay: idx * 0.02 }}
-                  className="p-5 rounded-2xl bg-surface/40 hover:bg-surface/60 transition-colors border-0 shadow-none space-y-3"
+                  className="bg-surface/40 hover:bg-surface/60 space-y-3 rounded-2xl border-0 p-5 shadow-none transition-colors"
                 >
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                  <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
                     {/* Channel & Reference */}
-                    <div className="flex items-start gap-3 min-w-0">
+                    <div className="flex min-w-0 items-start gap-3">
                       <div
                         className={clsx(
-                          "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
-                          tx.status === "SUCCESS"
-                            ? "bg-emerald-500/10 text-emerald-600"
-                            : tx.status === "FAILED"
-                            ? "bg-red-500/10 text-red-600"
-                            : "bg-amber-500/10 text-amber-600"
+                          'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
+                          tx.status === 'SUCCESS'
+                            ? 'bg-emerald-500/10 text-emerald-600'
+                            : tx.status === 'FAILED'
+                              ? 'bg-red-500/10 text-red-600'
+                              : 'bg-amber-500/10 text-amber-600',
                         )}
                       >
-                        {isCash ? <Banknote className="w-5 h-5" /> : <CreditCard className="w-5 h-5" />}
+                        {isCash ? (
+                          <Banknote className="h-5 w-5" />
+                        ) : (
+                          <CreditCard className="h-5 w-5" />
+                        )}
                       </div>
 
                       <div className="min-w-0 space-y-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-mono font-bold text-xs text-foreground tracking-tight">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-foreground font-mono text-xs font-bold tracking-tight">
                             {tx.reference}
                           </span>
                           <button
@@ -302,40 +307,56 @@ export default function SellerTransactionsPage() {
                             className="text-muted-foreground hover:text-foreground transition-colors"
                             title="Copy Reference"
                           >
-                            {copiedId === tx.id ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                            {copiedId === tx.id ? (
+                              <Check className="h-3.5 w-3.5 text-emerald-500" />
+                            ) : (
+                              <Copy className="h-3.5 w-3.5" />
+                            )}
                           </button>
 
                           <span
                             className={clsx(
-                              "px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider",
-                              tx.status === "SUCCESS"
-                                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                                : tx.status === "FAILED"
-                                ? "bg-red-500/10 text-red-600 dark:text-red-400"
-                                : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                              'rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider',
+                              tx.status === 'SUCCESS'
+                                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                                : tx.status === 'FAILED'
+                                  ? 'bg-red-500/10 text-red-600 dark:text-red-400'
+                                  : 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
                             )}
                           >
-                            {tx.status === "SUCCESS" ? "Paid" : tx.status}
+                            {tx.status === 'SUCCESS' ? 'Paid' : tx.status}
                           </span>
 
                           <span
                             className={clsx(
-                              "px-2 py-0.5 rounded-full text-[9px] font-medium uppercase tracking-wider",
-                              isCash ? "bg-amber-500/10 text-amber-600" : "bg-blue-500/10 text-blue-600"
+                              'rounded-full px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider',
+                              isCash
+                                ? 'bg-amber-500/10 text-amber-600'
+                                : 'bg-blue-500/10 text-blue-600',
                             )}
                           >
-                            {isCash ? "Cash on Delivery" : "Paystack Online"}
+                            {isCash ? 'Cash on Delivery' : 'Paystack Online'}
                           </span>
                         </div>
 
-                        <p className="text-[11px] text-muted-foreground flex items-center gap-2 flex-wrap">
-                          <span>Buyer: <strong className="text-foreground font-medium">{customerName}</strong></span>
+                        <p className="text-muted-foreground flex flex-wrap items-center gap-2 text-[11px]">
+                          <span>
+                            Buyer:{' '}
+                            <strong className="text-foreground font-medium">{customerName}</strong>
+                          </span>
                           <span>•</span>
-                          <span>{new Date(tx.created_at).toLocaleDateString(undefined, { dateStyle: "medium" })}</span>
+                          <span>
+                            {new Date(tx.created_at).toLocaleDateString(undefined, {
+                              dateStyle: 'medium',
+                            })}
+                          </span>
                           {tx.provider_ref && (
                             <>
                               <span>•</span>
-                              <span>Paystack ID: <code className="font-mono text-foreground">{tx.provider_ref}</code></span>
+                              <span>
+                                Paystack ID:{' '}
+                                <code className="text-foreground font-mono">{tx.provider_ref}</code>
+                              </span>
                             </>
                           )}
                         </p>
@@ -343,30 +364,28 @@ export default function SellerTransactionsPage() {
                     </div>
 
                     {/* 3-Way Financial Calculation: Gross - 4% = Net */}
-                    <div className="flex items-center gap-4 sm:gap-6 justify-between lg:justify-end border-t lg:border-t-0 pt-3 lg:pt-0 border-border/30">
-                      <div className="text-left lg:text-right space-y-0.5">
-                        <span className="text-[9px] uppercase tracking-wider text-muted-foreground block font-semibold">
+                    <div className="border-border/30 flex items-center justify-between gap-4 border-t pt-3 sm:gap-6 lg:justify-end lg:border-t-0 lg:pt-0">
+                      <div className="space-y-0.5 text-left lg:text-right">
+                        <span className="text-muted-foreground block text-[9px] font-semibold uppercase tracking-wider">
                           Gross Order
                         </span>
-                        <span className="text-xs font-semibold font-mono text-foreground">
+                        <span className="text-foreground font-mono text-xs font-semibold">
                           GH₵ {gross.toFixed(2)}
                         </span>
                       </div>
 
-                      <div className="text-left lg:text-right space-y-0.5 px-3 py-1.5 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400">
-                        <span className="text-[9px] uppercase tracking-wider block font-bold">
+                      <div className="space-y-0.5 rounded-xl bg-purple-500/10 px-3 py-1.5 text-left text-purple-600 lg:text-right dark:text-purple-400">
+                        <span className="block text-[9px] font-bold uppercase tracking-wider">
                           4% Platform Fee
                         </span>
-                        <span className="text-xs font-bold font-mono">
-                          -GH₵ {fee.toFixed(2)}
-                        </span>
+                        <span className="font-mono text-xs font-bold">-GH₵ {fee.toFixed(2)}</span>
                       </div>
 
-                      <div className="text-right space-y-0.5">
-                        <span className="text-[9px] uppercase tracking-wider text-muted-foreground block font-semibold">
+                      <div className="space-y-0.5 text-right">
+                        <span className="text-muted-foreground block text-[9px] font-semibold uppercase tracking-wider">
                           Net Earnings (96%)
                         </span>
-                        <span className="text-sm font-bold font-mono text-emerald-600 dark:text-emerald-400">
+                        <span className="font-mono text-sm font-bold text-emerald-600 dark:text-emerald-400">
                           +GH₵ {net.toFixed(2)}
                         </span>
                       </div>
@@ -374,23 +393,33 @@ export default function SellerTransactionsPage() {
                   </div>
 
                   {/* Order linkage bar */}
-                  <div className="pt-2.5 border-t border-border/30 flex items-center justify-between text-[11px] text-muted-foreground">
+                  <div className="border-border/30 text-muted-foreground flex items-center justify-between border-t pt-2.5 text-[11px]">
                     <div className="flex items-center gap-2">
-                      <span>Order: <code className="font-mono text-foreground">#ORD-{tx.order_id?.slice(-6)?.toUpperCase()}</code></span>
+                      <span>
+                        Order:{' '}
+                        <code className="text-foreground font-mono">
+                          #ORD-{tx.order_id?.slice(-6)?.toUpperCase()}
+                        </code>
+                      </span>
                       {tx.payout && (
                         <>
                           <span>•</span>
-                          <span>Payout: <strong className="text-foreground uppercase text-[10px]">{tx.payout.status}</strong></span>
+                          <span>
+                            Payout:{' '}
+                            <strong className="text-foreground text-[10px] uppercase">
+                              {tx.payout.status}
+                            </strong>
+                          </span>
                         </>
                       )}
                     </div>
 
                     <Link
                       href={`/dashboard/orders`}
-                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
+                      className="text-primary inline-flex items-center gap-1 text-[11px] font-semibold hover:underline"
                     >
                       <span>View Orders</span>
-                      <ExternalLink className="w-3 h-3" />
+                      <ExternalLink className="h-3 w-3" />
                     </Link>
                   </div>
                 </motion.div>

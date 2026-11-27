@@ -21,6 +21,7 @@ import { isOwnStore } from '@/lib/utils/ownership';
 import { useCart } from '@/lib/contexts/cart-context';
 import { useAuth } from '@/lib/contexts/auth-context';
 import { storeApi } from '@/lib/api/store';
+import { productApi } from '@/lib/api/product';
 import { orderApi } from '@/lib/api/order';
 import { addressApi, Address } from '@/lib/api/address';
 import { launchPaystackInline } from '@/lib/paystack';
@@ -47,11 +48,14 @@ export default function CheckoutPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const storeLink = searchParams.get('store');
-  const { groupedByVendor, removeItem } = useCart();
+  const { groupedByVendor, removeItem, updateQuantity } = useCart();
   const { token, user } = useAuth();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingStore, setIsLoadingStore] = useState(false);
+  const [storeAcceptsOrders, setStoreAcceptsOrders] = useState(true);
+  const [isCheckingStock, setIsCheckingStock] = useState(true);
+  const [liveStocks, setLiveStocks] = useState<Record<string, number | null>>({});
   const [paymentTiming, setPaymentTiming] = useState('BOTH');
   const [error, setError] = useState<string | null>(null);
 
@@ -81,12 +85,99 @@ export default function CheckoutPage() {
     [groupedByVendor, storeLink],
   );
 
+  // Verify live inventory before allowing checkout submission
+  useEffect(() => {
+    let cancelled = false;
+    if (!group || group.items.length === 0) {
+      setIsCheckingStock(false);
+      return;
+    }
+    const productIds = Array.from(new Set(group.items.map((i) => i.productId)));
+    setIsCheckingStock(true);
+    Promise.all(
+      productIds.map(async (pid) => {
+        try {
+          const p: any = await productApi.getProductById(pid);
+          return { pid, product: p };
+        } catch {
+          return { pid, product: null };
+        }
+      }),
+    ).then((results) => {
+      if (cancelled) return;
+      const next: Record<string, number | null> = {};
+      for (const { pid, product } of results) {
+        for (const it of group.items) {
+          if (it.productId !== pid) continue;
+          const key = it.variantId ? `${pid}::${it.variantId}` : pid;
+          if (
+            !product ||
+            (product.status && product.status !== 'published' && product.status !== 'active')
+          ) {
+            next[key] = 0;
+            continue;
+          }
+          if (it.variantId && Array.isArray(product.variants)) {
+            const v = product.variants.find((x: any) => x.id === it.variantId);
+            next[key] = v && v.is_active !== false ? Number(v.quantity_available ?? 0) : 0;
+          } else {
+            next[key] = Number(product.quantity_available ?? 0);
+          }
+        }
+      }
+      setLiveStocks(next);
+      setIsCheckingStock(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [group]);
+
+  const stockIssues = useMemo(() => {
+    if (!group || isCheckingStock) return [];
+    const issues: Array<{ key: string; title: string; requested: number; available: number }> = [];
+    for (const item of group.items) {
+      const key = item.variantId ? `${item.productId}::${item.variantId}` : item.productId;
+      const avail = liveStocks[key];
+      if (typeof avail === 'number' && item.quantity > avail) {
+        issues.push({
+          key,
+          title: item.title,
+          requested: item.quantity,
+          available: Math.max(0, avail),
+        });
+      }
+    }
+    return issues;
+  }, [group, liveStocks, isCheckingStock]);
+
+  const fixStockIssues = () => {
+    for (const issue of stockIssues) {
+      if (issue.available <= 0) {
+        removeItem(issue.key);
+      } else {
+        updateQuantity(issue.key, issue.available, issue.available);
+      }
+    }
+    setError(null);
+  };
+
   useEffect(() => {
     const loadStore = async () => {
       if (!storeLink) return;
       setIsLoadingStore(true);
       try {
         const store = await storeApi.getStoreBySlug(storeLink);
+        const acceptsOrders =
+          store.can_receive_orders !== false &&
+          store.is_seller_verified !== false &&
+          store.is_verified !== false;
+        setStoreAcceptsOrders(acceptsOrders);
+        if (!acceptsOrders) {
+          setError(
+            'This store has not completed seller verification yet and cannot receive orders right now.',
+          );
+        }
         const timing = store.payment_timing || 'BOTH';
         setPaymentTiming(timing);
         setFormData((prev) => ({
@@ -192,8 +283,23 @@ export default function CheckoutPage() {
 
   const submitOrder = async () => {
     if (!token || !group) return;
+    if (!storeAcceptsOrders) {
+      setError(
+        'This store has not completed seller verification yet and cannot receive orders right now.',
+      );
+      return;
+    }
     if (isOwnStore(user, { store_link: group.storeLink })) {
       setError('You cannot purchase products from your own store.');
+      return;
+    }
+    if (stockIssues.length > 0) {
+      const first = stockIssues[0];
+      setError(
+        first.available <= 0
+          ? `"${first.title}" is out of stock. Please remove it before checking out.`
+          : `Only ${first.available} of "${first.title}" available in stock. Please adjust your quantity.`,
+      );
       return;
     }
     if (!formValid) {
@@ -721,12 +827,41 @@ export default function CheckoutPage() {
               </div>
             </div>
 
+            {stockIssues.length > 0 && (
+              <div className="space-y-2 rounded-xl bg-red-500/10 p-3 text-xs text-red-500">
+                <p className="font-semibold">Stock updated — adjust quantities before paying:</p>
+                <ul className="space-y-1 text-[11px]">
+                  {stockIssues.map((issue) => (
+                    <li key={issue.key}>
+                      • {issue.title}: you have {issue.requested} in cart,{' '}
+                      {issue.available <= 0
+                        ? 'currently out of stock'
+                        : `only ${issue.available} available`}
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  type="button"
+                  onClick={fixStockIssues}
+                  className="rounded-lg bg-red-500 px-3 py-1.5 text-[11px] font-semibold text-white transition-opacity hover:opacity-90"
+                >
+                  Adjust to Available Stock
+                </button>
+              </div>
+            )}
+
             <div className="pt-3">
               <Button
                 variant="primary"
                 onClick={submitOrder}
                 isLoading={isSubmitting}
-                disabled={isSubmitting || isLoadingStore || !formValid}
+                disabled={
+                  isSubmitting ||
+                  isLoadingStore ||
+                  isCheckingStock ||
+                  stockIssues.length > 0 ||
+                  !formValid
+                }
                 className="h-12 w-full rounded-xl text-xs font-semibold uppercase tracking-wider"
               >
                 {isSubmitting

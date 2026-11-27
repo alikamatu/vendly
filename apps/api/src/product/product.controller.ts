@@ -109,6 +109,7 @@ export class ProductController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('category') category?: string,
+    @Query('subcategory') subcategory?: string,
     @Query('min_discount') minDiscount?: string,
     @Query('search') search?: string,
     @Query('brand') brand?: string,
@@ -152,6 +153,7 @@ export class ProductController {
     }
 
     const allowedSorts = [
+      'featured',
       'newest',
       'oldest',
       'price_asc',
@@ -192,6 +194,10 @@ export class ProductController {
       page: page ? parseInt(page, 10) : 1,
       limit: limit ? parseInt(limit, 10) : 20,
       category,
+      subcategory:
+        subcategory && subcategory.trim().length > 0
+          ? subcategory.trim()
+          : undefined,
       minDiscount: parsedMinDiscount,
       search: search && search.trim().length > 0 ? search : undefined,
       brand,

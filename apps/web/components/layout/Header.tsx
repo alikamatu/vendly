@@ -31,7 +31,7 @@ import { useFavorites } from '@/lib/contexts/favorite-context';
 import clsx from '@/utils/clsx';
 
 const NAV_LINKS = [
-  { label: 'Products', href: '/products', icon: LayoutGrid },
+  { label: 'Shop', href: '/products', icon: LayoutGrid },
   { label: 'Stores', href: '/stores', icon: Store },
   { label: 'Categories', href: '/categories', icon: Sparkles },
   { label: 'Sell', href: '/sell', icon: BadgePercent },

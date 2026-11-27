@@ -1,23 +1,27 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Users,
+  Store,
   Search,
-  Shield,
   AlertTriangle,
-  Ban,
-  CheckCircle2,
-  Trash2,
-  KeyRound,
   Sparkles,
   Eye,
+  Download,
+  RefreshCw,
+  ShieldCheck,
+  Ban,
+  Clock,
+  ChevronLeft,
+  ChevronRight,
+  ExternalLink,
+  CheckCircle2,
 } from 'lucide-react';
 import { AdminShell } from '@/components/layout/AdminShell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Modal } from '@/components/ui/modal';
 import { Spinner } from '@/components/ui/spinner';
 import {
   Table,
@@ -28,532 +32,693 @@ import {
   TableCell,
   TableEmpty,
 } from '@/components/ui/table';
-import { dateShort, shortId } from '@/lib/format';
+import { dateShort, formatCurrency } from '@/lib/format';
 import { ROLE_BADGE_COLORS } from '@/lib/constants';
-import type { VendlyUser, UserRole } from '@/types/operations';
 import { useVendlyUsers } from '@/hooks/use-users';
 import { useToast } from '@/contexts/ToastContext';
-import { useConfirm } from '@/contexts/ConfirmContext';
+import { UserControlModal } from '@/components/users/UserControlModal';
+
+const STOREFRONT_BASE_URL = process.env.NEXT_PUBLIC_WEB_URL || 'https://verndly.com';
+
+type DirectoryView = 'users' | 'stores';
+
+function csvEscape(value: unknown): string {
+  const s = value == null ? '' : String(value);
+  if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+    return `"${s.replace(/"/g, '""')}"`;
+  }
+  return s;
+}
 
 export default function UsersManagementPage() {
   const {
     users,
+    stores,
+    summary,
+    total,
+    totalPages,
+    storesTotal,
+    storesTotalPages,
     loading,
-    updateRole,
-    toggleSuspension,
-    warnUser,
-    deleteUser,
-    forceDisable2fa,
-    setProStatus,
+    storesLoading,
+    fetchUsers,
+    fetchStores,
   } = useVendlyUsers();
 
-  const { success, error: toastError } = useToast();
-  const { confirm } = useConfirm();
+  const { success } = useToast();
 
+  const [view, setView] = useState<DirectoryView>('users');
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('ALL');
-  const [selectedUser, setSelectedUser] = useState<VendlyUser | null>(null);
-  const [detailModalOpen, setDetailModalOpen] = useState(false);
-  const [warnModalOpen, setWarnModalOpen] = useState(false);
-  const [warnReason, setWarnReason] = useState('');
-  const [actionLoading, setActionLoading] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [page, setPage] = useState(1);
 
-  const filteredUsers = users.filter((u) => {
-    const matchesRole = roleFilter === 'ALL' || u.role === roleFilter;
-    const q = search.toLowerCase();
-    const matchesSearch =
-      !q ||
-      u.full_name?.toLowerCase().includes(q) ||
-      u.email?.toLowerCase().includes(q) ||
-      u.id?.toLowerCase().includes(q);
-    return matchesRole && matchesSearch;
-  });
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
-  const handleRoleChange = async (userId: string, newRole: UserRole) => {
-    setActionLoading(true);
-    try {
-      await updateRole(userId, newRole);
-      success(`User role updated to ${newRole}`);
-      if (selectedUser?.id === userId) {
-        setSelectedUser((prev) => (prev ? { ...prev, role: newRole } : null));
-      }
-    } catch (err) {
-      toastError(err instanceof Error ? err.message : 'Failed to update role');
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleToggleSuspension = async (userId: string) => {
-    setActionLoading(true);
-    try {
-      await toggleSuspension(userId);
-      success('User suspension status toggled');
-      if (selectedUser?.id === userId) {
-        setSelectedUser((prev) => (prev ? { ...prev, is_suspended: !prev.is_suspended } : null));
-      }
-    } catch (err) {
-      toastError(err instanceof Error ? err.message : 'Action failed');
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleWarn = async () => {
-    if (!selectedUser) return;
-    setActionLoading(true);
-    try {
-      await warnUser(selectedUser.id, warnReason || 'Administrative warning');
-      success('Warning issued to user');
-      setWarnModalOpen(false);
-      setWarnReason('');
-    } catch (err) {
-      toastError(err instanceof Error ? err.message : 'Failed to issue warning');
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleDisable2fa = async (userId: string) => {
-    const ok = await confirm({
-      title: 'Force-Disable 2FA',
-      description:
-        'Are you sure you want to force-disable two-factor authentication for this user? They will be required to set it up again upon their next sign in.',
-      confirmText: 'Disable 2FA',
-      variant: 'danger',
-    });
-    if (!ok) return;
-    setActionLoading(true);
-    try {
-      await forceDisable2fa(userId);
-      success('2FA disabled for user');
-      if (selectedUser?.id === userId) {
-        setSelectedUser((prev) => (prev ? { ...prev, totp_enabled: false } : null));
-      }
-    } catch (err) {
-      toastError(err instanceof Error ? err.message : 'Action failed');
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleTogglePro = async (user: VendlyUser) => {
-    const isPro = !user.is_pro;
-    if (!isPro) {
-      const ok = await confirm({
-        title: 'Revoke Pro Merchant Status',
-        description: `Are you sure you want to revoke Pro Merchant privileges from ${user.full_name || user.email}?`,
-        confirmText: 'Revoke Pro Status',
-        variant: 'warning',
+  const refreshActiveView = useCallback(async () => {
+    if (view === 'users') {
+      await fetchUsers({
+        search,
+        role: roleFilter,
+        accountStatus: statusFilter,
+        page,
+        limit: 50,
       });
-      if (!ok) return;
+    } else {
+      await fetchStores({
+        search,
+        accountStatus: statusFilter,
+        page,
+        limit: 50,
+      });
     }
-    setActionLoading(true);
-    try {
-      await setProStatus(user.id, { is_pro: isPro, duration_days: isPro ? 30 : 0 });
-      success(isPro ? 'Pro status granted' : 'Pro status removed');
-      if (selectedUser?.id === user.id) {
-        setSelectedUser((prev) => (prev ? { ...prev, is_pro: isPro } : null));
-      }
-    } catch (err) {
-      toastError(err instanceof Error ? err.message : 'Action failed');
-    } finally {
-      setActionLoading(false);
+  }, [view, search, roleFilter, statusFilter, page, fetchUsers, fetchStores]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      void refreshActiveView();
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [refreshActiveView]);
+
+  // Also ensure KPI summary is fetched once if user lands on Stores tab
+  useEffect(() => {
+    if (!summary) {
+      void fetchUsers({ page: 1, limit: 1 });
     }
+  }, [summary, fetchUsers]);
+
+  const handleOpenControl = (userId: string) => {
+    setSelectedUserId(userId);
+    setModalOpen(true);
   };
 
-  const handleDelete = async (userId: string) => {
-    const ok = await confirm({
-      title: 'Permanently Delete User',
-      description:
-        'Are you sure you want to permanently delete this user account? All listings, seller profile data, and related records will be removed. This action cannot be undone.',
-      confirmText: 'Delete User Account',
-      variant: 'danger',
-      icon: 'trash',
-    });
-    if (!ok) return;
-    setActionLoading(true);
-    try {
-      await deleteUser(userId);
-      success('User deleted');
-      setDetailModalOpen(false);
-    } catch (err) {
-      toastError(err instanceof Error ? err.message : 'Failed to delete user');
-    } finally {
-      setActionLoading(false);
+  const handleExportCsv = () => {
+    let header: string[] = [];
+    let rows: string[][] = [];
+    let filename = 'verndly-users.csv';
+
+    if (view === 'users') {
+      header = [
+        'ID',
+        'Full Name',
+        'Email',
+        'Phone',
+        'School',
+        'Role',
+        'Verified',
+        'Suspended',
+        'Disabled At',
+        'Deletion Scheduled',
+        'Warnings',
+        'Pro',
+        'Orders Count',
+        'Store Name',
+        'Store Handle',
+        'Store WhatsApp',
+        'Store Location',
+        'Store Products',
+        'Paystack Subaccount',
+        'Joined At',
+      ];
+      rows = users.map((u) => [
+        u.id,
+        u.full_name,
+        u.email,
+        u.phone_e164 || '',
+        u.school || '',
+        u.role,
+        String(u.is_verified),
+        String(u.is_suspended),
+        u.disabled_at || '',
+        u.deletion_scheduled_for || '',
+        String(u.warnings),
+        String(Boolean(u.is_pro)),
+        String(u.orders_count ?? 0),
+        u.seller_profile?.store_name || '',
+        u.seller_profile?.store_link || '',
+        u.seller_profile?.whatsapp_number || '',
+        u.seller_profile?.location || '',
+        String(u.seller_profile?.products_count ?? 0),
+        u.seller_profile?.paystack_subaccount_code || '',
+        u.created_at,
+      ]);
+      filename = `verndly-users-page-${page}.csv`;
+    } else {
+      header = [
+        'Store ID',
+        'Store Name',
+        'Handle',
+        'Owner Name',
+        'Owner Email',
+        'Owner Verified',
+        'Owner Suspended',
+        'WhatsApp',
+        'Location',
+        'Products',
+        'Rating',
+        'Reports',
+        'Bank',
+        'Account Number',
+        'Paystack Subaccount',
+        'Available Balance',
+        'Pending Escrow',
+        'Total Earned',
+        'Total Withdrawn',
+        'Created At',
+      ];
+      rows = stores.map((s) => [
+        s.id,
+        s.store_name,
+        s.store_link,
+        s.owner?.full_name || '',
+        s.owner?.email || '',
+        String(Boolean(s.owner?.is_verified)),
+        String(Boolean(s.owner?.is_suspended)),
+        s.whatsapp_number || '',
+        [s.area, s.location].filter(Boolean).join(', '),
+        String(s.products_count),
+        `${s.rating_avg.toFixed(1)} (${s.rating_count})`,
+        String(s.reports_count),
+        s.bank_name || '',
+        s.account_number || '',
+        s.paystack_subaccount_code || '',
+        String(s.balance_snapshot?.available_balance ?? 0),
+        String(s.balance_snapshot?.pending_balance ?? 0),
+        String(s.balance_snapshot?.total_earned ?? 0),
+        String(s.balance_snapshot?.total_withdrawn ?? 0),
+        s.created_at,
+      ]);
+      filename = `verndly-stores-page-${page}.csv`;
     }
+
+    const csv = [header, ...rows].map((r) => r.map(csvEscape).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+    success(`Exported ${rows.length} record(s) to CSV`);
   };
+
+  const activeTotal = view === 'users' ? total : storesTotal;
+  const activeTotalPages = view === 'users' ? totalPages : storesTotalPages;
+  const isBusy = view === 'users' ? loading : storesLoading;
 
   return (
     <AdminShell>
-      <div className="space-y-6">
+      <div className="space-y-6 pb-12">
         {/* Header */}
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div>
             <h2 className="text-foreground text-xl font-bold tracking-tight sm:text-2xl">
-              User & Merchant Directory
+              Users, Sellers &amp; Stores Control
             </h2>
             <p className="text-muted-foreground mt-0.5 text-xs sm:text-sm">
-              Manage platform members, permission roles, suspensions, warnings, and Pro accounts.
+              Restricted Super Admin directory with full profile, storefront, payout, and lifecycle
+              control.
             </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void refreshActiveView()}
+              className="gap-1.5 text-xs"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${isBusy ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportCsv}
+              className="gap-1.5 text-xs"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Export CSV
+            </Button>
           </div>
         </div>
 
-        {/* Search & Filters */}
-        <div className="flex flex-col items-center gap-3 sm:flex-row">
-          <div className="relative w-full sm:w-72">
+        {/* Live KPI Strip */}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          <div className="bg-card border-border rounded-2xl border p-3.5">
+            <span className="text-muted-foreground text-[11px] font-medium">Total Users</span>
+            <p className="text-foreground mt-1 text-xl font-bold">{summary?.totalUsers ?? total}</p>
+            <p className="text-muted-foreground text-[10px]">{summary?.admins ?? 0} admin(s)</p>
+          </div>
+          <div className="bg-card border-border rounded-2xl border p-3.5">
+            <span className="text-muted-foreground text-[11px] font-medium">Buyers</span>
+            <p className="text-foreground mt-1 text-xl font-bold">{summary?.buyers ?? 0}</p>
+            <p className="text-muted-foreground text-[10px]">Customer accounts</p>
+          </div>
+          <div className="bg-card border-border rounded-2xl border p-3.5">
+            <span className="text-muted-foreground text-[11px] font-medium">Sellers</span>
+            <p className="text-foreground mt-1 text-xl font-bold">{summary?.sellers ?? 0}</p>
+            <p className="text-muted-foreground text-[10px]">
+              {summary?.totalStores ?? storesTotal} active stores
+            </p>
+          </div>
+          <div className="bg-card border-border rounded-2xl border p-3.5">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground text-[11px] font-medium">Verified</span>
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
+            </div>
+            <p className="text-foreground mt-1 text-xl font-bold">{summary?.verified ?? 0}</p>
+            <p className="text-muted-foreground text-[10px]">Approved identities</p>
+          </div>
+          <div className="bg-card border-border rounded-2xl border p-3.5">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground text-[11px] font-medium">Suspended</span>
+              <Ban className="h-3.5 w-3.5 text-rose-500" />
+            </div>
+            <p className="mt-1 text-xl font-bold text-rose-500">{summary?.suspended ?? 0}</p>
+            <p className="text-muted-foreground text-[10px]">
+              {summary?.disabled ?? 0} self-disabled
+            </p>
+          </div>
+          <div className="bg-card border-border rounded-2xl border p-3.5">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground text-[11px] font-medium">Deleting</span>
+              <Clock className="h-3.5 w-3.5 text-amber-500" />
+            </div>
+            <p className="mt-1 text-xl font-bold text-amber-500">{summary?.deleting ?? 0}</p>
+            <p className="text-muted-foreground text-[10px]">In 14-day window</p>
+          </div>
+        </div>
+
+        {/* View Switcher: All Users vs Sellers & Stores */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="bg-muted/50 inline-flex items-center rounded-xl p-1">
+            <button
+              type="button"
+              onClick={() => {
+                setView('users');
+                setPage(1);
+              }}
+              className={`inline-flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+                view === 'users'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Users className="h-3.5 w-3.5" />
+              All Users ({summary?.totalUsers ?? total})
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setView('stores');
+                setPage(1);
+              }}
+              className={`inline-flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+                view === 'stores'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Store className="h-3.5 w-3.5" />
+              Sellers &amp; Stores ({summary?.totalStores ?? storesTotal})
+            </button>
+          </div>
+
+          <p className="text-muted-foreground text-xs">
+            Showing <strong className="text-foreground">{activeTotal}</strong> matching record(s)
+          </p>
+        </div>
+
+        {/* Search & Multi-Filters */}
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="relative w-full lg:w-80">
             <Search className="text-muted-foreground absolute left-3 top-2.5 h-4 w-4" />
             <Input
-              placeholder="Search by name, email, ID..."
+              placeholder={
+                view === 'users'
+                  ? 'Search name, email, phone, school, store…'
+                  : 'Search store name, @handle, WhatsApp, owner…'
+              }
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
               className="h-9 pl-9 text-xs"
             />
           </div>
 
-          <div className="flex w-full items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-            {['ALL', 'USER', 'SELLER', 'ADMIN'].map((role) => (
-              <Button
-                key={role}
-                size="sm"
-                variant={roleFilter === role ? 'primary' : 'outline'}
-                onClick={() => setRoleFilter(role)}
-                className="h-8 whitespace-nowrap px-3 text-xs"
-              >
-                {role === 'ALL' ? 'All Roles' : role}
-              </Button>
-            ))}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {view === 'users' && (
+              <>
+                {['ALL', 'USER', 'SELLER', 'ADMIN'].map((role) => (
+                  <Button
+                    key={role}
+                    size="sm"
+                    variant={roleFilter === role ? 'primary' : 'outline'}
+                    onClick={() => {
+                      setRoleFilter(role);
+                      setPage(1);
+                    }}
+                    className="h-8 px-2.5 text-xs"
+                  >
+                    {role === 'ALL' ? 'All Roles' : role}
+                  </Button>
+                ))}
+                <div className="bg-border mx-1 hidden h-5 w-px sm:block" />
+              </>
+            )}
+
+            {['ALL', 'ACTIVE', 'VERIFIED', 'UNVERIFIED', 'SUSPENDED', 'DISABLED', 'DELETING'].map(
+              (st) => (
+                <button
+                  key={st}
+                  type="button"
+                  onClick={() => {
+                    setStatusFilter(st);
+                    setPage(1);
+                  }}
+                  className={`rounded-xl px-2.5 py-1.5 text-[11px] font-semibold transition-colors ${
+                    statusFilter === st
+                      ? 'bg-foreground text-background'
+                      : 'bg-card border-border text-muted-foreground hover:text-foreground border'
+                  }`}
+                >
+                  {st === 'ALL' ? 'All Status' : st}
+                </button>
+              ),
+            )}
           </div>
         </div>
 
-        {/* Table */}
-        {loading ? (
+        {/* Directory Table */}
+        {isBusy ? (
           <div className="flex flex-col items-center justify-center gap-2 py-20">
             <Spinner size="lg" className="text-brand" />
-            <p className="text-muted-foreground text-xs">Loading directory...</p>
+            <p className="text-muted-foreground text-xs">
+              Loading {view === 'users' ? 'users' : 'sellers & stores'}…
+            </p>
           </div>
-        ) : filteredUsers.length === 0 ? (
+        ) : view === 'users' ? (
+          users.length === 0 ? (
+            <TableEmpty
+              icon={Users}
+              title="No users found"
+              description="No accounts match your search or filters."
+            />
+          ) : (
+            <Table>
+              <TableHeader>
+                <tr>
+                  <TableHead>User &amp; Contact</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Storefront</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Activity</TableHead>
+                  <TableHead>Joined</TableHead>
+                  <TableHead className="text-right">Control</TableHead>
+                </tr>
+              </TableHeader>
+              <TableBody>
+                {users.map((u) => {
+                  const roleBadge = ROLE_BADGE_COLORS[u.role] || {
+                    bg: 'bg-muted text-muted-foreground',
+                    text: u.role,
+                  };
+                  return (
+                    <TableRow key={u.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2.5">
+                          <div className="bg-muted text-muted-foreground flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold uppercase">
+                            {u.full_name?.charAt(0) || u.email?.charAt(0) || 'U'}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-foreground truncate font-semibold">
+                                {u.full_name || 'Anonymous'}
+                              </p>
+                              {u.is_verified && (
+                                <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                              )}
+                              {u.is_pro && <Sparkles className="text-brand h-3 w-3 shrink-0" />}
+                            </div>
+                            <p className="text-muted-foreground truncate text-[11px]">{u.email}</p>
+                            {(u.phone_e164 || u.school) && (
+                              <p className="text-muted-foreground truncate text-[10px]">
+                                {[u.phone_e164, u.school].filter(Boolean).join(' • ')}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span
+                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${roleBadge.bg}`}
+                        >
+                          {u.role}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        {u.seller_profile ? (
+                          <div className="min-w-0 max-w-[180px]">
+                            <p className="text-foreground truncate text-xs font-semibold">
+                              {u.seller_profile.store_name}
+                            </p>
+                            <p className="text-muted-foreground truncate text-[10px]">
+                              @{u.seller_profile.store_link} •{' '}
+                              {u.seller_profile.products_count ?? 0} items
+                            </p>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col items-start gap-1">
+                          {u.is_suspended ? (
+                            <Badge variant="danger" dot>
+                              Suspended
+                            </Badge>
+                          ) : u.deletion_scheduled_for ? (
+                            <Badge variant="danger" dot>
+                              Deleting {dateShort(u.deletion_scheduled_for)}
+                            </Badge>
+                          ) : u.disabled_at ? (
+                            <Badge variant="warning" dot>
+                              Disabled
+                            </Badge>
+                          ) : (
+                            <Badge variant="success" dot>
+                              Active
+                            </Badge>
+                          )}
+                          {u.warnings > 0 && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-500">
+                              <AlertTriangle className="h-3 w-3" />
+                              {u.warnings} warn
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-[11px]">
+                        <div>{u.orders_count ?? 0} orders</div>
+                        {u.seller_profile?.balance_snapshot && (
+                          <div className="text-foreground font-mono text-[10px]">
+                            {formatCurrency(u.seller_profile.balance_snapshot.total_earned)} earned
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-xs">
+                        {dateShort(u.created_at)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleOpenControl(u.id)}
+                          className="h-7 gap-1 px-2.5 text-xs"
+                        >
+                          <Eye className="h-3 w-3" />
+                          Manage
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )
+        ) : stores.length === 0 ? (
           <TableEmpty
-            icon={Users}
-            title="No users found"
-            description="No users match your search or filter."
+            icon={Store}
+            title="No stores found"
+            description="No seller stores match your search or status filter."
           />
         ) : (
           <Table>
             <TableHeader>
               <tr>
-                <TableHead>User</TableHead>
-                <TableHead>Role</TableHead>
+                <TableHead>Storefront</TableHead>
+                <TableHead>Owner &amp; Contact</TableHead>
+                <TableHead>Catalog &amp; Trust</TableHead>
+                <TableHead>Payout &amp; Balance</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Warnings</TableHead>
-                <TableHead>Pro</TableHead>
-                <TableHead>Joined</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="text-right">Control</TableHead>
               </tr>
             </TableHeader>
             <TableBody>
-              {filteredUsers.map((u) => {
-                const roleBadge = ROLE_BADGE_COLORS[u.role] || {
-                  bg: 'bg-muted text-muted-foreground',
-                  text: u.role,
-                };
-
-                return (
-                  <TableRow key={u.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-2.5">
-                        <div className="bg-muted text-muted-foreground flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold uppercase">
-                          {u.full_name?.charAt(0) || u.email?.charAt(0) || 'U'}
-                        </div>
-                        <div>
-                          <p className="text-foreground font-medium">
-                            {u.full_name || 'Anonymous'}
-                          </p>
-                          <p className="text-muted-foreground text-[11px]">{u.email}</p>
-                        </div>
+              {stores.map((s) => (
+                <TableRow key={s.id}>
+                  <TableCell>
+                    <div className="flex items-center gap-2.5">
+                      <div className="bg-muted flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl">
+                        {s.logo_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={s.logo_url}
+                            alt={s.store_name}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <Store className="text-muted-foreground h-4 w-4" />
+                        )}
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${roleBadge.bg}`}
-                      >
-                        {u.role}
+                      <div className="min-w-0 max-w-[200px]">
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-foreground truncate text-xs font-semibold">
+                            {s.store_name}
+                          </p>
+                          <a
+                            href={`${STOREFRONT_BASE_URL}/s/${s.store_link}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-muted-foreground hover:text-brand"
+                            title="Open storefront"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </div>
+                        <p className="text-muted-foreground truncate text-[11px]">
+                          @{s.store_link}
+                        </p>
+                        <p className="text-muted-foreground truncate text-[10px]">
+                          {[s.area, s.location].filter(Boolean).join(', ') || 'No location'}
+                        </p>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <p className="text-foreground text-xs font-medium">{s.owner?.full_name}</p>
+                    <p className="text-muted-foreground text-[11px]">{s.owner?.email}</p>
+                    {s.whatsapp_number && (
+                      <p className="text-muted-foreground text-[10px]">WA: {s.whatsapp_number}</p>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-xs">
+                    <p className="text-foreground font-semibold">{s.products_count} products</p>
+                    <p className="text-muted-foreground text-[10px]">
+                      ★ {s.rating_avg.toFixed(1)} ({s.rating_count})
+                      {s.reports_count > 0 && (
+                        <span className="ml-1.5 font-semibold text-rose-500">
+                          • {s.reports_count} report(s)
+                        </span>
+                      )}
+                    </p>
+                  </TableCell>
+                  <TableCell className="text-xs">
+                    <p className="text-foreground font-mono font-semibold">
+                      {formatCurrency(s.balance_snapshot?.available_balance ?? 0)}{' '}
+                      <span className="text-muted-foreground font-sans text-[10px] font-normal">
+                        avail
                       </span>
-                    </TableCell>
-                    <TableCell>
-                      {u.is_suspended ? (
-                        <Badge variant="danger" dot>
-                          Suspended
-                        </Badge>
-                      ) : u.deletion_scheduled_for ? (
-                        <Badge variant="danger" dot>
-                          Deleting {dateShort(u.deletion_scheduled_for)}
-                        </Badge>
-                      ) : u.disabled_at ? (
-                        <Badge variant="warning" dot>
-                          Disabled
-                        </Badge>
-                      ) : (
-                        <Badge variant="success" dot>
-                          Active
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {u.warnings > 0 ? (
-                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-500">
-                          <AlertTriangle className="h-3 w-3" />
-                          {u.warnings}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground text-xs">0</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {u.is_pro ? (
-                        <span className="text-brand inline-flex items-center gap-1 text-xs font-semibold">
-                          <Sparkles className="h-3 w-3" />
-                          Pro
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground text-xs">Free</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-xs">
-                      {dateShort(u.created_at)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedUser(u);
-                          setDetailModalOpen(true);
-                        }}
-                        className="h-7 px-2.5 text-xs"
-                      >
-                        <Eye className="mr-1 h-3 w-3" />
-                        Manage
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+                    </p>
+                    <p className="text-muted-foreground font-mono text-[10px]">
+                      {formatCurrency(s.balance_snapshot?.pending_balance ?? 0)} escrow •{' '}
+                      {s.paystack_subaccount_code ? 'Subacct OK' : 'No Subacct'}
+                    </p>
+                  </TableCell>
+                  <TableCell>
+                    {s.owner?.is_suspended ? (
+                      <Badge variant="danger" dot>
+                        Suspended
+                      </Badge>
+                    ) : s.owner?.deletion_scheduled_for ? (
+                      <Badge variant="danger" dot>
+                        Deleting {dateShort(s.owner.deletion_scheduled_for)}
+                      </Badge>
+                    ) : s.owner?.disabled_at ? (
+                      <Badge variant="warning" dot>
+                        Disabled
+                      </Badge>
+                    ) : s.owner?.is_verified ? (
+                      <Badge variant="success" dot>
+                        Verified
+                      </Badge>
+                    ) : (
+                      <Badge variant="default" dot>
+                        Unverified
+                      </Badge>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleOpenControl(s.user_id)}
+                      className="h-7 gap-1 px-2.5 text-xs"
+                    >
+                      <Eye className="h-3 w-3" />
+                      Manage
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
         )}
 
-        {/* User Manage Modal */}
-        <Modal
-          isOpen={detailModalOpen}
-          onClose={() => setDetailModalOpen(false)}
-          title={selectedUser?.full_name || 'User Profile'}
-          description={selectedUser?.email || ''}
-          maxWidth="lg"
-        >
-          {selectedUser && (
-            <div className="space-y-5 text-xs">
-              {/* Info Grid */}
-              <div className="bg-muted/40 border-border grid grid-cols-2 gap-3 rounded-xl border p-3.5">
-                <div>
-                  <span className="text-muted-foreground text-[11px]">User ID</span>
-                  <p className="text-foreground mt-0.5 font-mono text-[11px]">
-                    {shortId(selectedUser.id, 12)}
-                  </p>
-                </div>
-                <div>
-                  <span className="text-muted-foreground text-[11px]">Current Role</span>
-                  <p className="text-foreground mt-0.5 font-semibold">{selectedUser.role}</p>
-                </div>
-                <div>
-                  <span className="text-muted-foreground text-[11px]">Account Status</span>
-                  <p className="text-foreground mt-0.5 font-semibold">
-                    {selectedUser.is_suspended
-                      ? 'Suspended'
-                      : selectedUser.deletion_scheduled_for
-                        ? `Pending Deletion (${dateShort(selectedUser.deletion_scheduled_for)})`
-                        : selectedUser.disabled_at
-                          ? 'Disabled by User'
-                          : 'Active'}
-                  </p>
-                </div>
-                <div>
-                  <span className="text-muted-foreground text-[11px]">2FA Status</span>
-                  <p className="text-foreground mt-0.5 font-semibold">
-                    {selectedUser.totp_enabled ? 'Enabled' : 'Disabled'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Action Buttons Group */}
-              <div className="space-y-3 pt-2">
-                <h4 className="text-foreground text-muted-foreground text-xs font-semibold uppercase tracking-wider">
-                  Administrative Controls
-                </h4>
-
-                {/* Role Toggle */}
-                <div className="bg-card border-border flex items-center justify-between rounded-xl border p-3">
-                  <div>
-                    <p className="text-foreground font-medium">Change Permission Role</p>
-                    <p className="text-muted-foreground text-[11px]">
-                      Grant seller privileges or platform admin access.
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    {(['USER', 'SELLER', 'ADMIN'] as UserRole[]).map((r) => (
-                      <Button
-                        key={r}
-                        size="sm"
-                        variant={selectedUser.role === r ? 'primary' : 'outline'}
-                        disabled={actionLoading || selectedUser.role === r}
-                        onClick={() => handleRoleChange(selectedUser.id, r)}
-                        className="h-7 px-2 text-xs"
-                      >
-                        {r}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Suspension Toggle */}
-                <div className="bg-card border-border flex items-center justify-between rounded-xl border p-3">
-                  <div>
-                    <p className="text-foreground font-medium">
-                      {selectedUser.is_suspended ? 'Reactivate Account' : 'Suspend Account'}
-                    </p>
-                    <p className="text-muted-foreground text-[11px]">
-                      Temporarily block login and sales activities.
-                    </p>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant={selectedUser.is_suspended ? 'primary' : 'outline'}
-                    disabled={actionLoading}
-                    onClick={() => handleToggleSuspension(selectedUser.id)}
-                    className="h-7 text-xs"
-                  >
-                    <Ban className="mr-1 h-3 w-3" />
-                    {selectedUser.is_suspended ? 'Lift Suspension' : 'Suspend'}
-                  </Button>
-                </div>
-
-                {/* Issue Warning */}
-                <div className="bg-card border-border flex items-center justify-between rounded-xl border p-3">
-                  <div>
-                    <p className="text-foreground font-medium">Official Warning</p>
-                    <p className="text-muted-foreground text-[11px]">
-                      Current warnings: {selectedUser.warnings}
-                    </p>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setWarnModalOpen(true)}
-                    className="h-7 border-amber-500/30 text-xs text-amber-500 hover:bg-amber-500/10"
-                  >
-                    <AlertTriangle className="mr-1 h-3 w-3" />
-                    Issue Warning
-                  </Button>
-                </div>
-
-                {/* Pro Toggle */}
-                <div className="bg-card border-border flex items-center justify-between rounded-xl border p-3">
-                  <div>
-                    <p className="text-foreground font-medium">Pro Subscription</p>
-                    <p className="text-muted-foreground text-[11px]">
-                      Status: {selectedUser.is_pro ? 'Active Pro' : 'Standard'}
-                    </p>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={actionLoading}
-                    onClick={() => handleTogglePro(selectedUser)}
-                    className="h-7 text-xs"
-                  >
-                    <Sparkles className="text-brand mr-1 h-3 w-3" />
-                    {selectedUser.is_pro ? 'Revoke Pro' : 'Grant 30d Pro'}
-                  </Button>
-                </div>
-
-                {/* 2FA Reset */}
-                <div className="bg-card border-border flex items-center justify-between rounded-xl border p-3">
-                  <div>
-                    <p className="text-foreground font-medium">Reset Two-Factor (2FA)</p>
-                    <p className="text-muted-foreground text-[11px]">
-                      Help user recover account if authenticator is lost.
-                    </p>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={actionLoading}
-                    onClick={() => handleDisable2fa(selectedUser.id)}
-                    className="h-7 text-xs"
-                  >
-                    <KeyRound className="mr-1 h-3 w-3" />
-                    Disable 2FA
-                  </Button>
-                </div>
-
-                {/* Delete User */}
-                <div className="flex items-center justify-between rounded-xl border border-rose-500/20 bg-rose-500/5 p-3">
-                  <div>
-                    <p className="font-medium text-rose-500">Delete Account</p>
-                    <p className="text-muted-foreground text-[11px]">
-                      Permanently remove user from the system.
-                    </p>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={actionLoading}
-                    onClick={() => handleDelete(selectedUser.id)}
-                    className="h-7 border-rose-500/30 text-xs text-rose-500 hover:bg-rose-500/10"
-                  >
-                    <Trash2 className="mr-1 h-3 w-3" />
-                    Delete
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-        </Modal>
-
-        {/* Warning Modal */}
-        <Modal
-          isOpen={warnModalOpen}
-          onClose={() => setWarnModalOpen(false)}
-          title="Issue Administrative Warning"
-          description="A formal warning email and notification will be delivered to the user."
-          maxWidth="md"
-        >
-          <div className="space-y-4 text-xs">
-            <div className="space-y-1.5">
-              <label className="text-foreground text-xs font-medium">Warning Reason</label>
-              <Input
-                placeholder="e.g. Violation of seller policy / delayed fulfillment"
-                value={warnReason}
-                onChange={(e) => setWarnReason(e.target.value)}
-                className="text-xs"
-              />
-            </div>
-            <div className="border-border flex justify-end gap-2 border-t pt-3">
-              <Button variant="outline" size="sm" onClick={() => setWarnModalOpen(false)}>
-                Cancel
+        {/* Pagination Bar */}
+        {activeTotalPages > 1 && (
+          <div className="flex items-center justify-between pt-2 text-xs">
+            <span className="text-muted-foreground">
+              Page <strong className="text-foreground">{page}</strong> of{' '}
+              <strong className="text-foreground">{activeTotalPages}</strong>
+            </span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="h-8 gap-1 text-xs"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+                Previous
               </Button>
               <Button
+                variant="outline"
                 size="sm"
-                disabled={actionLoading}
-                onClick={handleWarn}
-                className="bg-amber-600 text-white hover:bg-amber-700"
+                disabled={page >= activeTotalPages}
+                onClick={() => setPage((p) => Math.min(activeTotalPages, p + 1))}
+                className="h-8 gap-1 text-xs"
               >
-                Send Warning
+                Next
+                <ChevronRight className="h-3.5 w-3.5" />
               </Button>
             </div>
           </div>
-        </Modal>
+        )}
       </div>
+
+      {/* Complete 360° Super Admin User & Store Control Modal */}
+      <UserControlModal
+        userId={selectedUserId}
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onMutated={refreshActiveView}
+      />
     </AdminShell>
   );
 }

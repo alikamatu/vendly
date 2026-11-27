@@ -42,7 +42,10 @@ export interface User {
     bank_name: string | null;
     bank_code: string | null;
     account_number: string | null;
+    paystack_subaccount_code?: string | null;
     onboarding_completed: boolean;
+    is_seller_verified?: boolean;
+    can_receive_orders?: boolean;
     structured_location?: {
       id: string;
       region: string;

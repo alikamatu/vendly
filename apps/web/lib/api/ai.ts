@@ -1,4 +1,5 @@
 import { api } from './index';
+import type { StructuredProductAttributes } from '../catalog-subcategories';
 
 export type AiProductCondition = 'new' | 'used' | 'refurbished';
 export type AiConfidence = 'high' | 'medium' | 'low';
@@ -8,9 +9,11 @@ export interface AiProductGroupDraft {
   title: string;
   description: string;
   category: string;
+  subcategory?: string;
   condition: AiProductCondition;
   brand: string;
   tags: string[];
+  attributes?: StructuredProductAttributes;
   suggested_price_ghs: number | null;
   confidence: AiConfidence;
 }
@@ -25,9 +28,11 @@ export interface AiSingleProductDraft {
   title: string;
   description: string;
   category: string;
+  subcategory?: string;
   condition: AiProductCondition;
   brand: string;
   tags: string[];
+  attributes?: StructuredProductAttributes;
   suggested_price_ghs: number | null;
   confidence: AiConfidence;
 }
@@ -159,6 +164,32 @@ export interface AiOnboardingAssistantResult {
   model: string;
 }
 
+export type AiCardCopyTone = 'minimal' | 'luxury' | 'hype';
+
+export interface AiCardCopyInput {
+  title: string;
+  description?: string;
+  category?: string;
+  brand?: string;
+  condition?: string;
+  price?: string | number;
+  original_price?: string | number | null;
+  currency?: string;
+  store_name?: string;
+  location?: string;
+  tone?: AiCardCopyTone;
+}
+
+export interface AiCardCopyResult {
+  badge: string;
+  headline: string;
+  tagline: string;
+  blurb: string;
+  cta: string;
+  social_caption: string;
+  model: string;
+}
+
 export const aiApi = {
   async buyerSearch(query: string, limit = 12): Promise<AiBuyerSearchResponse> {
     const res = await api.post<AiBuyerSearchResponse>('/ai/buyer-search', {
@@ -170,6 +201,13 @@ export const aiApi = {
 
   async polishListing(token: string, input: AiPolishListingInput): Promise<AiPolishListingResult> {
     const res = await api.post<AiPolishListingResult>('/ai/polish-listing', input, {
+      token,
+    });
+    return res.data;
+  },
+
+  async generateCardCopy(input: AiCardCopyInput, token?: string): Promise<AiCardCopyResult> {
+    const res = await api.post<AiCardCopyResult>('/ai/card-copy', input, {
       token,
     });
     return res.data;

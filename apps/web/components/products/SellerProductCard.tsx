@@ -41,6 +41,7 @@ interface SellerProductCardProps {
   promotionState?: 'idle' | 'verifying' | 'payment_required' | 'failed';
   index: number;
   onQuickStatusToggle?: (id: string, currentStatus: string) => void;
+  onGenerateShareCard?: (product: SellerProductCardProps['product']) => void;
   onDelete?: (id: string) => void;
 }
 
@@ -51,6 +52,7 @@ export default function SellerProductCard({
   promotionState = 'idle',
   index,
   onQuickStatusToggle,
+  onGenerateShareCard,
   onDelete,
 }: SellerProductCardProps) {
   const router = useRouter();
@@ -104,6 +106,15 @@ export default function SellerProductCard({
         router.push(`/dashboard/products/edit/${product.id}`);
       },
     },
+    ...(onGenerateShareCard
+      ? [
+          {
+            label: 'Generate Social Card',
+            icon: <Sparkles className="h-3.5 w-3.5" />,
+            onClick: () => onGenerateShareCard(product),
+          },
+        ]
+      : []),
     {
       label: 'Copy Public Link',
       icon: <Copy className="h-3.5 w-3.5" />,

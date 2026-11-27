@@ -33,6 +33,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/lib/contexts/auth-context';
 import { productApi } from '@/lib/api/product';
 import SellerProductCard from '@/components/products/SellerProductCard';
+import ShareProductCardModal from '@/components/dashboard/ShareProductCardModal';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
 import ConfirmModal from '@/components/ui/ConfirmModal';
@@ -64,7 +65,7 @@ type SortBy = (typeof SORT_OPTIONS)[number]['value'];
 const LOW_STOCK_THRESHOLD = 5;
 
 export default function SellerProductsPage() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
@@ -80,6 +81,7 @@ export default function SellerProductsPage() {
 
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [shareCardProduct, setShareCardProduct] = useState<any | null>(null);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusGroup, setStatusGroup] = useState<StatusGroup>('all');
@@ -544,6 +546,7 @@ export default function SellerProductsPage() {
                   promotionState={promotionStates[product.id] || 'idle'}
                   index={idx}
                   onQuickStatusToggle={handleQuickStatusToggle}
+                  onGenerateShareCard={() => setShareCardProduct(product)}
                   onDelete={(id) => setDeletingProductId(id)}
                 />
               ))
@@ -711,6 +714,11 @@ export default function SellerProductsPage() {
                                   router.push(`/dashboard/products/edit/${product.id}`),
                               },
                               {
+                                label: 'Generate Social Card',
+                                icon: <Sparkles className="h-3.5 w-3.5" />,
+                                onClick: () => setShareCardProduct(product),
+                              },
+                              {
                                 label: 'View Public Page',
                                 icon: <ExternalLink className="h-3.5 w-3.5" />,
                                 onClick: () => window.open(`/product/${product.id}`, '_blank'),
@@ -764,6 +772,34 @@ export default function SellerProductsPage() {
         variant="danger"
         isLoading={isDeleting}
       />
+
+      {shareCardProduct && (
+        <ShareProductCardModal
+          open={Boolean(shareCardProduct)}
+          onClose={() => setShareCardProduct(null)}
+          product={{
+            id: shareCardProduct.id,
+            title: shareCardProduct.title,
+            description: shareCardProduct.description,
+            category: shareCardProduct.category,
+            brand: shareCardProduct.brand,
+            condition: shareCardProduct.condition,
+            price: shareCardProduct.price,
+            original_price: shareCardProduct.original_price,
+            currency: shareCardProduct.currency,
+            image_urls: shareCardProduct.image_urls,
+          }}
+          storeName={
+            shareCardProduct.seller?.store_name ?? user?.seller_profile?.store_name ?? null
+          }
+          storeLink={
+            shareCardProduct.seller?.store_link ?? user?.seller_profile?.store_link ?? null
+          }
+          storeLocation={
+            shareCardProduct.seller?.location ?? user?.seller_profile?.location ?? null
+          }
+        />
+      )}
     </div>
   );
 }

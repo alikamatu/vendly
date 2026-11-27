@@ -38,8 +38,7 @@ import { useProStatus } from '@/hooks/useProStatus';
 import { productApi } from '@/lib/api/product';
 import ShareProductCardModal from '@/components/dashboard/ShareProductCardModal';
 
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') || 'https://verndly.com';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') || 'https://verndly.com';
 
 const STATUS_OPTIONS: Array<{ value: string; label: string; description: string }> = [
   {
@@ -98,11 +97,9 @@ export default function ManageProductPage() {
   }, [product, user]);
 
   const currentStock = stockDraft ?? product?.quantity_available ?? 0;
-  const stockDirty =
-    stockDraft !== null && stockDraft !== product?.quantity_available;
+  const stockDirty = stockDraft !== null && stockDraft !== product?.quantity_available;
   const lowStock = currentStock > 0 && currentStock <= 5;
   const outOfStock = currentStock === 0;
-
 
   async function handleStatusChange(next: string) {
     if (!token || !product || next === product.status) return;
@@ -171,7 +168,11 @@ export default function ManageProductPage() {
           await refresh();
           return;
         } catch (paymentErr: any) {
-          if (String(paymentErr?.message || '').toLowerCase().includes('payment')) {
+          if (
+            String(paymentErr?.message || '')
+              .toLowerCase()
+              .includes('payment')
+          ) {
             const init = await productApi.initializeHotSalesPayment(token, product.id);
             if (init.checkout_url) {
               window.location.href = init.checkout_url;
@@ -202,12 +203,11 @@ export default function ManageProductPage() {
     }
   }
 
-
   if (loading) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3">
-        <Loader2 className="w-7 h-7 animate-spin text-[var(--color-accent)]" />
-        <p className="text-xs text-[var(--color-muted)] font-medium tracking-wider uppercase">
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3">
+        <Loader2 className="h-7 w-7 animate-spin text-[var(--color-accent)]" />
+        <p className="text-xs font-medium uppercase tracking-wider text-[var(--color-muted)]">
           Loading product hub...
         </p>
       </div>
@@ -216,14 +216,18 @@ export default function ManageProductPage() {
 
   if (error || !product) {
     return (
-      <div className="max-w-md mx-auto py-20 text-center space-y-4">
+      <div className="mx-auto max-w-md space-y-4 py-20 text-center">
         <Alert
           variant="error"
           title="Product Unavailable"
           message={error || 'This listing may have been removed or does not exist.'}
         />
-        <Button variant="secondary" onClick={() => router.push('/dashboard/products')} className="rounded-xl">
-          <ArrowLeft className="w-4 h-4 mr-1.5" /> Back to products
+        <Button
+          variant="secondary"
+          onClick={() => router.push('/dashboard/products')}
+          className="rounded-xl"
+        >
+          <ArrowLeft className="mr-1.5 h-4 w-4" /> Back to products
         </Button>
       </div>
     );
@@ -231,13 +235,19 @@ export default function ManageProductPage() {
 
   if (!isOwner) {
     return (
-      <div className="max-w-md mx-auto py-20 text-center space-y-4">
-        <div className="w-12 h-12 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] flex items-center justify-center mx-auto">
-          <Lock className="w-6 h-6 text-[var(--color-muted)]" />
+      <div className="mx-auto max-w-md space-y-4 py-20 text-center">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+          <Lock className="h-6 w-6 text-[var(--color-muted)]" />
         </div>
         <h1 className="text-lg font-bold text-[var(--color-foreground)]">Unauthorized Access</h1>
-        <p className="text-sm text-[var(--color-muted)]">You do not have permission to manage this product.</p>
-        <Button variant="secondary" onClick={() => router.push('/dashboard/products')} className="rounded-xl">
+        <p className="text-sm text-[var(--color-muted)]">
+          You do not have permission to manage this product.
+        </p>
+        <Button
+          variant="secondary"
+          onClick={() => router.push('/dashboard/products')}
+          className="rounded-xl"
+        >
           Back to your products
         </Button>
       </div>
@@ -252,32 +262,32 @@ export default function ManageProductPage() {
   const moreMenuItems: DropdownMenuItem[] = [
     {
       label: 'Copy Public Link',
-      icon: <Copy className="w-3.5 h-3.5" />,
+      icon: <Copy className="h-3.5 w-3.5" />,
       onClick: copyPublicUrl,
     },
     {
       label: 'Edit Details',
-      icon: <Edit2 className="w-3.5 h-3.5" />,
+      icon: <Edit2 className="h-3.5 w-3.5" />,
       onClick: () => router.push(`/dashboard/products/edit/${product.id}`),
     },
     {
       label: 'Manage Variants',
-      icon: <Layers className="w-3.5 h-3.5" />,
+      icon: <Layers className="h-3.5 w-3.5" />,
       onClick: () => setShowVariantModal(true),
     },
     {
       label: 'Generate Social Card',
-      icon: <Sparkles className="w-3.5 h-3.5" />,
+      icon: <Sparkles className="h-3.5 w-3.5" />,
       onClick: () => setShowShareCard(true),
     },
     {
       label: product.is_featured ? 'Deactivate Boost' : 'Boost on Hot Sales',
-      icon: <Flame className="w-3.5 h-3.5 text-amber-500" />,
+      icon: <Flame className="h-3.5 w-3.5 text-amber-500" />,
       onClick: handleToggleHot,
     },
     {
       label: 'Delete Product',
-      icon: <Trash2 className="w-3.5 h-3.5" />,
+      icon: <Trash2 className="h-3.5 w-3.5" />,
       variant: 'danger',
       divider: true,
       onClick: () => setConfirmDelete(true),
@@ -285,12 +295,12 @@ export default function ManageProductPage() {
   ];
 
   return (
-    <div className="max-w-5xl mx-auto pb-24 px-3 sm:px-6 space-y-4">
+    <div className="mx-auto max-w-5xl space-y-4 px-3 pb-24 sm:px-6">
       <Link
         href="/dashboard/products"
-        className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)] hover:text-[var(--color-foreground)] transition-colors mt-2 group"
+        className="group mt-2 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)] transition-colors hover:text-[var(--color-foreground)]"
       >
-        <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+        <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" />
         All products
       </Link>
 
@@ -309,35 +319,31 @@ export default function ManageProductPage() {
       ) : null}
 
       <Card
-        className="overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface)] p-5 sm:p-6 rounded-2xl"
+        className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 sm:p-6"
         hoverEffect={false}
       >
-        <div className="flex flex-col md:flex-row gap-6 items-start">
-          <div className="w-full md:w-56 shrink-0 space-y-3">
-            <div className="relative aspect-square w-full rounded-xl overflow-hidden border border-[var(--color-border)] bg-black/5">
+        <div className="flex flex-col items-start gap-6 md:flex-row">
+          <div className="w-full shrink-0 space-y-3 md:w-56">
+            <div className="relative aspect-square w-full overflow-hidden rounded-xl border border-[var(--color-border)] bg-black/5">
               {activeMediaIndex === 99 && product.video_url ? (
-                <video
-                  src={product.video_url}
-                  controls
-                  className="w-full h-full object-cover"
-                />
+                <video src={product.video_url} controls className="h-full w-full object-cover" />
               ) : images[activeMediaIndex] ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={images[activeMediaIndex]}
                   alt={product.title}
-                  className="w-full h-full object-cover"
+                  className="h-full w-full object-cover"
                   loading="eager"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-[var(--color-muted)]">
-                  <ImageIcon className="w-9 h-9 stroke-1" />
+                <div className="flex h-full w-full items-center justify-center text-[var(--color-muted)]">
+                  <ImageIcon className="h-9 w-9 stroke-1" />
                 </div>
               )}
 
               {product.is_featured && (
-                <span className="absolute top-2 left-2 inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-white uppercase tracking-wider">
-                  <Flame className="w-2.5 h-2.5 fill-current" /> Hot
+                <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-amber-500 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white">
+                  <Flame className="h-2.5 w-2.5 fill-current" /> Hot
                 </span>
               )}
             </div>
@@ -349,37 +355,37 @@ export default function ManageProductPage() {
                     key={url}
                     type="button"
                     onClick={() => setActiveMediaIndex(idx)}
-                    className={`relative w-11 h-11 rounded-lg overflow-hidden border-2 transition-colors shrink-0 ${
+                    className={`relative h-11 w-11 shrink-0 overflow-hidden rounded-lg border-2 transition-colors ${
                       activeMediaIndex === idx
                         ? 'border-[var(--color-accent)]'
                         : 'border-[var(--color-border)] opacity-70 hover:opacity-100'
                     }`}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={url} alt="" className="w-full h-full object-cover" />
+                    <img src={url} alt="" className="h-full w-full object-cover" />
                   </button>
                 ))}
                 {hasVideo && (
                   <button
                     type="button"
                     onClick={() => setActiveMediaIndex(99)}
-                    className={`relative w-11 h-11 rounded-lg overflow-hidden border-2 flex items-center justify-center bg-black/10 transition-colors shrink-0 ${
+                    className={`relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg border-2 bg-black/10 transition-colors ${
                       activeMediaIndex === 99
                         ? 'border-[var(--color-accent)]'
                         : 'border-[var(--color-border)] opacity-70 hover:opacity-100'
                     }`}
                     title="Play Video"
                   >
-                    <Video className="w-4 h-4 text-[var(--color-foreground)]" />
+                    <Video className="h-4 w-4 text-[var(--color-foreground)]" />
                   </button>
                 )}
               </div>
             )}
           </div>
 
-          <div className="flex-1 min-w-0 space-y-4 w-full">
+          <div className="w-full min-w-0 flex-1 space-y-4">
             <div>
-              <div className="flex items-center gap-2 flex-wrap mb-1">
+              <div className="mb-1 flex flex-wrap items-center gap-2">
                 <span className="text-xs font-semibold uppercase tracking-wider text-[var(--color-accent)]">
                   {product.category}
                 </span>
@@ -393,46 +399,46 @@ export default function ManageProductPage() {
                 )}
                 <span className="text-[var(--color-muted)] opacity-40">·</span>
                 <span className="text-xs text-[var(--color-muted)]">
-                  Listed {createdDate.toLocaleDateString(undefined, {
+                  Listed{' '}
+                  {createdDate.toLocaleDateString(undefined, {
                     month: 'short',
                     day: 'numeric',
                     year: 'numeric',
                   })}
                 </span>
               </div>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--color-foreground)] leading-snug">
+              <h1 className="text-xl font-bold leading-snug tracking-tight text-[var(--color-foreground)] sm:text-2xl">
                 {product.title}
               </h1>
             </div>
 
-            <div className="flex items-baseline gap-3 flex-wrap">
-              <span className="text-2xl sm:text-3xl font-bold text-[var(--color-foreground)] tabular-nums">
+            <div className="flex flex-wrap items-baseline gap-3">
+              <span className="text-2xl font-bold tabular-nums text-[var(--color-foreground)] sm:text-3xl">
                 {product.currency || 'GH₵'}
                 {parseFloat(product.price).toLocaleString()}
               </span>
-              {product.original_price &&
-                Number(product.original_price) > Number(product.price) && (
-                  <span className="text-sm text-[var(--color-muted)] line-through tabular-nums">
-                    {product.currency || 'GH₵'}
-                    {parseFloat(product.original_price).toLocaleString()}
-                  </span>
-                )}
+              {product.original_price && Number(product.original_price) > Number(product.price) && (
+                <span className="text-sm tabular-nums text-[var(--color-muted)] line-through">
+                  {product.currency || 'GH₵'}
+                  {parseFloat(product.original_price).toLocaleString()}
+                </span>
+              )}
               <span
-                className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider border ${
+                className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
                   product.status === 'active'
-                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-                    : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                    ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                    : 'border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400'
                 }`}
               >
                 {product.status}
               </span>
               <span
-                className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider border ${
+                className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
                   outOfStock
-                    ? 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20'
+                    ? 'border-red-500/20 bg-red-500/10 text-red-600 dark:text-red-400'
                     : lowStock
-                      ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
-                      : 'bg-[var(--color-surface)] text-[var(--color-foreground)] border-[var(--color-border)]'
+                      ? 'border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                      : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-foreground)]'
                 }`}
               >
                 {outOfStock ? 'Out of Stock' : `${currentStock} in stock`}
@@ -442,30 +448,30 @@ export default function ManageProductPage() {
             <div className="flex flex-wrap items-center gap-2 pt-1">
               <Link
                 href={`/dashboard/products/edit/${product.id}`}
-                className="inline-flex items-center gap-1.5 h-9 px-4 rounded-xl bg-[var(--color-accent)] text-white text-xs font-semibold hover:opacity-90 transition"
+                className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-[var(--color-accent)] px-4 text-xs font-semibold text-white transition hover:opacity-90"
               >
-                <Edit2 className="w-3.5 h-3.5" />
+                <Edit2 className="h-3.5 w-3.5" />
                 Edit Listing
               </Link>
               <a
                 href={publicUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] text-xs font-medium text-[var(--color-foreground)] hover:bg-[var(--color-border)]/20 transition"
+                className="hover:bg-[var(--color-border)]/20 inline-flex h-9 items-center gap-1.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-3.5 text-xs font-medium text-[var(--color-foreground)] transition"
               >
-                <Eye className="w-3.5 h-3.5" />
+                <Eye className="h-3.5 w-3.5" />
                 View Public
-                <ExternalLink className="w-3 h-3 opacity-50" />
+                <ExternalLink className="h-3 w-3 opacity-50" />
               </a>
 
               <DropdownMenu
                 trigger={
                   <button
                     type="button"
-                    className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-muted)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-border)]/20 transition-colors"
+                    className="hover:bg-[var(--color-border)]/20 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-muted)] transition-colors hover:text-[var(--color-foreground)]"
                     title="More options"
                   >
-                    <MoreHorizontal className="w-4 h-4" />
+                    <MoreHorizontal className="h-4 w-4" />
                   </button>
                 }
                 items={moreMenuItems}
@@ -476,12 +482,15 @@ export default function ManageProductPage() {
         </div>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="p-5 rounded-2xl space-y-3 bg-[var(--color-surface)] border border-[var(--color-border)]" hoverEffect={false}>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <Card
+          className="space-y-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5"
+          hoverEffect={false}
+        >
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-[var(--color-foreground)]">Listing Status</h2>
             {savingStatus && (
-              <Loader2 className="w-3.5 h-3.5 animate-spin text-[var(--color-muted)]" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--color-muted)]" />
             )}
           </div>
           <div className="grid grid-cols-2 gap-2">
@@ -493,17 +502,17 @@ export default function ManageProductPage() {
                   type="button"
                   onClick={() => handleStatusChange(s.value)}
                   disabled={savingStatus || active}
-                  className={`relative p-3 rounded-xl text-left transition-colors border ${
+                  className={`relative rounded-xl border p-3 text-left transition-colors ${
                     active
-                      ? 'bg-[var(--color-foreground)] text-[var(--color-surface)] border-transparent'
-                      : 'border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-foreground)] hover:border-[var(--color-foreground)]/30'
+                      ? 'border-transparent bg-[var(--color-foreground)] text-[var(--color-surface)]'
+                      : 'hover:border-[var(--color-foreground)]/30 border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-foreground)]'
                   }`}
                 >
-                  <div className="text-xs font-bold uppercase tracking-wider flex items-center justify-between">
+                  <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider">
                     <span>{s.label}</span>
-                    {active && <Check className="w-3.5 h-3.5 opacity-80" />}
+                    {active && <Check className="h-3.5 w-3.5 opacity-80" />}
                   </div>
-                  <p className="text-[10px] opacity-75 mt-1 leading-tight line-clamp-2">
+                  <p className="mt-1 line-clamp-2 text-[10px] leading-tight opacity-75">
                     {s.description}
                   </p>
                 </button>
@@ -515,11 +524,16 @@ export default function ManageProductPage() {
           </p>
         </Card>
 
-        <Card className="p-5 rounded-2xl space-y-3 bg-[var(--color-surface)] border border-[var(--color-border)]" hoverEffect={false}>
+        <Card
+          className="space-y-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5"
+          hoverEffect={false}
+        >
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-[var(--color-foreground)]">Inventory Quantity</h2>
+            <h2 className="text-sm font-semibold text-[var(--color-foreground)]">
+              Inventory Quantity
+            </h2>
             <span
-              className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+              className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
                 outOfStock
                   ? 'bg-red-500/10 text-red-600 dark:text-red-400'
                   : lowStock
@@ -533,7 +547,7 @@ export default function ManageProductPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setStockDraft(Math.max(0, currentStock - 1))}
-              className="h-10 w-10 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] hover:bg-[var(--color-border)]/20 text-base font-bold text-[var(--color-foreground)] transition"
+              className="hover:bg-[var(--color-border)]/20 h-10 w-10 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] text-base font-bold text-[var(--color-foreground)] transition"
               aria-label="Decrease stock"
             >
               −
@@ -542,14 +556,12 @@ export default function ManageProductPage() {
               type="number"
               min={0}
               value={currentStock}
-              onChange={(e) =>
-                setStockDraft(Math.max(0, parseInt(e.target.value || '0', 10)))
-              }
-              className="flex-1 h-10 px-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] text-center text-sm font-bold text-[var(--color-foreground)] tabular-nums focus:outline-none focus:border-[var(--color-accent)]"
+              onChange={(e) => setStockDraft(Math.max(0, parseInt(e.target.value || '0', 10)))}
+              className="h-10 flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-3 text-center text-sm font-bold tabular-nums text-[var(--color-foreground)] focus:border-[var(--color-accent)] focus:outline-none"
             />
             <button
               onClick={() => setStockDraft(currentStock + 1)}
-              className="h-10 w-10 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] hover:bg-[var(--color-border)]/20 text-base font-bold text-[var(--color-foreground)] transition"
+              className="hover:bg-[var(--color-border)]/20 h-10 w-10 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] text-base font-bold text-[var(--color-foreground)] transition"
               aria-label="Increase stock"
             >
               +
@@ -561,7 +573,7 @@ export default function ManageProductPage() {
                 size="sm"
                 onClick={handleSaveStock}
                 disabled={savingStock}
-                className="flex-1 h-9 rounded-xl text-xs"
+                className="h-9 flex-1 rounded-xl text-xs"
               >
                 {savingStock ? 'Saving...' : 'Confirm Stock Update'}
               </Button>
@@ -577,20 +589,24 @@ export default function ManageProductPage() {
           )}
         </Card>
 
-        <Card className="p-5 rounded-2xl space-y-3 bg-[var(--color-surface)] border border-[var(--color-border)]" hoverEffect={false}>
+        <Card
+          className="space-y-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5"
+          hoverEffect={false}
+        >
           <div className="flex items-start justify-between gap-2">
             <div>
-              <h2 className="text-sm font-semibold flex items-center gap-1.5 text-[var(--color-foreground)]">
-                <Flame className="w-4 h-4 text-amber-500 fill-current" /> Hot Sales Boost
+              <h2 className="flex items-center gap-1.5 text-sm font-semibold text-[var(--color-foreground)]">
+                <Flame className="h-4 w-4 fill-current text-amber-500" /> Hot Sales Boost
               </h2>
-              <p className="text-xs text-[var(--color-muted)] mt-1">
-                Pin this product to the top featured homepage carousel for verified Ghanaian shoppers.
+              <p className="mt-1 text-xs text-[var(--color-muted)]">
+                Pin this product to the top featured homepage carousel for verified Ghanaian
+                shoppers.
               </p>
             </div>
             <span
-              className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider shrink-0 ${
+              className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
                 product.is_featured
-                  ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                  ? 'border border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400'
                   : 'bg-[var(--color-border)]/50 text-[var(--color-muted)]'
               }`}
             >
@@ -602,11 +618,11 @@ export default function ManageProductPage() {
             variant={product.is_featured ? 'secondary' : 'primary'}
             onClick={handleToggleHot}
             disabled={togglingHot}
-            className="w-full h-9 rounded-xl text-xs"
+            className="h-9 w-full rounded-xl text-xs"
           >
             {togglingHot ? (
               <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> Processing...
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Processing...
               </>
             ) : product.is_featured ? (
               'Deactivate Hot Sales'
@@ -616,17 +632,21 @@ export default function ManageProductPage() {
           </Button>
         </Card>
 
-        <Card className="p-5 rounded-2xl space-y-3 bg-[var(--color-surface)] border border-[var(--color-border)]" hoverEffect={false}>
+        <Card
+          className="space-y-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5"
+          hoverEffect={false}
+        >
           <div className="flex items-start justify-between gap-2">
             <div>
-              <h2 className="text-sm font-semibold flex items-center gap-1.5 text-[var(--color-foreground)]">
-                <Sparkles className="w-4 h-4 text-[var(--color-accent)]" /> Social Share Card
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--color-accent)]/10 text-[var(--color-accent)] uppercase tracking-wider ml-1">
+              <h2 className="flex items-center gap-1.5 text-sm font-semibold text-[var(--color-foreground)]">
+                <Sparkles className="h-4 w-4 text-[var(--color-accent)]" /> Social Share Card
+                <span className="bg-[var(--color-accent)]/10 ml-1 rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[var(--color-accent)]">
                   Pro
                 </span>
               </h2>
-              <p className="text-xs text-[var(--color-muted)] mt-1">
-                Generate high-resolution 1200×630 promotional banners tailored for WhatsApp Status, Instagram, and TikTok.
+              <p className="mt-1 text-xs text-[var(--color-muted)]">
+                Generate high-resolution 1200×630 promotional banners tailored for WhatsApp Status,
+                Instagram, and TikTok.
               </p>
             </div>
           </div>
@@ -634,34 +654,33 @@ export default function ManageProductPage() {
             <Button
               size="sm"
               onClick={() => setShowShareCard(true)}
-              className="w-full h-9 rounded-xl text-xs"
+              className="h-9 w-full rounded-xl text-xs"
             >
-              <Sparkles className="w-3.5 h-3.5 mr-1.5" /> Generate Social Card
+              <Sparkles className="mr-1.5 h-3.5 w-3.5" /> Generate Social Card
             </Button>
           ) : (
             <Link href="/dashboard/settings" className="block">
-              <Button
-                size="sm"
-                variant="secondary"
-                className="w-full h-9 rounded-xl text-xs"
-              >
-                <Lock className="w-3.5 h-3.5 mr-1.5" /> Unlock with Pro
+              <Button size="sm" variant="secondary" className="h-9 w-full rounded-xl text-xs">
+                <Lock className="mr-1.5 h-3.5 w-3.5" /> Unlock with Pro
               </Button>
             </Link>
           )}
         </Card>
 
-        <Card className="p-5 rounded-2xl space-y-3 bg-[var(--color-surface)] border border-[var(--color-border)]" hoverEffect={false}>
+        <Card
+          className="space-y-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5"
+          hoverEffect={false}
+        >
           <div className="flex items-start justify-between gap-2">
             <div>
-              <h2 className="text-sm font-semibold flex items-center gap-1.5 text-[var(--color-foreground)]">
-                <Layers className="w-4 h-4 text-[var(--color-muted)]" /> Product Variants
+              <h2 className="flex items-center gap-1.5 text-sm font-semibold text-[var(--color-foreground)]">
+                <Layers className="h-4 w-4 text-[var(--color-muted)]" /> Product Variants
               </h2>
-              <p className="text-xs text-[var(--color-muted)] mt-1">
+              <p className="mt-1 text-xs text-[var(--color-muted)]">
                 Manage size, color, storage, or material options with custom prices and inventory.
               </p>
             </div>
-            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider shrink-0 bg-[var(--color-border)]/50 text-[var(--color-muted)]">
+            <span className="bg-[var(--color-border)]/50 shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[var(--color-muted)]">
               {Array.isArray(product.variants) && product.variants.length
                 ? `${product.variants.length} active`
                 : 'None'}
@@ -671,49 +690,57 @@ export default function ManageProductPage() {
             size="sm"
             variant="secondary"
             onClick={() => setShowVariantModal(true)}
-            className="w-full h-9 rounded-xl text-xs"
+            className="h-9 w-full rounded-xl text-xs"
           >
             Manage Variants &amp; Attributes
           </Button>
         </Card>
 
-        <Card className="p-5 rounded-2xl space-y-3 bg-[var(--color-surface)] border border-[var(--color-border)]" hoverEffect={false}>
+        <Card
+          className="space-y-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5"
+          hoverEffect={false}
+        >
           <div className="flex items-start justify-between gap-2">
             <div>
-              <h2 className="text-sm font-semibold flex items-center gap-1.5 text-[var(--color-foreground)]">
-                <BarChart3 className="w-4 h-4 text-[var(--color-muted)]" /> Performance
+              <h2 className="flex items-center gap-1.5 text-sm font-semibold text-[var(--color-foreground)]">
+                <BarChart3 className="h-4 w-4 text-[var(--color-muted)]" /> Performance
                 {!isPro && (
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--color-accent)]/10 text-[var(--color-accent)] uppercase tracking-wider ml-1">
+                  <span className="bg-[var(--color-accent)]/10 ml-1 rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[var(--color-accent)]">
                     Preview
                   </span>
                 )}
               </h2>
-              <p className="text-xs text-[var(--color-muted)] mt-1">
-                {isPro ? 'Views and impressions over the last 30 days.' : 'Upgrade to Pro for full visitor conversion stats.'}
+              <p className="mt-1 text-xs text-[var(--color-muted)]">
+                {isPro
+                  ? 'Views and impressions over the last 30 days.'
+                  : 'Upgrade to Pro for full visitor conversion stats.'}
               </p>
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2">
-            <Metric label="Views" value={product.views_count ?? 0} icon={<Eye className="w-3 h-3" />} />
-            <Metric label="In stock" value={currentStock} icon={<Package className="w-3 h-3" />} />
+            <Metric
+              label="Views"
+              value={product.views_count ?? 0}
+              icon={<Eye className="h-3 w-3" />}
+            />
+            <Metric label="In stock" value={currentStock} icon={<Package className="h-3 w-3" />} />
             <Metric
               label="Rating"
-              value={
-                product.rating_avg ? `${Number(product.rating_avg).toFixed(1)}★` : '—'
-              }
-              icon={<TrendingUp className="w-3 h-3" />}
+              value={product.rating_avg ? `${Number(product.rating_avg).toFixed(1)}★` : '—'}
+              icon={<TrendingUp className="h-3 w-3" />}
             />
           </div>
           {isPro ? (
             <Link href="/dashboard/analytics" className="block">
-              <Button size="sm" variant="secondary" className="w-full h-9 rounded-xl text-xs">
-                <BarChart3 className="w-3.5 h-3.5 mr-1.5" /> View Store Analytics
+              <Button size="sm" variant="secondary" className="h-9 w-full rounded-xl text-xs">
+                <BarChart3 className="mr-1.5 h-3.5 w-3.5" /> View Store Analytics
               </Button>
             </Link>
           ) : (
             <Link href="/dashboard/settings" className="block">
-              <Button size="sm" variant="secondary" className="w-full h-9 rounded-xl text-xs">
-                <Sparkles className="w-3.5 h-3.5 text-[var(--color-accent)] mr-1.5" /> Unlock Advanced Analytics
+              <Button size="sm" variant="secondary" className="h-9 w-full rounded-xl text-xs">
+                <Sparkles className="mr-1.5 h-3.5 w-3.5 text-[var(--color-accent)]" /> Unlock
+                Advanced Analytics
               </Button>
             </Link>
           )}
@@ -723,17 +750,20 @@ export default function ManageProductPage() {
       {(product.tags?.length > 0 ||
         Object.keys(product.attributes || {}).length > 0 ||
         product.description) && (
-        <Card className="p-5 rounded-2xl space-y-4 bg-[var(--color-surface)] border border-[var(--color-border)]" hoverEffect={false}>
-          <h2 className="text-sm font-semibold flex items-center gap-1.5 text-[var(--color-foreground)]">
-            <Tag className="w-4 h-4 text-[var(--color-muted)]" /> Specs &amp; Details
+        <Card
+          className="space-y-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5"
+          hoverEffect={false}
+        >
+          <h2 className="flex items-center gap-1.5 text-sm font-semibold text-[var(--color-foreground)]">
+            <Tag className="h-4 w-4 text-[var(--color-muted)]" /> Specs &amp; Details
           </h2>
 
           {product.description && (
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-muted)] block mb-1">
+              <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[var(--color-muted)]">
                 Description
               </span>
-              <p className="text-xs text-[var(--color-foreground)] leading-relaxed whitespace-pre-line bg-[var(--color-background)] p-3 rounded-xl border border-[var(--color-border)]">
+              <p className="whitespace-pre-line rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3 text-xs leading-relaxed text-[var(--color-foreground)]">
                 {product.description}
               </p>
             </div>
@@ -741,14 +771,14 @@ export default function ManageProductPage() {
 
           {product.tags?.length > 0 && (
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-muted)] block mb-1.5">
+              <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-[var(--color-muted)]">
                 Tags
               </span>
               <div className="flex flex-wrap gap-1.5">
                 {product.tags.map((t: string) => (
                   <span
                     key={t}
-                    className="text-xs px-2.5 py-0.5 rounded-full bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-foreground)]"
+                    className="rounded-full border border-[var(--color-border)] bg-[var(--color-background)] px-2.5 py-0.5 text-xs text-[var(--color-foreground)]"
                   >
                     #{t}
                   </span>
@@ -759,19 +789,19 @@ export default function ManageProductPage() {
 
           {product.attributes && Object.keys(product.attributes).length > 0 && (
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-muted)] block mb-1.5">
+              <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-[var(--color-muted)]">
                 Attributes
               </span>
-              <dl className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+              <dl className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-3">
                 {Object.entries(product.attributes).map(([k, v]) => (
                   <div
                     key={k}
-                    className="bg-[var(--color-background)] border border-[var(--color-border)] p-2.5 rounded-xl"
+                    className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-2.5"
                   >
                     <dt className="text-[10px] font-bold uppercase text-[var(--color-muted)]">
                       {k.replace(/_/g, ' ')}
                     </dt>
-                    <dd className="font-semibold text-[var(--color-foreground)] truncate mt-0.5">
+                    <dd className="mt-0.5 truncate font-semibold text-[var(--color-foreground)]">
                       {String(v)}
                     </dd>
                   </div>
@@ -783,15 +813,15 @@ export default function ManageProductPage() {
       )}
 
       <Card
-        className="p-5 rounded-2xl space-y-3 border border-[var(--color-danger)]/20 bg-[var(--color-danger)]/[0.02]"
+        className="border-[var(--color-danger)]/20 bg-[var(--color-danger)]/[0.02] space-y-3 rounded-2xl border p-5"
         hoverEffect={false}
       >
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
           <div>
-            <h2 className="text-sm font-bold text-[var(--color-danger)] flex items-center gap-1.5">
-              <AlertCircle className="w-4 h-4" /> Danger Zone
+            <h2 className="flex items-center gap-1.5 text-sm font-bold text-[var(--color-danger)]">
+              <AlertCircle className="h-4 w-4" /> Danger Zone
             </h2>
-            <p className="text-xs text-[var(--color-muted)] mt-0.5">
+            <p className="mt-0.5 text-xs text-[var(--color-muted)]">
               Permanently remove this listing and all configured variants.
             </p>
           </div>
@@ -799,9 +829,9 @@ export default function ManageProductPage() {
             size="sm"
             variant="secondary"
             onClick={() => setConfirmDelete(true)}
-            className="h-9 rounded-xl text-xs text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 shrink-0"
+            className="hover:bg-[var(--color-danger)]/10 h-9 shrink-0 rounded-xl text-xs text-[var(--color-danger)]"
           >
-            <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Delete Listing
+            <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Delete Listing
           </Button>
         </div>
       </Card>
@@ -820,9 +850,21 @@ export default function ManageProductPage() {
       <ShareProductCardModal
         open={showShareCard}
         onClose={() => setShowShareCard(false)}
-        product={{ id: product.id, title: product.title }}
+        product={{
+          id: product.id,
+          title: product.title,
+          description: product.description,
+          category: product.category,
+          brand: product.brand,
+          condition: product.condition,
+          price: product.price,
+          original_price: product.original_price,
+          currency: product.currency,
+          image_urls: product.image_urls,
+        }}
         storeName={product.seller?.store_name ?? null}
         storeLink={product.seller?.store_link ?? null}
+        storeLocation={product.seller?.location ?? null}
       />
 
       <Modal
@@ -856,11 +898,11 @@ function Metric({
   icon: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl bg-[var(--color-background)] border border-[var(--color-border)] p-3 text-center space-y-0.5">
-      <div className="flex items-center justify-center gap-1 text-[10px] uppercase font-bold tracking-wider text-[var(--color-muted)]">
+    <div className="space-y-0.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3 text-center">
+      <div className="flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wider text-[var(--color-muted)]">
         {icon} {label}
       </div>
-      <div className="text-sm font-bold text-[var(--color-foreground)] tabular-nums">{value}</div>
+      <div className="text-sm font-bold tabular-nums text-[var(--color-foreground)]">{value}</div>
     </div>
   );
 }

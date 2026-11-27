@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft,
@@ -25,6 +26,12 @@ import { useCart } from '@/lib/contexts/cart-context';
 import { useFavorites } from '@/lib/contexts/favorite-context';
 import { useAuth } from '@/lib/contexts/auth-context';
 import { isOwnStore } from '@/lib/utils/ownership';
+import {
+  formatDimensionsLabel,
+  formatWeightLabel,
+  type ProductDimensions,
+  type ProductWeight,
+} from '@/lib/catalog-subcategories';
 import PriceBlock from '@/components/product-detail/PriceBlock';
 import SellerCard from '@/components/product-detail/SellerCard';
 import RelatedProducts from '@/components/product-detail/RelatedProducts';
@@ -140,9 +147,24 @@ export default function ProductDetailClient({
         : raw && typeof raw === 'object'
           ? raw
           : {};
-    return Object.entries(obj)
-      .filter(([, value]) => value != null && String(value).trim() !== '')
-      .map(([key, value]) => [key, String(value).trim()]);
+    const entries: [string, string][] = [];
+    for (const [key, value] of Object.entries(obj)) {
+      if (value == null) continue;
+      if (key === 'dimensions' && typeof value === 'object') {
+        const formatted = formatDimensionsLabel(value as ProductDimensions);
+        if (formatted) entries.push(['dimensions', formatted]);
+        continue;
+      }
+      if (key === 'weight' && typeof value === 'object') {
+        const formatted = formatWeightLabel(value as ProductWeight);
+        if (formatted) entries.push(['weight', formatted]);
+        continue;
+      }
+      if (typeof value === 'object') continue;
+      const text = String(value).trim();
+      if (text) entries.push([key, text]);
+    }
+    return entries;
   }, [product]);
 
   const formatAttributeLabel = (key: string) => {
@@ -168,8 +190,11 @@ export default function ProductDetailClient({
     ? matchedVariant.quantity_available
     : product?.quantity_available;
   const isOwner = useMemo(() => isOwnStore(user, product?.seller), [user, product?.seller]);
+  const storeAcceptsOrders =
+    product?.seller?.can_receive_orders !== false && product?.seller?.is_seller_verified !== false;
   const canPurchase =
     !isOwner &&
+    storeAcceptsOrders &&
     (hasVariants
       ? !!matchedVariant && matchedVariant.quantity_available > 0
       : typeof product?.quantity_available !== 'number' || product.quantity_available > 0);
@@ -180,37 +205,48 @@ export default function ProductDetailClient({
       toast.error('You cannot purchase your own product.');
       return;
     }
+    if (!storeAcceptsOrders) {
+      toast.error('This store is pending seller verification and cannot receive orders yet.');
+      return;
+    }
     if (hasVariants && !matchedVariant) return;
     const price =
       typeof effectivePrice === 'number' ? String(effectivePrice) : (effectivePrice ?? '0');
-    addItem({
+    const added = addItem({
       productId: String(product.id),
       variantId: matchedVariant?.id ?? null,
       variantLabel,
       title: product.title ?? 'Product',
       price,
       imageUrl: matchedVariant?.image_url || product.image_urls?.[0] || '/placeholder-product.png',
+      maxStock: typeof effectiveStock === 'number' ? effectiveStock : null,
       storeLink: product.seller.store_link ?? '',
       storeName: product.seller.store_name ?? 'Store',
       logoUrl: product.seller.logo_url ?? null,
     });
-    setAddedFeedback(true);
-    setTimeout(() => setAddedFeedback(false), 2000);
+    if (added) {
+      setAddedFeedback(true);
+      setTimeout(() => setAddedFeedback(false), 2000);
+    }
   };
 
   // Auto-open Quick Checkout if returning from auth redirect (?buyNow=1)
   useEffect(() => {
-    if (typeof window === 'undefined' || !product || isOwner) return;
+    if (typeof window === 'undefined' || !product || isOwner || !storeAcceptsOrders) return;
     const sp = new URLSearchParams(window.location.search);
     if (sp.get('buyNow') === '1') {
       setIsQuickCheckoutOpen(true);
     }
-  }, [product, isOwner]);
+  }, [product, isOwner, storeAcceptsOrders]);
 
   const handleBuyNow = () => {
     if (!product?.seller) return;
     if (isOwner) {
       toast.error('You cannot purchase your own product.');
+      return;
+    }
+    if (!storeAcceptsOrders) {
+      toast.error('This store is pending seller verification and cannot receive orders yet.');
       return;
     }
     if (hasVariants && !matchedVariant) {
@@ -654,9 +690,21 @@ export default function ProductDetailClient({
                     <span className="text-muted text-[10px] font-normal uppercase tracking-wider">
                       {formatAttributeLabel(key)}
                     </span>
-                    <span className="text-foreground max-w-[60%] truncate text-sm font-normal">
-                      {value}
-                    </span>
+                    {key === 'subcategory' ? (
+                      <Link
+                        href={`/products?${new URLSearchParams({
+                          ...(product.category ? { category: product.category } : {}),
+                          subcategory: value,
+                        }).toString()}`}
+                        className="text-foreground max-w-[60%] truncate text-sm font-medium underline-offset-2 hover:underline"
+                      >
+                        {value}
+                      </Link>
+                    ) : (
+                      <span className="text-foreground max-w-[60%] truncate text-sm font-normal">
+                        {value}
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -672,12 +720,13 @@ export default function ProductDetailClient({
               className="flex flex-wrap gap-2"
             >
               {product.tags.map((tag: string) => (
-                <span
+                <Link
                   key={tag}
-                  className="bg-surface border-border/50 text-muted hover:text-foreground hover:border-primary/30 flex cursor-default items-center gap-1.5 rounded-xl border px-4 py-2 text-[10px] font-normal uppercase transition-all"
+                  href={`/products?q=${encodeURIComponent(tag)}`}
+                  className="bg-surface border-border/50 text-muted hover:text-foreground hover:border-primary/30 flex items-center gap-1.5 rounded-xl border px-4 py-2 text-[10px] font-normal uppercase transition-all"
                 >
                   <Tag className="h-3 w-3" /> {tag}
-                </span>
+                </Link>
               ))}
             </motion.div>
           )}
@@ -714,6 +763,41 @@ export default function ProductDetailClient({
               >
                 Manage Product
               </Button>
+            </motion.div>
+          ) : !storeAcceptsOrders ? (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="space-y-3 pt-4"
+            >
+              <div className="rounded-2xl bg-amber-500/10 px-4 py-3 text-amber-950 dark:text-amber-100">
+                <p className="text-xs font-semibold">
+                  Orders disabled — Store pending verification
+                </p>
+                <p className="mt-0.5 text-[11px] opacity-80">
+                  This seller is still completing Verndly verification. You can browse their
+                  products, and checkout will unlock once verified.
+                </p>
+              </div>
+              <div className="flex flex-row gap-2.5 sm:gap-3">
+                <Button
+                  variant="secondary"
+                  disabled
+                  className="border-border/80 bg-surface/60 text-muted sm:h-13 h-12 flex-1 cursor-not-allowed gap-2 rounded-xl border text-xs font-semibold opacity-60 sm:rounded-2xl sm:text-sm"
+                >
+                  <ShoppingCart className="h-4 w-4 shrink-0" />
+                  <span className="truncate">Add to Cart</span>
+                </Button>
+                <Button
+                  variant="primary"
+                  disabled
+                  className="bg-foreground/30 text-background sm:h-13 h-12 flex-1 cursor-not-allowed gap-2 rounded-xl border-0 text-xs font-semibold sm:rounded-2xl sm:text-sm"
+                >
+                  <Zap className="h-4 w-4 shrink-0" />
+                  <span className="truncate">Orders Unavailable</span>
+                </Button>
+              </div>
             </motion.div>
           ) : (
             <motion.div

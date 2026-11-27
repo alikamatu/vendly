@@ -27,6 +27,13 @@ import { useAuth } from '@/lib/contexts/auth-context';
 import { toast } from 'sonner';
 import VerndlyAiIcon from '@/components/ai/VerndlyAiIcon';
 import VerndlyAiOverlay from '@/components/ai/VerndlyAiOverlay';
+import {
+  DIMENSION_UNITS,
+  WARRANTY_PRESETS,
+  WEIGHT_UNITS,
+  buildStructuredAttributes,
+  getSubtabsForCategory,
+} from '@/lib/catalog-subcategories';
 
 export interface CategoryField {
   name?: string;
@@ -56,10 +63,22 @@ export interface ProductNoteItem {
   video: File | null;
   videoPreview: string | null;
   category: string;
+  subcategory: string;
   condition: 'new' | 'used' | 'refurbished';
   quantity_available: string;
   brand: string;
   tags: string[];
+  length: string;
+  width: string;
+  height: string;
+  dimensionUnit: 'cm' | 'mm' | 'in' | 'm';
+  weight: string;
+  weightUnit: 'kg' | 'g' | 'lb';
+  color: string;
+  material: string;
+  size: string;
+  warranty: string;
+  sku: string;
   status: 'active' | 'draft';
   aiGenerated?: boolean;
   aiConfidence?: AiConfidence;
@@ -93,6 +112,153 @@ const CONDITIONS = [
 
 const MIN_ACTIVE_DESCRIPTION_LENGTH = 20;
 const MAX_BULK_PHOTOS = 20;
+const ADD_PRODUCT_DRAFT_PREFIX = 'verndly_add_product_draft_v1';
+const MAX_DRAFT_STORAGE_CHARS = 3_400_000;
+
+interface PersistedImageFile {
+  name: string;
+  type: string;
+  dataUrl: string;
+}
+
+interface PersistedProductNote {
+  id: string;
+  title: string;
+  price: string;
+  original_price: string;
+  description: string;
+  category: string;
+  subcategory: string;
+  condition: 'new' | 'used' | 'refurbished';
+  quantity_available: string;
+  brand: string;
+  tags: string[];
+  length: string;
+  width: string;
+  height: string;
+  dimensionUnit: 'cm' | 'mm' | 'in' | 'm';
+  weight: string;
+  weightUnit: 'kg' | 'g' | 'lb';
+  color: string;
+  material: string;
+  size: string;
+  warranty: string;
+  sku: string;
+  status: 'active' | 'draft';
+  aiGenerated?: boolean;
+  aiConfidence?: AiConfidence;
+  aiSuggestedPrice?: number | null;
+  hadImages?: boolean;
+  savedImages?: PersistedImageFile[];
+}
+
+interface PersistedBatchDraft {
+  version: 1;
+  savedAt: number;
+  activeNoteIndex: number;
+  showMoreDetails: boolean;
+  tagInput: string;
+  notes: PersistedProductNote[];
+}
+
+const persistedImageCache = new WeakMap<File, Promise<PersistedImageFile | null>>();
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
+    reader.onerror = () => reject(reader.error || new Error('FileReader failed'));
+    reader.readAsDataURL(blob);
+  });
+}
+
+function serializeImageForDraft(file: File): Promise<PersistedImageFile | null> {
+  const cached = persistedImageCache.get(file);
+  if (cached) return cached;
+
+  const job = (async (): Promise<PersistedImageFile | null> => {
+    try {
+      const compact = await imageCompression(file, {
+        maxSizeMB: 0.16,
+        maxWidthOrHeight: 900,
+        useWebWorker: false,
+      });
+      const dataUrl = await blobToDataUrl(compact);
+      if (!dataUrl.startsWith('data:image/')) return null;
+      return {
+        name: file.name || 'photo.jpg',
+        type: compact.type || file.type || 'image/jpeg',
+        dataUrl,
+      };
+    } catch {
+      try {
+        if (file.size <= 350_000) {
+          const dataUrl = await blobToDataUrl(file);
+          if (dataUrl.startsWith('data:image/')) {
+            return {
+              name: file.name || 'photo.jpg',
+              type: file.type || 'image/jpeg',
+              dataUrl,
+            };
+          }
+        }
+      } catch {
+        // fall through
+      }
+      return null;
+    }
+  })();
+
+  persistedImageCache.set(file, job);
+  return job;
+}
+
+function dataUrlToFile(img: PersistedImageFile): File | null {
+  try {
+    const commaIdx = img.dataUrl.indexOf(',');
+    if (commaIdx === -1) return null;
+    const header = img.dataUrl.slice(0, commaIdx);
+    const b64 = img.dataUrl.slice(commaIdx + 1);
+    const mimeMatch = header.match(/data:([^;]+);base64/);
+    const mime = mimeMatch?.[1] || img.type || 'image/jpeg';
+    const binary = atob(b64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return new File([bytes], img.name || 'photo.jpg', { type: mime });
+  } catch {
+    return null;
+  }
+}
+
+function hasMeaningfulDraft(notes: ProductNoteItem[]): boolean {
+  if (notes.length > 1) return true;
+  const first = notes[0];
+  if (!first) return false;
+  return Boolean(
+    first.title.trim() ||
+    first.price.trim() ||
+    first.original_price.trim() ||
+    first.description.trim() ||
+    first.brand.trim() ||
+    first.subcategory.trim() ||
+    first.length.trim() ||
+    first.width.trim() ||
+    first.height.trim() ||
+    first.weight.trim() ||
+    first.color.trim() ||
+    first.material.trim() ||
+    first.size.trim() ||
+    first.warranty.trim() ||
+    first.sku.trim() ||
+    first.tags.length > 0 ||
+    first.images.length > 0 ||
+    (first.quantity_available && first.quantity_available !== '1') ||
+    first.condition !== 'new' ||
+    first.status !== 'active',
+  );
+}
 
 function createBlankProductNote(initialCategory = 'General'): ProductNoteItem {
   return {
@@ -109,10 +275,22 @@ function createBlankProductNote(initialCategory = 'General'): ProductNoteItem {
     video: null,
     videoPreview: null,
     category: initialCategory,
+    subcategory: '',
     condition: 'new',
     quantity_available: '1',
     brand: '',
     tags: [],
+    length: '',
+    width: '',
+    height: '',
+    dimensionUnit: 'cm',
+    weight: '',
+    weightUnit: 'kg',
+    color: '',
+    material: '',
+    size: '',
+    warranty: '',
+    sku: '',
     status: 'active',
     aiGenerated: false,
     aiSuggestedPrice: null,
@@ -138,7 +316,8 @@ function getItemReadiness(item: ProductNoteItem): { ready: boolean; missing: str
 }
 
 export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProductNotesFormProps) {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
+  const draftStorageKey = `${ADD_PRODUCT_DRAFT_PREFIX}:${user?.id || 'guest'}`;
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [brandsMap, setBrandsMap] = useState<Record<string, { id: string; name: string }[]>>({});
@@ -146,7 +325,12 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
   const [notes, setNotes] = useState<ProductNoteItem[]>([createBlankProductNote()]);
   const [activeNoteIndex, setActiveNoteIndex] = useState<number>(0);
   const [tagInput, setTagInput] = useState<string>('');
-  const [showMoreDetails, setShowMoreDetails] = useState<boolean>(false);
+  const [showMoreDetails, setShowMoreDetails] = useState<boolean>(true);
+  const [draftHydrated, setDraftHydrated] = useState<boolean>(false);
+  const [draftRestoredNotice, setDraftRestoredNotice] = useState<'full' | 'needs_photos' | null>(
+    null,
+  );
+  const [draftSaved, setDraftSaved] = useState<boolean>(false);
 
   // AI states
   const [aiConfigured, setAiConfigured] = useState<boolean | null>(null);
@@ -170,6 +354,212 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
   });
 
   const activeNote = notes[activeNoteIndex] || notes[0];
+
+  // Restore saved Add Product draft from localStorage (survives refresh & back button)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = localStorage.getItem(draftStorageKey);
+      if (raw) {
+        const parsed = JSON.parse(raw) as PersistedBatchDraft;
+        if (parsed && Array.isArray(parsed.notes) && parsed.notes.length > 0) {
+          let missingSomePhotos = false;
+          const restoredNotes: ProductNoteItem[] = parsed.notes.map((n) => {
+            const restoredFiles: File[] = [];
+            const restoredPreviews: string[] = [];
+            if (Array.isArray(n.savedImages)) {
+              for (const img of n.savedImages) {
+                const file = dataUrlToFile(img);
+                if (file) {
+                  restoredFiles.push(file);
+                  restoredPreviews.push(URL.createObjectURL(file));
+                }
+              }
+            }
+            if (n.hadImages && restoredFiles.length === 0) {
+              missingSomePhotos = true;
+            }
+            return {
+              id: n.id || createBlankProductNote().id,
+              title: typeof n.title === 'string' ? n.title : '',
+              price: typeof n.price === 'string' ? n.price : '',
+              original_price: typeof n.original_price === 'string' ? n.original_price : '',
+              description: typeof n.description === 'string' ? n.description : '',
+              images: restoredFiles,
+              imagePreviews: restoredPreviews,
+              video: null,
+              videoPreview: null,
+              category: typeof n.category === 'string' && n.category ? n.category : 'General',
+              subcategory: typeof n.subcategory === 'string' ? n.subcategory : '',
+              condition:
+                n.condition === 'used' || n.condition === 'refurbished' ? n.condition : 'new',
+              quantity_available:
+                typeof n.quantity_available === 'string' && n.quantity_available
+                  ? n.quantity_available
+                  : '1',
+              brand: typeof n.brand === 'string' ? n.brand : '',
+              tags: Array.isArray(n.tags)
+                ? n.tags.filter((t): t is string => typeof t === 'string')
+                : [],
+              length: typeof n.length === 'string' ? n.length : '',
+              width: typeof n.width === 'string' ? n.width : '',
+              height: typeof n.height === 'string' ? n.height : '',
+              dimensionUnit:
+                n.dimensionUnit === 'mm' || n.dimensionUnit === 'in' || n.dimensionUnit === 'm'
+                  ? n.dimensionUnit
+                  : 'cm',
+              weight: typeof n.weight === 'string' ? n.weight : '',
+              weightUnit: n.weightUnit === 'g' || n.weightUnit === 'lb' ? n.weightUnit : 'kg',
+              color: typeof n.color === 'string' ? n.color : '',
+              material: typeof n.material === 'string' ? n.material : '',
+              size: typeof n.size === 'string' ? n.size : '',
+              warranty: typeof n.warranty === 'string' ? n.warranty : '',
+              sku: typeof n.sku === 'string' ? n.sku : '',
+              status: n.status === 'draft' ? 'draft' : 'active',
+              aiGenerated: Boolean(n.aiGenerated),
+              aiConfidence: n.aiConfidence,
+              aiSuggestedPrice: n.aiSuggestedPrice ?? null,
+            };
+          });
+
+          if (hasMeaningfulDraft(restoredNotes) || parsed.tagInput?.trim()) {
+            const safeIdx = Math.min(
+              Math.max(0, Number(parsed.activeNoteIndex) || 0),
+              restoredNotes.length - 1,
+            );
+            setNotes(restoredNotes);
+            setActiveNoteIndex(safeIdx);
+            setShowMoreDetails(Boolean(parsed.showMoreDetails));
+            setTagInput(typeof parsed.tagInput === 'string' ? parsed.tagInput : '');
+            setDraftSaved(true);
+            setDraftRestoredNotice(missingSomePhotos ? 'needs_photos' : 'full');
+          }
+        }
+      }
+    } catch {
+      // Corrupted draft — ignore and start fresh
+    } finally {
+      setDraftHydrated(true);
+    }
+  }, [draftStorageKey]);
+
+  // Auto-save form state (and compact photo copies when quota allows) to localStorage
+  useEffect(() => {
+    if (!draftHydrated || typeof window === 'undefined') return;
+    let cancelled = false;
+
+    const timer = setTimeout(async () => {
+      if (!hasMeaningfulDraft(notes) && !tagInput.trim()) {
+        try {
+          localStorage.removeItem(draftStorageKey);
+        } catch {
+          // ignore
+        }
+        if (!cancelled) setDraftSaved(false);
+        return;
+      }
+
+      const serializedNotes: PersistedProductNote[] = await Promise.all(
+        notes.map(async (item) => {
+          const encodedImages = (
+            await Promise.all(item.images.map((f) => serializeImageForDraft(f)))
+          ).filter((x): x is PersistedImageFile => Boolean(x));
+
+          return {
+            id: item.id,
+            title: item.title,
+            price: item.price,
+            original_price: item.original_price,
+            description: item.description,
+            category: item.category,
+            subcategory: item.subcategory,
+            condition: item.condition,
+            quantity_available: item.quantity_available,
+            brand: item.brand,
+            tags: item.tags,
+            length: item.length,
+            width: item.width,
+            height: item.height,
+            dimensionUnit: item.dimensionUnit,
+            weight: item.weight,
+            weightUnit: item.weightUnit,
+            color: item.color,
+            material: item.material,
+            size: item.size,
+            warranty: item.warranty,
+            sku: item.sku,
+            status: item.status,
+            aiGenerated: item.aiGenerated,
+            aiConfidence: item.aiConfidence,
+            aiSuggestedPrice: item.aiSuggestedPrice ?? null,
+            hadImages: item.images.length > 0,
+            savedImages: encodedImages,
+          };
+        }),
+      );
+
+      if (cancelled) return;
+
+      const buildPayload = (includeImages: boolean): string => {
+        const draft: PersistedBatchDraft = {
+          version: 1,
+          savedAt: Date.now(),
+          activeNoteIndex,
+          showMoreDetails,
+          tagInput,
+          notes: includeImages
+            ? serializedNotes
+            : serializedNotes.map(({ savedImages: _ignored, ...rest }) => rest),
+        };
+        return JSON.stringify(draft);
+      };
+
+      try {
+        const fullJson = buildPayload(true);
+        if (fullJson.length <= MAX_DRAFT_STORAGE_CHARS) {
+          localStorage.setItem(draftStorageKey, fullJson);
+        } else {
+          localStorage.setItem(draftStorageKey, buildPayload(false));
+        }
+        if (!cancelled) setDraftSaved(true);
+      } catch {
+        // Fallback when localStorage quota is tight: save all text & metadata without images
+        try {
+          localStorage.setItem(draftStorageKey, buildPayload(false));
+          if (!cancelled) setDraftSaved(true);
+        } catch {
+          // Storage completely unavailable
+        }
+      }
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [notes, activeNoteIndex, showMoreDetails, tagInput, draftHydrated, draftStorageKey]);
+
+  const handleClearDraft = useCallback(() => {
+    const defaultCat = categories[0]?.name || 'General';
+    setNotes((prev) => {
+      prev.forEach((n) => {
+        n.imagePreviews.forEach((url) => URL.revokeObjectURL(url));
+        if (n.videoPreview) URL.revokeObjectURL(n.videoPreview);
+      });
+      return [createBlankProductNote(defaultCat)];
+    });
+    setActiveNoteIndex(0);
+    setTagInput('');
+    setShowMoreDetails(false);
+    setDraftRestoredNotice(null);
+    setDraftSaved(false);
+    try {
+      localStorage.removeItem(draftStorageKey);
+    } catch {
+      // ignore
+    }
+    toast.success('Draft cleared');
+  }, [categories, draftStorageKey]);
 
   // Fetch categories
   useEffect(() => {
@@ -415,14 +805,27 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
         const groupedFiles = group.photo_indices
           .map((idx) => files[idx])
           .filter((f): f is File => Boolean(f));
+        const attrs = group.attributes || {};
         return {
           ...createBlankProductNote(group.category || defaultCat),
           title: group.title || '',
           description: group.description || '',
           category: group.category || defaultCat,
+          subcategory: group.subcategory || attrs.subcategory || '',
           condition: group.condition || 'new',
           brand: group.brand || '',
           tags: group.tags || [],
+          length: attrs.dimensions?.length ? String(attrs.dimensions.length) : '',
+          width: attrs.dimensions?.width ? String(attrs.dimensions.width) : '',
+          height: attrs.dimensions?.height ? String(attrs.dimensions.height) : '',
+          dimensionUnit: attrs.dimensions?.unit || 'cm',
+          weight: attrs.weight?.value ? String(attrs.weight.value) : '',
+          weightUnit: attrs.weight?.unit || 'kg',
+          color: attrs.color || '',
+          material: attrs.material || '',
+          size: attrs.size || '',
+          warranty: attrs.warranty || '',
+          sku: attrs.sku || '',
           images: groupedFiles,
           imagePreviews: groupedFiles.map((f) => URL.createObjectURL(f)),
           aiGenerated: true,
@@ -506,14 +909,27 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
       setNotes((prev) =>
         prev.map((item) => {
           if (item.id !== targetId) return item;
+          const attrs = product.attributes || {};
           return {
             ...item,
             title: product.title || item.title,
             description: product.description || item.description,
             category: product.category || item.category,
+            subcategory: product.subcategory || attrs.subcategory || item.subcategory,
             condition: product.condition || item.condition,
             brand: product.brand || item.brand,
             tags: product.tags.length > 0 ? product.tags : item.tags,
+            length: attrs.dimensions?.length ? String(attrs.dimensions.length) : item.length,
+            width: attrs.dimensions?.width ? String(attrs.dimensions.width) : item.width,
+            height: attrs.dimensions?.height ? String(attrs.dimensions.height) : item.height,
+            dimensionUnit: attrs.dimensions?.unit || item.dimensionUnit,
+            weight: attrs.weight?.value ? String(attrs.weight.value) : item.weight,
+            weightUnit: attrs.weight?.unit || item.weightUnit,
+            color: attrs.color || item.color,
+            material: attrs.material || item.material,
+            size: attrs.size || item.size,
+            warranty: attrs.warranty || item.warranty,
+            sku: attrs.sku || item.sku,
             aiGenerated: true,
             aiConfidence: product.confidence,
             aiSuggestedPrice: product.suggested_price_ghs,
@@ -662,6 +1078,21 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
           ),
         }));
 
+        const structuredAttributes = buildStructuredAttributes({
+          subcategory: item.subcategory,
+          length: item.length,
+          width: item.width,
+          height: item.height,
+          dimensionUnit: item.dimensionUnit,
+          weight: item.weight,
+          weightUnit: item.weightUnit,
+          color: item.color,
+          material: item.material,
+          size: item.size,
+          warranty: item.warranty,
+          sku: item.sku,
+        });
+
         const created = await productApi.createProduct(
           token,
           {
@@ -676,6 +1107,8 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
             category: item.category || categories[0]?.name || 'General',
             brand: item.brand.trim() || undefined,
             tags: item.tags,
+            attributes:
+              Object.keys(structuredAttributes).length > 0 ? structuredAttributes : undefined,
           },
           compressedImages,
           item.video,
@@ -716,6 +1149,13 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
     }));
 
     if (!hasError && createdIds.length > 0) {
+      try {
+        localStorage.removeItem(draftStorageKey);
+      } catch {
+        // ignore
+      }
+      setDraftSaved(false);
+      setDraftRestoredNotice(null);
       toast.success(`Published ${createdIds.length} product${createdIds.length === 1 ? '' : 's'}!`);
     }
   };
@@ -781,13 +1221,28 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
             <ArrowLeft className="h-4 w-4" />
           </button>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-foreground text-xl font-bold tracking-tight sm:text-2xl">
                 Add Products
               </h1>
               <span className="bg-surface text-muted rounded-full px-2.5 py-0.5 text-xs font-semibold">
                 {notes.length} {notes.length === 1 ? 'item' : 'items'}
               </span>
+              {draftSaved && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                  <Check className="h-3 w-3" />
+                  Draft saved
+                </span>
+              )}
+              {draftSaved && !isPublishing && (
+                <button
+                  type="button"
+                  onClick={handleClearDraft}
+                  className="text-muted hover:text-foreground text-[11px] font-medium underline underline-offset-2 transition-colors"
+                >
+                  Clear draft
+                </button>
+              )}
             </div>
             <p className="text-muted mt-0.5 text-xs sm:text-sm">
               Upload photos and let Verndly AI sort products and draft details automatically.
@@ -806,6 +1261,37 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
           <span>Verndly AI Bulk Add</span>
         </button>
       </div>
+
+      {/* Restored draft banner */}
+      {draftRestoredNotice && (
+        <div className="bg-surface flex flex-wrap items-center justify-between gap-3 rounded-2xl px-4 py-3 text-xs">
+          <div className="flex items-center gap-2.5">
+            <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+            <p className="text-foreground font-medium">
+              {draftRestoredNotice === 'needs_photos'
+                ? 'Your previous product draft was restored. Re-attach any large photos before publishing.'
+                : 'Your previous product draft was automatically restored.'}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleClearDraft}
+              className="bg-background text-muted hover:text-foreground rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-colors"
+            >
+              Start Fresh
+            </button>
+            <button
+              type="button"
+              onClick={() => setDraftRestoredNotice(null)}
+              aria-label="Dismiss draft notice"
+              className="text-muted hover:text-foreground rounded-lg p-1 transition-colors"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Full-screen centered Verndly AI working state */}
       <VerndlyAiOverlay
@@ -1244,7 +1730,16 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
               <select
                 id="product-category"
                 value={activeNote.category}
-                onChange={(e) => updateActiveNote({ category: e.target.value })}
+                onChange={(e) => {
+                  const nextCat = e.target.value;
+                  const nextSubs = getSubtabsForCategory(nextCat);
+                  updateActiveNote({
+                    category: nextCat,
+                    subcategory: nextSubs.includes(activeNote.subcategory)
+                      ? activeNote.subcategory
+                      : '',
+                  });
+                }}
                 className="bg-background text-foreground w-full rounded-2xl px-4 py-3.5 text-sm font-semibold outline-none"
               >
                 {categories.length === 0 ? (
@@ -1259,6 +1754,44 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
               </select>
             </div>
           </div>
+
+          {/* Subcategory / Subtab selector (dynamically scoped to Category) */}
+          {(() => {
+            const availableSubtabs = getSubtabsForCategory(activeNote.category);
+            if (availableSubtabs.length === 0) return null;
+            return (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label
+                    htmlFor="product-subcategory"
+                    className="text-muted block text-xs font-semibold uppercase tracking-wider"
+                  >
+                    Subcategory
+                  </label>
+                  <span className="text-muted text-[11px]">Helps buyers filter by subtab</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {availableSubtabs.map((sub) => {
+                    const selected = activeNote.subcategory === sub;
+                    return (
+                      <button
+                        key={sub}
+                        type="button"
+                        onClick={() => updateActiveNote({ subcategory: selected ? '' : sub })}
+                        className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+                          selected
+                            ? 'bg-foreground text-background'
+                            : 'bg-background text-muted hover:text-foreground'
+                        }`}
+                      >
+                        {sub}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Condition selector pills */}
           <div className="space-y-1.5">
@@ -1320,7 +1853,7 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
             />
           </div>
 
-          {/* Optional Details Accordion — keeps mobile UI clean & uncluttered */}
+          {/* Full Product Details: Pricing, Stock, Brand, Dimensions, Weight, Specs & Tags */}
           <div className="bg-background rounded-2xl p-4">
             <button
               type="button"
@@ -1329,10 +1862,11 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
             >
               <div>
                 <span className="text-foreground text-sm font-semibold">
-                  More details (optional)
+                  Specifications, Dimensions &amp; Tags
                 </span>
                 <p className="text-muted text-xs">
-                  Compare-at price, stock quantity, brand, and search tags
+                  Compare-at price, stock, brand, dimensions (L × W × H), weight, color, material,
+                  warranty &amp; search tags
                 </p>
               </div>
               <ChevronDown
@@ -1343,7 +1877,7 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
             </button>
 
             {showMoreDetails && (
-              <div className="mt-4 space-y-4 pt-2">
+              <div className="mt-4 space-y-5 pt-2">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                   {/* Compare-at / original price */}
                   <div className="space-y-1.5">
@@ -1409,6 +1943,210 @@ export default function BatchProductNotesForm({ onCancel, onSuccess }: BatchProd
                         ))}
                       </datalist>
                     )}
+                  </div>
+                </div>
+
+                {/* Dimensions (L × W × H) & Weight */}
+                <div className="space-y-2">
+                  <span className="text-muted block text-xs font-semibold">
+                    Dimensions &amp; Weight
+                  </span>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-6">
+                    <div className="space-y-1">
+                      <label htmlFor="product-length" className="text-muted text-[11px]">
+                        Length
+                      </label>
+                      <input
+                        id="product-length"
+                        type="number"
+                        inputMode="decimal"
+                        min="0"
+                        step="0.1"
+                        value={activeNote.length}
+                        onChange={(e) => updateActiveNote({ length: e.target.value })}
+                        placeholder="L"
+                        className="bg-surface text-foreground placeholder:text-muted/60 w-full rounded-xl px-3 py-2 text-sm outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label htmlFor="product-width" className="text-muted text-[11px]">
+                        Width
+                      </label>
+                      <input
+                        id="product-width"
+                        type="number"
+                        inputMode="decimal"
+                        min="0"
+                        step="0.1"
+                        value={activeNote.width}
+                        onChange={(e) => updateActiveNote({ width: e.target.value })}
+                        placeholder="W"
+                        className="bg-surface text-foreground placeholder:text-muted/60 w-full rounded-xl px-3 py-2 text-sm outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label htmlFor="product-height" className="text-muted text-[11px]">
+                        Height
+                      </label>
+                      <input
+                        id="product-height"
+                        type="number"
+                        inputMode="decimal"
+                        min="0"
+                        step="0.1"
+                        value={activeNote.height}
+                        onChange={(e) => updateActiveNote({ height: e.target.value })}
+                        placeholder="H"
+                        className="bg-surface text-foreground placeholder:text-muted/60 w-full rounded-xl px-3 py-2 text-sm outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label htmlFor="product-dim-unit" className="text-muted text-[11px]">
+                        Unit
+                      </label>
+                      <select
+                        id="product-dim-unit"
+                        value={activeNote.dimensionUnit}
+                        onChange={(e) =>
+                          updateActiveNote({
+                            dimensionUnit: e.target.value as ProductNoteItem['dimensionUnit'],
+                          })
+                        }
+                        className="bg-surface text-foreground w-full rounded-xl px-2.5 py-2 text-sm font-medium outline-none"
+                      >
+                        {DIMENSION_UNITS.map((u) => (
+                          <option key={u} value={u}>
+                            {u}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label htmlFor="product-weight" className="text-muted text-[11px]">
+                        Weight
+                      </label>
+                      <input
+                        id="product-weight"
+                        type="number"
+                        inputMode="decimal"
+                        min="0"
+                        step="0.01"
+                        value={activeNote.weight}
+                        onChange={(e) => updateActiveNote({ weight: e.target.value })}
+                        placeholder="0.0"
+                        className="bg-surface text-foreground placeholder:text-muted/60 w-full rounded-xl px-3 py-2 text-sm outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label htmlFor="product-weight-unit" className="text-muted text-[11px]">
+                        Wt. Unit
+                      </label>
+                      <select
+                        id="product-weight-unit"
+                        value={activeNote.weightUnit}
+                        onChange={(e) =>
+                          updateActiveNote({
+                            weightUnit: e.target.value as ProductNoteItem['weightUnit'],
+                          })
+                        }
+                        className="bg-surface text-foreground w-full rounded-xl px-2.5 py-2 text-sm font-medium outline-none"
+                      >
+                        {WEIGHT_UNITS.map((u) => (
+                          <option key={u} value={u}>
+                            {u}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Color, Material, Size / Capacity, Warranty, SKU */}
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div className="space-y-1">
+                    <label htmlFor="product-color" className="text-muted text-xs font-semibold">
+                      Color
+                    </label>
+                    <input
+                      id="product-color"
+                      type="text"
+                      value={activeNote.color}
+                      onChange={(e) => updateActiveNote({ color: e.target.value })}
+                      placeholder="e.g. Matte Black, Rose Gold"
+                      className="bg-surface text-foreground placeholder:text-muted/60 w-full rounded-xl px-3.5 py-2.5 text-sm outline-none"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label htmlFor="product-material" className="text-muted text-xs font-semibold">
+                      Material
+                    </label>
+                    <input
+                      id="product-material"
+                      type="text"
+                      value={activeNote.material}
+                      onChange={(e) => updateActiveNote({ material: e.target.value })}
+                      placeholder="e.g. Cotton, Leather, Aluminum"
+                      className="bg-surface text-foreground placeholder:text-muted/60 w-full rounded-xl px-3.5 py-2.5 text-sm outline-none"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label htmlFor="product-size" className="text-muted text-xs font-semibold">
+                      Size / Capacity
+                    </label>
+                    <input
+                      id="product-size"
+                      type="text"
+                      value={activeNote.size}
+                      onChange={(e) => updateActiveNote({ size: e.target.value })}
+                      placeholder="e.g. 256GB, EU 42, Large, 100ml"
+                      className="bg-surface text-foreground placeholder:text-muted/60 w-full rounded-xl px-3.5 py-2.5 text-sm outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <label htmlFor="product-warranty" className="text-muted text-xs font-semibold">
+                      Warranty / Guarantee
+                    </label>
+                    <select
+                      id="product-warranty"
+                      value={activeNote.warranty}
+                      onChange={(e) => updateActiveNote({ warranty: e.target.value })}
+                      className="bg-surface text-foreground w-full rounded-xl px-3.5 py-2.5 text-sm font-medium outline-none"
+                    >
+                      <option value="">Not specified</option>
+                      {activeNote.warranty &&
+                        !(WARRANTY_PRESETS as readonly string[]).includes(activeNote.warranty) && (
+                          <option value={activeNote.warranty}>{activeNote.warranty}</option>
+                        )}
+                      {WARRANTY_PRESETS.map((w) => (
+                        <option key={w} value={w}>
+                          {w}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label htmlFor="product-sku" className="text-muted text-xs font-semibold">
+                      SKU / Model Code
+                    </label>
+                    <input
+                      id="product-sku"
+                      type="text"
+                      value={activeNote.sku}
+                      onChange={(e) => updateActiveNote({ sku: e.target.value })}
+                      placeholder="Optional store code or model number"
+                      className="bg-surface text-foreground placeholder:text-muted/60 w-full rounded-xl px-3.5 py-2.5 text-sm outline-none"
+                    />
                   </div>
                 </div>
 

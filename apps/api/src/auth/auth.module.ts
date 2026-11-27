@@ -18,6 +18,7 @@ import { PaymentsModule } from '../payments/payments.module';
 import { SmsClient } from './arkesel.client';
 import { OAuthService } from './oauth.service';
 import { LoopsModule } from '../loops/loops.module';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { LoopsModule } from '../loops/loops.module';
     EmailModule,
     LoopsModule,
     CloudinaryModule,
+    NotificationModule,
     PassportModule,
     PaymentsModule,
     JwtModule.registerAsync({

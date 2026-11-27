@@ -205,6 +205,15 @@ export const authApi = {
     return res.data;
   },
 
+  async startSellerSetup(token: string) {
+    const res = await api.post<{
+      message: string;
+      access_token: string;
+      user: any;
+    }>('/auth/start-seller-setup', undefined, { token });
+    return res.data;
+  },
+
   async logout(token: string) {
     const res = await api.post<{ message: string }>('/auth/logout', undefined, { token });
     return res.data;

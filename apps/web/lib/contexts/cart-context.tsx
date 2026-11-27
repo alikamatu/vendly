@@ -16,6 +16,8 @@ export interface CartItem {
   imageUrl: string;
   videoUrl?: string | null;
   quantity: number;
+  /** Latest known available inventory for this product/variant. */
+  maxStock?: number | null;
   storeLink: string;
   storeName: string;
   logoUrl?: string | null;
@@ -87,10 +89,11 @@ function groupCartByVendor(items: CartItem[]): GroupedCart[] {
 
 interface CartContextValue {
   items: CartItem[];
-  addItem: (item: Omit<CartItem, 'quantity'>) => void;
+  /** Returns true when item was added/incremented, false when blocked by stock or ownership. */
+  addItem: (item: Omit<CartItem, 'quantity'>) => boolean;
   /** productId or full composite key produced by `cartKey(productId, variantId)`. */
   removeItem: (key: string) => void;
-  updateQuantity: (key: string, quantity: number) => void;
+  updateQuantity: (key: string, quantity: number, maxStockOverride?: number | null) => void;
   clearCart: () => void;
   itemCount: number;
   totalPrice: number;
@@ -115,36 +118,111 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [items, hydrated]);
 
   const addItem = useCallback(
-    (item: Omit<CartItem, 'quantity'>) => {
+    (item: Omit<CartItem, 'quantity'>): boolean => {
       if (isOwnStore(user, { store_link: item.storeLink })) {
         toast.error('You cannot purchase your own product.');
-        return;
+        return false;
       }
       const key = cartKey(item.productId, item.variantId ?? null);
-      setItems((prev) => {
-        const existing = prev.find((i) => itemKey(i) === key);
-        if (existing) {
-          return prev.map((i) => (itemKey(i) === key ? { ...i, quantity: i.quantity + 1 } : i));
+      const incomingMax =
+        typeof item.maxStock === 'number' && Number.isFinite(item.maxStock)
+          ? Math.max(0, Math.floor(item.maxStock))
+          : null;
+
+      if (incomingMax !== null && incomingMax <= 0) {
+        toast.error(`${item.title} is out of stock.`);
+        return false;
+      }
+
+      const existing = items.find((i) => itemKey(i) === key);
+      const effectiveMax =
+        incomingMax !== null
+          ? incomingMax
+          : typeof existing?.maxStock === 'number' && Number.isFinite(existing.maxStock)
+            ? Math.max(0, Math.floor(existing.maxStock))
+            : null;
+
+      if (existing) {
+        if (effectiveMax !== null && existing.quantity >= effectiveMax) {
+          toast.error(
+            effectiveMax === 1
+              ? `Only 1 of "${item.title}" is available in stock.`
+              : `Only ${effectiveMax} of "${item.title}" available in stock.`,
+          );
+          return false;
         }
-        return [...prev, { ...item, quantity: 1 }];
-      });
+        setItems((prev) =>
+          prev.map((i) =>
+            itemKey(i) === key
+              ? {
+                  ...i,
+                  quantity:
+                    effectiveMax !== null ? Math.min(effectiveMax, i.quantity + 1) : i.quantity + 1,
+                  ...(effectiveMax !== null ? { maxStock: effectiveMax } : {}),
+                }
+              : i,
+          ),
+        );
+        return true;
+      }
+
+      setItems((prev) => [
+        ...prev,
+        {
+          ...item,
+          quantity: 1,
+          ...(effectiveMax !== null ? { maxStock: effectiveMax } : {}),
+        },
+      ]);
+      return true;
     },
-    [user],
+    [user, items],
   );
 
   const removeItem = useCallback((key: string) => {
     setItems((prev) => prev.filter((i) => itemKey(i) !== key && i.productId !== key));
   }, []);
 
-  const updateQuantity = useCallback((key: string, quantity: number) => {
-    if (quantity < 1) {
-      setItems((prev) => prev.filter((i) => itemKey(i) !== key && i.productId !== key));
-      return;
-    }
-    setItems((prev) =>
-      prev.map((i) => (itemKey(i) === key || i.productId === key ? { ...i, quantity } : i)),
-    );
-  }, []);
+  const updateQuantity = useCallback(
+    (key: string, quantity: number, maxStockOverride?: number | null) => {
+      const nextInt = Math.floor(quantity);
+      if (nextInt < 1) {
+        setItems((prev) => prev.filter((i) => itemKey(i) !== key && i.productId !== key));
+        return;
+      }
+      const target = items.find((i) => itemKey(i) === key || i.productId === key);
+      const resolvedMax =
+        typeof maxStockOverride === 'number' && Number.isFinite(maxStockOverride)
+          ? Math.max(0, Math.floor(maxStockOverride))
+          : typeof target?.maxStock === 'number' && Number.isFinite(target.maxStock)
+            ? Math.max(0, Math.floor(target.maxStock))
+            : null;
+
+      if (resolvedMax !== null && resolvedMax <= 0) {
+        toast.error(target ? `"${target.title}" is out of stock.` : 'This item is out of stock.');
+        return;
+      }
+
+      let clamped = nextInt;
+      if (resolvedMax !== null && nextInt > resolvedMax) {
+        clamped = resolvedMax;
+        toast.error(`Only ${resolvedMax} of "${target?.title || 'this item'}" available in stock.`);
+      }
+
+      setItems((prev) =>
+        prev.map((i) =>
+          itemKey(i) === key || i.productId === key
+            ? {
+                ...i,
+                quantity: clamped,
+                ...(resolvedMax !== null ? { maxStock: resolvedMax } : {}),
+              }
+            : i,
+        ),
+      );
+    },
+    [items],
+  );
 
   const clearCart = useCallback(() => setItems([]), []);
 

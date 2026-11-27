@@ -1,19 +1,22 @@
 import { ImageResponse } from 'next/og';
-import { getPublicBrand } from '@/lib/brand-guard';
 import { NextRequest } from 'next/server';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { getPublicBrand } from '@/lib/brand-guard';
 
 /**
- * Modern Google-Style Product Poster & Social Card Generator
+ * Verndly Studio Product Card Generator (Apple / Nike Editorial Style)
  *
- *   GET /api/cards/product/<productId>?theme=dark|light&format=portrait|landscape
+ *   GET /api/cards/product/<productId>?theme=light|dark&format=portrait|landscape
+ *       &fit=cover|contain&photo=0&badge=...&title=...&tagline=...&blurb=...&cta=...
  *
- * Modern Google Store / Material Design aesthetic:
- *  - High-clarity typography with zero missing glyphs (clean "GH¢ " currency formatting)
- *  - Sculptural product showcase stage with seamless studio backdrop
- *  - Material You pill chips for specs and categories
- *  - Google Store-style pill CTA button and proud price lockup
- *  - Portrait: 1080×1350 (4:5 poster ratio, WhatsApp Status, Instagram Post/Story, TikTok)
- *  - Landscape: 1200×630 (16:9 social ratio, Twitter/X cards, WhatsApp links, iMessage, Facebook)
+ * Engineered for effortless mobile legibility on WhatsApp Status, Instagram Stories,
+ * TikTok, X/Twitter, and OpenGraph link previews:
+ *  - Bundled Inter static weights (500 / 600 / 700 / 800) with crisp tight tracking
+ *  - Large, eye-friendly typography (58px titles, 44px prices, 34px CTAs on 1080×1350)
+ *  - Floating rounded studio card over soft cyclorama canvas with ambient depth
+ *  - Full-bleed rounded hero image with frosted glass badge & circular store/Verndly mark
+ *  - Optional Verndly AI editorial headline, tagline, blurb, badge, and CTA overrides
  */
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -23,6 +26,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1000';
 interface Product {
   id: string;
   title: string;
+  description?: string | null;
   price: string | number;
   original_price?: string | number | null;
   currency?: string | null;
@@ -38,8 +42,47 @@ interface Product {
     logo_url?: string | null;
     service_area?: string | null;
     location?: string | null;
-    user?: { is_pro?: boolean | null } | null;
+    user?: { is_pro?: boolean | null; is_verified?: boolean | null } | null;
   } | null;
+}
+
+type LoadedFont = {
+  name: string;
+  data: Buffer;
+  weight: 500 | 600 | 700 | 800;
+  style: 'normal';
+};
+
+let fontsPromise: Promise<LoadedFont[]> | null = null;
+
+function loadInterFonts(): Promise<LoadedFont[]> {
+  if (!fontsPromise) {
+    fontsPromise = (async () => {
+      const fontsDir = path.join(process.cwd(), 'assets', 'fonts');
+      const specs: Array<{ file: string; weight: 500 | 600 | 700 | 800 }> = [
+        { file: 'Inter-Medium.ttf', weight: 500 },
+        { file: 'Inter-SemiBold.ttf', weight: 600 },
+        { file: 'Inter-Bold.ttf', weight: 700 },
+        { file: 'Inter-ExtraBold.ttf', weight: 800 },
+      ];
+      const loaded: LoadedFont[] = [];
+      for (const spec of specs) {
+        try {
+          const data = await readFile(path.join(fontsDir, spec.file));
+          loaded.push({
+            name: 'Inter',
+            data,
+            weight: spec.weight,
+            style: 'normal',
+          });
+        } catch {
+          // Graceful fallback if a font file is absent in a partial test environment
+        }
+      }
+      return loaded;
+    })();
+  }
+  return fontsPromise;
 }
 
 async function fetchProduct(id: string): Promise<Product | null> {
@@ -50,7 +93,7 @@ async function fetchProduct(id: string): Promise<Product | null> {
     if (!res.ok) return null;
     const json = await res.json();
     return (
-      json && typeof json === 'object' && 'data' in json ? (json as any).data : json
+      json && typeof json === 'object' && 'data' in json ? (json as { data: Product }).data : json
     ) as Product;
   } catch {
     return null;
@@ -61,7 +104,7 @@ async function fetchImageAsDataUri(url: string): Promise<string | null> {
   try {
     const res = await fetch(url, {
       cache: 'no-store',
-      headers: { 'User-Agent': 'Verndly-Card-Renderer/1.0' },
+      headers: { 'User-Agent': 'Verndly-Card-Renderer/2.0' },
     });
     if (!res.ok) return null;
     const ct = res.headers.get('content-type') || 'image/jpeg';
@@ -72,7 +115,14 @@ async function fetchImageAsDataUri(url: string): Promise<string | null> {
   }
 }
 
-function getPriceComponents(price: string | number, currency?: string | null) {
+function cleanParam(val: string | null, maxLen: number): string | null {
+  if (!val) return null;
+  const cleaned = val.replace(/\s+/g, ' ').trim();
+  if (!cleaned) return null;
+  return cleaned.length > maxLen ? `${cleaned.slice(0, maxLen - 1).trimEnd()}…` : cleaned;
+}
+
+function formatPriceText(price: string | number, currency?: string | null) {
   const code = (currency || 'GHS').toUpperCase();
   const symbol =
     code === 'GHS'
@@ -83,18 +133,88 @@ function getPriceComponents(price: string | number, currency?: string | null) {
           ? '€'
           : code === 'GBP'
             ? '£'
-            : code;
+            : `${code} `;
   const n = Number(price);
-  const formattedNumber = Number.isFinite(n)
-    ? n.toLocaleString('en-US', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      })
-    : String(price);
-  return { symbol, formattedNumber, full: `${symbol} ${formattedNumber}` };
+  if (!Number.isFinite(n)) {
+    return `${symbol}${price}`;
+  }
+  const hasDecimals = Math.abs(n - Math.round(n)) > 0.001;
+  const formatted = n.toLocaleString('en-US', {
+    minimumFractionDigits: hasDecimals ? 2 : 0,
+    maximumFractionDigits: hasDecimals ? 2 : 0,
+  });
+  return code === 'GHS' ? `${symbol} ${formatted}` : `${symbol}${formatted}`;
 }
 
-function errorImage(title: string, subtitle: string) {
+function buildSmartFallbackCopy(product: Product, hasDiscount: boolean, discountPercent: number) {
+  const publicBrand = getPublicBrand(product.brand, product.seller);
+  const storeName = product.seller?.store_name?.trim() || 'Verified Verndly Store';
+  const category = product.category?.trim() || 'Featured';
+
+  const badge = hasDiscount
+    ? `Save ${discountPercent}%`
+    : product.seller?.user?.is_pro
+      ? 'Featured'
+      : product.condition && product.condition.toLowerCase() !== 'new'
+        ? product.condition.charAt(0).toUpperCase() + product.condition.slice(1).toLowerCase()
+        : 'Best Seller';
+
+  const headline =
+    product.title.length > 36 ? `${product.title.slice(0, 33).trimEnd()}…` : product.title;
+
+  const tagline = publicBrand ? `By ${publicBrand} · ${storeName}` : `Curated by ${storeName}`;
+
+  const rawDesc = (product.description || '').replace(/\s+/g, ' ').trim();
+  const isWeakDesc =
+    !rawDesc ||
+    rawDesc.length < 24 ||
+    /^(it is nice|nice|good|quality|available|dm to order)\.?$/i.test(rawDesc);
+
+  const blurb = isWeakDesc
+    ? `Shop authentic ${category.toLowerCase()} from ${storeName} with 3-day Paystack escrow protection.`
+    : rawDesc.length > 96
+      ? `${rawDesc.slice(0, 93).trimEnd()}…`
+      : rawDesc;
+
+  return { badge, headline, tagline, blurb, cta: 'Buy Now' };
+}
+
+function VerndlyMark({ size = 40, color = '#B91C1C' }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" fill="none">
+      <circle cx="27" cy="33" r="14" fill={color} />
+      <rect
+        x="37"
+        y="16"
+        width="28"
+        height="74"
+        rx="14"
+        transform="rotate(-36 51 53)"
+        fill={color}
+      />
+    </svg>
+  );
+}
+
+function ArrowUpRightIcon({ size = 26, color = '#0A0A0A' }: { size?: number; color?: string }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth="2.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M7 17L17 7" />
+      <path d="M7 7h10v10" />
+    </svg>
+  );
+}
+
+function errorImage(title: string, subtitle: string, fonts: LoadedFont[]) {
   return new ImageResponse(
     <div
       style={{
@@ -104,157 +224,145 @@ function errorImage(title: string, subtitle: string) {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#0b0c0e',
-        color: '#ffffff',
-        fontFamily: 'system-ui, -apple-system, sans-serif',
-        padding: 60,
+        backgroundColor: '#F1F2F5',
+        color: '#0A0A0A',
+        fontFamily: fonts.length ? 'Inter, sans-serif' : 'system-ui, sans-serif',
+        padding: 72,
         textAlign: 'center',
       }}
     >
-      <div
-        style={{
-          fontSize: 40,
-          fontWeight: 700,
-          letterSpacing: -1,
-          display: 'flex',
-        }}
-      >
+      <div style={{ fontSize: 52, fontWeight: 800, letterSpacing: -1.5, display: 'flex' }}>
         {title}
       </div>
-      <div
-        style={{
-          fontSize: 20,
-          color: '#9ca3af',
-          marginTop: 12,
-          display: 'flex',
-        }}
-      >
+      <div style={{ fontSize: 28, color: '#64748B', marginTop: 18, display: 'flex' }}>
         {subtitle}
       </div>
     </div>,
-    { width: 1080, height: 1350 },
+    {
+      width: 1080,
+      height: 1350,
+      ...(fonts.length ? { fonts } : {}),
+    },
   );
 }
 
 export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
-
   const searchParams = req.nextUrl.searchParams;
-  const themeParam = searchParams.get('theme') || 'dark';
+
+  const themeParam = searchParams.get('theme') || 'light';
   const formatParam = searchParams.get('format') || 'portrait';
+  const fitParam = searchParams.get('fit') || 'cover';
+  const photoIndexParam = Number(searchParams.get('photo') || '0');
 
-  const isDark = themeParam !== 'light';
+  const isDark = themeParam === 'dark';
   const isLandscape = formatParam === 'landscape';
+  const imageFit: 'cover' | 'contain' = fitParam === 'contain' ? 'contain' : 'cover';
 
-  const product = await fetchProduct(id);
+  const [product, fonts] = await Promise.all([fetchProduct(id), loadInterFonts()]);
   if (!product) {
-    return errorImage('Product Not Found', 'Unable to load product specifications.');
+    return errorImage('Product Not Found', 'This listing could not be loaded.', fonts);
   }
 
-  // Fetch product photo and seller avatar
-  const remoteUrl = product.image_urls?.[0];
+  const images = Array.isArray(product.image_urls) ? product.image_urls.filter(Boolean) : [];
+  const safePhotoIndex =
+    Number.isFinite(photoIndexParam) && photoIndexParam >= 0 && photoIndexParam < images.length
+      ? photoIndexParam
+      : 0;
+  const activePhotoUrl = images[safePhotoIndex] || images[0] || null;
+
   const [imageData, sellerLogoData] = await Promise.all([
-    remoteUrl ? fetchImageAsDataUri(remoteUrl) : Promise.resolve(null),
+    activePhotoUrl ? fetchImageAsDataUri(activePhotoUrl) : Promise.resolve(null),
     product.seller?.logo_url ? fetchImageAsDataUri(product.seller.logo_url) : Promise.resolve(null),
   ]);
 
-  // Modern Price Formatting (Zero missing tofu glyphs)
-  const price = getPriceComponents(product.price, product.currency);
   const numPrice = Number(product.price);
   const numOriginal = product.original_price != null ? Number(product.original_price) : null;
-  const hasDiscount = Boolean(numOriginal && numOriginal > numPrice && numPrice > 0);
+  const hasDiscount = Boolean(
+    numOriginal &&
+    Number.isFinite(numOriginal) &&
+    Number.isFinite(numPrice) &&
+    numOriginal > numPrice &&
+    numPrice > 0,
+  );
   const discountPercent =
     hasDiscount && numOriginal ? Math.round(((numOriginal - numPrice) / numOriginal) * 100) : 0;
-  const originalPrice =
-    hasDiscount && numOriginal ? getPriceComponents(numOriginal, product.currency) : null;
 
-  const storeName = product.seller?.store_name || 'Verified Merchant';
-  const isPro = Boolean(product.seller?.user?.is_pro);
-  const safeTitle =
-    product.title.length > 55 ? `${product.title.slice(0, 52).trimEnd()}…` : product.title;
+  const formattedPrice = formatPriceText(product.price, product.currency);
+  const formattedOriginal =
+    hasDiscount && numOriginal ? formatPriceText(numOriginal, product.currency) : null;
 
-  const category = (product.category || 'Featured Listing').toUpperCase();
-  const location = (product.seller?.location || 'Accra, Ghana').toUpperCase();
+  const fallbackCopy = buildSmartFallbackCopy(product, hasDiscount, discountPercent);
 
-  // Modern Google-Style Palette Tokens
-  const c = isDark
+  const badgeText = cleanParam(searchParams.get('badge'), 20) || fallbackCopy.badge;
+  const headlineText = cleanParam(searchParams.get('title'), 42) || fallbackCopy.headline;
+  const taglineText = cleanParam(searchParams.get('tagline'), 44) || fallbackCopy.tagline;
+  const blurbText = cleanParam(searchParams.get('blurb'), 110) || fallbackCopy.blurb;
+  const ctaText = cleanParam(searchParams.get('cta'), 16) || fallbackCopy.cta;
+
+  const storeName = product.seller?.store_name?.trim() || 'Verndly Store';
+  const storeUrlLabel = product.seller?.store_link
+    ? `verndly.com/s/${product.seller.store_link}`
+    : 'verndly.com';
+  const dotCount = images.length > 1 ? Math.min(images.length, 5) : 0;
+
+  // Dynamic font sizes so short headlines go MASSIVE and longer ones never clip
+  const portraitTitleSize = headlineText.length <= 22 ? 58 : headlineText.length <= 32 ? 50 : 44;
+  const portraitPriceSize = formattedPrice.length <= 9 ? 44 : formattedPrice.length <= 12 ? 38 : 34;
+
+  const landscapeTitleSize = headlineText.length <= 22 ? 46 : headlineText.length <= 32 ? 40 : 35;
+  const landscapePriceSize = formattedPrice.length <= 9 ? 36 : 30;
+
+  const fontFamily = fonts.length
+    ? 'Inter, system-ui, -apple-system, sans-serif'
+    : 'system-ui, -apple-system, sans-serif';
+
+  // Studio Light (exact Apple / Nike inspo aesthetic) & Obsidian Dark tokens
+  const t = isDark
     ? {
-        canvasBg: '#0c0d10',
-        cardBg: '#131519',
-        cardBorder: 'rgba(255, 255, 255, 0.09)',
-        stageBg: '#ffffff',
-        stageBorder: 'rgba(255, 255, 255, 0.08)',
-        badgeBg: '#1c2026',
-        badgeBorder: 'rgba(255, 255, 255, 0.08)',
-        badgeText: '#f1f3f4',
-        textPrimary: '#f8f9fa',
-        textSecondary: '#9aa0a6',
-        textTertiary: '#5f6368',
-        currencyText: '#ef4444',
-        accent: '#ef4444',
-        pillBg: '#1e2229',
-        pillBorder: 'rgba(255, 255, 255, 0.08)',
-        pillText: '#e8eaed',
-        actionBarBg: '#181b20',
-        actionBarBorder: 'rgba(255, 255, 255, 0.08)',
-        ctaBg: '#ef4444',
-        ctaText: '#ffffff',
+        canvasBg: '#09090B',
+        cardBg: '#141418',
+        cardShadow: '0 40px 96px rgba(0, 0, 0, 0.72), 0 0 0 1px rgba(255, 255, 255, 0.08)',
+        photoBg: '#1C1C22',
+        badgeBg: 'rgba(10, 10, 14, 0.62)',
+        badgeBorder: 'rgba(255, 255, 255, 0.18)',
+        badgeText: '#FFFFFF',
+        logoBg: '#FFFFFF',
+        titleText: '#FAFAFA',
+        taglineText: '#A1A1AA',
+        blurbText: '#8E929B',
+        pricePillBg: '#23232B',
+        priceText: '#FFFFFF',
+        strikeText: '#71717A',
+        ctaBg: '#FFFFFF',
+        ctaText: '#0A0A0A',
+        ctaCircleBg: '#0A0A0A',
+        ctaArrowColor: '#FFFFFF',
+        footerText: '#A1A1AA',
+        footerStrong: '#FAFAFA',
       }
     : {
-        canvasBg: '#edf0f4',
-        cardBg: '#ffffff',
-        cardBorder: 'rgba(0, 0, 0, 0.07)',
-        stageBg: '#ffffff',
-        stageBorder: 'rgba(0, 0, 0, 0.06)',
-        badgeBg: '#f1f3f4',
-        badgeBorder: 'rgba(0, 0, 0, 0.06)',
-        badgeText: '#202124',
-        textPrimary: '#202124',
-        textSecondary: '#5f6368',
-        textTertiary: '#80868b',
-        currencyText: '#ef4444',
-        accent: '#ef4444',
-        pillBg: '#f1f3f4',
-        pillBorder: 'rgba(0, 0, 0, 0.06)',
-        pillText: '#3c4043',
-        actionBarBg: '#f8f9fa',
-        actionBarBorder: 'rgba(0, 0, 0, 0.07)',
-        ctaBg: '#202124',
-        ctaText: '#ffffff',
+        canvasBg: '#F1F2F5',
+        cardBg: '#FFFFFF',
+        cardShadow: '0 40px 90px rgba(15, 23, 42, 0.13), 0 10px 28px rgba(15, 23, 42, 0.06)',
+        photoBg: '#F4F4F6',
+        badgeBg: 'rgba(28, 28, 32, 0.48)',
+        badgeBorder: 'rgba(255, 255, 255, 0.24)',
+        badgeText: '#FFFFFF',
+        logoBg: '#FFFFFF',
+        titleText: '#0A0A0A',
+        taglineText: '#6E737D',
+        blurbText: '#858B96',
+        pricePillBg: '#F2F3F6',
+        priceText: '#0A0A0A',
+        strikeText: '#9CA3AF',
+        ctaBg: '#0A0A0A',
+        ctaText: '#FFFFFF',
+        ctaCircleBg: '#FFFFFF',
+        ctaArrowColor: '#0A0A0A',
+        footerText: '#64748B',
+        footerStrong: '#0A0A0A',
       };
-
-  // Structured specification pills (Material You Chips)
-  const attrs = product.attributes || {};
-  const chips: string[] = [];
-  const publicBrand = getPublicBrand(product.brand, product.seller);
-  if (publicBrand) chips.push(publicBrand);
-  if (attrs.dietary_info) chips.push(String(attrs.dietary_info));
-  if (attrs.food_type) chips.push(String(attrs.food_type));
-  if (attrs.size) chips.push(`Size: ${attrs.size}`);
-  if (attrs.color) chips.push(`Color: ${attrs.color}`);
-  if (attrs.material) chips.push(String(attrs.material));
-  if (attrs.storage) chips.push(String(attrs.storage));
-  if (attrs.quantity_unit) chips.push(String(attrs.quantity_unit));
-
-  // Dynamic fallback for custom attributes
-  if (chips.length < 3) {
-    for (const [k, v] of Object.entries(attrs)) {
-      if (
-        v &&
-        typeof v === 'string' &&
-        !chips.includes(v) &&
-        !['expiry', 'delivery_until'].includes(k)
-      ) {
-        chips.push(v.length > 20 ? `${v.slice(0, 18)}…` : v);
-        if (chips.length >= 3) break;
-      }
-    }
-  }
-
-  if (product.condition && product.condition.toLowerCase() !== 'new') {
-    chips.push(product.condition);
-  }
-  chips.push('In Stock');
 
   const width = isLandscape ? 1200 : 1080;
   const height = isLandscape ? 630 : 1350;
@@ -262,15 +370,15 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
   try {
     const imgRes = new ImageResponse(
       isLandscape ? (
-        // ────────────────── LANDSCAPE 1200×630 (OG / Social Card) ──────────────────
+        // ────────────────── LANDSCAPE 1200×630 (OG / Social Preview) ──────────────────
         <div
           style={{
             width: '100%',
             height: '100%',
             display: 'flex',
-            backgroundColor: c.canvasBg,
-            fontFamily: 'system-ui, -apple-system, sans-serif',
-            padding: 24,
+            backgroundColor: t.canvasBg,
+            fontFamily,
+            padding: '28px 34px',
           }}
         >
           <div
@@ -278,531 +386,25 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
               flex: 1,
               display: 'flex',
               flexDirection: 'row',
-              backgroundColor: c.cardBg,
-              border: `1px solid ${c.cardBorder}`,
-              borderRadius: 32,
-              overflow: 'hidden',
+              backgroundColor: t.cardBg,
+              borderRadius: 42,
+              padding: 22,
+              boxShadow: t.cardShadow,
             }}
           >
-            {/* Left Column: Product Showcase Stage */}
+            {/* Left Rounded Hero Photo */}
             <div
               style={{
-                width: 480,
+                width: 492,
                 height: '100%',
-                position: 'relative',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: c.stageBg,
-                borderRight: `1px solid ${c.cardBorder}`,
-                padding: 24,
-              }}
-            >
-              {imageData ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={imageData}
-                  alt=""
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'contain',
-                  }}
-                />
-              ) : (
-                <div
-                  style={{
-                    fontSize: 24,
-                    color: c.textTertiary,
-                    display: 'flex',
-                  }}
-                >
-                  Product Photo
-                </div>
-              )}
-
-              {/* Discount pill */}
-              {hasDiscount && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: 20,
-                    right: 20,
-                    display: 'flex',
-                    alignItems: 'center',
-                    backgroundColor: c.accent,
-                    color: '#ffffff',
-                    padding: '6px 14px',
-                    borderRadius: 999,
-                    fontSize: 13,
-                    fontWeight: 800,
-                    letterSpacing: 0.5,
-                  }}
-                >
-                  {`SAVE ${discountPercent}%`}
-                </div>
-              )}
-            </div>
-
-            {/* Right Column: Information & Pricing */}
-            <div
-              style={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                padding: '32px 36px',
-              }}
-            >
-              {/* Header: Verndly & Store Info */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  width: '100%',
-                }}
-              >
-                {/* Verndly Badge */}
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    backgroundColor: c.badgeBg,
-                    border: `1px solid ${c.badgeBorder}`,
-                    padding: '6px 14px',
-                    borderRadius: 999,
-                  }}
-                >
-                  <svg width="18" height="18" viewBox="0 0 100 100" fill="none">
-                    <circle cx="27" cy="33" r="14" fill="#ef4444" />
-                    <rect
-                      x="37"
-                      y="16"
-                      width="28"
-                      height="74"
-                      rx="14"
-                      transform="rotate(-36 51 53)"
-                      fill="#ef4444"
-                    />
-                  </svg>
-                  <span
-                    style={{
-                      fontSize: 12,
-                      fontWeight: 700,
-                      letterSpacing: 1.2,
-                      color: c.badgeText,
-                      display: 'flex',
-                    }}
-                  >
-                    VERNDLY
-                  </span>
-                </div>
-
-                {/* Seller Store Badge */}
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    backgroundColor: c.badgeBg,
-                    border: `1px solid ${c.badgeBorder}`,
-                    padding: '4px 12px 4px 6px',
-                    borderRadius: 999,
-                  }}
-                >
-                  {sellerLogoData ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={sellerLogoData}
-                      alt=""
-                      style={{
-                        width: 26,
-                        height: 26,
-                        borderRadius: 999,
-                        objectFit: 'cover',
-                      }}
-                    />
-                  ) : (
-                    <div
-                      style={{
-                        width: 26,
-                        height: 26,
-                        borderRadius: 999,
-                        backgroundColor: c.accent,
-                        color: '#fff',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: 12,
-                        fontWeight: 700,
-                      }}
-                    >
-                      {storeName.slice(0, 1).toUpperCase()}
-                    </div>
-                  )}
-                  <span
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color: c.textPrimary,
-                      display: 'flex',
-                    }}
-                  >
-                    {storeName}
-                  </span>
-                  {isPro && (
-                    <span
-                      style={{
-                        fontSize: 9,
-                        fontWeight: 800,
-                        backgroundColor: c.accent,
-                        color: '#ffffff',
-                        padding: '2px 6px',
-                        borderRadius: 999,
-                        display: 'flex',
-                      }}
-                    >
-                      PRO
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Title & Metadata */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <div
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 700,
-                    letterSpacing: 2,
-                    textTransform: 'uppercase',
-                    color: c.textSecondary,
-                    display: 'flex',
-                  }}
-                >
-                  {`${category}  •  ${location}`}
-                </div>
-                <div
-                  style={{
-                    fontSize: 34,
-                    fontWeight: 800,
-                    letterSpacing: -1,
-                    lineHeight: 1.15,
-                    color: c.textPrimary,
-                    display: 'flex',
-                  }}
-                >
-                  {safeTitle}
-                </div>
-
-                {/* Specs chips */}
-                <div
-                  style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: 8,
-                    marginTop: 4,
-                  }}
-                >
-                  {chips.slice(0, 3).map((chip) => (
-                    <div
-                      key={chip}
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 600,
-                        backgroundColor: c.pillBg,
-                        color: c.pillText,
-                        border: `1px solid ${c.pillBorder}`,
-                        padding: '5px 14px',
-                        borderRadius: 999,
-                        display: 'flex',
-                      }}
-                    >
-                      {chip}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Price & Pill CTA Bar */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  backgroundColor: c.actionBarBg,
-                  border: `1px solid ${c.actionBarBorder}`,
-                  borderRadius: 24,
-                  padding: '14px 22px',
-                }}
-              >
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'baseline',
-                    gap: 6,
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: 22,
-                      fontWeight: 700,
-                      color: c.currencyText,
-                      display: 'flex',
-                    }}
-                  >
-                    {price.symbol}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 40,
-                      fontWeight: 800,
-                      letterSpacing: -1.2,
-                      color: c.textPrimary,
-                      display: 'flex',
-                    }}
-                  >
-                    {price.formattedNumber}
-                  </span>
-                  {originalPrice && (
-                    <span
-                      style={{
-                        fontSize: 16,
-                        fontWeight: 500,
-                        textDecoration: 'line-through',
-                        color: c.textTertiary,
-                        display: 'flex',
-                        marginLeft: 8,
-                      }}
-                    >
-                      {originalPrice.full}
-                    </span>
-                  )}
-                </div>
-
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    backgroundColor: c.ctaBg,
-                    color: c.ctaText,
-                    padding: '10px 20px',
-                    borderRadius: 999,
-                    fontSize: 13,
-                    fontWeight: 700,
-                  }}
-                >
-                  <span>Order Now</span>
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M7 17L17 7" />
-                    <path d="M7 7h10v10" />
-                  </svg>
-                </div>
-              </div>
-
-              {/* Trust Footer */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  fontSize: 11,
-                  color: c.textTertiary,
-                  fontWeight: 500,
-                  marginTop: -6,
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                  </svg>
-                  <span style={{ display: 'flex' }}>Verndly Escrow Protected</span>
-                </div>
-                <span style={{ display: 'flex' }}>•</span>
-                <span style={{ display: 'flex' }}>Verified Independent Merchant</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : (
-        // ────────────────── PORTRAIT 1080×1350 (Google-Style Poster) ──────────────────
-        <div
-          style={{
-            width: '100%',
-            height: '100%',
-            display: 'flex',
-            backgroundColor: c.canvasBg,
-            fontFamily: 'system-ui, -apple-system, sans-serif',
-            padding: 36,
-          }}
-        >
-          <div
-            style={{
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              backgroundColor: c.cardBg,
-              border: `1px solid ${c.cardBorder}`,
-              borderRadius: 44,
-              overflow: 'hidden',
-              padding: 32,
-              justifyContent: 'space-between',
-            }}
-          >
-            {/* Top Header Row */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                width: '100%',
-                height: 52,
-                marginBottom: 16,
-              }}
-            >
-              {/* Verndly Brand Tag */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  backgroundColor: c.badgeBg,
-                  border: `1px solid ${c.badgeBorder}`,
-                  padding: '8px 18px',
-                  borderRadius: 999,
-                }}
-              >
-                <svg width="20" height="20" viewBox="0 0 100 100" fill="none">
-                  <circle cx="27" cy="33" r="14" fill="#ef4444" />
-                  <rect
-                    x="37"
-                    y="16"
-                    width="28"
-                    height="74"
-                    rx="14"
-                    transform="rotate(-36 51 53)"
-                    fill="#ef4444"
-                  />
-                </svg>
-                <span
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 700,
-                    letterSpacing: 1.5,
-                    color: c.badgeText,
-                    display: 'flex',
-                  }}
-                >
-                  VERNDLY MARKETPLACE
-                </span>
-              </div>
-
-              {/* Merchant Pill */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  backgroundColor: c.badgeBg,
-                  border: `1px solid ${c.badgeBorder}`,
-                  padding: '6px 16px 6px 8px',
-                  borderRadius: 999,
-                }}
-              >
-                {sellerLogoData ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={sellerLogoData}
-                    alt=""
-                    style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: 999,
-                      objectFit: 'cover',
-                    }}
-                  />
-                ) : (
-                  <div
-                    style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: 999,
-                      backgroundColor: c.accent,
-                      color: '#fff',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: 14,
-                      fontWeight: 700,
-                    }}
-                  >
-                    {storeName.slice(0, 1).toUpperCase()}
-                  </div>
-                )}
-                <span
-                  style={{
-                    fontSize: 15,
-                    fontWeight: 600,
-                    color: c.textPrimary,
-                    display: 'flex',
-                  }}
-                >
-                  {storeName}
-                </span>
-                {isPro && (
-                  <span
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 800,
-                      backgroundColor: c.accent,
-                      color: '#ffffff',
-                      padding: '3px 8px',
-                      borderRadius: 999,
-                      display: 'flex',
-                    }}
-                  >
-                    PRO
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Center Product Showcase Stage */}
-            <div
-              style={{
-                width: '100%',
-                height: 660,
-                borderRadius: 32,
+                borderRadius: 30,
                 overflow: 'hidden',
                 position: 'relative',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: c.stageBg,
-                border: `1px solid ${c.stageBorder}`,
-                padding: 28,
+                backgroundColor: t.photoBg,
+                padding: imageFit === 'contain' ? 24 : 0,
               }}
             >
               {imageData ? (
@@ -813,22 +415,32 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
                   style={{
                     width: '100%',
                     height: '100%',
-                    objectFit: 'contain',
+                    objectFit: imageFit,
                   }}
                 />
               ) : (
-                <div
-                  style={{
-                    fontSize: 32,
-                    color: c.textTertiary,
-                    display: 'flex',
-                  }}
-                >
-                  Product Photo Unavailable
+                <div style={{ fontSize: 28, fontWeight: 600, color: t.blurbText, display: 'flex' }}>
+                  Product Photo
                 </div>
               )}
 
-              {/* Category Pill Floating */}
+              {/* Subtle Bottom Scrim */}
+              {imageFit === 'cover' && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    height: 120,
+                    backgroundImage:
+                      'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.36) 100%)',
+                    display: 'flex',
+                  }}
+                />
+              )}
+
+              {/* Top-Left Frosted Badge */}
               <div
                 style={{
                   position: 'absolute',
@@ -836,159 +448,207 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
                   left: 20,
                   display: 'flex',
                   alignItems: 'center',
-                  backgroundColor: 'rgba(18, 20, 24, 0.8)',
-                  color: '#ffffff',
-                  padding: '6px 16px',
+                  backgroundColor: hasDiscount ? '#B91C1C' : t.badgeBg,
+                  border: `1px solid ${hasDiscount ? 'rgba(255,255,255,0.22)' : t.badgeBorder}`,
+                  color: t.badgeText,
+                  padding: '10px 22px',
                   borderRadius: 999,
-                  fontSize: 11,
-                  fontWeight: 700,
-                  letterSpacing: 1.2,
+                  fontSize: 21,
+                  fontWeight: 600,
+                  letterSpacing: -0.2,
                 }}
               >
-                {category}
+                {badgeText}
               </div>
 
-              {/* Discount Pill Floating */}
-              {hasDiscount && (
+              {/* Top-Right Circular Brand / Store Emblem */}
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 18,
+                  right: 18,
+                  width: 68,
+                  height: 68,
+                  borderRadius: 999,
+                  backgroundColor: t.logoBg,
+                  boxShadow: '0 8px 22px rgba(0, 0, 0, 0.2)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  overflow: 'hidden',
+                }}
+              >
+                {sellerLogoData ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={sellerLogoData}
+                    alt=""
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <VerndlyMark size={38} color="#B91C1C" />
+                )}
+              </div>
+
+              {/* Bottom Pagination Dots */}
+              {dotCount > 1 && (
                 <div
                   style={{
                     position: 'absolute',
-                    top: 20,
-                    right: 20,
+                    bottom: 18,
+                    left: 0,
+                    right: 0,
                     display: 'flex',
                     alignItems: 'center',
-                    backgroundColor: c.accent,
-                    color: '#ffffff',
-                    padding: '8px 18px',
-                    borderRadius: 999,
-                    fontSize: 14,
-                    fontWeight: 800,
-                    letterSpacing: 0.5,
+                    justifyContent: 'center',
+                    gap: 8,
                   }}
                 >
-                  {`SAVE ${discountPercent}%`}
+                  {Array.from({ length: dotCount }).map((_, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        width: idx === safePhotoIndex ? 12 : 9,
+                        height: idx === safePhotoIndex ? 12 : 9,
+                        borderRadius: 999,
+                        backgroundColor:
+                          idx === safePhotoIndex ? '#FFFFFF' : 'rgba(255, 255, 255, 0.48)',
+                        display: 'flex',
+                      }}
+                    />
+                  ))}
                 </div>
               )}
             </div>
 
-            {/* Bottom Section: Title, Specs & Price Bar */}
+            {/* Right Editorial Stack */}
             <div
               style={{
+                flex: 1,
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between',
-                paddingTop: 18,
-                gap: 14,
+                padding: '18px 20px 14px 36px',
               }}
             >
-              {/* Category & Location Subtitle */}
-              <div
-                style={{
-                  fontSize: 13,
-                  fontWeight: 700,
-                  letterSpacing: 2.5,
-                  textTransform: 'uppercase',
-                  color: c.textSecondary,
-                  display: 'flex',
-                }}
-              >
-                {`${category}  •  ${location}`}
-              </div>
-
-              {/* Title */}
-              <div
-                style={{
-                  fontSize: 46,
-                  fontWeight: 800,
-                  letterSpacing: -1.5,
-                  lineHeight: 1.15,
-                  color: c.textPrimary,
-                  display: 'flex',
-                }}
-              >
-                {safeTitle}
-              </div>
-
-              {/* Material You Chips Rail */}
-              <div
-                style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: 8,
-                }}
-              >
-                {chips.slice(0, 4).map((chip) => (
-                  <div
-                    key={chip}
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 600,
-                      backgroundColor: c.pillBg,
-                      color: c.pillText,
-                      border: `1px solid ${c.pillBorder}`,
-                      padding: '7px 18px',
-                      borderRadius: 999,
-                      display: 'flex',
-                    }}
-                  >
-                    {chip}
-                  </div>
-                ))}
-              </div>
-
-              {/* High-Impact Price & Pill CTA Bar */}
+              {/* Brand & Store Row */}
               <div
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  backgroundColor: c.actionBarBg,
-                  border: `1px solid ${c.actionBarBorder}`,
-                  borderRadius: 28,
-                  padding: '16px 28px',
-                  marginTop: 4,
+                  gap: 12,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <VerndlyMark size={24} color="#B91C1C" />
+                  <span
+                    style={{
+                      fontSize: 20,
+                      fontWeight: 700,
+                      letterSpacing: -0.3,
+                      color: t.footerStrong,
+                      display: 'flex',
+                    }}
+                  >
+                    {storeName}
+                  </span>
+                </div>
+                <span
+                  style={{
+                    fontSize: 17,
+                    fontWeight: 600,
+                    color: t.taglineText,
+                    display: 'flex',
+                  }}
+                >
+                  verndly.com
+                </span>
+              </div>
+
+              {/* Main Copy Block */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div
+                  style={{
+                    fontSize: landscapeTitleSize,
+                    fontWeight: 800,
+                    letterSpacing: -1.4,
+                    lineHeight: 1.08,
+                    color: t.titleText,
+                    display: 'flex',
+                  }}
+                >
+                  {headlineText}
+                </div>
+                <div
+                  style={{
+                    fontSize: 27,
+                    fontWeight: 600,
+                    letterSpacing: -0.4,
+                    lineHeight: 1.2,
+                    color: t.taglineText,
+                    display: 'flex',
+                  }}
+                >
+                  {taglineText}
+                </div>
+                <div
+                  style={{
+                    fontSize: 22,
+                    fontWeight: 500,
+                    letterSpacing: -0.2,
+                    lineHeight: 1.38,
+                    color: t.blurbText,
+                    marginTop: 6,
+                    display: 'flex',
+                  }}
+                >
+                  {blurbText}
+                </div>
+              </div>
+
+              {/* Price Pill + Buy Now CTA Row */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 16,
+                  marginTop: 10,
                 }}
               >
                 <div
                   style={{
                     display: 'flex',
                     alignItems: 'baseline',
-                    gap: 8,
+                    gap: 10,
+                    backgroundColor: t.pricePillBg,
+                    padding: '16px 30px',
+                    borderRadius: 999,
                   }}
                 >
                   <span
                     style={{
-                      fontSize: 26,
-                      fontWeight: 700,
-                      color: c.currencyText,
-                      display: 'flex',
-                    }}
-                  >
-                    {price.symbol}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 52,
+                      fontSize: landscapePriceSize,
                       fontWeight: 800,
-                      letterSpacing: -1.8,
-                      color: c.textPrimary,
+                      letterSpacing: -1,
+                      color: t.priceText,
                       display: 'flex',
                     }}
                   >
-                    {price.formattedNumber}
+                    {formattedPrice}
                   </span>
-                  {originalPrice && (
+                  {formattedOriginal && (
                     <span
                       style={{
                         fontSize: 20,
-                        fontWeight: 500,
+                        fontWeight: 600,
                         textDecoration: 'line-through',
-                        color: c.textTertiary,
+                        color: t.strikeText,
                         display: 'flex',
-                        marginLeft: 8,
                       }}
                     >
-                      {originalPrice.full}
+                      {formattedOriginal}
                     </span>
                   )}
                 </div>
@@ -997,80 +657,379 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 8,
-                    backgroundColor: c.ctaBg,
-                    color: c.ctaText,
-                    padding: '14px 28px',
+                    gap: 14,
+                    backgroundColor: t.ctaBg,
+                    color: t.ctaText,
+                    padding: '10px 12px 10px 28px',
                     borderRadius: 999,
-                    fontSize: 15,
-                    fontWeight: 700,
                   }}
                 >
-                  <span>Order on verndly.com</span>
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+                  <span
+                    style={{
+                      fontSize: 25,
+                      fontWeight: 700,
+                      letterSpacing: -0.4,
+                      display: 'flex',
+                    }}
                   >
-                    <path d="M7 17L17 7" />
-                    <path d="M7 7h10v10" />
-                  </svg>
+                    {ctaText}
+                  </span>
+                  <div
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 999,
+                      backgroundColor: t.ctaCircleBg,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <ArrowUpRightIcon size={22} color={t.ctaArrowColor} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        // ────────────────── PORTRAIT 1080×1350 (Studio Card — Inspo Architecture) ──────────────────
+        <div
+          style={{
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            backgroundColor: t.canvasBg,
+            fontFamily,
+            padding: '54px 62px 38px 62px',
+          }}
+        >
+          {/* Floating Studio Product Card */}
+          <div
+            style={{
+              width: '100%',
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              backgroundColor: t.cardBg,
+              borderRadius: 56,
+              padding: 28,
+              boxShadow: t.cardShadow,
+            }}
+          >
+            {/* Top Full-Bleed Rounded Hero Photo */}
+            <div
+              style={{
+                width: '100%',
+                height: 678,
+                borderRadius: 38,
+                overflow: 'hidden',
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: t.photoBg,
+                padding: imageFit === 'contain' ? 32 : 0,
+              }}
+            >
+              {imageData ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={imageData}
+                  alt=""
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: imageFit,
+                  }}
+                />
+              ) : (
+                <div style={{ fontSize: 34, fontWeight: 600, color: t.blurbText, display: 'flex' }}>
+                  Product Photo Unavailable
+                </div>
+              )}
+
+              {/* Subtle bottom vignette so pagination dots always stay crisp */}
+              {imageFit === 'cover' && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    height: 150,
+                    backgroundImage:
+                      'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.42) 100%)',
+                    display: 'flex',
+                  }}
+                />
+              )}
+
+              {/* Top-Left Frosted Glass Badge (e.g. "Best Seller" / "Save 20%") */}
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 26,
+                  left: 26,
+                  display: 'flex',
+                  alignItems: 'center',
+                  backgroundColor: hasDiscount ? '#B91C1C' : t.badgeBg,
+                  border: `1px solid ${hasDiscount ? 'rgba(255,255,255,0.22)' : t.badgeBorder}`,
+                  color: t.badgeText,
+                  padding: '14px 30px',
+                  borderRadius: 999,
+                  fontSize: 27,
+                  fontWeight: 600,
+                  letterSpacing: -0.3,
+                }}
+              >
+                {badgeText}
+              </div>
+
+              {/* Top-Right Circular Store / Verndly Badge */}
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 24,
+                  right: 24,
+                  width: 92,
+                  height: 92,
+                  borderRadius: 999,
+                  backgroundColor: t.logoBg,
+                  boxShadow: '0 10px 28px rgba(0, 0, 0, 0.22)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  overflow: 'hidden',
+                }}
+              >
+                {sellerLogoData ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={sellerLogoData}
+                    alt=""
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <VerndlyMark size={52} color="#B91C1C" />
+                )}
+              </div>
+
+              {/* Bottom-Center Carousel Dots (when multi-photo listing) */}
+              {dotCount > 1 && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    bottom: 24,
+                    left: 0,
+                    right: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 12,
+                  }}
+                >
+                  {Array.from({ length: dotCount }).map((_, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        width: idx === safePhotoIndex ? 14 : 11,
+                        height: idx === safePhotoIndex ? 14 : 11,
+                        borderRadius: 999,
+                        backgroundColor:
+                          idx === safePhotoIndex ? '#FFFFFF' : 'rgba(255, 255, 255, 0.45)',
+                        display: 'flex',
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Bottom Editorial Copy + Massive Price / CTA Row */}
+            <div
+              style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                padding: '34px 24px 16px 24px',
+              }}
+            >
+              {/* Title, Punchy Tagline & Crisp 2-Line Blurb */}
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <div
+                  style={{
+                    fontSize: portraitTitleSize,
+                    fontWeight: 800,
+                    letterSpacing: -1.8,
+                    lineHeight: 1.08,
+                    color: t.titleText,
+                    display: 'flex',
+                  }}
+                >
+                  {headlineText}
+                </div>
+
+                <div
+                  style={{
+                    fontSize: 34,
+                    fontWeight: 600,
+                    letterSpacing: -0.6,
+                    lineHeight: 1.2,
+                    color: t.taglineText,
+                    marginTop: 10,
+                    display: 'flex',
+                  }}
+                >
+                  {taglineText}
+                </div>
+
+                <div
+                  style={{
+                    fontSize: 28,
+                    fontWeight: 500,
+                    letterSpacing: -0.3,
+                    lineHeight: 1.38,
+                    color: t.blurbText,
+                    marginTop: 22,
+                    display: 'flex',
+                  }}
+                >
+                  {blurbText}
                 </div>
               </div>
 
-              {/* Security and Buyer Trust Bar */}
+              {/* Price Capsule + Buy Now Arrow Pill */}
               <div
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 12,
-                  fontSize: 12,
-                  color: c.textTertiary,
-                  fontWeight: 500,
-                  letterSpacing: 0.3,
-                  marginTop: 2,
+                  justifyContent: 'space-between',
+                  gap: 20,
+                  marginTop: 24,
                 }}
               >
+                {/* Left Tonal Price Pill */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'baseline',
+                    gap: 12,
+                    backgroundColor: t.pricePillBg,
+                    padding: '22px 38px',
+                    borderRadius: 999,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: portraitPriceSize,
+                      fontWeight: 800,
+                      letterSpacing: -1.2,
+                      color: t.priceText,
+                      display: 'flex',
+                    }}
+                  >
+                    {formattedPrice}
+                  </span>
+                  {formattedOriginal && (
+                    <span
+                      style={{
+                        fontSize: 24,
+                        fontWeight: 600,
+                        textDecoration: 'line-through',
+                        color: t.strikeText,
+                        display: 'flex',
+                      }}
+                    >
+                      {formattedOriginal}
+                    </span>
+                  )}
+                </div>
+
+                {/* Right High-Contrast CTA Pill */}
                 <div
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 6,
+                    gap: 18,
+                    backgroundColor: t.ctaBg,
+                    color: t.ctaText,
+                    padding: '14px 16px 14px 38px',
+                    borderRadius: 999,
                   }}
                 >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+                  <span
+                    style={{
+                      fontSize: 33,
+                      fontWeight: 700,
+                      letterSpacing: -0.6,
+                      display: 'flex',
+                    }}
                   >
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                  </svg>
-                  <span style={{ display: 'flex' }}>100% Buyer Protected</span>
+                    {ctaText}
+                  </span>
+                  <div
+                    style={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: 999,
+                      backgroundColor: t.ctaCircleBg,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <ArrowUpRightIcon size={28} color={t.ctaArrowColor} />
+                  </div>
                 </div>
-                <span style={{ display: 'flex' }}>•</span>
-                <span style={{ display: 'flex' }}>Direct WhatsApp & In-App Chat</span>
-                <span style={{ display: 'flex' }}>•</span>
-                <span style={{ display: 'flex' }}>Official Express Delivery</span>
               </div>
             </div>
+          </div>
+
+          {/* Clean Verndly Attribution Strip Below Floating Card */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 14,
+              marginTop: 24,
+            }}
+          >
+            <VerndlyMark size={24} color="#B91C1C" />
+            <span
+              style={{
+                fontSize: 22,
+                fontWeight: 700,
+                letterSpacing: -0.3,
+                color: t.footerStrong,
+                display: 'flex',
+              }}
+            >
+              {storeUrlLabel}
+            </span>
+            <span style={{ fontSize: 22, color: t.footerText, display: 'flex' }}>•</span>
+            <span
+              style={{
+                fontSize: 22,
+                fontWeight: 500,
+                color: t.footerText,
+                display: 'flex',
+              }}
+            >
+              3-Day Escrow Protected
+            </span>
           </div>
         </div>
       ),
       {
         width,
         height,
+        ...(fonts.length ? { fonts } : {}),
       },
     );
 
@@ -1080,11 +1039,11 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
       status: 200,
       headers: {
         'Content-Type': 'image/png',
-        'Cache-Control': 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400',
+        'Cache-Control': 'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400',
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('[product-card] render failed:', err);
-    return errorImage('Unable to Generate Card', 'Please refresh to retry rendering.');
+    return errorImage('Unable to Generate Card', 'Please refresh to retry rendering.', fonts);
   }
 }

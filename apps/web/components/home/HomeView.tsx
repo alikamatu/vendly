@@ -166,6 +166,17 @@ export default function HomeView({ initialData }: { initialData?: InitialHomeDat
 
         <TopDeals products={railProducts} minDiscount={DEALS_MIN_DISCOUNT} limit={DEALS_LIMIT} />
 
+        {/* Direct Browse Shop CTA */}
+        <div className="flex justify-center pt-2">
+          <Link
+            href="/products"
+            className="bg-foreground text-background inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-xs font-semibold transition-opacity hover:opacity-90 sm:text-sm"
+          >
+            <span>Browse Shop</span>
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+
         {/* Clean, borderless, shadowless SSR-rendered Trust & Discovery Section */}
         <section
           aria-label="Why buyers and sellers choose Verndly Ghana"

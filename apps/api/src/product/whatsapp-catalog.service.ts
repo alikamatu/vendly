@@ -10,6 +10,10 @@ import { CloudinaryService } from '../common/cloudinary.service';
 import { AuditLogService } from '../audit/audit-log.service';
 import { GeminiService } from '../ai/gemini.service';
 import { matchCategoryName } from './category-matcher';
+import {
+  normalizeProductAttributes,
+  type StructuredProductAttributes,
+} from './category-taxonomy';
 
 type Decimal = Prisma.Decimal;
 const Decimal = Prisma.Decimal;
@@ -44,10 +48,12 @@ export interface WhatsAppPreviewItem {
   original_price: number | null;
   currency: string;
   category: string;
+  subcategory?: string;
   condition: 'new' | 'used' | 'refurbished';
   quantity_available: number;
   brand: string;
   tags: string[];
+  attributes?: StructuredProductAttributes;
   image_urls: string[];
   status: 'active' | 'draft';
   source_url?: string;
@@ -73,10 +79,12 @@ export interface WhatsAppCommitItemInput {
   original_price?: number | string | null;
   currency?: string;
   category: string;
+  subcategory?: string;
   condition?: 'new' | 'used' | 'refurbished';
   quantity_available?: number | string;
   brand?: string;
   tags?: string[];
+  attributes?: StructuredProductAttributes;
   image_urls?: string[];
   status?: 'active' | 'draft';
 }
@@ -857,23 +865,35 @@ export class WhatsAppCatalogService {
       categories,
     );
 
-    const items: WhatsAppPreviewItem[] = analysis.products.map((p, idx) => ({
-      tempId: `wa_ss_${idx}_${Date.now()}`,
-      title: p.title,
-      description: p.description,
-      price: p.price,
-      original_price: p.original_price,
-      currency: p.currency || 'GHS',
-      category: p.category,
-      condition: p.condition,
-      quantity_available: p.in_stock ? 1 : 0,
-      brand: p.brand,
-      tags: p.tags,
-      image_urls: [],
-      status: 'draft',
-      source_screenshot_index: p.source_screenshot_index,
-      image_box_2d: p.image_box_2d ?? null,
-    }));
+    const items: WhatsAppPreviewItem[] = analysis.products.map((p, idx) => {
+      const attrs = normalizeProductAttributes(
+        {
+          ...(p.attributes || {}),
+          ...(p.subcategory ? { subcategory: p.subcategory } : {}),
+        },
+        p.category,
+        { title: p.title, description: p.description, tags: p.tags },
+      );
+      return {
+        tempId: `wa_ss_${idx}_${Date.now()}`,
+        title: p.title,
+        description: p.description,
+        price: p.price,
+        original_price: p.original_price,
+        currency: p.currency || 'GHS',
+        category: p.category,
+        ...(attrs.subcategory ? { subcategory: attrs.subcategory } : {}),
+        condition: p.condition,
+        quantity_available: p.in_stock ? 1 : 0,
+        brand: p.brand,
+        tags: p.tags,
+        ...(Object.keys(attrs).length > 0 ? { attributes: attrs } : {}),
+        image_urls: [],
+        status: 'draft',
+        source_screenshot_index: p.source_screenshot_index,
+        image_box_2d: p.image_box_2d ?? null,
+      };
+    });
 
     const warnings: string[] = [];
     if (items.length === 0) {
@@ -1162,6 +1182,16 @@ export class WhatsAppCatalogService {
 
         const qty = Number.parseInt(String(raw?.quantity_available ?? 1), 10);
         const tags = normalizeTags(Array.isArray(raw?.tags) ? raw.tags : []);
+        const attributes = normalizeProductAttributes(
+          {
+            ...(raw?.attributes && typeof raw.attributes === 'object'
+              ? raw.attributes
+              : {}),
+            ...(raw?.subcategory ? { subcategory: raw.subcategory } : {}),
+          },
+          category,
+          { title, description, tags },
+        );
 
         const product = await this.prisma.product.create({
           data: {
@@ -1179,7 +1209,7 @@ export class WhatsAppCatalogService {
             image_urls: mirroredUrls,
             tags,
             is_featured: false,
-            attributes: {},
+            attributes: attributes as unknown as Prisma.InputJsonValue,
           } as any,
         });
 

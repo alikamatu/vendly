@@ -37,6 +37,7 @@ interface QuickCheckoutModalProps {
     title: string;
     price: string | number;
     original_price?: string | number | null;
+    quantity_available?: number | null;
     image_urls: string[];
     seller: {
       id?: string;
@@ -44,6 +45,8 @@ interface QuickCheckoutModalProps {
       store_link: string;
       logo_url?: string | null;
       payment_timing?: string | null;
+      is_seller_verified?: boolean;
+      can_receive_orders?: boolean;
     };
   };
   selectedVariant?: {
@@ -51,6 +54,7 @@ interface QuickCheckoutModalProps {
     title?: string;
     sku?: string | null;
     price?: number | string | null;
+    quantity_available?: number | null;
     image_url?: string | null;
     attributes?: Record<string, string>;
   } | null;
@@ -99,10 +103,27 @@ export default function QuickCheckoutModal({
     return Number(product.price || 0);
   }, [selectedVariant, product.price]);
 
+  const maxStock = useMemo<number | null>(() => {
+    const raw =
+      selectedVariant && typeof selectedVariant.quantity_available === 'number'
+        ? selectedVariant.quantity_available
+        : typeof product.quantity_available === 'number'
+          ? product.quantity_available
+          : null;
+    return raw !== null && Number.isFinite(raw) ? Math.max(0, Math.floor(raw)) : null;
+  }, [selectedVariant, product.quantity_available]);
+
+  const isOutOfStock = maxStock !== null && maxStock <= 0;
+
   const subtotal = unitPrice * quantity;
   const totalAmount = subtotal;
 
   /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (maxStock !== null && maxStock > 0 && quantity > maxStock) {
+      setQuantity(maxStock);
+    }
+  }, [maxStock, quantity]);
   useEffect(() => {
     if (user) {
       if (!customerName && user.full_name) setCustomerName(user.full_name);
@@ -184,6 +205,26 @@ export default function QuickCheckoutModal({
     if (isOwnStore(user, product.seller)) {
       setError('You cannot purchase your own product.');
       return;
+    }
+
+    if (
+      product.seller?.can_receive_orders === false ||
+      product.seller?.is_seller_verified === false
+    ) {
+      setError('This store has not completed seller verification and cannot receive orders yet.');
+      return;
+    }
+
+    if (maxStock !== null) {
+      if (maxStock <= 0) {
+        setError('This item is currently out of stock.');
+        return;
+      }
+      if (quantity > maxStock) {
+        setQuantity(maxStock);
+        setError(`Only ${maxStock} available in stock.`);
+        return;
+      }
     }
 
     if (!customerName.trim()) {
@@ -357,12 +398,27 @@ export default function QuickCheckoutModal({
               </div>
 
               <div className="bg-surface flex items-center justify-between rounded-2xl border-0 p-3.5 shadow-none">
-                <span className="text-foreground text-xs font-medium">Quantity</span>
+                <div className="flex flex-col">
+                  <span className="text-foreground text-xs font-medium">Quantity</span>
+                  {maxStock !== null && (
+                    <span
+                      className={`text-[10px] font-medium ${
+                        isOutOfStock
+                          ? 'text-red-500'
+                          : maxStock <= 5
+                            ? 'text-amber-600 dark:text-amber-400'
+                            : 'text-muted'
+                      }`}
+                    >
+                      {isOutOfStock ? 'Out of stock' : `${maxStock} available in stock`}
+                    </span>
+                  )}
+                </div>
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
                     onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                    disabled={quantity <= 1 || isSubmitting}
+                    disabled={quantity <= 1 || isSubmitting || isOutOfStock}
                     className="bg-background hover:bg-background/80 text-foreground flex h-8 w-8 items-center justify-center rounded-xl border-0 shadow-none transition-colors disabled:opacity-40"
                   >
                     <Minus className="h-3.5 w-3.5" />
@@ -370,9 +426,17 @@ export default function QuickCheckoutModal({
                   <span className="min-w-[20px] text-center text-xs font-semibold">{quantity}</span>
                   <button
                     type="button"
-                    onClick={() => setQuantity((q) => q + 1)}
-                    disabled={isSubmitting}
-                    className="bg-background hover:bg-background/80 text-foreground flex h-8 w-8 items-center justify-center rounded-xl border-0 shadow-none transition-colors"
+                    onClick={() => {
+                      if (maxStock !== null && quantity >= maxStock) {
+                        toast.error(`Only ${maxStock} available in stock.`);
+                        return;
+                      }
+                      setQuantity((q) => (maxStock !== null ? Math.min(maxStock, q + 1) : q + 1));
+                    }}
+                    disabled={
+                      isSubmitting || isOutOfStock || (maxStock !== null && quantity >= maxStock)
+                    }
+                    className="bg-background hover:bg-background/80 text-foreground flex h-8 w-8 items-center justify-center rounded-xl border-0 shadow-none transition-colors disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <Plus className="h-3.5 w-3.5" />
                   </button>

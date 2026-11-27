@@ -1,3 +1,5 @@
+import type { StructuredProductAttributes } from '../product/category-taxonomy';
+
 export type AiProductCondition = 'new' | 'used' | 'refurbished';
 export type AiConfidence = 'high' | 'medium' | 'low';
 
@@ -6,9 +8,11 @@ export interface AiProductGroupDraft {
   title: string;
   description: string;
   category: string;
+  subcategory?: string;
   condition: AiProductCondition;
   brand: string;
   tags: string[];
+  attributes?: StructuredProductAttributes;
   suggested_price_ghs: number | null;
   confidence: AiConfidence;
 }
@@ -23,9 +27,11 @@ export interface AiSingleProductDraft {
   title: string;
   description: string;
   category: string;
+  subcategory?: string;
   condition: AiProductCondition;
   brand: string;
   tags: string[];
+  attributes?: StructuredProductAttributes;
   suggested_price_ghs: number | null;
   confidence: AiConfidence;
 }
@@ -48,9 +54,11 @@ export interface AiWhatsAppCatalogItem {
   original_price: number | null;
   currency: string;
   category: string;
+  subcategory?: string;
   condition: AiProductCondition;
   brand: string;
   tags: string[];
+  attributes?: StructuredProductAttributes;
   in_stock: boolean;
   source_screenshot_index: number;
   /** Normalized [ymin, xmin, ymax, xmax] (0..1000) bounding box of the product photo inside the screenshot */
@@ -101,6 +109,32 @@ export interface AiPolishListingResult {
   category: string;
   tags: string[];
   improvements: string[];
+  model: string;
+}
+
+export type AiCardCopyTone = 'minimal' | 'luxury' | 'hype';
+
+export interface AiCardCopyInput {
+  title: string;
+  description?: string;
+  category?: string;
+  brand?: string;
+  condition?: string;
+  price?: string | number;
+  original_price?: string | number | null;
+  currency?: string;
+  store_name?: string;
+  location?: string;
+  tone?: AiCardCopyTone;
+}
+
+export interface AiCardCopyResult {
+  badge: string;
+  headline: string;
+  tagline: string;
+  blurb: string;
+  cta: string;
+  social_caption: string;
   model: string;
 }
 

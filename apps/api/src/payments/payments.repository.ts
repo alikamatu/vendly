@@ -83,17 +83,37 @@ export class PaymentsRepository {
         return;
       }
 
-      // 2. Deduct inventory
+      // 2. Deduct inventory safely (never allow stock to drop below 0)
       for (const item of order.items) {
-        if (!item.product_id) continue;
-        await tx.product.update({
-          where: { id: item.product_id },
-          data: {
-            quantity_available: {
-              decrement: item.quantity,
+        if (item.variant_id) {
+          const updatedVar = await tx.productVariant.updateMany({
+            where: {
+              id: item.variant_id,
+              quantity_available: { gte: item.quantity },
             },
-          },
-        });
+            data: { quantity_available: { decrement: item.quantity } },
+          });
+          if (updatedVar.count === 0) {
+            await tx.productVariant.update({
+              where: { id: item.variant_id },
+              data: { quantity_available: 0 },
+            });
+          }
+        } else if (item.product_id) {
+          const updatedProd = await tx.product.updateMany({
+            where: {
+              id: item.product_id,
+              quantity_available: { gte: item.quantity },
+            },
+            data: { quantity_available: { decrement: item.quantity } },
+          });
+          if (updatedProd.count === 0) {
+            await tx.product.update({
+              where: { id: item.product_id },
+              data: { quantity_available: 0 },
+            });
+          }
+        }
       }
 
       // 3. Mark as PAID (which also moves it out of AWAITING_PAYMENT)
@@ -447,18 +467,148 @@ export class PaymentsRepository {
     status: 'PENDING' | 'PROCESSING' | 'SUCCESS' | 'FAILED',
     payload?: {
       provider_ref?: string;
-      failure_reason?: string;
+      failure_reason?: string | null;
       processed_at?: Date;
+      metadata?: Record<string, any>;
     },
   ) {
     return this.prisma.payout.update({
       where: { id },
       data: {
         status,
-        provider_ref: payload?.provider_ref,
-        failure_reason: payload?.failure_reason,
-        processed_at: payload?.processed_at,
+        ...(payload?.provider_ref !== undefined
+          ? { provider_ref: payload.provider_ref }
+          : {}),
+        ...(payload?.failure_reason !== undefined
+          ? { failure_reason: payload.failure_reason }
+          : {}),
+        ...(payload?.processed_at !== undefined
+          ? { processed_at: payload.processed_at }
+          : {}),
+        ...(payload?.metadata !== undefined
+          ? { metadata: payload.metadata as any }
+          : {}),
       },
+    });
+  }
+
+  async listSellerSubaccounts(params: {
+    search?: string;
+    status?: string;
+    page: number;
+    limit: number;
+  }) {
+    const where: any = {};
+    if (params.search && params.search.trim()) {
+      const q = params.search.trim();
+      where.OR = [
+        { store_name: { contains: q, mode: 'insensitive' } },
+        { store_link: { contains: q, mode: 'insensitive' } },
+        { bank_name: { contains: q, mode: 'insensitive' } },
+        { account_number: { contains: q, mode: 'insensitive' } },
+        { paystack_subaccount_code: { contains: q, mode: 'insensitive' } },
+        { user: { email: { contains: q, mode: 'insensitive' } } },
+      ];
+    }
+    if (params.status === 'ACTIVE') {
+      where.paystack_subaccount_code = { not: null };
+    } else if (params.status === 'MISSING') {
+      where.paystack_subaccount_code = null;
+      where.bank_code = { not: null };
+      where.account_number = { not: null };
+    } else if (params.status === 'UNCONFIGURED') {
+      where.OR = [{ bank_code: null }, { account_number: null }];
+    }
+
+    const skip = (params.page - 1) * params.limit;
+    const [sellers, total, retries] = await Promise.all([
+      this.prisma.sellerProfile.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              id: true,
+              full_name: true,
+              email: true,
+              is_verified: true,
+              is_suspended: true,
+            },
+          },
+          balance_snapshot: true,
+        },
+        orderBy: { updated_at: 'desc' },
+        skip,
+        take: params.limit,
+      }),
+      this.prisma.sellerProfile.count({ where }),
+      this.prisma.subaccountRetry.findMany({
+        orderBy: { updated_at: 'desc' },
+        take: 500,
+      }),
+    ]);
+
+    const retryBySeller = new Map<string, (typeof retries)[number]>();
+    for (const r of retries) {
+      if (!retryBySeller.has(r.seller_id)) {
+        retryBySeller.set(r.seller_id, r);
+      }
+    }
+
+    const items = sellers.map((s) => {
+      const retry = retryBySeller.get(s.id) || null;
+      const hasBank = Boolean(s.bank_code && s.account_number);
+      const subaccount_status = s.paystack_subaccount_code
+        ? 'ACTIVE'
+        : !hasBank
+          ? 'UNCONFIGURED'
+          : retry?.status === 'FAILED'
+            ? 'FAILED'
+            : 'PENDING_RETRY';
+
+      return {
+        seller_id: s.id,
+        user_id: s.user_id,
+        store_name: s.store_name,
+        store_link: s.store_link,
+        is_seller_verified: s.is_seller_verified,
+        onboarding_completed: s.onboarding_completed,
+        bank_name: s.bank_name,
+        bank_code: s.bank_code,
+        account_number: s.account_number,
+        paystack_subaccount_code: s.paystack_subaccount_code,
+        subaccount_status,
+        retry: retry
+          ? {
+              id: retry.id,
+              attempts: retry.attempts,
+              last_error: retry.last_error,
+              status: retry.status,
+              updated_at: retry.updated_at,
+            }
+          : null,
+        balance: s.balance_snapshot
+          ? {
+              available: Number(s.balance_snapshot.available_balance || 0),
+              pending: Number(s.balance_snapshot.pending_balance || 0),
+              withdrawn: Number(s.balance_snapshot.total_withdrawn || 0),
+            }
+          : { available: 0, pending: 0, withdrawn: 0 },
+        owner: s.user,
+      };
+    });
+
+    return { items, total };
+  }
+
+  async findRetryableSubaccounts() {
+    return this.prisma.sellerProfile.findMany({
+      where: {
+        paystack_subaccount_code: null,
+        bank_code: { not: null },
+        account_number: { not: null },
+      },
+      select: { id: true, store_name: true },
+      take: 100,
     });
   }
 
@@ -961,6 +1111,315 @@ export class PaymentsRepository {
           });
         }
       }
+    });
+  }
+
+  async listRefunds(params: {
+    status?: string;
+    search?: string;
+    page: number;
+    limit: number;
+  }) {
+    const where: Prisma.RefundWhereInput = {};
+    if (params.status && params.status !== 'ALL') {
+      where.status = params.status as any;
+    }
+    if (params.search && params.search.trim()) {
+      const q = params.search.trim();
+      where.OR = [
+        { reference: { contains: q, mode: 'insensitive' } },
+        { provider_ref: { contains: q, mode: 'insensitive' } },
+        { reason: { contains: q, mode: 'insensitive' } },
+        { transaction: { reference: { contains: q, mode: 'insensitive' } } },
+        { order: { customer_name: { contains: q, mode: 'insensitive' } } },
+      ];
+    }
+
+    const skip = (params.page - 1) * params.limit;
+    const [items, total, agg, successCount, pendingCount, failedCount] =
+      await Promise.all([
+        this.prisma.refund.findMany({
+          where,
+          include: {
+            transaction: {
+              select: {
+                id: true,
+                reference: true,
+                amount: true,
+                provider: true,
+              },
+            },
+            order: {
+              select: {
+                id: true,
+                status: true,
+                customer_name: true,
+                buyer: { select: { id: true, full_name: true, email: true } },
+                items: {
+                  take: 1,
+                  include: {
+                    product: {
+                      select: {
+                        seller: { select: { id: true, store_name: true } },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          orderBy: { created_at: 'desc' },
+          skip,
+          take: params.limit,
+        }),
+        this.prisma.refund.count({ where }),
+        this.prisma.refund.aggregate({
+          where: { status: 'SUCCESS' },
+          _sum: { amount: true },
+        }),
+        this.prisma.refund.count({ where: { status: 'SUCCESS' } }),
+        this.prisma.refund.count({
+          where: { status: { in: ['PENDING', 'PROCESSING'] } },
+        }),
+        this.prisma.refund.count({ where: { status: 'FAILED' } }),
+      ]);
+
+    return {
+      items,
+      total,
+      page: params.page,
+      limit: params.limit,
+      totalPages: Math.max(1, Math.ceil(total / params.limit)),
+      summary: {
+        total_refunded_amount: Number(agg._sum.amount || 0),
+        success_count: successCount,
+        pending_count: pendingCount,
+        failed_count: failedCount,
+      },
+    };
+  }
+
+  async listVendorWallets(params: {
+    search?: string;
+    page: number;
+    limit: number;
+  }) {
+    const where: Prisma.SellerProfileWhereInput = {};
+    if (params.search && params.search.trim()) {
+      const q = params.search.trim();
+      where.OR = [
+        { store_name: { contains: q, mode: 'insensitive' } },
+        { store_link: { contains: q, mode: 'insensitive' } },
+        { bank_name: { contains: q, mode: 'insensitive' } },
+        { account_number: { contains: q, mode: 'insensitive' } },
+        { user: { full_name: { contains: q, mode: 'insensitive' } } },
+        { user: { email: { contains: q, mode: 'insensitive' } } },
+      ];
+    }
+
+    const skip = (params.page - 1) * params.limit;
+    const [sellers, total, totalsAgg] = await Promise.all([
+      this.prisma.sellerProfile.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              id: true,
+              full_name: true,
+              email: true,
+              is_suspended: true,
+            },
+          },
+          balance_snapshot: true,
+          _count: {
+            select: { payouts: true, ledger_entries: true },
+          },
+        },
+        orderBy: { created_at: 'desc' },
+        skip,
+        take: params.limit,
+      }),
+      this.prisma.sellerProfile.count({ where }),
+      this.prisma.vendorBalanceSnapshot.aggregate({
+        _sum: {
+          available_balance: true,
+          pending_balance: true,
+          total_earned: true,
+          total_withdrawn: true,
+        },
+      }),
+    ]);
+
+    const items = sellers.map((s) => ({
+      seller_id: s.id,
+      user_id: s.user_id,
+      store_name: s.store_name,
+      store_link: s.store_link,
+      is_seller_verified: s.is_seller_verified,
+      bank_name: s.bank_name,
+      bank_code: s.bank_code,
+      account_number: s.account_number,
+      paystack_subaccount_code: s.paystack_subaccount_code,
+      owner: s.user,
+      available_balance: Number(s.balance_snapshot?.available_balance || 0),
+      pending_balance: Number(s.balance_snapshot?.pending_balance || 0),
+      total_earned: Number(s.balance_snapshot?.total_earned || 0),
+      total_withdrawn: Number(s.balance_snapshot?.total_withdrawn || 0),
+      payouts_count: s._count.payouts,
+      ledger_count: s._count.ledger_entries,
+    }));
+
+    return {
+      items,
+      total,
+      page: params.page,
+      limit: params.limit,
+      totalPages: Math.max(1, Math.ceil(total / params.limit)),
+      summary: {
+        total_available: Number(totalsAgg._sum.available_balance || 0),
+        total_pending: Number(totalsAgg._sum.pending_balance || 0),
+        total_earned: Number(totalsAgg._sum.total_earned || 0),
+        total_withdrawn: Number(totalsAgg._sum.total_withdrawn || 0),
+      },
+    };
+  }
+
+  async listLedgerEntries(params: {
+    sellerId?: string;
+    type?: string;
+    sourceType?: string;
+    search?: string;
+    page: number;
+    limit: number;
+  }) {
+    const where: Prisma.PaymentLedgerEntryWhereInput = {};
+    if (params.sellerId && params.sellerId !== 'ALL') {
+      where.seller_id = params.sellerId;
+    }
+    if (params.type && params.type !== 'ALL') {
+      where.type = params.type as any;
+    }
+    if (params.sourceType && params.sourceType !== 'ALL') {
+      where.source_type = params.sourceType as any;
+    }
+    if (params.search && params.search.trim()) {
+      const q = params.search.trim();
+      where.OR = [
+        { reference: { contains: q, mode: 'insensitive' } },
+        { description: { contains: q, mode: 'insensitive' } },
+        { seller: { store_name: { contains: q, mode: 'insensitive' } } },
+      ];
+    }
+
+    const skip = (params.page - 1) * params.limit;
+    const [items, total] = await Promise.all([
+      this.prisma.paymentLedgerEntry.findMany({
+        where,
+        include: {
+          seller: { select: { id: true, store_name: true } },
+          transaction: { select: { id: true, reference: true } },
+          payout: { select: { id: true, reference: true, status: true } },
+        },
+        orderBy: { created_at: 'desc' },
+        skip,
+        take: params.limit,
+      }),
+      this.prisma.paymentLedgerEntry.count({ where }),
+    ]);
+
+    return {
+      items,
+      total,
+      page: params.page,
+      limit: params.limit,
+      totalPages: Math.max(1, Math.ceil(total / params.limit)),
+    };
+  }
+
+  async listPaymentLogs(params: {
+    event?: string;
+    search?: string;
+    page: number;
+    limit: number;
+  }) {
+    const where: Prisma.PaymentLogWhereInput = {};
+    if (params.event && params.event !== 'ALL') {
+      where.event = { contains: params.event, mode: 'insensitive' };
+    }
+    if (params.search && params.search.trim()) {
+      const q = params.search.trim();
+      where.OR = [
+        { event: { contains: q, mode: 'insensitive' } },
+        { event_id: { contains: q, mode: 'insensitive' } },
+      ];
+    }
+
+    const skip = (params.page - 1) * params.limit;
+    const [items, total] = await Promise.all([
+      this.prisma.paymentLog.findMany({
+        where,
+        orderBy: { created_at: 'desc' },
+        skip,
+        take: params.limit,
+      }),
+      this.prisma.paymentLog.count({ where }),
+    ]);
+
+    return {
+      items,
+      total,
+      page: params.page,
+      limit: params.limit,
+      totalPages: Math.max(1, Math.ceil(total / params.limit)),
+    };
+  }
+
+  async getPromotionPaymentById(id: string) {
+    return this.prisma.productPromotionPayment.findUnique({
+      where: { id },
+      include: {
+        product: true,
+        seller: { include: { user: true } },
+      },
+    });
+  }
+
+  async updatePromotionPaymentById(
+    id: string,
+    status: 'PENDING' | 'SUCCESS' | 'FAILED',
+    providerRef?: string,
+  ) {
+    return this.prisma.productPromotionPayment.update({
+      where: { id },
+      data: {
+        status,
+        ...(providerRef ? { provider_ref: providerRef } : {}),
+        ...(status === 'SUCCESS'
+          ? { paid_at: new Date(), consumed_at: new Date() }
+          : {}),
+      },
+      include: { product: true },
+    });
+  }
+
+  async featureProductById(productId: string) {
+    return this.prisma.product.update({
+      where: { id: productId },
+      data: { is_featured: true },
+    });
+  }
+
+  async updateSellerBankDetails(
+    sellerId: string,
+    data: {
+      bank_name: string | null;
+      bank_code: string | null;
+      account_number: string | null;
+    },
+  ) {
+    return this.prisma.sellerProfile.update({
+      where: { id: sellerId },
+      data,
     });
   }
 }

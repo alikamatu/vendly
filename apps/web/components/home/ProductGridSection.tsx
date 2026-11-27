@@ -29,19 +29,21 @@ export default function ProductGridSection({
   if (!items.length) return emptyState as any;
 
   return (
-    <section className="space-y-8">
+    <section className="space-y-6">
       <SectionHeader eyebrow={eyebrow} title={title} description={description} action={action} />
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 md:gap-4 lg:grid-cols-5">
+      {/* Free-flowing variable-height masonry with thin gaps matching the Shop listing style */}
+      <div className="columns-2 gap-1.5 sm:columns-3 sm:gap-2 md:columns-4 lg:columns-5">
         {items.map((product, idx) => (
           <motion.div
             key={product.id}
-            initial={{ opacity: 0, y: 12 }}
+            initial={{ opacity: 0, y: 10 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-40px' }}
-            transition={{ duration: 0.3, delay: Math.min(idx * 0.015, 0.25) }}
+            transition={{ duration: 0.28, delay: Math.min(idx * 0.012, 0.2) }}
+            className="mb-1.5 break-inside-avoid sm:mb-2"
           >
-            <ProductCard product={product as any} index={idx} />
+            <ProductCard product={product as any} index={idx % 8} />
           </motion.div>
         ))}
       </div>

@@ -31,7 +31,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 type VerificationOption = 'URL' | 'FILES' | 'CONTACT' | null;
 
 export default function SellerVerificationForm() {
-  const { user, token, isLoading: authLoading, refreshUser } = useAuth();
+  const { user, token, isLoading: authLoading, refreshUser, setAuthData } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectUrl = searchParams.get('redirect') || '/create-store';
@@ -39,6 +39,7 @@ export default function SellerVerificationForm() {
 
   const { form } = useVerificationForm();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSkipping, setIsSkipping] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -85,6 +86,21 @@ export default function SellerVerificationForm() {
       await refreshUser();
     } finally {
       setIsRefreshing(false);
+    }
+  };
+
+  const handleSkipVerification = async () => {
+    if (!token || isSkipping) return;
+    setIsSkipping(true);
+    setError(null);
+    try {
+      const res = await authApi.startSellerSetup(token);
+      setAuthData(res.access_token, res.user as any);
+      router.push(res.user?.seller_profile?.onboarding_completed ? '/dashboard' : '/create-store');
+    } catch (err: any) {
+      setError(err?.message || 'Unable to unlock store setup right now. Please try again.');
+    } finally {
+      setIsSkipping(false);
     }
   };
 
@@ -207,11 +223,40 @@ export default function SellerVerificationForm() {
           </div>
           <h2 className="text-foreground text-2xl font-medium tracking-tight">Under review</h2>
           <p className="text-muted mt-2 text-sm">
-            We&apos;re reviewing your details. Store creation unlocks automatically once approved
-            (typically within 24–48 hours).
+            We&apos;re reviewing your details (typically within 24–48 hours). You can set up your
+            store and add products while you wait — orders unlock automatically once approved.
           </p>
 
+          {error && (
+            <div className="mt-4 w-full text-left">
+              <Alert variant="error" message={error} onDismiss={() => setError(null)} />
+            </div>
+          )}
+
           <div className="mt-8 w-full space-y-2.5">
+            {!user?.seller_profile?.onboarding_completed ? (
+              <Button
+                variant="primary"
+                size="md"
+                onClick={handleSkipVerification}
+                isLoading={isSkipping}
+                loadingText="Opening store setup…"
+                className="flex h-11 w-full items-center justify-center gap-2"
+              >
+                <Store size={16} />
+                <span>Set up my store while waiting</span>
+              </Button>
+            ) : (
+              <Button
+                variant="primary"
+                size="md"
+                onClick={() => router.push('/dashboard')}
+                className="flex h-11 w-full items-center justify-center gap-2"
+              >
+                <Store size={16} />
+                <span>Go to dashboard</span>
+              </Button>
+            )}
             <Button
               variant="secondary"
               size="md"
@@ -221,14 +266,6 @@ export default function SellerVerificationForm() {
             >
               <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
               <span>{isRefreshing ? 'Checking…' : 'Refresh status'}</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => router.push('/dashboard')}
-              className="text-muted hover:text-foreground w-full text-sm"
-            >
-              Back to dashboard
             </Button>
           </div>
         </div>
@@ -331,6 +368,35 @@ export default function SellerVerificationForm() {
                       />
                     </button>
                   ))}
+                </div>
+
+                {/* Skip Verification & Set Up Store Now */}
+                <div className="bg-background space-y-3 rounded-2xl p-4 text-center">
+                  <p className="text-muted text-xs leading-relaxed">
+                    Want to build your storefront first? You can skip verification for now and add
+                    products right away —{' '}
+                    <strong className="text-foreground">orders stay disabled</strong> until your
+                    verification is approved.
+                  </p>
+                  {error && (
+                    <Alert variant="error" message={error} onDismiss={() => setError(null)} />
+                  )}
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="md"
+                    onClick={handleSkipVerification}
+                    isLoading={isSkipping}
+                    loadingText="Opening store setup…"
+                    className="flex h-11 w-full items-center justify-center gap-2"
+                  >
+                    <Store size={15} />
+                    <span>
+                      {user?.seller_profile?.onboarding_completed
+                        ? 'Continue to my store dashboard'
+                        : 'Skip for now & set up my store'}
+                    </span>
+                  </Button>
                 </div>
               </motion.div>
             ) : (

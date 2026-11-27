@@ -3,6 +3,7 @@ import {
   BadRequestException,
   UnauthorizedException,
   ConflictException,
+  ForbiddenException,
   NotFoundException,
   Inject,
   HttpException,
@@ -14,7 +15,7 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
-import { VerificationType } from '@prisma/client';
+import { Role, VerificationType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { parseGhanaPhone } from './phone.util';
 import { EmailService } from '../email/email.service';
@@ -453,6 +454,12 @@ export class AuthService {
               bio: user.seller_profile.bio,
               logo_url: user.seller_profile.logo_url,
               onboarding_completed: user.seller_profile.onboarding_completed,
+              is_seller_verified: Boolean(
+                user.seller_profile.is_seller_verified,
+              ),
+              can_receive_orders: Boolean(
+                user.seller_profile.is_seller_verified,
+              ),
             }
           : null,
       },
@@ -529,7 +536,11 @@ export class AuthService {
             bank_name: user.seller_profile.bank_name,
             bank_code: user.seller_profile.bank_code,
             account_number: user.seller_profile.account_number,
+            paystack_subaccount_code:
+              user.seller_profile.paystack_subaccount_code,
             onboarding_completed: user.seller_profile.onboarding_completed,
+            is_seller_verified: Boolean(user.seller_profile.is_seller_verified),
+            can_receive_orders: Boolean(user.seller_profile.is_seller_verified),
             structured_location: user.seller_profile.structured_location
               ? {
                   id: user.seller_profile.structured_location.id,
@@ -540,6 +551,54 @@ export class AuthService {
           }
         : null,
       created_at: user.created_at,
+    };
+  }
+
+  async startSellerSetup(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        seller_profile: true,
+        admin_approvals: {
+          orderBy: { created_at: 'desc' },
+          take: 1,
+        },
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.is_suspended || user.disabled_at || user.deletion_scheduled_for) {
+      throw new ForbiddenException(
+        'Your account is currently not eligible to set up a store.',
+      );
+    }
+
+    let role = user.role;
+    if (role === Role.USER) {
+      const updated = await this.prisma.user.update({
+        where: { id: userId },
+        data: { role: Role.SELLER },
+        select: { role: true },
+      });
+      role = updated.role;
+    }
+
+    const payload = {
+      sub: user.id.toString(),
+      email: user.email,
+      role,
+    };
+    const access_token = this.jwtService.sign(payload);
+    const fullUser = await this.getMe(userId);
+
+    return {
+      message:
+        'Store setup unlocked. You can set up your store now — complete seller verification to receive orders.',
+      access_token,
+      user: fullUser,
     };
   }
 
@@ -730,6 +789,12 @@ export class AuthService {
               bio: user.seller_profile.bio,
               logo_url: user.seller_profile.logo_url,
               onboarding_completed: user.seller_profile.onboarding_completed,
+              is_seller_verified: Boolean(
+                user.seller_profile.is_seller_verified,
+              ),
+              can_receive_orders: Boolean(
+                user.seller_profile.is_seller_verified,
+              ),
             }
           : null,
       },

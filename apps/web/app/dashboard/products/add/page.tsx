@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -10,6 +10,8 @@ import WebsiteImportPanel from '@/components/products/WebsiteImportPanel';
 import WhatsAppImportPanel from '@/components/products/WhatsAppImportPanel';
 
 type AddSource = 'upload' | 'website' | 'whatsapp';
+
+const SOURCE_STORAGE_KEY = 'verndly_add_product_source_v1';
 
 const SPRING_PILL = { type: 'spring' as const, stiffness: 420, damping: 34 };
 
@@ -48,6 +50,29 @@ export default function AddProductPage() {
 
   const [source, setSource] = useState<AddSource>(initialSource);
 
+  useEffect(() => {
+    if (initialParam === 'website' || initialParam === 'whatsapp' || initialParam === 'upload') {
+      return;
+    }
+    try {
+      const saved = localStorage.getItem(SOURCE_STORAGE_KEY);
+      if (saved === 'upload' || saved === 'website' || saved === 'whatsapp') {
+        setSource(saved);
+      }
+    } catch {
+      // ignore storage errors
+    }
+  }, [initialParam]);
+
+  const handleSelectSource = (next: AddSource) => {
+    setSource(next);
+    try {
+      localStorage.setItem(SOURCE_STORAGE_KEY, next);
+    } catch {
+      // ignore storage errors
+    }
+  };
+
   return (
     <div className="w-full space-y-6">
       {/* Unified Source Switcher — lists all ways to add or import products */}
@@ -62,7 +87,7 @@ export default function AddProductPage() {
             <button
               key={tab.id}
               type="button"
-              onClick={() => setSource(tab.id)}
+              onClick={() => handleSelectSource(tab.id)}
               className={`relative flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left transition-colors ${
                 active ? 'text-foreground' : 'text-muted hover:text-foreground'
               }`}

@@ -37,6 +37,8 @@ export interface StorefrontHeaderData {
   location?: string | null;
   area?: string | null;
   is_verified?: boolean;
+  is_seller_verified?: boolean;
+  can_receive_orders?: boolean;
   is_pro?: boolean;
   member_since?: string | Date | null;
   products_count?: number;
@@ -220,15 +222,19 @@ export default function StorefrontHeader({ store, productsCount }: StorefrontHea
               )}
             </div>
 
-            {/* Action Buttons: Message / WhatsApp DM, Share, Info */}
+            {/* Action Buttons: Message / WhatsApp DM (verified stores only), Share, Info */}
             <div className="flex w-full flex-wrap items-center gap-2.5 md:w-auto">
-              <button
-                onClick={handleMessageClick}
-                className="flex h-11 flex-1 items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 text-xs font-semibold uppercase tracking-wider text-white shadow-none transition-all hover:bg-emerald-700 active:scale-95 md:flex-none"
-              >
-                <MessageCircle className="h-4 w-4" />
-                <span>Message</span>
-              </button>
+              {store.can_receive_orders !== false &&
+                store.is_seller_verified !== false &&
+                store.is_verified !== false && (
+                  <button
+                    onClick={handleMessageClick}
+                    className="flex h-11 flex-1 items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 text-xs font-semibold uppercase tracking-wider text-white shadow-none transition-all hover:bg-emerald-700 active:scale-95 md:flex-none"
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    <span>Message</span>
+                  </button>
+                )}
 
               <button
                 onClick={() => setIsShareModalOpen(true)}
@@ -238,13 +244,17 @@ export default function StorefrontHeader({ store, productsCount }: StorefrontHea
                 <span>Share</span>
               </button>
 
-              <button
-                onClick={() => setIsContactModalOpen(true)}
-                className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-muted)] transition-all hover:bg-[var(--color-surface)] hover:text-[var(--color-foreground)] active:scale-95"
-                title="Store details & contact"
-              >
-                <Info className="h-4 w-4" />
-              </button>
+              {store.can_receive_orders !== false &&
+                store.is_seller_verified !== false &&
+                store.is_verified !== false && (
+                  <button
+                    onClick={() => setIsContactModalOpen(true)}
+                    className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-muted)] transition-all hover:bg-[var(--color-surface)] hover:text-[var(--color-foreground)] active:scale-95"
+                    title="Store details & contact"
+                  >
+                    <Info className="h-4 w-4" />
+                  </button>
+                )}
 
               {store.id && !isOwner && (
                 <button
@@ -267,7 +277,7 @@ export default function StorefrontHeader({ store, productsCount }: StorefrontHea
                 <h1 className="text-2xl font-bold uppercase tracking-tight text-[var(--color-foreground)] md:text-3xl">
                   {store.store_name}
                 </h1>
-                {store.is_verified && (
+                {store.is_verified ? (
                   <span
                     title="Verified young entrepreneur store"
                     className="inline-flex items-center gap-1 rounded-full border border-blue-500/20 bg-blue-500/10 px-2.5 py-0.5 text-[10px] font-semibold text-blue-500"
@@ -275,12 +285,26 @@ export default function StorefrontHeader({ store, productsCount }: StorefrontHea
                     <BadgeCheck className="h-3.5 w-3.5" />
                     Verified
                   </span>
+                ) : (
+                  <span className="bg-amber-500/12 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                    Orders disabled · Pending verification
+                  </span>
                 )}
               </div>
               <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-accent)]">
                 @{store.store_link}
               </p>
             </div>
+
+            {(store.can_receive_orders === false ||
+              store.is_seller_verified === false ||
+              store.is_verified === false) && (
+              <div className="rounded-2xl bg-amber-500/10 px-4 py-3 text-xs text-amber-950 dark:text-amber-100">
+                <strong className="font-semibold">Store pending seller verification.</strong>{' '}
+                Products can be browsed, but orders and direct store contact are disabled until
+                verification is approved.
+              </div>
+            )}
 
             {store.bio && (
               <p className="text-[var(--color-foreground)]/80 max-w-3xl text-xs font-normal leading-relaxed md:text-sm">
@@ -310,26 +334,29 @@ export default function StorefrontHeader({ store, productsCount }: StorefrontHea
               {memberSince && <Chip icon={CalendarDays}>Joined {memberSince}</Chip>}
             </div>
 
-            {/* Social Links Chips */}
-            {quickSocials.length > 0 && (
-              <div className="border-[var(--color-border)]/60 flex flex-wrap items-center gap-2 border-t pt-2">
-                <span className="mr-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-muted)]">
-                  Connect:
-                </span>
-                {quickSocials.map((s) => (
-                  <a
-                    key={s.key}
-                    href={s.url!}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:border-[var(--color-accent)]/50 inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-2.5 py-1 text-[10px] font-medium text-[var(--color-foreground)] transition-colors hover:text-[var(--color-accent)]"
-                  >
-                    {s.icon}
-                    <span>{s.name}</span>
-                  </a>
-                ))}
-              </div>
-            )}
+            {/* Social Links Chips (hidden on unverified stores) */}
+            {quickSocials.length > 0 &&
+              store.can_receive_orders !== false &&
+              store.is_seller_verified !== false &&
+              store.is_verified !== false && (
+                <div className="border-[var(--color-border)]/60 flex flex-wrap items-center gap-2 border-t pt-2">
+                  <span className="mr-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-muted)]">
+                    Connect:
+                  </span>
+                  {quickSocials.map((s) => (
+                    <a
+                      key={s.key}
+                      href={s.url!}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:border-[var(--color-accent)]/50 inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-2.5 py-1 text-[10px] font-medium text-[var(--color-foreground)] transition-colors hover:text-[var(--color-accent)]"
+                    >
+                      {s.icon}
+                      <span>{s.name}</span>
+                    </a>
+                  ))}
+                </div>
+              )}
           </div>
         </div>
       </motion.div>

@@ -165,6 +165,13 @@ export class AuthController {
     return this.authService.getApprovalStatus(req.user.id);
   }
 
+  @Post('start-seller-setup')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async startSellerSetup(@Req() req) {
+    return this.authService.startSellerSetup(req.user.id);
+  }
+
   @Post('logout')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)

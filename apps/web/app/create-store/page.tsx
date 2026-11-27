@@ -27,6 +27,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { useAuth } from '@/lib/contexts/auth-context';
+import { authApi } from '@/lib/api/auth';
 import { storeApi } from '@/lib/api/store';
 import { onboardingApi, ServiceArea, DeliveryTime } from '@/lib/api/onboarding';
 import { aiApi, type AiOnboardingAssistantResult } from '@/lib/api/ai';
@@ -356,7 +357,14 @@ function CelebrationScreen({ storeName, storeSlug }: { storeName: string; storeS
 // ───────── Main Unified Component ─────────
 
 export default function CreateStorePage() {
-  const { user, token, isAuthenticated, isLoading: authLoading, refreshUser } = useAuth();
+  const {
+    user,
+    token,
+    isAuthenticated,
+    isLoading: authLoading,
+    refreshUser,
+    setAuthData,
+  } = useAuth();
   const router = useRouter();
 
   // Screen State
@@ -493,12 +501,19 @@ export default function CreateStorePage() {
 
     if (!token) return;
 
-    // User has to be seller verified before they can create a store
-    const isSellerVerified =
+    // If an authenticated buyer navigated directly to /create-store, unlock seller setup automatically
+    const hasSellerRole =
       user?.approval_status === 'APPROVED' || user?.role === 'SELLER' || user?.role === 'ADMIN';
 
-    if (!isSellerVerified) {
-      router.replace('/seller-verification?redirect=/create-store');
+    if (!hasSellerRole) {
+      authApi
+        .startSellerSetup(token)
+        .then((res) => {
+          setAuthData(res.access_token, res.user as any);
+        })
+        .catch(() => {
+          router.replace('/seller-verification?redirect=/create-store');
+        });
       return;
     }
 
@@ -740,13 +755,33 @@ export default function CreateStorePage() {
 
     setIsSaving(true);
     try {
-      await onboardingApi.completePayment(token, {
+      const momoProviderName =
+        MOMO_PROVIDERS.find((p) => p.code === momoProvider)?.name || momoProvider;
+
+      const resolvedBankCode =
+        needsMoMo && !needsBank ? momoProvider : needsBank ? bankCode : undefined;
+      const resolvedBankName =
+        needsMoMo && !needsBank ? momoProviderName : needsBank ? bankName || bankCode : undefined;
+      const resolvedAccountNumber =
+        needsMoMo && !needsBank
+          ? momoNumber.trim()
+          : needsBank
+            ? bankAccountNumber.trim()
+            : undefined;
+
+      const res = await onboardingApi.completePayment(token, {
         accepted_payment_methods: paymentMethods,
         payment_timing: paymentTiming,
-        bank_name: needsMoMo && !needsBank ? momoProvider : bankName || 'Mobile Money',
-        bank_code: needsMoMo && !needsBank ? momoProvider : bankCode || 'MOMO',
-        account_number: needsMoMo && !needsBank ? momoNumber.trim() : bankAccountNumber.trim(),
+        bank_name: resolvedBankName,
+        bank_code: resolvedBankCode,
+        account_number: resolvedAccountNumber,
       });
+
+      if (res.subaccount_status === 'ACTIVE') {
+        toast.success('Store launched & Paystack payout subaccount activated!');
+      } else if (res.subaccount_warning) {
+        toast.info(res.subaccount_warning);
+      }
 
       await refreshUser();
       setCompletedSteps([true, true, true]);
@@ -757,6 +792,31 @@ export default function CreateStorePage() {
       setIsSaving(false);
     }
   };
+
+  // Allow unverified sellers to skip payout setup for now and finish later in Settings
+  const handleSkipPayoutStep = async () => {
+    if (!token) return;
+    setIsSaving(true);
+    try {
+      await onboardingApi.completePayment(token, {
+        skip_payout: true,
+        accepted_payment_methods: paymentMethods,
+        payment_timing: paymentTiming,
+      });
+      await refreshUser();
+      setCompletedSteps([true, true, true]);
+      setIsComplete(true);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to skip payout setup');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const canSkipPayout =
+    user?.approval_status !== 'APPROVED' &&
+    user?.role !== 'ADMIN' &&
+    !user?.seller_profile?.is_seller_verified;
 
   // ───────── Toggle payment methods ─────────
   const toggleMethod = (id: string) => {
@@ -1379,27 +1439,41 @@ export default function CreateStorePage() {
                       </div>
 
                       {/* Step 3 Actions */}
-                      <div className="flex items-center gap-3 pt-3">
-                        <Button
-                          type="button"
-                          onClick={() => setCurrentStep(1)}
-                          variant="secondary"
-                          className="h-12 flex-1 rounded-xl border-none text-sm font-medium shadow-none"
-                        >
-                          <ChevronLeft className="h-4 w-4 shrink-0" />
-                          <span>Back</span>
-                        </Button>
+                      <div className="space-y-2.5 pt-3">
+                        <div className="flex items-center gap-3">
+                          <Button
+                            type="button"
+                            onClick={() => setCurrentStep(1)}
+                            variant="secondary"
+                            className="h-12 flex-1 rounded-xl border-none text-sm font-medium shadow-none"
+                          >
+                            <ChevronLeft className="h-4 w-4 shrink-0" />
+                            <span>Back</span>
+                          </Button>
 
-                        <Button
-                          type="submit"
-                          variant="primary"
-                          className="bg-secondary hover:bg-secondary/90 h-12 flex-[2] rounded-xl border-none text-sm font-medium text-white shadow-none"
-                          isLoading={isSaving}
-                          loadingText="Launching store..."
-                        >
-                          <Sparkles className="h-4 w-4 shrink-0" />
-                          <span>Launch Store & Sell</span>
-                        </Button>
+                          <Button
+                            type="submit"
+                            variant="primary"
+                            className="bg-secondary hover:bg-secondary/90 h-12 flex-[2] rounded-xl border-none text-sm font-medium text-white shadow-none"
+                            isLoading={isSaving}
+                            loadingText="Launching store..."
+                          >
+                            <Sparkles className="h-4 w-4 shrink-0" />
+                            <span>Launch Store &amp; Sell</span>
+                          </Button>
+                        </div>
+
+                        {canSkipPayout && (
+                          <button
+                            type="button"
+                            disabled={isSaving}
+                            onClick={handleSkipPayoutStep}
+                            className="text-muted hover:text-foreground w-full py-2 text-center text-xs font-medium transition-colors disabled:opacity-50"
+                          >
+                            Skip payout setup for now — I’ll add MoMo / bank details in Settings
+                            later
+                          </button>
+                        )}
                       </div>
                     </motion.div>
                   </form>

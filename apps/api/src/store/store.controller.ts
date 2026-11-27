@@ -22,6 +22,7 @@ import { UpdateStoreDto } from './dto/update-store.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/guards/roles.decorator';
+import { actorFromReq } from '../audit/audit-log.service';
 
 @Controller('stores')
 export class StoreController {
@@ -29,7 +30,7 @@ export class StoreController {
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('SELLER')
+  @Roles('USER', 'SELLER', 'ADMIN')
   @UseInterceptors(FileInterceptor('logo'))
   async createStore(
     @Request() req,
@@ -67,6 +68,42 @@ export class StoreController {
     logo?: Express.Multer.File,
   ) {
     return this.storeService.updateStore(req.user.id, dto, logo);
+  }
+
+  @Post('payout-details/request-verification')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SELLER', 'ADMIN')
+  async requestPayoutVerification(
+    @Request() req,
+    @Body()
+    body: {
+      bank_name?: string;
+      bank_code: string;
+      account_number: string;
+    },
+  ) {
+    return this.storeService.requestPayoutChangeVerification(req.user.id, body);
+  }
+
+  @Post('payout-details/confirm')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SELLER', 'ADMIN')
+  async confirmPayoutChange(
+    @Request() req,
+    @Body()
+    body: {
+      code: string;
+      method?: 'EMAIL_OTP' | 'TOTP';
+      bank_name?: string;
+      bank_code?: string;
+      account_number?: string;
+    },
+  ) {
+    return this.storeService.confirmPayoutDetailsChange(
+      req.user.id,
+      body,
+      actorFromReq(req),
+    );
   }
 
   @Get('stats')

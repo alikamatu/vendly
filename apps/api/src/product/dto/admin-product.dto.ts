@@ -6,10 +6,12 @@ import {
   IsArray,
   IsInt,
   Min,
+  Max,
   IsNumberString,
   IsObject,
   ArrayNotEmpty,
   ValidateIf,
+  IsNotEmpty,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 
@@ -38,6 +40,21 @@ export class AdminProductListQueryDto {
   search?: string;
 
   @IsOptional()
+  @IsString()
+  stock?: 'in_stock' | 'out_of_stock' | 'low_stock';
+
+  @IsOptional()
+  @IsString()
+  sort?:
+    | 'newest'
+    | 'oldest'
+    | 'price_asc'
+    | 'price_desc'
+    | 'views_desc'
+    | 'stock_asc'
+    | 'title_asc';
+
+  @IsOptional()
   @Transform(({ value }) =>
     value === undefined || value === null || value === ''
       ? undefined
@@ -61,24 +78,101 @@ export class AdminProductListQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  limit?: number = 20;
+  @Max(500)
+  limit?: number = 50;
+}
+
+export class AdminCreateProductDto {
+  @IsString()
+  @IsNotEmpty()
+  seller_id!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  title!: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsNumberString()
+  price!: string;
+
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null && value !== '')
+  @IsNumberString()
+  original_price?: string | null;
+
+  @IsOptional()
+  @IsString()
+  currency?: string;
+
+  @IsOptional()
+  @IsString()
+  condition?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  quantity_available?: number;
+
+  @IsOptional()
+  @IsEnum(AdminProductStatus)
+  status?: AdminProductStatus;
+
+  @IsOptional()
+  @IsBoolean()
+  is_featured?: boolean;
+
+  @IsString()
+  @IsNotEmpty()
+  category!: string;
+
+  @IsOptional()
+  @IsString()
+  brand?: string | null;
+
+  @IsOptional()
+  @IsObject()
+  attributes?: Record<string, unknown>;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  image_urls?: string[];
+
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsString()
+  video_url?: string | null;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  tags?: string[];
 }
 
 export class AdminUpdateProductDto {
   @IsOptional()
   @IsString()
-  title?: string;
+  seller_id?: string;
 
   @IsOptional()
   @IsString()
-  description?: string;
+  title?: string;
+
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsString()
+  description?: string | null;
 
   @IsOptional()
   @IsNumberString()
   price?: string;
 
   @IsOptional()
-  @ValidateIf((_, value) => value !== null)
+  @ValidateIf((_, value) => value !== null && value !== '')
   @IsNumberString()
   original_price?: string | null;
 
@@ -109,6 +203,11 @@ export class AdminUpdateProductDto {
   category?: string;
 
   @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsString()
+  brand?: string | null;
+
+  @IsOptional()
   @IsObject()
   attributes?: Record<string, unknown>;
 
@@ -118,18 +217,34 @@ export class AdminUpdateProductDto {
   image_urls?: string[];
 
   @IsOptional()
+  @ValidateIf((_, value) => value !== null)
   @IsString()
-  video_url?: string;
+  video_url?: string | null;
 
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   tags?: string[];
+
+  @IsOptional()
+  @IsString()
+  reason?: string;
 }
 
 export class AdminUpdateStatusDto {
   @IsEnum(AdminProductStatus)
   status!: AdminProductStatus;
+
+  @IsOptional()
+  @IsString()
+  reason?: string;
+}
+
+export class AdminUpdateStockDto {
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  quantity_available!: number;
 
   @IsOptional()
   @IsString()
@@ -145,6 +260,7 @@ export enum AdminBulkAction {
   DELETE = 'delete',
   STATUS = 'status',
   FEATURE = 'feature',
+  CATEGORY = 'category',
 }
 
 export class AdminBulkActionDto {
@@ -158,4 +274,12 @@ export class AdminBulkActionDto {
 
   @IsOptional()
   value?: unknown;
+
+  @IsOptional()
+  @IsBoolean()
+  force?: boolean;
+
+  @IsOptional()
+  @IsString()
+  reason?: string;
 }

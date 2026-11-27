@@ -152,9 +152,13 @@ describe('GeminiService & normalizers', () => {
         description:
           'Compact cylindrical black portable speaker with fabric grille.',
         category: 'Electronics',
+        subcategory: 'Audio & Headphones',
         condition: 'refurbished',
         brand: 'JBL',
         tags: ['speaker', 'audio', 'portable'],
+        attributes: {
+          subcategory: 'Audio & Headphones',
+        },
         suggested_price_ghs: 320,
         confidence: 'high',
       });
@@ -472,6 +476,65 @@ describe('GeminiService & normalizers', () => {
         recommended_payment_timing: 'UPFRONT_ONLY',
         whatsapp_number: '0244112233',
         matched_location: { id: '1', region: 'Greater Accra', city: 'Accra' },
+      });
+    });
+
+    it('generates studio card copy with Gemini and falls back cleanly when unconfigured', async () => {
+      const mockFetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            candidates: [
+              {
+                content: {
+                  parts: [
+                    {
+                      text: JSON.stringify({
+                        badge: 'Best Seller',
+                        headline: 'Air Force 1 Premium',
+                        tagline: 'Own the street classic',
+                        blurb:
+                          'Crisp leather build with everyday comfort, ready for fast Accra delivery.',
+                        cta: 'Buy Now',
+                        social_caption:
+                          'Air Force 1 Premium — GH₵ 550. Own the street classic. Order safely on Verndly with 3-day escrow.',
+                      }),
+                    },
+                  ],
+                },
+              },
+            ],
+          }),
+      });
+      global.fetch = mockFetch;
+
+      const configured = createService({ GEMINI_API_KEY: 'test-key' });
+      const aiRes = await configured.generateProductCardCopy({
+        title: 'Air Force 1 Premium',
+        description: 'nice shoe',
+        category: 'Fashion',
+        price: 550,
+        tone: 'minimal',
+      });
+      expect(aiRes).toMatchObject({
+        badge: 'Best Seller',
+        headline: 'Air Force 1 Premium',
+        tagline: 'Own the street classic',
+        cta: 'Buy Now',
+      });
+
+      const unconfigured = createService({});
+      const fallbackRes = await unconfigured.generateProductCardCopy({
+        title: 'Chill Hoodie',
+        price: 400,
+        original_price: 500,
+        store_name: 'The Hoodies',
+      });
+      expect(fallbackRes).toMatchObject({
+        badge: 'Save 20%',
+        headline: 'Chill Hoodie',
+        cta: 'Buy Now',
+        model: 'fallback',
       });
     });
   });

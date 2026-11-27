@@ -252,8 +252,15 @@ export default function AiNativeHero({ compactBottom = false }: AiNativeHeroProp
               )}
             </AnimatePresence>
 
-            {/* 1-Tap Prompt Pills */}
+            {/* 1-Tap Prompt Pills + Direct Browse Shop CTA */}
             <div className="flex flex-wrap items-center justify-center gap-2">
+              <Link
+                href="/products"
+                className="bg-foreground text-background inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold transition-opacity hover:opacity-90"
+              >
+                <span>Browse Shop</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
               {SHOP_PROMPTS.map((item) => (
                 <button
                   key={item.label}

@@ -16,6 +16,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { GeminiService } from './gemini.service';
 import { BuyerSearchService } from './buyer-search.service';
 import {
+  AiCardCopyInput,
   AiDraftStorefrontInput,
   AiOnboardingAssistantInput,
   AiPolishListingInput,
@@ -96,6 +97,17 @@ export class AiController {
   async polishListing(@Body() body: AiPolishListingInput) {
     const categoryNames = await this.getCategoryNames();
     return this.geminiService.polishProductListing(body, categoryNames);
+  }
+
+  /**
+   * AI Product Card Copywriter — crafts punchy Nike/Apple-grade headlines,
+   * taglines, badges, and micro-descriptions for downloadable share cards.
+   */
+  @Post('card-copy')
+  @UseGuards(JwtAuthGuard, ThrottlerGuard)
+  @Throttle({ default: { limit: 25, ttl: 60000 } })
+  async generateCardCopy(@Body() body: AiCardCopyInput) {
+    return this.geminiService.generateProductCardCopy(body);
   }
 
   @Post('draft-storefront')

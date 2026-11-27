@@ -1,4 +1,5 @@
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { DEFAULT_ESCROW_RELEASE_DAYS, OrderService } from './order.service';
 
 describe('OrderService', () => {
@@ -23,6 +24,7 @@ describe('OrderService', () => {
           user_id: 'user-123',
           store_link: 'my-store',
           payment_timing: 'FLEXIBLE',
+          is_seller_verified: true,
         }),
       },
       user: {
@@ -257,6 +259,247 @@ describe('OrderService', () => {
       const sweepRes = await service.sweepMaturedEscrowOrders();
       expect(sweepRes).toEqual({ checked: 1, released: 1, releaseDays: 3 });
       expect(releaseEscrowForOrder).toHaveBeenCalledWith('order-matured-1');
+    });
+  });
+
+  describe('stock quantity enforcement', () => {
+    const baseDto = {
+      storeLink: 'test-store',
+      customerName: 'Ama',
+      customerPhone: '0244123456',
+      deliveryMethod: 'DELIVERY',
+      deliveryLocation: 'East Legon, Accra',
+      paymentMethod: 'CASH_ON_DELIVERY',
+    };
+
+    function makeOrderService(opts: {
+      products: Array<{
+        id: string;
+        title: string;
+        price: any;
+        status: string;
+        quantity_available: number;
+      }>;
+      variants?: Array<{
+        id: string;
+        product_id: string;
+        is_active: boolean;
+        quantity_available: number;
+        price?: any;
+      }>;
+    }) {
+      const prismaMock = {
+        sellerProfile: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'seller-1',
+            user_id: 'seller-owner',
+            store_name: 'Test Store',
+            store_link: 'test-store',
+            payment_timing: 'BOTH',
+            is_seller_verified: true,
+            user: {
+              is_suspended: false,
+              disabled_at: null,
+              deletion_scheduled_for: null,
+            },
+          }),
+        },
+        user: {
+          findUnique: jest
+            .fn()
+            .mockResolvedValue({ id: 'buyer-1', email: 'ama@example.com' }),
+        },
+        product: {
+          findMany: jest.fn().mockResolvedValue(opts.products),
+        },
+        productVariant: {
+          findMany: jest.fn().mockResolvedValue(opts.variants ?? []),
+          findFirst: jest.fn().mockResolvedValue(null),
+        },
+        $transaction: jest.fn(),
+      };
+      return new OrderService(
+        prismaMock as never,
+        {} as never,
+        { create: jest.fn() } as never,
+        {} as never,
+        {} as never,
+        { emit: jest.fn() } as never,
+      );
+    }
+
+    it('rejects single item requesting more than available product stock', async () => {
+      const service = makeOrderService({
+        products: [
+          {
+            id: 'prod-1',
+            title: 'Chill Hoodie',
+            price: new Prisma.Decimal(450),
+            status: 'active',
+            quantity_available: 2,
+          },
+        ],
+      });
+
+      await expect(
+        service.createOrder('buyer-1', {
+          ...baseDto,
+          items: [{ productId: 'prod-1', quantity: 3 }],
+        }),
+      ).rejects.toThrow(/Only 2 of "Chill Hoodie" available in stock/);
+    });
+
+    it('rejects duplicate lines whose combined quantity exceeds available stock', async () => {
+      const service = makeOrderService({
+        products: [
+          {
+            id: 'prod-1',
+            title: 'Chill Hoodie',
+            price: new Prisma.Decimal(450),
+            status: 'active',
+            quantity_available: 3,
+          },
+        ],
+      });
+
+      await expect(
+        service.createOrder('buyer-1', {
+          ...baseDto,
+          items: [
+            { productId: 'prod-1', quantity: 2 },
+            { productId: 'prod-1', quantity: 2 },
+          ],
+        }),
+      ).rejects.toThrow(/Only 3 of "Chill Hoodie" available in stock/);
+    });
+
+    it('rejects duplicate variant lines whose combined quantity exceeds variant stock and blocks zero/negative quantities', async () => {
+      const service = makeOrderService({
+        products: [
+          {
+            id: 'prod-1',
+            title: 'Sneaker',
+            price: new Prisma.Decimal(500),
+            status: 'active',
+            quantity_available: 10,
+          },
+        ],
+        variants: [
+          {
+            id: 'var-42',
+            product_id: 'prod-1',
+            is_active: true,
+            quantity_available: 2,
+          },
+        ],
+      });
+
+      await expect(
+        service.createOrder('buyer-1', {
+          ...baseDto,
+          items: [
+            { productId: 'prod-1', variantId: 'var-42', quantity: 2 },
+            { productId: 'prod-1', variantId: 'var-42', quantity: 1 },
+          ],
+        }),
+      ).rejects.toThrow(/Only 2 of "Sneaker" available in stock/);
+
+      await expect(
+        service.createOrder('buyer-1', {
+          ...baseDto,
+          items: [{ productId: 'prod-1', variantId: 'var-42', quantity: 0 }],
+        }),
+      ).rejects.toThrow(/whole number of at least 1/);
+    });
+  });
+
+  describe('unverified seller order hard-block', () => {
+    it('hard-blocks createOrder with ForbiddenException when seller verification is not complete', async () => {
+      const prismaMock = {
+        sellerProfile: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'seller-unverified',
+            user_id: 'seller-owner-2',
+            store_name: 'Preview Shop',
+            store_link: 'preview-shop',
+            payment_timing: 'BOTH',
+            is_seller_verified: false,
+            user: {
+              is_suspended: false,
+              disabled_at: null,
+              deletion_scheduled_for: null,
+            },
+          }),
+        },
+        product: { findMany: jest.fn() },
+      };
+
+      const service = new OrderService(
+        prismaMock as never,
+        {} as never,
+        {} as never,
+        {} as never,
+        {} as never,
+        {} as never,
+      );
+
+      await expect(
+        service.createOrder('buyer-9', {
+          storeLink: 'preview-shop',
+          items: [{ productId: 'prod-1', quantity: 1 }],
+          customerName: 'Kofi Mensah',
+          customerPhone: '+233240000001',
+          deliveryMethod: 'PICKUP',
+          deliveryLocation: 'Store Pickup',
+          paymentMethod: 'PAYSTACK',
+        }),
+      ).rejects.toThrow(
+        new ForbiddenException(
+          'This store has not completed seller verification and cannot receive orders yet.',
+        ),
+      );
+      expect(prismaMock.product.findMany).not.toHaveBeenCalled();
+    });
+
+    it('hard-blocks reinitializeOrderPayment when store is unverified', async () => {
+      const prismaMock = {
+        order: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'order-stale',
+            buyer_id: 'buyer-9',
+            status: 'AWAITING_PAYMENT',
+            total_amount: new Prisma.Decimal(150),
+            buyer: { email: 'kofi@example.com' },
+            items: [
+              {
+                product: {
+                  seller: {
+                    id: 'seller-unverified',
+                    is_seller_verified: false,
+                  },
+                },
+              },
+            ],
+          }),
+        },
+      };
+
+      const service = new OrderService(
+        prismaMock as never,
+        {} as never,
+        {} as never,
+        {} as never,
+        {} as never,
+        {} as never,
+      );
+
+      await expect(
+        service.reinitializeOrderPayment('buyer-9', 'order-stale'),
+      ).rejects.toThrow(
+        new ForbiddenException(
+          'This store has not completed seller verification and cannot receive orders yet.',
+        ),
+      );
     });
   });
 });

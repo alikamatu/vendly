@@ -746,45 +746,209 @@ export class PaymentsService {
     return payout;
   }
 
-  async createSubaccount(sellerId: string) {
-    const seller = await this.paymentsRepository.getSellerProfile(sellerId);
+  async resolveBankAccount(bankCode: string, accountNumber: string) {
+    const cleanBank = (bankCode || '').trim().toUpperCase();
+    const cleanAcct = (accountNumber || '').replace(/[\s-]/g, '').trim();
 
-    if (!seller) {
-      this.logger.error(`Seller not found: ${sellerId}`);
-      return;
-    }
-
-    if (seller.paystack_subaccount_code) {
-      this.logger.log(
-        `Seller ${sellerId} already has a subaccount: ${seller.paystack_subaccount_code}`,
+    if (!cleanBank) {
+      throw new BadRequestException(
+        'Bank or Mobile Money provider code is required.',
       );
-      return;
     }
-
-    // Check for missing bank details
-    if (!seller.bank_code || !seller.account_number) {
-      const errorMsg = 'Missing bank details (bank_code or account_number)';
-      this.logger.warn(
-        `Cannot create subaccount for seller ${sellerId}: ${errorMsg}`,
+    if (!/^\d{9,16}$/.test(cleanAcct)) {
+      throw new BadRequestException(
+        'Account or Mobile Money number must contain 9 to 16 digits.',
       );
-      await this.handleSubaccountFailure(sellerId, errorMsg);
-      return;
     }
 
     try {
-      const payload = {
-        business_name: seller.store_name,
-        settlement_bank: seller.bank_code,
-        account_number: seller.account_number,
-        percentage_charge: this.platformFeePercent,
-        description: `Subaccount for ${seller.store_name}`,
+      const { data } = await firstValueFrom(
+        this.httpService.get('/bank/resolve', {
+          params: {
+            account_number: cleanAcct,
+            bank_code: cleanBank,
+          },
+        }),
+      );
+      if (data?.status === true && data?.data?.account_name) {
+        return {
+          verified: true,
+          account_name: String(data.data.account_name),
+          account_number: String(data.data.account_number || cleanAcct),
+          bank_code: cleanBank,
+        };
+      }
+      throw new BadRequestException(
+        data?.message || 'Could not resolve this account with Paystack.',
+      );
+    } catch (error: any) {
+      if (error instanceof BadRequestException) throw error;
+      const status = error?.response?.status;
+      const msg =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Unable to verify account with Paystack.';
+      if (status && status >= 400 && status < 500) {
+        throw new BadRequestException(msg);
+      }
+      this.logger.warn(
+        `Paystack account resolution unavailable (${cleanBank}): ${msg}`,
+      );
+      return {
+        verified: false,
+        account_name: null,
+        account_number: cleanAcct,
+        bank_code: cleanBank,
+        warning: msg,
       };
+    }
+  }
 
+  async createSubaccount(
+    sellerId: string,
+    opts?: { forceUpdate?: boolean; throwOnError?: boolean; actor?: Actor },
+  ): Promise<{
+    ok: boolean;
+    subaccount_code: string | null;
+    action: 'created' | 'updated' | 'existing' | 'failed';
+    error?: string;
+  }> {
+    const seller = await this.paymentsRepository.getSellerProfile(sellerId);
+
+    if (!seller) {
+      const msg = `Seller profile not found: ${sellerId}`;
+      this.logger.error(msg);
+      if (opts?.throwOnError) throw new NotFoundException(msg);
+      return { ok: false, subaccount_code: null, action: 'failed', error: msg };
+    }
+
+    if (seller.paystack_subaccount_code && !opts?.forceUpdate) {
+      this.logger.log(
+        `Seller ${sellerId} already has a subaccount: ${seller.paystack_subaccount_code}`,
+      );
+      return {
+        ok: true,
+        subaccount_code: seller.paystack_subaccount_code,
+        action: 'existing',
+      };
+    }
+
+    const cleanBank = (seller.bank_code || '').trim();
+    const cleanAcct = (seller.account_number || '')
+      .replace(/[\s-]/g, '')
+      .trim();
+
+    if (!cleanBank || !cleanAcct) {
+      const errorMsg = 'Missing payout details (bank_code or account_number)';
+      this.logger.warn(
+        `Cannot sync subaccount for seller ${sellerId}: ${errorMsg}`,
+      );
+      await this.handleSubaccountFailure(sellerId, errorMsg);
+      if (opts?.throwOnError) throw new BadRequestException(errorMsg);
+      return {
+        ok: false,
+        subaccount_code: null,
+        action: 'failed',
+        error: errorMsg,
+      };
+    }
+
+    if (!/^\d{9,16}$/.test(cleanAcct)) {
+      const errorMsg =
+        'Account / Mobile Money number must contain 9 to 16 digits with no letters.';
+      await this.handleSubaccountFailure(sellerId, errorMsg);
+      if (opts?.throwOnError) throw new BadRequestException(errorMsg);
+      return {
+        ok: false,
+        subaccount_code: null,
+        action: 'failed',
+        error: errorMsg,
+      };
+    }
+
+    const payload = {
+      business_name: seller.store_name,
+      settlement_bank: cleanBank,
+      account_number: cleanAcct,
+      percentage_charge: this.platformFeePercent,
+      description: `Subaccount for ${seller.store_name}`,
+    };
+
+    // If a subaccount already exists and forceUpdate is requested, update it in place on Paystack
+    if (seller.paystack_subaccount_code && opts?.forceUpdate) {
+      try {
+        await firstValueFrom(
+          this.httpService.put(
+            `/subaccount/${seller.paystack_subaccount_code}`,
+            payload,
+          ),
+        );
+        const retry =
+          await this.paymentsRepository.findPendingSubaccountRetry(sellerId);
+        if (retry) {
+          await this.paymentsRepository.updateSubaccountRetry(retry.id, {
+            status: 'COMPLETED',
+          });
+        }
+        this.auditLogs.record({
+          actorId: opts?.actor?.id,
+          actorRole: opts?.actor?.role,
+          action: 'subaccount.updated',
+          entityType: 'seller_profile',
+          entityId: sellerId,
+          after: {
+            paystack_subaccount_code: seller.paystack_subaccount_code,
+            bank_code: cleanBank,
+            account_last4: cleanAcct.slice(-4),
+          },
+          ip: opts?.actor?.ip,
+          userAgent: opts?.actor?.userAgent,
+        });
+        this.logger.log(
+          `Paystack subaccount updated for seller ${sellerId}: ${seller.paystack_subaccount_code}`,
+        );
+        return {
+          ok: true,
+          subaccount_code: seller.paystack_subaccount_code,
+          action: 'updated',
+        };
+      } catch (updateErr: any) {
+        const status = updateErr?.response?.status;
+        const msg =
+          updateErr?.response?.data?.message ||
+          updateErr?.message ||
+          'Update failed';
+        // If Paystack reports invalid bank/account (400/422), surface it instead of masking
+        if (status && status >= 400 && status < 500 && status !== 404) {
+          await this.handleSubaccountFailure(sellerId, msg);
+          if (opts?.throwOnError) {
+            throw new BadRequestException(
+              `Paystack rejected these payout details: ${msg}`,
+            );
+          }
+          return {
+            ok: false,
+            subaccount_code: null,
+            action: 'failed',
+            error: msg,
+          };
+        }
+        this.logger.warn(
+          `In-place Paystack subaccount update failed for ${sellerId} (${msg}); attempting fresh creation`,
+        );
+      }
+    }
+
+    try {
       const { data } = await firstValueFrom(
         this.httpService.post('/subaccount', payload),
       );
 
-      const subaccountCode = data.data.subaccount_code;
+      const subaccountCode = data?.data?.subaccount_code;
+      if (!subaccountCode) {
+        throw new Error('Paystack did not return a subaccount_code');
+      }
+
       await this.paymentsRepository.updateSellerSubaccount(
         sellerId,
         subaccountCode,
@@ -799,16 +963,53 @@ export class PaymentsService {
         });
       }
 
+      this.auditLogs.record({
+        actorId: opts?.actor?.id,
+        actorRole: opts?.actor?.role,
+        action: 'subaccount.created',
+        entityType: 'seller_profile',
+        entityId: sellerId,
+        after: {
+          paystack_subaccount_code: subaccountCode,
+          bank_code: cleanBank,
+          account_last4: cleanAcct.slice(-4),
+        },
+        ip: opts?.actor?.ip,
+        userAgent: opts?.actor?.userAgent,
+      });
+
       this.logger.log(
         `Paystack subaccount created for seller ${sellerId}: ${subaccountCode}`,
       );
-      return subaccountCode;
+      return {
+        ok: true,
+        subaccount_code: subaccountCode,
+        action: 'created',
+      };
     } catch (error: any) {
-      const errorMsg = error.response?.data?.message || error.message;
+      const status = error?.response?.status;
+      const errorMsg =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Paystack subaccount error';
       this.logger.error(
         `Failed to create Paystack subaccount for seller ${sellerId}: ${errorMsg}`,
       );
       await this.handleSubaccountFailure(sellerId, errorMsg);
+
+      // Surface Paystack 4xx validation errors when requested so onboarding/settings can fix typos immediately
+      if (opts?.throwOnError && status && status >= 400 && status < 500) {
+        throw new BadRequestException(
+          `Paystack could not verify your payout account: ${errorMsg}`,
+        );
+      }
+
+      return {
+        ok: false,
+        subaccount_code: null,
+        action: 'failed',
+        error: errorMsg,
+      };
     }
   }
 
@@ -920,6 +1121,17 @@ export class PaymentsService {
   async processManualPayout(id: string, actor?: Actor) {
     const payout = await this.paymentsRepository.getPayoutById(id);
     if (!payout) throw new NotFoundException('Payout not found');
+    const meta = ((payout as any).metadata || {}) as Record<string, any>;
+    if (meta.on_hold) {
+      throw new BadRequestException(
+        'This payout is currently on hold. Release the hold before processing.',
+      );
+    }
+    if (meta.cancelled) {
+      throw new BadRequestException(
+        'This payout was cancelled and cannot be processed.',
+      );
+    }
     if (
       (payout as any).status === 'SUCCESS' ||
       (payout as any).status === 'PROCESSING'
@@ -970,7 +1182,13 @@ export class PaymentsService {
     });
 
     let processed = 0;
+    let skippedOnHold = 0;
     for (const item of queue.items) {
+      const meta = ((item as any).metadata || {}) as Record<string, any>;
+      if (meta.on_hold || meta.cancelled) {
+        skippedOnHold++;
+        continue;
+      }
       try {
         await this.processManualPayout(item.id, actor);
         processed++;
@@ -988,11 +1206,334 @@ export class PaymentsService {
       action: 'payout.run_queue',
       entityType: 'payout',
       entityId: null,
-      metadata: { processed, ids: queue.items.map((i: any) => i.id) },
+      metadata: {
+        processed,
+        skippedOnHold,
+        ids: queue.items.map((i: any) => i.id),
+      },
       ip: actor?.ip,
       userAgent: actor?.userAgent,
     });
-    return { processed };
+    return { processed, skippedOnHold };
+  }
+
+  async holdPayout(id: string, reason: string, actor?: Actor) {
+    const payout = await this.paymentsRepository.getPayoutById(id);
+    if (!payout) throw new NotFoundException('Payout not found');
+    if (payout.status === 'SUCCESS') {
+      throw new BadRequestException(
+        'Completed payouts cannot be placed on hold.',
+      );
+    }
+    const cleanReason =
+      (reason || '').trim() || 'Placed on administrative hold';
+    const nextMeta = {
+      ...(((payout as any).metadata || {}) as Record<string, any>),
+      on_hold: true,
+      hold_reason: cleanReason,
+      held_at: new Date().toISOString(),
+      held_by: actor?.id || 'ADMIN',
+    };
+    const updated = await this.paymentsRepository.updatePayoutStatus(
+      id,
+      payout.status === 'FAILED' ? 'FAILED' : 'PENDING',
+      {
+        failure_reason: `ON HOLD: ${cleanReason}`,
+        metadata: nextMeta,
+      },
+    );
+    this.auditLogs.record({
+      actorId: actor?.id,
+      actorRole: actor?.role,
+      action: 'payout.hold',
+      entityType: 'payout',
+      entityId: id,
+      reason: cleanReason,
+      before: { status: payout.status, on_hold: false },
+      after: { status: updated.status, on_hold: true },
+      ip: actor?.ip,
+      userAgent: actor?.userAgent,
+    });
+    return updated;
+  }
+
+  async releasePayoutHold(id: string, actor?: Actor) {
+    const payout = await this.paymentsRepository.getPayoutById(id);
+    if (!payout) throw new NotFoundException('Payout not found');
+    const prevMeta = ((payout as any).metadata || {}) as Record<string, any>;
+    const nextMeta = {
+      ...prevMeta,
+      on_hold: false,
+      released_at: new Date().toISOString(),
+      released_by: actor?.id || 'ADMIN',
+    };
+    const updated = await this.paymentsRepository.updatePayoutStatus(
+      id,
+      payout.status === 'SUCCESS' ? 'SUCCESS' : 'PENDING',
+      {
+        failure_reason: null,
+        metadata: nextMeta,
+      },
+    );
+    this.auditLogs.record({
+      actorId: actor?.id,
+      actorRole: actor?.role,
+      action: 'payout.release_hold',
+      entityType: 'payout',
+      entityId: id,
+      before: { status: payout.status, on_hold: Boolean(prevMeta.on_hold) },
+      after: { status: updated.status, on_hold: false },
+      ip: actor?.ip,
+      userAgent: actor?.userAgent,
+    });
+    return updated;
+  }
+
+  async cancelPayout(id: string, reason: string, actor?: Actor) {
+    const payout = await this.paymentsRepository.getPayoutById(id);
+    if (!payout) throw new NotFoundException('Payout not found');
+    if (payout.status === 'SUCCESS') {
+      throw new BadRequestException('Completed payouts cannot be cancelled.');
+    }
+    const cleanReason = (reason || '').trim();
+    if (!cleanReason) {
+      throw new BadRequestException('A cancellation reason is required.');
+    }
+    const nextMeta = {
+      ...(((payout as any).metadata || {}) as Record<string, any>),
+      on_hold: false,
+      cancelled: true,
+      cancel_reason: cleanReason,
+      cancelled_at: new Date().toISOString(),
+      cancelled_by: actor?.id || 'ADMIN',
+    };
+    const updated = await this.paymentsRepository.updatePayoutStatus(
+      id,
+      'FAILED',
+      {
+        failure_reason: `CANCELLED: ${cleanReason}`,
+        metadata: nextMeta,
+      },
+    );
+    this.auditLogs.record({
+      actorId: actor?.id,
+      actorRole: actor?.role,
+      action: 'payout.cancel',
+      entityType: 'payout',
+      entityId: id,
+      reason: cleanReason,
+      before: { status: payout.status },
+      after: { status: 'FAILED', cancelled: true },
+      ip: actor?.ip,
+      userAgent: actor?.userAgent,
+    });
+    return updated;
+  }
+
+  async markPayoutSettledOffline(
+    id: string,
+    payload: { external_ref?: string; note?: string },
+    actor?: Actor,
+  ) {
+    const payout = await this.paymentsRepository.getPayoutById(id);
+    if (!payout) throw new NotFoundException('Payout not found');
+    if (payout.status === 'SUCCESS') {
+      throw new BadRequestException(
+        'This payout is already marked as settled.',
+      );
+    }
+    const ref = (payload?.external_ref || '').trim() || `OFFLINE_${Date.now()}`;
+    const nextMeta = {
+      ...(((payout as any).metadata || {}) as Record<string, any>),
+      on_hold: false,
+      settled_offline: true,
+      settled_offline_ref: ref,
+      settled_offline_note: (payload?.note || '').trim() || undefined,
+      settled_by: actor?.id || 'ADMIN',
+    };
+    await this.paymentsRepository.updatePayoutStatus(id, 'PROCESSING', {
+      provider_ref: ref,
+      failure_reason: null,
+      metadata: nextMeta,
+    });
+    const finalized = await this.finalizePayoutSuccess(id, {
+      provider_ref: ref,
+      processed_at: new Date(),
+    });
+    this.auditLogs.record({
+      actorId: actor?.id,
+      actorRole: actor?.role,
+      action: 'payout.mark_settled_offline',
+      entityType: 'payout',
+      entityId: id,
+      reason: payload?.note,
+      before: { status: payout.status },
+      after: { status: 'SUCCESS', provider_ref: ref },
+      ip: actor?.ip,
+      userAgent: actor?.userAgent,
+    });
+    return finalized;
+  }
+
+  async createManualAdminPayout(
+    input: {
+      seller_id: string;
+      amount: number;
+      reason: string;
+      execute_now?: boolean;
+    },
+    actor?: Actor,
+  ) {
+    const amount = Number(input.amount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new BadRequestException('Payout amount must be a positive number.');
+    }
+    const reason = (input.reason || '').trim();
+    if (!reason) {
+      throw new BadRequestException(
+        'Please provide a reason/note for this manual payout.',
+      );
+    }
+    const seller = await this.paymentsRepository.getSellerProfile(
+      input.seller_id,
+    );
+    if (!seller) {
+      throw new NotFoundException('Seller store not found.');
+    }
+    if (!seller.bank_code || !seller.account_number) {
+      throw new BadRequestException(
+        `${seller.store_name} does not have bank/MoMo payout details configured yet.`,
+      );
+    }
+
+    const reference = `MAN_PAY_${Date.now()}_${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+    const payout = await this.paymentsRepository.createPayout({
+      seller_id: seller.id,
+      reference,
+      amount: new Prisma.Decimal(amount.toFixed(2)),
+      mode: 'MANUAL',
+      status: 'PENDING',
+      metadata: {
+        created_by_admin: actor?.id || 'ADMIN',
+        admin_reason: reason,
+        ad_hoc: true,
+      },
+    });
+
+    this.auditLogs.record({
+      actorId: actor?.id,
+      actorRole: actor?.role,
+      action: 'payout.create_manual',
+      entityType: 'payout',
+      entityId: payout.id,
+      reason,
+      after: {
+        seller_id: seller.id,
+        store_name: seller.store_name,
+        amount: amount.toFixed(2),
+        reference,
+        execute_now: Boolean(input.execute_now),
+      },
+      ip: actor?.ip,
+      userAgent: actor?.userAgent,
+    });
+
+    if (input.execute_now) {
+      const execResult = await this.processManualPayout(payout.id, actor);
+      return { payout, execution: execResult };
+    }
+    return { payout };
+  }
+
+  async resendPayoutReceipt(id: string, actor?: Actor) {
+    const payout = await this.paymentsRepository.getPayoutById(id);
+    if (!payout) throw new NotFoundException('Payout not found');
+    if (payout.status !== 'SUCCESS') {
+      throw new BadRequestException(
+        'Receipts can only be resent for completed payouts.',
+      );
+    }
+    await this.sendPayoutReceipt(id, payout);
+    this.auditLogs.record({
+      actorId: actor?.id,
+      actorRole: actor?.role,
+      action: 'payout.resend_receipt',
+      entityType: 'payout',
+      entityId: id,
+      ip: actor?.ip,
+      userAgent: actor?.userAgent,
+    });
+    return {
+      success: true,
+      message: 'Payout receipt email re-sent to the seller.',
+    };
+  }
+
+  async listSubaccounts(params: {
+    search?: string;
+    status?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    return this.paymentsRepository.listSellerSubaccounts({
+      search: params.search,
+      status: params.status,
+      page: params.page || 1,
+      limit: params.limit || 50,
+    });
+  }
+
+  async retryAllFailedSubaccounts(actor?: Actor) {
+    const candidates = await this.paymentsRepository.findRetryableSubaccounts();
+    let synced = 0;
+    let failed = 0;
+    const errors: Array<{
+      seller_id: string;
+      store_name: string;
+      error: string;
+    }> = [];
+
+    for (const s of candidates) {
+      const res = await this.createSubaccount(s.id, {
+        forceUpdate: true,
+        throwOnError: false,
+        actor,
+      });
+      if (res.ok) {
+        synced++;
+      } else {
+        failed++;
+        errors.push({
+          seller_id: s.id,
+          store_name: s.store_name,
+          error: res.error || 'Unknown error',
+        });
+      }
+    }
+
+    return {
+      total: candidates.length,
+      synced,
+      failed,
+      errors,
+    };
+  }
+
+  async refundByTransactionId(
+    transactionId: string,
+    body: { amount?: number; reason?: string },
+    actor?: Actor,
+  ) {
+    const txn = await this.paymentsRepository.getTransactionById(transactionId);
+    if (!txn) {
+      throw new NotFoundException('Transaction not found.');
+    }
+    return this.refundTransaction({
+      orderId: txn.order_id,
+      amount: body?.amount,
+      reason: body?.reason || 'Refund initiated by Super Admin',
+      actor,
+    });
   }
 
   async finalizePayoutSuccess(
@@ -1516,5 +2057,510 @@ export class PaymentsService {
         .sendSellerOrderStatusNotification(email, statusData)
         .catch(() => {});
     }
+  }
+
+  /* ─── Super Admin Full Payment Control Suite ─────────────────────────── */
+
+  async getPaystackBalance() {
+    try {
+      const { data } = await firstValueFrom(this.httpService.get('/balance'));
+      const rawBalances: Array<{ currency: string; balance: number }> =
+        Array.isArray(data?.data) ? data.data : [];
+      const balances = rawBalances.map((b) => ({
+        currency: b.currency || 'GHS',
+        amount: Number((Number(b.balance || 0) / 100).toFixed(2)),
+      }));
+      const ghs = balances.find((b) => b.currency === 'GHS') || balances[0];
+      return {
+        live: true,
+        currency: ghs?.currency || 'GHS',
+        available: ghs?.amount ?? 0,
+        balances,
+        checked_at: new Date().toISOString(),
+      };
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Could not reach Paystack balance API';
+      this.logger.warn(`Paystack balance fetch unavailable: ${msg}`);
+      return {
+        live: false,
+        currency: 'GHS',
+        available: null,
+        balances: [],
+        error: msg,
+        checked_at: new Date().toISOString(),
+      };
+    }
+  }
+
+  async adminVerifyTransactionWithPaystack(
+    transactionId: string,
+    actor?: Actor,
+  ) {
+    const tx = await this.paymentsRepository.getTransactionById(transactionId);
+    if (!tx) throw new NotFoundException('Transaction not found');
+
+    const verification = await this.verifyTransaction(
+      tx.reference,
+      tx.provider,
+    );
+
+    this.auditLogs
+      .record({
+        actorId: actor?.id,
+        actorRole: actor?.role,
+        action: 'transaction.admin_verify_paystack',
+        entityType: 'transaction',
+        entityId: tx.id,
+        metadata: {
+          reference: tx.reference,
+          gateway_status: verification?.status,
+        },
+        ip: actor?.ip,
+        userAgent: actor?.userAgent,
+      })
+      .catch(() => {});
+
+    return {
+      success: true,
+      reference: tx.reference,
+      verification,
+    };
+  }
+
+  async adminReleaseEscrowForOrder(orderId: string, actor?: Actor) {
+    const order = await this.paymentsRepository.findOrderWithDetails(orderId);
+    if (!order) throw new NotFoundException('Order not found');
+    if (!order.transaction) {
+      throw new BadRequestException('Order has no payment transaction');
+    }
+    if (order.transaction.status !== 'SUCCESS') {
+      throw new BadRequestException(
+        `Cannot release escrow while transaction status is ${order.transaction.status}`,
+      );
+    }
+
+    await this.releaseEscrowForOrder(orderId);
+
+    if (['PAID', 'PROCESSING', 'SHIPPED', 'DELIVERED'].includes(order.status)) {
+      await this.paymentsRepository.updateOrderStatus(orderId, 'COMPLETED');
+    }
+
+    this.auditLogs
+      .record({
+        actorId: actor?.id,
+        actorRole: actor?.role,
+        action: 'escrow.admin_release',
+        entityType: 'order',
+        entityId: orderId,
+        before: { order_status: order.status },
+        after: { order_status: 'COMPLETED', escrow_released: true },
+        metadata: { transaction_id: order.transaction.id },
+        ip: actor?.ip,
+        userAgent: actor?.userAgent,
+      })
+      .catch(() => {});
+
+    return {
+      success: true,
+      message: 'Escrow released to seller balance and payout queued.',
+      order_id: orderId,
+    };
+  }
+
+  async listRefunds(params: {
+    status?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    return this.paymentsRepository.listRefunds({
+      status: params.status,
+      search: params.search,
+      page: Math.max(1, params.page || 1),
+      limit: Math.min(200, Math.max(1, params.limit || 50)),
+    });
+  }
+
+  async listVendorWallets(params: {
+    search?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    return this.paymentsRepository.listVendorWallets({
+      search: params.search,
+      page: Math.max(1, params.page || 1),
+      limit: Math.min(200, Math.max(1, params.limit || 50)),
+    });
+  }
+
+  async listLedgerEntries(params: {
+    sellerId?: string;
+    type?: string;
+    sourceType?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    return this.paymentsRepository.listLedgerEntries({
+      sellerId: params.sellerId,
+      type: params.type,
+      sourceType: params.sourceType,
+      search: params.search,
+      page: Math.max(1, params.page || 1),
+      limit: Math.min(200, Math.max(1, params.limit || 50)),
+    });
+  }
+
+  async adjustVendorWallet(
+    sellerId: string,
+    payload: {
+      type: 'CREDIT' | 'DEBIT';
+      bucket: 'available' | 'pending';
+      amount: number;
+      reason: string;
+    },
+    actor?: Actor,
+  ) {
+    const seller =
+      await this.paymentsRepository.findSellerByProfileId(sellerId);
+    if (!seller) throw new NotFoundException('Seller store not found');
+
+    const amt = Number(payload.amount);
+    if (!Number.isFinite(amt) || amt <= 0) {
+      throw new BadRequestException('Adjustment amount must be greater than 0');
+    }
+    const cleanReason = (payload.reason || '').trim();
+    if (!cleanReason) {
+      throw new BadRequestException(
+        'An audit reason is required for wallet adjustments',
+      );
+    }
+
+    const type = payload.type === 'DEBIT' ? 'DEBIT' : 'CREDIT';
+    const bucket = payload.bucket === 'pending' ? 'pending' : 'available';
+    const decAmt = new Prisma.Decimal(amt.toFixed(2));
+    const signedDelta = type === 'CREDIT' ? decAmt : decAmt.negated();
+    const ref = `ADJ_${Date.now()}_${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+
+    await this.paymentsRepository.createLedgerEntry({
+      seller_id: sellerId,
+      reference: ref,
+      type,
+      source_type: 'ADJUSTMENT',
+      amount: decAmt,
+      description: `Admin ${type.toLowerCase()} (${bucket}): ${cleanReason}`,
+      metadata: {
+        bucket,
+        reason: cleanReason,
+        actor_id: actor?.id,
+      },
+    });
+
+    const snapshot = await this.paymentsRepository.upsertVendorBalanceSnapshot({
+      sellerId,
+      ...(bucket === 'available'
+        ? { availableDelta: signedDelta }
+        : { pendingDelta: signedDelta }),
+      ...(type === 'CREDIT' ? { earnedDelta: decAmt } : {}),
+    });
+
+    this.auditLogs
+      .record({
+        actorId: actor?.id,
+        actorRole: actor?.role,
+        action: 'wallet.admin_adjust',
+        entityType: 'seller_wallet',
+        entityId: sellerId,
+        reason: cleanReason,
+        after: {
+          type,
+          bucket,
+          amount: amt,
+          reference: ref,
+          available_balance: Number(snapshot.available_balance),
+          pending_balance: Number(snapshot.pending_balance),
+        },
+        ip: actor?.ip,
+        userAgent: actor?.userAgent,
+      })
+      .catch(() => {});
+
+    if (seller.user_id) {
+      this.notifications
+        .create({
+          userId: seller.user_id,
+          type: 'SYSTEM' as any,
+          title: `Wallet ${type === 'CREDIT' ? 'credited' : 'adjusted'} by Admin`,
+          body: `Your ${bucket} balance was ${type === 'CREDIT' ? 'credited' : 'debited'} by GH₵ ${amt.toFixed(2)}. Reason: ${cleanReason}`,
+          link: '/dashboard/transactions',
+        })
+        .catch(() => {});
+    }
+
+    return {
+      success: true,
+      reference: ref,
+      snapshot: {
+        available_balance: Number(snapshot.available_balance),
+        pending_balance: Number(snapshot.pending_balance),
+        total_earned: Number(snapshot.total_earned),
+        total_withdrawn: Number(snapshot.total_withdrawn),
+      },
+    };
+  }
+
+  async releaseVendorPendingBalance(
+    sellerId: string,
+    payload: { amount?: number; reason?: string },
+    actor?: Actor,
+  ) {
+    const seller =
+      await this.paymentsRepository.findSellerByProfileId(sellerId);
+    if (!seller) throw new NotFoundException('Seller store not found');
+
+    const walletsRes = await this.paymentsRepository.listVendorWallets({
+      page: 1,
+      limit: 1,
+      search: seller.store_name,
+    });
+    const current = walletsRes.items.find((w) => w.seller_id === sellerId);
+    const pendingNow = current?.pending_balance ?? 0;
+
+    if (pendingNow <= 0) {
+      throw new BadRequestException(
+        'Seller has no pending escrow balance to release.',
+      );
+    }
+
+    const releaseAmt =
+      payload.amount && payload.amount > 0
+        ? Math.min(Number(payload.amount), pendingNow)
+        : pendingNow;
+
+    const decAmt = new Prisma.Decimal(releaseAmt.toFixed(2));
+    const cleanReason =
+      (payload.reason || '').trim() || 'Super Admin early escrow release';
+    const ref = `REL_${Date.now()}_${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+
+    await this.paymentsRepository.createLedgerEntry({
+      seller_id: sellerId,
+      reference: ref,
+      type: 'CREDIT',
+      source_type: 'ADJUSTMENT',
+      amount: decAmt,
+      description: `Pending escrow released to available: ${cleanReason}`,
+      metadata: { action: 'release_pending', reason: cleanReason },
+    });
+
+    const snapshot = await this.paymentsRepository.upsertVendorBalanceSnapshot({
+      sellerId,
+      pendingDelta: decAmt.negated(),
+      availableDelta: decAmt,
+    });
+
+    this.auditLogs
+      .record({
+        actorId: actor?.id,
+        actorRole: actor?.role,
+        action: 'wallet.admin_release_pending',
+        entityType: 'seller_wallet',
+        entityId: sellerId,
+        reason: cleanReason,
+        after: {
+          released_amount: releaseAmt,
+          available_balance: Number(snapshot.available_balance),
+          pending_balance: Number(snapshot.pending_balance),
+        },
+        ip: actor?.ip,
+        userAgent: actor?.userAgent,
+      })
+      .catch(() => {});
+
+    return {
+      success: true,
+      released_amount: releaseAmt,
+      snapshot: {
+        available_balance: Number(snapshot.available_balance),
+        pending_balance: Number(snapshot.pending_balance),
+      },
+    };
+  }
+
+  async adminOverrideSellerBankAndSync(
+    sellerId: string,
+    payload: {
+      bank_name?: string;
+      bank_code: string;
+      account_number: string;
+      reason?: string;
+    },
+    actor?: Actor,
+  ) {
+    const seller =
+      await this.paymentsRepository.findSellerByProfileId(sellerId);
+    if (!seller) throw new NotFoundException('Seller store not found');
+
+    const cleanBankCode = (payload.bank_code || '').trim();
+    const cleanAccount = (payload.account_number || '')
+      .replace(/[\s-]/g, '')
+      .trim();
+    const cleanBankName = (payload.bank_name || '').trim() || cleanBankCode;
+
+    if (!cleanBankCode || !/^\d{9,16}$/.test(cleanAccount)) {
+      throw new BadRequestException(
+        'Valid bank/provider code and 9–16 digit account/MoMo number are required.',
+      );
+    }
+
+    const prevBank = {
+      bank_name: seller.bank_name,
+      bank_code: seller.bank_code,
+      account_number: seller.account_number,
+    };
+
+    await this.paymentsRepository.updateSellerBankDetails(sellerId, {
+      bank_name: cleanBankName,
+      bank_code: cleanBankCode,
+      account_number: cleanAccount,
+    });
+
+    let subResult: {
+      ok: boolean;
+      subaccount_code: string | null;
+      action: string;
+      error?: string;
+    };
+    try {
+      subResult = await this.createSubaccount(sellerId, {
+        forceUpdate: true,
+        throwOnError: true,
+        actor,
+      });
+    } catch (err) {
+      await this.paymentsRepository.updateSellerBankDetails(sellerId, prevBank);
+      throw err;
+    }
+
+    const reason =
+      (payload.reason || '').trim() || 'Super Admin payout account update';
+    this.auditLogs
+      .record({
+        actorId: actor?.id,
+        actorRole: actor?.role,
+        action: 'subaccount.admin_bank_override',
+        entityType: 'seller_profile',
+        entityId: sellerId,
+        reason,
+        before: {
+          bank_code: prevBank.bank_code,
+          account_tail: prevBank.account_number?.slice(-4) || null,
+        },
+        after: {
+          bank_code: cleanBankCode,
+          account_tail: cleanAccount.slice(-4),
+          subaccount_code: subResult.subaccount_code,
+        },
+        ip: actor?.ip,
+        userAgent: actor?.userAgent,
+      })
+      .catch(() => {});
+
+    if (seller.user?.email) {
+      const mask = (a: string | null | undefined) =>
+        !a ? 'Not set' : `****${a.slice(-4)}`;
+      this.emailService
+        .sendPayoutDetailsChangedAlertEmail({
+          to: seller.user.email,
+          fullName: seller.user.full_name || 'Seller',
+          storeName: seller.store_name,
+          bankName: cleanBankName,
+          maskedAccount: mask(cleanAccount),
+          subaccountSynced: subResult.ok,
+        })
+        .catch(() => {});
+    }
+
+    return {
+      success: true,
+      bank_name: cleanBankName,
+      bank_code: cleanBankCode,
+      account_number: cleanAccount,
+      subaccount_code: subResult.subaccount_code,
+      subaccount_status: subResult.ok ? 'ACTIVE' : 'PENDING_RETRY',
+    };
+  }
+
+  async reconcilePromotionPayment(
+    id: string,
+    status: 'SUCCESS' | 'FAILED',
+    reason: string | undefined,
+    actor?: Actor,
+  ) {
+    const promo = await this.paymentsRepository.getPromotionPaymentById(id);
+    if (!promo) throw new NotFoundException('Promotion payment not found');
+
+    if (status !== 'SUCCESS' && status !== 'FAILED') {
+      throw new BadRequestException('Status must be SUCCESS or FAILED');
+    }
+
+    const updated = await this.paymentsRepository.updatePromotionPaymentById(
+      id,
+      status,
+      `ADMIN_RECON_${Date.now()}`,
+    );
+
+    if (status === 'SUCCESS') {
+      if (promo.category === 'BOOST' && promo.product_id) {
+        await this.paymentsRepository
+          .featureProductById(promo.product_id)
+          .catch(() => {});
+      } else if (promo.category === 'PLAN' && promo.seller?.user_id) {
+        await this.paymentsRepository
+          .upgradeUserToPro(promo.seller.user_id, 30)
+          .catch(() => {});
+      }
+    }
+
+    this.auditLogs
+      .record({
+        actorId: actor?.id,
+        actorRole: actor?.role,
+        action: 'promotion.admin_reconcile',
+        entityType: 'promotion_payment',
+        entityId: id,
+        reason: reason || `Admin reconciled promotion payment to ${status}`,
+        before: { status: promo.status },
+        after: { status },
+        metadata: { category: promo.category, product_id: promo.product_id },
+        ip: actor?.ip,
+        userAgent: actor?.userAgent,
+      })
+      .catch(() => {});
+
+    return {
+      success: true,
+      promotion: updated,
+      message:
+        status === 'SUCCESS'
+          ? 'Promotion payment confirmed and benefits activated.'
+          : 'Promotion payment marked as FAILED.',
+    };
+  }
+
+  async listPaymentLogs(params: {
+    event?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    return this.paymentsRepository.listPaymentLogs({
+      event: params.event,
+      search: params.search,
+      page: Math.max(1, params.page || 1),
+      limit: Math.min(200, Math.max(1, params.limit || 50)),
+    });
   }
 }

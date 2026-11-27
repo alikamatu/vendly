@@ -5,10 +5,45 @@
 
 export type UserRole = 'USER' | 'SELLER' | 'ADMIN';
 
+export interface VendorBalanceInfo {
+  available_balance: number;
+  pending_balance: number;
+  total_earned: number;
+  total_withdrawn: number;
+}
+
+export interface SellerProfileSummary {
+  id: string;
+  user_id?: string;
+  store_name: string;
+  store_link: string;
+  logo_url?: string | null;
+  bio?: string | null;
+  whatsapp_number?: string | null;
+  location?: string | null;
+  area?: string | null;
+  business_hours?: string | null;
+  delivery_policies?: string | null;
+  bank_name?: string | null;
+  bank_code?: string | null;
+  account_number?: string | null;
+  paystack_subaccount_code?: string | null;
+  onboarding_completed?: boolean;
+  payment_timing?: string | null;
+  service_area?: string | null;
+  avg_delivery_time?: string | null;
+  rating_avg?: number;
+  rating_count?: number;
+  products_count?: number;
+  reports_count?: number;
+  balance_snapshot?: VendorBalanceInfo | null;
+}
+
 export interface VendlyUser {
   id: string;
   full_name: string;
   email: string;
+  school?: string | null;
   role: UserRole;
   is_verified: boolean;
   is_suspended: boolean;
@@ -18,8 +53,10 @@ export interface VendlyUser {
   warnings: number;
   created_at: string;
   updated_at?: string;
+  verification_doc?: string | null;
   totp_enabled?: boolean;
   totp_method?: 'TOTP' | 'SMS';
+  totp_verified_at?: string | null;
   phone_e164?: string | null;
   phone_verified_at?: string | null;
   oauth_provider?: string | null;
@@ -27,6 +64,123 @@ export interface VendlyUser {
   is_pro?: boolean;
   pro_expires_at?: string | null;
   terms_accepted_at?: string | null;
+  orders_count?: number;
+  reviews_count?: number;
+  reports_filed_count?: number;
+  seller_profile?: SellerProfileSummary | null;
+  addresses?: Array<{
+    id: string;
+    label?: string | null;
+    name: string;
+    phone: string;
+    street: string;
+    city: string;
+    region?: string | null;
+    is_default: boolean;
+  }>;
+  admin_approvals?: Array<{
+    id: string;
+    status: VerificationStatus;
+    type: VerificationType;
+    verification_data?: string | null;
+    reviewed_at?: string | null;
+    created_at: string;
+  }>;
+}
+
+export interface AdminUsersSummary {
+  totalUsers: number;
+  buyers: number;
+  sellers: number;
+  admins: number;
+  verified: number;
+  suspended: number;
+  disabled: number;
+  deleting: number;
+  totalStores: number;
+}
+
+export interface AdminStoreSummary {
+  id: string;
+  user_id: string;
+  store_name: string;
+  store_link: string;
+  logo_url?: string | null;
+  bio?: string | null;
+  whatsapp_number?: string | null;
+  location?: string | null;
+  area?: string | null;
+  bank_name?: string | null;
+  account_number?: string | null;
+  paystack_subaccount_code?: string | null;
+  onboarding_completed: boolean;
+  payment_timing?: string | null;
+  service_area?: string | null;
+  avg_delivery_time?: string | null;
+  rating_avg: number;
+  rating_count: number;
+  created_at: string;
+  products_count: number;
+  payouts_count: number;
+  reviews_count: number;
+  reports_count: number;
+  balance_snapshot?: VendorBalanceInfo | null;
+  owner: VendlyUser;
+}
+
+export interface AdminUserDetail {
+  user: VendlyUser;
+  stats: {
+    productCount: number;
+    totalOrders: number;
+    totalSales: number;
+    recentOrders: Array<{
+      id: string;
+      product: string;
+      amount: number;
+      date: string;
+      status: string;
+    }>;
+  } | null;
+  buyerStats: {
+    totalOrders: number;
+    totalSpent: number;
+    recentOrders: Array<{
+      id: string;
+      total_amount: number;
+      status: string;
+      delivery_method?: string | null;
+      created_at: string;
+      items_summary: string;
+    }>;
+  };
+  products: Array<{
+    id: string;
+    title: string;
+    price: number;
+    currency: string;
+    status: string;
+    quantity_available: number;
+    category: string;
+    views_count: number;
+    image_urls: string[];
+    created_at: string;
+  }>;
+  reportsFiled: Array<{
+    id: string;
+    target_type: string;
+    reason: string;
+    status: string;
+    created_at: string;
+  }>;
+  reportsReceived: Array<{
+    id: string;
+    target_type: string;
+    reason: string;
+    status: string;
+    resolution_action?: string | null;
+    created_at: string;
+  }>;
 }
 
 export type VerificationType = 'URL' | 'FILES' | 'CONTACT';
@@ -129,11 +283,22 @@ export interface OrderStatsSummary {
 
 export type ProductStatus = 'draft' | 'active' | 'archived' | 'rejected';
 
+export interface AdminProductSummary {
+  total: number;
+  active: number;
+  draft: number;
+  archived: number;
+  rejected: number;
+  featured: number;
+  out_of_stock: number;
+  low_stock: number;
+}
+
 export interface VendlyProduct {
   id: string;
   seller_id: string;
   title: string;
-  description?: string;
+  description?: string | null;
   price: string | number;
   original_price?: string | number | null;
   currency: string;
@@ -143,6 +308,7 @@ export interface VendlyProduct {
   is_featured: boolean;
   views_count: number;
   category: string;
+  brand?: string | null;
   attributes?: Record<string, unknown>;
   image_urls: string[];
   video_url?: string | null;
@@ -154,6 +320,19 @@ export interface VendlyProduct {
     store_name: string;
     store_link: string;
     logo_url?: string | null;
+    is_seller_verified?: boolean;
+    user?: {
+      id: string;
+      full_name: string;
+      email: string;
+    } | null;
+  };
+  _count?: {
+    order_items: number;
+    reviews: number;
+    reports: number;
+    favorited_by: number;
+    variants: number;
   };
 }
 
@@ -162,9 +341,39 @@ export interface ProductListParams {
   category?: string;
   seller_id?: string;
   search?: string;
+  stock?: 'in_stock' | 'out_of_stock' | 'low_stock' | '';
+  sort?:
+    | 'newest'
+    | 'oldest'
+    | 'price_asc'
+    | 'price_desc'
+    | 'views_desc'
+    | 'stock_asc'
+    | 'title_asc';
   is_featured?: boolean;
+  min_discount?: number;
   page?: number;
   limit?: number;
+}
+
+export interface AdminProductWriteInput {
+  seller_id?: string;
+  title?: string;
+  description?: string | null;
+  price?: string;
+  original_price?: string | null;
+  currency?: string;
+  condition?: string;
+  quantity_available?: number;
+  status?: ProductStatus | string;
+  is_featured?: boolean;
+  category?: string;
+  brand?: string | null;
+  attributes?: Record<string, unknown>;
+  image_urls?: string[];
+  video_url?: string | null;
+  tags?: string[];
+  reason?: string;
 }
 
 export interface CategoryField {
@@ -367,6 +576,7 @@ export interface VendlyPayout {
   status: PayoutStatus;
   mode?: PayoutMode;
   failure_reason?: string;
+  metadata?: Record<string, any> | null;
   processed_at?: string;
   created_at: string;
   seller?: {

@@ -4,11 +4,12 @@ import Link from 'next/link';
 import FaqJsonLd from '@/components/seo/FaqJsonLd';
 import BreadcrumbJsonLd from '@/components/seo/BreadcrumbJsonLd';
 import { buildMetadata } from '@/lib/seo';
+import { SUPPORT_CONTACT } from '@/lib/contact';
 
 export const metadata: Metadata = buildMetadata({
   title: '3-Day Buyer Protection, Returns & Refunds Policy',
   description:
-    'Official 3-Day Buyer Protection policy, return eligibility, replacement protocols, escrow refund timelines, and dispute mediation on Verndly Ghana.',
+    'Official 3-Day Buyer Protection policy for Verndly Ghana: when you can request a return, how escrow refunds work, and how to escalate an unresolved claim to support.',
   path: '/returns',
 });
 
@@ -26,12 +27,12 @@ const RETURNS_FAQ = [
   {
     question: 'How quickly are approved refunds processed?',
     answer:
-      'Approved refunds are executed directly via Paystack gateway reversal to the original Mobile Money or card account within 24–48 hours of merchant inspection.',
+      'When a seller or Verndly support approves a refund, Paystack sends it back to the Mobile Money wallet or card used at checkout.',
   },
   {
     question: 'What happens if a seller rejects my return claim?',
     answer:
-      'Buyers can escalate rejected claims directly to Verndly Trust & Safety Support for independent administrative arbitration and binding dispute resolution.',
+      'Open the order and escalate the claim to Verndly support. Support reviews what you submitted and can issue a Paystack refund if the claim is valid.',
   },
 ];
 
@@ -47,8 +48,8 @@ export default function ReturnsPage() {
       <FaqJsonLd items={RETURNS_FAQ} />
       <LegalPage
         eyebrow="Buyer Protection & Peace of Mind"
-        title="Returns, Replacements & Refunds Policy"
-        description="Every purchase on Verndly is backed by our escrow-protected 3-Day Buyer Protection Guarantee. If your order arrives damaged, defective, or materially different from the seller's listing, this policy ensures a prompt, fair replacement or full refund."
+        title="Returns & Refunds Policy"
+        description="Every purchase on Verndly is backed by escrow-protected 3-Day Buyer Protection. If your order arrives damaged, defective, or materially different from the seller's listing, request a return from the order and receive a Paystack refund when the claim is approved."
         updatedAt="November 2026"
         sections={[
           {
@@ -63,11 +64,11 @@ export default function ReturnsPage() {
                   have had a full opportunity to inspect your purchase.
                 </p>
                 <div className="bg-surface border-border/70 text-muted-foreground rounded-xl border p-4 text-xs leading-relaxed">
-                  <strong>The Verndly Guarantee:</strong> You are entitled to a full 100% refund or
-                  free replacement if: (a) your order never arrives; (b) the item arrives broken or
-                  damaged in transit; (c) the item has manufacturing defects or does not function as
-                  described; or (d) the merchandise delivered is materially different in model,
-                  brand, color, or condition from the seller&apos;s product listing.
+                  <strong>The Verndly Guarantee:</strong> You can request a full refund if: (a) your
+                  order never arrives; (b) the item arrives broken or damaged in transit; (c) the
+                  item has manufacturing defects or does not function as described; or (d) the
+                  merchandise delivered is materially different in model, brand, color, or condition
+                  from the seller&apos;s product listing.
                 </div>
               </>
             ),
@@ -78,9 +79,8 @@ export default function ReturnsPage() {
             body: (
               <>
                 <p>
-                  The return inspection window spans <strong>three (3) calendar days</strong>,
-                  commencing immediately upon the verified delivery timestamp recorded by our
-                  courier partner or your delivery confirmation notice.
+                  The return window spans <strong>three (3) calendar days</strong>, starting from
+                  the delivery time recorded on your order.
                 </p>
                 <p>
                   To qualify for a valid return and refund, items must satisfy the following
@@ -211,78 +211,73 @@ export default function ReturnsPage() {
                     Incorrect Item).
                   </li>
                   <li>
-                    <strong>Upload Verification Evidence:</strong> Provide a clear written
-                    description of the issue alongside at least two (2) clear photographs or a short
-                    video demonstrating the defect, transit damage, or serial number. Clear
-                    photographic proof accelerates approval.
+                    <strong>Describe the issue:</strong> Choose a reason and write what went wrong.
+                    The form requires a description of at least 20 characters.
                   </li>
                   <li>
-                    <strong>Seller Review Window (48 Hours):</strong> The merchant is notified
-                    immediately and has forty-eight (48) hours to review your evidence and approve
-                    the return or offer a free replacement.
+                    <strong>Seller review:</strong> The seller is notified and asked to respond
+                    within 48 hours. They can approve a Paystack refund or reject the claim. That
+                    timer is not automatic — if it stays unresolved, escalate from the order.
                   </li>
                   <li>
-                    <strong>Courier Handover:</strong> Upon return authorization, a return waybill
-                    is issued. Hand over the securely packaged item to our designated courier or
-                    return it to the merchant&apos;s authorized collection point.
+                    <strong>Hand the item back:</strong> If the seller asks for the item to be
+                    returned, arrange that handover with them. Verndly does not issue return
+                    waybills, book a courier, or run a pickup service.
                   </li>
                 </ol>
               </>
             ),
           },
           {
-            title: 'Return Shipping Logistics & Cost Responsibility',
-            badge: 'Logistics & Fees',
+            title: 'Returning the Item',
+            badge: 'No Verndly Pickup',
             body: (
               <>
-                <p>Financial responsibility for return shipping costs is governed by fault:</p>
+                <p>
+                  Verndly does not run a fulfillment center, inspection center, or return courier.
+                  There is no platform waybill and no free pickup arranged by Verndly.
+                </p>
                 <ul className="list-disc space-y-2 pl-5 text-xs md:text-sm">
                   <li>
-                    <strong>Seller-Covered Return Courier (100% Free for Buyer):</strong> When a
-                    return is initiated due to merchant error, defective merchandise, transit
-                    damage, or an incorrect item dispatched, the seller is legally responsible for
-                    100% of the return courier fees. Verndly covers or coordinates courier pickup at
-                    zero cost to the buyer.
+                    <strong>Seller error:</strong> For a damaged, defective, or wrong item, ask the
+                    seller how they want it sent back. Any courier cost is between you and the
+                    seller. Verndly does not book or pay for that pickup.
                   </li>
                   <li>
-                    <strong>Buyer-Covered Return Courier:</strong> If an individual merchant
-                    voluntarily agrees to accept a return or size exchange due to buyer change of
-                    mind (where the original item was delivered fully intact and accurately
-                    described), the buyer covers the return courier transportation fee.
+                    <strong>Change of mind:</strong> A return because you changed your mind is only
+                    possible if that seller agrees. You arrange and pay for sending the item back.
                   </li>
                   <li>
-                    <strong>Packaging Obligations:</strong> Buyers must package returned goods with
-                    adequate padding and protective cardboard. If an item is returned damaged due to
-                    reckless or unpadded packaging, deductions may apply to the final refund value.
+                    <strong>Packaging:</strong> Pack the item so it arrives back in the condition
+                    you received it, with original tags, accessories, and packaging where you still
+                    have them.
                   </li>
                 </ul>
               </>
             ),
           },
           {
-            title: 'Merchant Inspection & Quality Assurance Protocol',
-            badge: 'Inspection SLA',
+            title: 'After the Item Is Back with the Seller',
+            badge: 'Seller Review',
             body: (
               <>
                 <p>
-                  Once the returned item is delivered back to the merchant or Verndly fulfillment
-                  inspection center:
+                  Returned goods go back to the selling merchant. Verndly does not receive or
+                  inspect parcels at a warehouse.
                 </p>
                 <ul className="list-disc space-y-1.5 pl-5 text-xs md:text-sm">
                   <li>
-                    The merchant has <strong>forty-eight (48) hours</strong> to physically inspect
-                    the returned parcel, verify the reported defect, and confirm that all original
-                    accessories and serial numbers match the initial dispatch record.
+                    The seller confirms they have the item from the order page and can issue the
+                    Paystack refund.
                   </li>
                   <li>
-                    If the merchant approves the return, or fails to act within the 48-hour
-                    inspection SLA, the escrow system automatically triggers immediate refund
-                    execution.
+                    Missing the 48-hour response window does not refund you automatically. Escrow
+                    stays held while a return request is open, and a refund happens only when the
+                    seller or Verndly support approves it.
                   </li>
                   <li>
-                    If the merchant disputes the condition of the return (e.g. claims the buyer
-                    returned a different or used item), the claim is escalated to Verndly Trust
-                    &amp; Safety for binding arbitration.
+                    If the seller rejects the claim or disagrees about the item&apos;s condition,
+                    escalate that order to Verndly support.
                   </li>
                 </ul>
               </>
@@ -294,8 +289,8 @@ export default function ReturnsPage() {
             body: (
               <>
                 <p>
-                  Approved refunds are executed immediately through Paystack and credited directly
-                  back to the original payment method used during initial checkout:
+                  Approved refunds are sent through Paystack to the Mobile Money wallet or card used
+                  at checkout:
                 </p>
                 <div className="space-y-3 text-xs md:text-sm">
                   <div className="bg-surface border-border/70 flex items-start justify-between gap-4 rounded-xl border p-4">
@@ -328,40 +323,31 @@ export default function ReturnsPage() {
                   </div>
                 </div>
                 <p className="text-muted-foreground text-xs">
-                  <strong>Full Shipping Refund:</strong> When an entire order is returned due to
-                  defect, transit damage, or merchant fulfillment error, your refund includes 100%
-                  of the initial delivery fee paid at checkout.
+                  An approved refund is the amount paid on that order through Paystack, unless
+                  support records a different amount.
                 </p>
               </>
             ),
           },
           {
-            title: 'Dispute Escalation & Verndly Escrow Mediation',
-            badge: 'Impartial Arbitration',
+            title: 'Escalating an Unresolved Claim',
+            badge: 'Support Review',
             body: (
               <>
                 <p>
-                  In the rare event that a Buyer and Seller cannot reach an amicable resolution
-                  within forty-eight (48) hours of a return inquiry, either party may escalate the
-                  case to Verndly Trust &amp; Safety by clicking{' '}
-                  <strong>&quot;Escalate to Verndly Support&quot;</strong>.
-                </p>
-                <p>
-                  <strong>The Mediation Process:</strong>
+                  If the seller rejects your return or leaves it unresolved, open the order and
+                  escalate it to Verndly support. Only the buyer can start that escalation, and it
+                  marks the return as escalated and notifies the seller.
                 </p>
                 <ul className="list-disc space-y-1.5 pl-5 text-xs md:text-sm">
+                  <li>Support reviews the reason and description already on the return request.</li>
                   <li>
-                    Both parties are requested to submit supporting documentation (photos, courier
-                    waybills, chat transcripts).
+                    This is a support review, not a separate inspection center or a formal
+                    arbitration hearing.
                   </li>
                   <li>
-                    Verndly compliance officers review the evidence impartially under these
-                    published standards.
-                  </li>
-                  <li>
-                    Verndly issues a binding administrative determination. If the buyer&apos;s claim
-                    is verified, Verndly will unilaterally disburse a 100% escrow refund directly to
-                    the buyer, irrespective of merchant resistance.
+                    If the claim is valid, support can issue the Paystack refund from the admin
+                    tools. A refund is not automatic.
                   </li>
                 </ul>
               </>
@@ -393,13 +379,12 @@ export default function ReturnsPage() {
                 <div className="bg-surface border-border/70 text-muted-foreground rounded-xl border p-4 text-xs">
                   <strong>Direct Dispute Support:</strong>
                   <br />
-                  Have questions or need assistance with an ongoing return? Contact our Buyer
-                  Protection Desk at{' '}
-                  <a href="mailto:disputes@verndly.com" className="text-primary underline">
-                    disputes@verndly.com
+                  Have questions or need assistance with an ongoing return? Email{' '}
+                  <a href={SUPPORT_CONTACT.emailHref} className="text-primary underline">
+                    {SUPPORT_CONTACT.email}
                   </a>{' '}
-                  or message our official support WhatsApp at +233 53 406 5652 quoting your Order
-                  Number.
+                  or message support on WhatsApp at {SUPPORT_CONTACT.phoneDisplay} and include your
+                  order number.
                 </div>
               </>
             ),

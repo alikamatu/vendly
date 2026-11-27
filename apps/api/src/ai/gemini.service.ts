@@ -10,6 +10,8 @@ import {
   AiBulkPhotoAnalysisResult,
   AiBuyerSearchPlan,
   AiBuyerSearchSort,
+  AiCardCopyInput,
+  AiCardCopyResult,
   AiConfidence,
   AiDeliveryTime,
   AiDraftStorefrontInput,
@@ -28,6 +30,10 @@ import {
   AiWhatsAppCatalogItem,
   AiWhatsAppScreenshotsResult,
 } from './gemini.types';
+import {
+  ALL_SUBCATEGORY_NAMES,
+  normalizeProductAttributes,
+} from '../product/category-taxonomy';
 
 const DEFAULT_GEMINI_MODEL = 'gemini-3.6-flash';
 const FALLBACK_GEMINI_MODELS = [
@@ -272,13 +278,35 @@ export function normalizeBulkAnalysis(
 
     if (validIndices.length === 0) continue;
 
+    const title = cleanText(item.title, 120);
+    const description = cleanText(item.description, 1000);
+    const category = resolveCategory(item.category, availableCategories);
+    const tags = normalizeTags(item.tags);
+    const attributes = normalizeProductAttributes(
+      {
+        subcategory: item.subcategory,
+        color: item.color,
+        material: item.material,
+        size: item.size,
+        warranty: item.warranty,
+        dimensions: item.dimensions,
+        weight: item.weight,
+      },
+      category,
+      { title, description, tags },
+    );
+
     const baseDraft = {
-      title: cleanText(item.title, 120),
-      description: cleanText(item.description, 1000),
-      category: resolveCategory(item.category, availableCategories),
+      title,
+      description,
+      category,
+      ...(attributes.subcategory
+        ? { subcategory: attributes.subcategory }
+        : {}),
       condition: normalizeCondition(item.condition),
       brand: cleanText(item.brand, 60),
-      tags: normalizeTags(item.tags),
+      tags,
+      ...(Object.keys(attributes).length > 0 ? { attributes } : {}),
       suggested_price_ghs: normalizePrice(item.suggested_price_ghs),
       confidence: normalizeConfidence(item.confidence),
     };
@@ -457,13 +485,33 @@ export function normalizeSingleAnalysis(
 ): AiSingleProductDraft {
   const item =
     raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
+  const title = cleanText(item.title, 120);
+  const description = cleanText(item.description, 1000);
+  const category = resolveCategory(item.category, availableCategories);
+  const tags = normalizeTags(item.tags);
+  const attributes = normalizeProductAttributes(
+    {
+      subcategory: item.subcategory,
+      color: item.color,
+      material: item.material,
+      size: item.size,
+      warranty: item.warranty,
+      dimensions: item.dimensions,
+      weight: item.weight,
+    },
+    category,
+    { title, description, tags },
+  );
+
   return {
-    title: cleanText(item.title, 120),
-    description: cleanText(item.description, 1000),
-    category: resolveCategory(item.category, availableCategories),
+    title,
+    description,
+    category,
+    ...(attributes.subcategory ? { subcategory: attributes.subcategory } : {}),
     condition: normalizeCondition(item.condition),
     brand: cleanText(item.brand, 60),
-    tags: normalizeTags(item.tags),
+    tags,
+    ...(Object.keys(attributes).length > 0 ? { attributes } : {}),
     suggested_price_ghs: normalizePrice(item.suggested_price_ghs),
     confidence: normalizeConfidence(item.confidence),
   };
@@ -769,9 +817,11 @@ export class GeminiService {
       '4. Write concise, natural product titles (3–9 words, Title Case, no spam, no ALL CAPS, no "best/cheap/promo").',
       '5. Write factual descriptions of 2–3 sentences (35–260 characters) describing ONLY what is visibly observable: item type, color, material/finish, design details, and apparent state. Never invent technical specifications (like RAM, storage, battery size, or warranty) unless clearly printed in the image.',
       `6. Pick the single best matching category from this exact list: ${categories.join(', ')}.`,
-      '7. Set brand ONLY if a brand name or logo is clearly readable/visible on the product or box. Otherwise return an empty string "". NEVER guess restricted brands (Apple, Nike, Adidas, Samsung, etc.).',
-      '8. Provide 3 to 6 lowercase search tags relevant to shoppers in Ghana.',
-      '9. Provide suggested_price_ghs as a rough, realistic Ghana Cedis (GHS) integer estimate ONLY if the product type is clear; otherwise set it to null.',
+      `7. Pick the closest subcategory from this list when applicable (or "" if none fits): ${ALL_SUBCATEGORY_NAMES.join(', ')}.`,
+      '8. Set brand ONLY if a brand name or logo is clearly readable/visible on the product or box. Otherwise return an empty string "". NEVER guess restricted brands (Apple, Nike, Adidas, Samsung, etc.).',
+      '9. Provide 3 to 6 lowercase search tags relevant to shoppers in Ghana.',
+      '10. Extract visible color, material, and size/capacity if clearly observable (otherwise ""). Populate dimensions (length, width, height, unit) or weight (value, unit) ONLY if printed on packaging/labels; never invent measurements.',
+      '11. Provide suggested_price_ghs as a rough, realistic Ghana Cedis (GHS) integer estimate ONLY if the product type is clear; otherwise set it to null.',
     ].join('\n');
 
     const parts: GeminiPart[] = [
@@ -816,11 +866,33 @@ export class GeminiService {
               title: { type: 'STRING' },
               description: { type: 'STRING' },
               category: { type: 'STRING' },
+              subcategory: { type: 'STRING' },
               condition: {
                 type: 'STRING',
                 enum: ['new', 'used', 'refurbished'],
               },
               brand: { type: 'STRING' },
+              color: { type: 'STRING' },
+              material: { type: 'STRING' },
+              size: { type: 'STRING' },
+              dimensions: {
+                type: 'OBJECT',
+                nullable: true,
+                properties: {
+                  length: { type: 'NUMBER', nullable: true },
+                  width: { type: 'NUMBER', nullable: true },
+                  height: { type: 'NUMBER', nullable: true },
+                  unit: { type: 'STRING' },
+                },
+              },
+              weight: {
+                type: 'OBJECT',
+                nullable: true,
+                properties: {
+                  value: { type: 'NUMBER', nullable: true },
+                  unit: { type: 'STRING' },
+                },
+              },
               tags: {
                 type: 'ARRAY',
                 items: { type: 'STRING' },
@@ -870,9 +942,11 @@ export class GeminiService {
       '1. Write a concise, natural product title (3–9 words, Title Case, no spam, no ALL CAPS).',
       '2. Write a factual description of 2–3 sentences (35–260 characters) describing ONLY visible attributes (type, color, material, visible features). Never fabricate specs not visible in the photo.',
       `3. Pick the single best matching category from this exact list: ${categories.join(', ')}.`,
-      '4. Set brand ONLY if clearly printed/visible on the item or packaging; otherwise return "". Never guess trademarks.',
-      '5. Provide 3 to 6 clean lowercase search tags.',
-      '6. Provide suggested_price_ghs as a conservative rough Ghana Cedis (GHS) integer estimate if clear, otherwise null.',
+      `4. Pick the closest subcategory from this list when applicable (or ""): ${ALL_SUBCATEGORY_NAMES.join(', ')}.`,
+      '5. Set brand ONLY if clearly printed/visible on the item or packaging; otherwise return "". Never guess trademarks.',
+      '6. Provide 3 to 6 clean lowercase search tags.',
+      '7. Extract visible color, material, and size/capacity if clearly observable (otherwise ""). Populate dimensions/weight ONLY if visibly printed on the product or box.',
+      '8. Provide suggested_price_ghs as a conservative rough Ghana Cedis (GHS) integer estimate if clear, otherwise null.',
     ].join('\n');
 
     const parts: GeminiPart[] = [
@@ -906,11 +980,33 @@ export class GeminiService {
         title: { type: 'STRING' },
         description: { type: 'STRING' },
         category: { type: 'STRING' },
+        subcategory: { type: 'STRING' },
         condition: {
           type: 'STRING',
           enum: ['new', 'used', 'refurbished'],
         },
         brand: { type: 'STRING' },
+        color: { type: 'STRING' },
+        material: { type: 'STRING' },
+        size: { type: 'STRING' },
+        dimensions: {
+          type: 'OBJECT',
+          nullable: true,
+          properties: {
+            length: { type: 'NUMBER', nullable: true },
+            width: { type: 'NUMBER', nullable: true },
+            height: { type: 'NUMBER', nullable: true },
+            unit: { type: 'STRING' },
+          },
+        },
+        weight: {
+          type: 'OBJECT',
+          nullable: true,
+          properties: {
+            value: { type: 'NUMBER', nullable: true },
+            unit: { type: 'STRING' },
+          },
+        },
         tags: {
           type: 'ARRAY',
           items: { type: 'STRING' },
@@ -956,11 +1052,13 @@ export class GeminiService {
       '2. Read the EXACT numeric price printed in WhatsApp (e.g. "GHS 250.00" or "GH₵ 250" → price: 250, currency: "GHS"). If a crossed-out sale price is shown, put the higher crossed-out price in original_price and the active selling price in price. If no price is visible, set price to null.',
       '3. Write a clean factual description (35–260 chars) combining the WhatsApp item description (if visible) and observable visual details. Never fabricate specs.',
       `4. Pick the closest category from this exact list: ${categories.join(', ')}.`,
-      '5. Set brand ONLY if clearly printed in the WhatsApp text or visibly on the product; otherwise "".',
-      '6. Provide 3 to 5 lowercase search tags.',
-      '7. Set source_screenshot_index to the 0-based index of the screenshot where the product appears most clearly.',
-      '8. Set in_stock to false only if WhatsApp explicitly marks the item out of stock or unavailable; otherwise true.',
-      '9. Set image_box_2d to [ymin, xmin, ymax, xmax] (4 integers on a 0 to 1000 normalized scale, where 0 is top/left and 1000 is bottom/right) tightly framing ONLY that product’s photo or thumbnail inside the screenshot at source_screenshot_index — EXCLUDING WhatsApp headers, status bars, titles, prices, and buttons. If no product photo is visible for that item, set image_box_2d to null.',
+      `5. Pick the closest subcategory from this list when applicable (or ""): ${ALL_SUBCATEGORY_NAMES.join(', ')}.`,
+      '6. Set brand ONLY if clearly printed in the WhatsApp text or visibly on the product; otherwise "".',
+      '7. Provide 3 to 6 lowercase search tags.',
+      '8. Extract color, material, size, warranty, dimensions (length/width/height/unit), and weight (value/unit) if mentioned in the WhatsApp text or visibly clear; never fabricate measurements.',
+      '9. Set source_screenshot_index to the 0-based index of the screenshot where the product appears most clearly.',
+      '10. Set in_stock to false only if WhatsApp explicitly marks the item out of stock or unavailable; otherwise true.',
+      '11. Set image_box_2d to [ymin, xmin, ymax, xmax] (4 integers on a 0 to 1000 normalized scale, where 0 is top/left and 1000 is bottom/right) tightly framing ONLY that product’s photo or thumbnail inside the screenshot at source_screenshot_index — EXCLUDING WhatsApp headers, status bars, titles, prices, and buttons. If no product photo is visible for that item, set image_box_2d to null.',
     ].join('\n');
 
     const parts: GeminiPart[] = [
@@ -1004,11 +1102,34 @@ export class GeminiService {
               original_price: { type: 'NUMBER', nullable: true },
               currency: { type: 'STRING' },
               category: { type: 'STRING' },
+              subcategory: { type: 'STRING' },
               condition: {
                 type: 'STRING',
                 enum: ['new', 'used', 'refurbished'],
               },
               brand: { type: 'STRING' },
+              color: { type: 'STRING' },
+              material: { type: 'STRING' },
+              size: { type: 'STRING' },
+              warranty: { type: 'STRING' },
+              dimensions: {
+                type: 'OBJECT',
+                nullable: true,
+                properties: {
+                  length: { type: 'NUMBER', nullable: true },
+                  width: { type: 'NUMBER', nullable: true },
+                  height: { type: 'NUMBER', nullable: true },
+                  unit: { type: 'STRING' },
+                },
+              },
+              weight: {
+                type: 'OBJECT',
+                nullable: true,
+                properties: {
+                  value: { type: 'NUMBER', nullable: true },
+                  unit: { type: 'STRING' },
+                },
+              },
               tags: { type: 'ARRAY', items: { type: 'STRING' } },
               in_stock: { type: 'BOOLEAN' },
               source_screenshot_index: { type: 'INTEGER' },
@@ -1060,16 +1181,37 @@ export class GeminiService {
       const source_screenshot_index =
         rawIdx >= 0 && rawIdx < files.length ? rawIdx : 0;
 
+      const resolvedCat = resolveCategory(item.category, categories);
+      const description = cleanText(item.description, 1000);
+      const tags = normalizeTags(item.tags);
+      const attributes = normalizeProductAttributes(
+        {
+          subcategory: item.subcategory,
+          color: item.color,
+          material: item.material,
+          size: item.size,
+          warranty: item.warranty,
+          dimensions: item.dimensions,
+          weight: item.weight,
+        },
+        resolvedCat,
+        { title, description, tags },
+      );
+
       products.push({
         title,
-        description: cleanText(item.description, 1000),
+        description,
         price,
         original_price,
         currency: cleanText(item.currency, 8).toUpperCase() || 'GHS',
-        category: resolveCategory(item.category, categories),
+        category: resolvedCat,
+        ...(attributes.subcategory
+          ? { subcategory: attributes.subcategory }
+          : {}),
         condition: normalizeCondition(item.condition),
         brand: cleanText(item.brand, 60),
-        tags: normalizeTags(item.tags),
+        tags,
+        ...(Object.keys(attributes).length > 0 ? { attributes } : {}),
         in_stock: item.in_stock !== false,
         source_screenshot_index,
         image_box_2d: normalizeImageBox2d(item.image_box_2d),
@@ -1688,11 +1830,34 @@ export class GeminiService {
               original_price: { type: 'NUMBER', nullable: true },
               currency: { type: 'STRING' },
               category: { type: 'STRING' },
+              subcategory: { type: 'STRING' },
               condition: {
                 type: 'STRING',
                 enum: ['new', 'used', 'refurbished'],
               },
               brand: { type: 'STRING' },
+              color: { type: 'STRING' },
+              material: { type: 'STRING' },
+              size: { type: 'STRING' },
+              warranty: { type: 'STRING' },
+              dimensions: {
+                type: 'OBJECT',
+                nullable: true,
+                properties: {
+                  length: { type: 'NUMBER', nullable: true },
+                  width: { type: 'NUMBER', nullable: true },
+                  height: { type: 'NUMBER', nullable: true },
+                  unit: { type: 'STRING' },
+                },
+              },
+              weight: {
+                type: 'OBJECT',
+                nullable: true,
+                properties: {
+                  value: { type: 'NUMBER', nullable: true },
+                  unit: { type: 'STRING' },
+                },
+              },
               tags: { type: 'ARRAY', items: { type: 'STRING' } },
               image_urls: { type: 'ARRAY', items: { type: 'STRING' } },
             },
@@ -1773,5 +1938,181 @@ export class GeminiService {
     }
 
     return out;
+  }
+
+  /**
+   * Generates high-impact, mobile-legible editorial copy for Verndly Product
+   * Share Cards (inspired by Apple / Nike studio product cards).
+   * Always returns crisp, bounded strings safe for 1080×1350 & 1200×630 layouts.
+   */
+  async generateProductCardCopy(
+    input: AiCardCopyInput,
+  ): Promise<AiCardCopyResult> {
+    const rawTitle = cleanText(input?.title, 120);
+    if (!rawTitle) {
+      throw new BadRequestException('A product title is required.');
+    }
+
+    const rawDesc = cleanText(input?.description, 800);
+    const category = cleanText(input?.category, 60) || 'Featured';
+    const brand = cleanText(input?.brand, 60);
+    const condition = cleanText(input?.condition, 30) || 'new';
+    const storeName = cleanText(input?.store_name, 60);
+    const location = cleanText(input?.location, 60);
+    const tone = input?.tone || 'minimal';
+    const numPrice = Number(input?.price);
+    const numOriginal =
+      input?.original_price != null ? Number(input.original_price) : null;
+    const hasDiscount = Boolean(
+      numOriginal &&
+      Number.isFinite(numOriginal) &&
+      Number.isFinite(numPrice) &&
+      numOriginal > numPrice &&
+      numPrice > 0,
+    );
+    const discountPct =
+      hasDiscount && numOriginal
+        ? Math.round(((numOriginal - numPrice) / numOriginal) * 100)
+        : 0;
+    const currency = cleanText(input?.currency, 6).toUpperCase() || 'GHS';
+    const formattedPrice = Number.isFinite(numPrice)
+      ? `${currency === 'GHS' ? 'GH₵' : currency} ${numPrice.toLocaleString('en-US')}`
+      : '';
+
+    const toneGuide: Record<string, string> = {
+      minimal:
+        'Apple / Nike minimalist editorial — ultra-clean, confident, effortless, zero fluff or exclamation spam.',
+      luxury:
+        'High-fashion studio editorial — refined, tactile, elevated craftsmanship language, calm prestige.',
+      hype: 'Energetic streetwear drop — bold, crisp, punchy, culturally resonant for Ghana & modern youth without sounding spammy.',
+    };
+
+    const systemInstruction = [
+      'You are Verndly AI, an elite brand copywriter crafting text for a bold, studio-grade mobile product share card (1080x1350).',
+      'The card has LARGE, minimal typography like a Nike / Apple product showcase card — every word must punch above its weight and be readable in 2 seconds on a phone.',
+      `Tone direction: ${toneGuide[tone] || toneGuide.minimal}`,
+      'Strict field rules:',
+      '1. badge: 1–2 short words (max 16 chars) for a frosted glass pill on the photo (e.g. "Best Seller", "New Drop", "Limited Stock", "Top Pick", or "Save X%" if discounted). Never use emojis.',
+      '2. headline: Clean, crisp product name (max 34 chars). Fix messy casing, drop redundant filler/emojis, keep the exact real product identity.',
+      '3. tagline: Iconic 2–5 word hook (max 36 chars) that sits directly under the title (like "Own the Airforce" or "Built for everyday wear"). Must feel magnetic and authentic.',
+      '4. blurb: One crisp editorial sentence (45–92 chars max, fits cleanly on 2 lines). Elevate thin descriptions honestly without inventing fake materials, specs, or warranties not implied by the listing.',
+      '5. cta: Short 2-word action pill text (max 12 chars), e.g. "Buy Now", "Shop Now", or "Order Now".',
+      '6. social_caption: Ready-to-post WhatsApp Status / Instagram caption (max 220 chars, natural, includes price if provided, invites buyers to order safely on Verndly with 3-day escrow).',
+    ].join('\n');
+
+    const responseSchema = {
+      type: 'OBJECT',
+      required: [
+        'badge',
+        'headline',
+        'tagline',
+        'blurb',
+        'cta',
+        'social_caption',
+      ],
+      properties: {
+        badge: { type: 'STRING' },
+        headline: { type: 'STRING' },
+        tagline: { type: 'STRING' },
+        blurb: { type: 'STRING' },
+        cta: { type: 'STRING' },
+        social_caption: { type: 'STRING' },
+      },
+    };
+
+    const fallbackBadge = hasDiscount
+      ? `Save ${discountPct}%`
+      : condition.toLowerCase() === 'new'
+        ? 'New Drop'
+        : 'Top Pick';
+    const fallbackHeadline =
+      rawTitle.length > 34 ? `${rawTitle.slice(0, 31).trimEnd()}…` : rawTitle;
+    const fallbackTagline = brand
+      ? `Signature ${brand} ${category.toLowerCase()}`
+      : `Elevated ${category.toLowerCase()} essentials`;
+    const fallbackBlurb =
+      rawDesc && rawDesc.length >= 24
+        ? rawDesc.length > 94
+          ? `${rawDesc.slice(0, 91).trimEnd()}…`
+          : rawDesc
+        : `Curated by ${storeName || 'a verified Verndly seller'} — ready for fast delivery with 3-day escrow protection.`;
+    const fallbackCaption = [
+      `${fallbackHeadline}${formattedPrice ? ` — ${formattedPrice}` : ''}`,
+      fallbackTagline,
+      'Order safely on Verndly with 3-day Paystack escrow.',
+    ].join('\n');
+
+    if (!this.isConfigured()) {
+      return {
+        badge: fallbackBadge,
+        headline: fallbackHeadline,
+        tagline: fallbackTagline,
+        blurb: fallbackBlurb,
+        cta: 'Buy Now',
+        social_caption: fallbackCaption,
+        model: 'fallback',
+      };
+    }
+
+    try {
+      const raw = await this.generateStructuredJson<Record<string, unknown>>({
+        systemInstruction,
+        parts: [
+          {
+            text: [
+              `Product title: ${rawTitle}`,
+              rawDesc
+                ? `Description: ${rawDesc}`
+                : 'Description: (not provided)',
+              `Category: ${category}`,
+              brand ? `Brand: ${brand}` : '',
+              `Condition: ${condition}`,
+              formattedPrice ? `Price: ${formattedPrice}` : '',
+              hasDiscount ? `Discount: ${discountPct}% off` : '',
+              storeName ? `Store: ${storeName}` : '',
+              location ? `Location: ${location}` : '',
+            ]
+              .filter(Boolean)
+              .join('\n'),
+          },
+        ],
+        responseSchema,
+        temperature: tone === 'hype' ? 0.65 : 0.45,
+        fast: true,
+        timeoutMs: 12_000,
+        maxOutputTokens: 320,
+      });
+
+      const badge = cleanText(raw?.badge, 18) || fallbackBadge;
+      const headline = cleanText(raw?.headline, 36) || fallbackHeadline;
+      const tagline = cleanText(raw?.tagline, 42) || fallbackTagline;
+      const blurb = cleanText(raw?.blurb, 105) || fallbackBlurb;
+      const cta = cleanText(raw?.cta, 14) || 'Buy Now';
+      const social_caption =
+        cleanText(raw?.social_caption, 260) || fallbackCaption;
+
+      return {
+        badge,
+        headline,
+        tagline,
+        blurb,
+        cta,
+        social_caption,
+        model: this.getModel(),
+      };
+    } catch (err) {
+      this.logger.warn(
+        `generateProductCardCopy fell back cleanly: ${(err as Error)?.message}`,
+      );
+      return {
+        badge: fallbackBadge,
+        headline: fallbackHeadline,
+        tagline: fallbackTagline,
+        blurb: fallbackBlurb,
+        cta: 'Buy Now',
+        social_caption: fallbackCaption,
+        model: 'fallback',
+      };
+    }
   }
 }

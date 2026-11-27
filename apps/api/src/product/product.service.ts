@@ -23,6 +23,10 @@ import {
   buildProductSlug,
   isUuid,
 } from './product-slug';
+import {
+  findSubcategoryDefinition,
+  normalizeProductAttributes,
+} from './category-taxonomy';
 
 type Decimal = Prisma.Decimal;
 const Decimal = Prisma.Decimal;
@@ -46,6 +50,167 @@ function normalizeTags(tags: string[] = []): string[] {
   }
 
   return normalized;
+}
+
+export interface RankableSellerShape {
+  id?: string | null;
+  user?: {
+    is_pro?: boolean | null;
+    pro_expires_at?: Date | string | null;
+    is_verified?: boolean | null;
+  } | null;
+}
+
+export interface RankableProductShape {
+  id: string;
+  seller_id?: string | null;
+  is_featured?: boolean | null;
+  quantity_available?: number | null;
+  created_at?: Date | string | null;
+  seller?: RankableSellerShape | null;
+}
+
+export function isActiveProSeller(
+  seller: RankableSellerShape | null | undefined,
+  now: Date = new Date(),
+): boolean {
+  if (!seller?.user?.is_pro) return false;
+  if (!seller.user.pro_expires_at) return true;
+  const expiresAt =
+    seller.user.pro_expires_at instanceof Date
+      ? seller.user.pro_expires_at
+      : new Date(seller.user.pro_expires_at);
+  return !Number.isNaN(expiresAt.getTime()) && expiresAt > now;
+}
+
+function toCreatedTimestamp(value: Date | string | null | undefined): number {
+  if (!value) return 0;
+  const d = value instanceof Date ? value : new Date(value);
+  const ts = d.getTime();
+  return Number.isNaN(ts) ? 0 : ts;
+}
+
+function compareWithinPool<T extends RankableProductShape>(a: T, b: T): number {
+  const featDiff =
+    Number(Boolean(b.is_featured)) - Number(Boolean(a.is_featured));
+  if (featDiff !== 0) return featDiff;
+
+  const timeDiff =
+    toCreatedTimestamp(b.created_at) - toCreatedTimestamp(a.created_at);
+  if (timeDiff !== 0) return timeDiff;
+
+  return String(a.id).localeCompare(String(b.id));
+}
+
+function spreadBySellerRoundRobin<T extends RankableProductShape>(
+  sortedPool: T[],
+): T[] {
+  if (sortedPool.length <= 1) return sortedPool;
+
+  const buckets = new Map<string, T[]>();
+  for (const item of sortedPool) {
+    const sellerKey = String(item.seller_id || item.seller?.id || item.id);
+    const list = buckets.get(sellerKey);
+    if (list) {
+      list.push(item);
+    } else {
+      buckets.set(sellerKey, [item]);
+    }
+  }
+
+  if (buckets.size <= 1) return sortedPool;
+
+  const queues = Array.from(buckets.values());
+  const diversified: T[] = [];
+  let pass = 0;
+  while (diversified.length < sortedPool.length) {
+    let addedInPass = false;
+    for (const queue of queues) {
+      if (pass < queue.length) {
+        diversified.push(queue[pass]);
+        addedInPass = true;
+      }
+    }
+    if (!addedInPass) break;
+    pass++;
+  }
+
+  return diversified;
+}
+
+function interleaveStockTier<T extends RankableProductShape>(
+  tierItems: T[],
+  now: Date,
+  proBatchSize: number,
+): T[] {
+  if (tierItems.length <= 1) return [...tierItems];
+
+  const proPool: T[] = [];
+  const standardPool: T[] = [];
+
+  for (const item of tierItems) {
+    if (isActiveProSeller(item.seller, now) || Boolean(item.is_featured)) {
+      proPool.push(item);
+    } else {
+      standardPool.push(item);
+    }
+  }
+
+  proPool.sort(compareWithinPool);
+  standardPool.sort(compareWithinPool);
+
+  const diversifiedPro = spreadBySellerRoundRobin(proPool);
+  const diversifiedStandard = spreadBySellerRoundRobin(standardPool);
+
+  const batch = Math.max(1, Math.floor(proBatchSize));
+  const result: T[] = [];
+  let pIdx = 0;
+  let sIdx = 0;
+
+  while (pIdx < diversifiedPro.length || sIdx < diversifiedStandard.length) {
+    for (let k = 0; k < batch && pIdx < diversifiedPro.length; k++) {
+      result.push(diversifiedPro[pIdx++]);
+    }
+    if (sIdx < diversifiedStandard.length) {
+      result.push(diversifiedStandard[sIdx++]);
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Deterministic Pro-first interleaved discovery ranking:
+ * - In-stock items always rank ahead of out-of-stock items.
+ * - Within each stock tier, active Pro sellers' products (plus boosted `is_featured` items)
+ *   lead in a deterministic `proBatchSize : 1` mix (default `3 : 1`) with other sellers'
+ *   products, using per-seller round-robin diversity so a single seller doesn't monopolize
+ *   consecutive slots.
+ */
+export function interleaveProFirstProducts<T extends RankableProductShape>(
+  items: T[],
+  now: Date = new Date(),
+  proBatchSize = 3,
+): T[] {
+  if (items.length <= 1) return [...items];
+
+  const inStockItems: T[] = [];
+  const outOfStockItems: T[] = [];
+
+  for (const item of items) {
+    const qty =
+      typeof item.quantity_available === 'number' ? item.quantity_available : 1;
+    if (qty > 0) {
+      inStockItems.push(item);
+    } else {
+      outOfStockItems.push(item);
+    }
+  }
+
+  return [
+    ...interleaveStockTier(inStockItems, now, proBatchSize),
+    ...interleaveStockTier(outOfStockItems, now, proBatchSize),
+  ];
 }
 
 @Injectable()
@@ -147,11 +312,11 @@ export class ProductService {
       video_url = videoResult.secure_url;
     }
 
-    // 5. Parse attributes if provided
-    let parsedAttributes = {};
+    // 5. Parse & normalize structured attributes (subcategory, dimensions, weight, color, material, warranty, sku)
+    let rawAttributes: unknown = {};
     if (dto.attributes) {
       try {
-        parsedAttributes =
+        rawAttributes =
           typeof dto.attributes === 'string'
             ? JSON.parse(dto.attributes)
             : dto.attributes;
@@ -159,6 +324,15 @@ export class ProductService {
         console.warn('Failed to parse product attributes', err);
       }
     }
+    const parsedAttributes = normalizeProductAttributes(
+      rawAttributes,
+      dto.category,
+      {
+        title: normalizedTitle,
+        description: dto.description,
+        tags: normalizedTags,
+      },
+    );
 
     // 6. Validate & normalize original_price
     let originalPriceCreate: Decimal | null | undefined = undefined;
@@ -231,6 +405,7 @@ export class ProductService {
       page?: number;
       limit?: number;
       category?: string;
+      subcategory?: string;
       sellerId?: string;
       status?: string;
       minDiscount?: number;
@@ -252,6 +427,7 @@ export class ProductService {
         | 'FOUR_TO_SEVEN_DAYS'
         | 'MORE_THAN_ONE_WEEK';
       sort?:
+        | 'featured'
         | 'newest'
         | 'oldest'
         | 'price_asc'
@@ -264,6 +440,7 @@ export class ProductService {
       page = 1,
       limit = 20,
       category,
+      subcategory,
       sellerId,
       status,
       search,
@@ -278,7 +455,7 @@ export class ProductService {
       cityId,
       serviceArea,
       avgDeliveryTime,
-      sort = 'newest',
+      sort = 'featured',
     } = params;
     let { minDiscount } = params;
     const skip = (page - 1) * limit;
@@ -366,6 +543,34 @@ export class ProductService {
       where.OR = or;
     }
 
+    if (subcategory && subcategory.trim().length > 0) {
+      const def = findSubcategoryDefinition(subcategory, category);
+      const canonicalSub = def?.name || subcategory.trim();
+      const subOr: Prisma.ProductWhereInput[] = [
+        {
+          attributes: {
+            path: ['subcategory'],
+            equals: canonicalSub,
+          },
+        },
+      ];
+      if (def && def.keywords.length > 0) {
+        subOr.push({ tags: { hasSome: def.keywords } });
+        for (const kw of def.keywords.slice(0, 8)) {
+          subOr.push({ title: { contains: kw, mode: 'insensitive' } });
+        }
+      } else {
+        subOr.push({ title: { contains: canonicalSub, mode: 'insensitive' } });
+        subOr.push({ tags: { has: canonicalSub.toLowerCase() } });
+      }
+      const existingAnd = Array.isArray(where.AND)
+        ? where.AND
+        : where.AND
+          ? [where.AND]
+          : [];
+      where.AND = [...existingAnd, { OR: subOr }];
+    }
+
     if (sort === 'discount_desc') {
       const threshold =
         typeof minDiscount === 'number' && !Number.isNaN(minDiscount)
@@ -379,20 +584,60 @@ export class ProductService {
       !Number.isNaN(minDiscount) &&
       minDiscount > 0;
 
+    const now = new Date();
+    const browseSellerSelect = {
+      id: true,
+      store_name: true,
+      logo_url: true,
+      store_link: true,
+      is_seller_verified: true,
+      user: {
+        select: {
+          is_pro: true,
+          pro_expires_at: true,
+          is_verified: true,
+        },
+      },
+    } satisfies Prisma.SellerProfileSelect;
+
+    const decorateBrowseProducts = <
+      T extends {
+        id: string;
+        title?: string | null;
+        seller_id?: string | null;
+        seller?: (RankableSellerShape & Record<string, unknown>) | null;
+      },
+    >(
+      rows: T[],
+    ) =>
+      attachProductSlugs(rows as any[]).map((item: any) => {
+        if (!item.seller) return item;
+        const sellerVerified =
+          typeof item.seller.is_seller_verified === 'boolean'
+            ? item.seller.is_seller_verified
+            : Boolean(item.seller.user?.is_verified);
+        return {
+          ...item,
+          seller: {
+            ...item.seller,
+            is_pro: isActiveProSeller(item.seller, now),
+            is_verified: sellerVerified,
+            is_seller_verified: sellerVerified,
+            can_receive_orders: sellerVerified,
+          },
+        };
+      });
+
     if (hasDiscountFilter) {
       const allMatching = await this.prisma.product.findMany({
         where: { ...where, original_price: { not: null } },
         include: {
           seller: {
-            select: {
-              store_name: true,
-              logo_url: true,
-              store_link: true,
-            },
+            select: browseSellerSelect,
           },
         },
         orderBy: this.resolveOrderBy(
-          sort === 'discount_desc' ? 'newest' : sort,
+          sort === 'discount_desc' || sort === 'featured' ? 'newest' : sort,
         ),
       });
 
@@ -412,15 +657,51 @@ export class ProductService {
             entry !== null && entry.pct >= (minDiscount as number),
         );
 
+      let orderedDiscountProducts: typeof allMatching;
       if (sort === 'discount_desc') {
         withPct.sort((a, b) => b.pct - a.pct);
+        orderedDiscountProducts = withPct.map((e) => e.product);
+      } else if (sort === 'featured') {
+        orderedDiscountProducts = interleaveProFirstProducts(
+          withPct.map((e) => e.product),
+          now,
+          3,
+        );
+      } else {
+        orderedDiscountProducts = withPct.map((e) => e.product);
       }
 
-      const total = withPct.length;
-      const data = withPct.slice(skip, skip + limit).map((e) => e.product);
+      const total = orderedDiscountProducts.length;
+      const pageSlice = orderedDiscountProducts.slice(skip, skip + limit);
 
       return {
-        data,
+        data: decorateBrowseProducts(pageSlice),
+        meta: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+        },
+      };
+    }
+
+    if (sort === 'featured') {
+      const allMatching = await this.prisma.product.findMany({
+        where,
+        include: {
+          seller: {
+            select: browseSellerSelect,
+          },
+        },
+        orderBy: [{ created_at: 'desc' }, { id: 'asc' }],
+      });
+
+      const ranked = interleaveProFirstProducts(allMatching, now, 3);
+      const total = ranked.length;
+      const pageSlice = ranked.slice(skip, skip + limit);
+
+      return {
+        data: decorateBrowseProducts(pageSlice),
         meta: {
           total,
           page,
@@ -435,11 +716,7 @@ export class ProductService {
         where,
         include: {
           seller: {
-            select: {
-              store_name: true,
-              logo_url: true,
-              store_link: true,
-            },
+            select: browseSellerSelect,
           },
         },
         orderBy: this.resolveOrderBy(sort),
@@ -450,7 +727,7 @@ export class ProductService {
     ]);
 
     return {
-      data: attachProductSlugs(data),
+      data: decorateBrowseProducts(data),
       meta: {
         total,
         page,
@@ -462,6 +739,7 @@ export class ProductService {
 
   private resolveOrderBy(
     sort:
+      | 'featured'
       | 'newest'
       | 'oldest'
       | 'price_asc'
@@ -479,6 +757,7 @@ export class ProductService {
         return { price: 'desc' };
       case 'popular':
         return { views_count: 'desc' };
+      case 'featured':
       case 'newest':
       case 'discount_desc':
       default:
@@ -522,6 +801,7 @@ export class ProductService {
           location: true,
           service_area: true,
           avg_delivery_time: true,
+          is_seller_verified: true,
           user: {
             select: {
               is_pro: true,
@@ -625,6 +905,11 @@ export class ProductService {
     const sellerIsPro =
       !!product.seller?.user?.is_pro && (!proExpires || proExpires > now);
 
+    const sellerVerified =
+      typeof product.seller?.is_seller_verified === 'boolean'
+        ? product.seller.is_seller_verified
+        : Boolean(product.seller?.user?.is_verified);
+
     return {
       ...product,
       slug: resolvedSlug,
@@ -632,7 +917,9 @@ export class ProductService {
         ? {
             ...product.seller,
             is_pro: sellerIsPro,
-            is_verified: product.seller.user?.is_verified ?? false,
+            is_verified: sellerVerified,
+            is_seller_verified: sellerVerified,
+            can_receive_orders: sellerVerified,
           }
         : product.seller,
     };

@@ -22,6 +22,7 @@ interface ProductCardProps {
     title: string;
     price: string;
     original_price?: string | number | null;
+    quantity_available?: number | null;
     image_urls: string[];
     video_url?: string | null;
     is_featured?: boolean;
@@ -29,6 +30,9 @@ interface ProductCardProps {
       store_name: string;
       logo_url?: string;
       store_link: string;
+      is_verified?: boolean;
+      is_seller_verified?: boolean;
+      can_receive_orders?: boolean;
     };
   };
   index: number;
@@ -53,6 +57,8 @@ export default function ProductCard({ product, index }: ProductCardProps) {
   const [logoError, setLogoError] = useState(false);
 
   const isOwnProduct = isOwnStore(user, product.seller);
+  const storeAcceptsOrders =
+    product.seller?.can_receive_orders !== false && product.seller?.is_seller_verified !== false;
   const favorited = isFavorited(String(product.id));
 
   const handleToggleFavorite = (e: React.MouseEvent) => {
@@ -69,19 +75,26 @@ export default function ProductCard({ product, index }: ProductCardProps) {
       toast.error('You cannot purchase your own product.');
       return;
     }
-    addItem({
+    if (!storeAcceptsOrders) {
+      toast.error('This store is pending seller verification and cannot receive orders yet.');
+      return;
+    }
+    const addedOk = addItem({
       productId: String(product.id),
       title: product.title,
       price: typeof product.price === 'number' ? String(product.price) : (product.price ?? '0'),
       imageUrl: product.image_urls?.[0] ?? '/placeholder-product.png',
       videoUrl: product.video_url,
+      maxStock: typeof product.quantity_available === 'number' ? product.quantity_available : null,
       storeLink: product.seller.store_link ?? '',
       storeName: product.seller.store_name ?? 'Store',
       logoUrl: product.seller.logo_url ?? null,
     });
-    setAdded(true);
-    toast.success('Added to cart');
-    setTimeout(() => setAdded(false), 1800);
+    if (addedOk) {
+      setAdded(true);
+      toast.success('Added to cart');
+      setTimeout(() => setAdded(false), 1800);
+    }
   };
 
   const handleMouseEnter = () => {
@@ -110,7 +123,7 @@ export default function ProductCard({ product, index }: ProductCardProps) {
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.4, delay: index * 0.05 }}
-      className="mb-2 break-inside-avoid"
+      className="break-inside-avoid"
     >
       <Card
         className="group relative overflow-hidden rounded-[2rem] border-0 bg-transparent p-0 shadow-none"
@@ -184,7 +197,7 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                 : 'opacity-100 group-hover/media:translate-y-0 group-hover:translate-y-0 group-hover/media:opacity-100 group-hover:opacity-100 sm:translate-y-2 sm:opacity-0'
             }`}
           >
-            {!isOwnProduct && (
+            {!isOwnProduct && storeAcceptsOrders && (
               <MotionButton
                 type="button"
                 aria-label="Add to cart"
@@ -244,7 +257,7 @@ export default function ProductCard({ product, index }: ProductCardProps) {
           </div>
         </div>
 
-        <div className="space-y-3 p-5">
+        <div className="space-y-1.5 px-2.5 pb-3 pt-2.5 sm:px-3">
           <div className="flex items-start justify-between gap-4">
             <h3 className="text-foreground line-clamp-1 flex-1 text-xs capitalize tracking-tight">
               {product.title}
@@ -278,6 +291,11 @@ export default function ProductCard({ product, index }: ProductCardProps) {
               )}
             </div>
             <p className="text-muted truncate text-[10px]">@{product.seller.store_link}</p>
+            {!storeAcceptsOrders && (
+              <span className="bg-amber-500/12 ml-auto shrink-0 rounded-full px-2 py-0.5 text-[9px] font-semibold text-amber-600 dark:text-amber-400">
+                Pending verification
+              </span>
+            )}
           </div>
         </div>
       </Card>

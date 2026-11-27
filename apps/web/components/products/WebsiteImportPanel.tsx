@@ -23,6 +23,7 @@ import type { WhatsAppCommitResult, WhatsAppPreviewItem } from '@/lib/api/whatsa
 import VerndlyAiIcon from '@/components/ai/VerndlyAiIcon';
 import VerndlyAiOverlay from '@/components/ai/VerndlyAiOverlay';
 import RemoteProductThumb from '@/components/products/RemoteProductThumb';
+import ImportItemSpecsEditor from '@/components/products/ImportItemSpecsEditor';
 import Alert from '@/components/ui/Alert';
 
 interface EditableWebsiteItem extends WhatsAppPreviewItem {
@@ -44,8 +45,11 @@ const MODES: Array<{ id: WebsiteImportMode; label: string; hint: string }> = [
   { id: 'catalog', label: 'Owned website', hint: 'Full online storefront' },
 ];
 
+const WEBSITE_IMPORT_DRAFT_PREFIX = 'verndly_website_import_draft_v1';
+
 export default function WebsiteImportPanel() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
+  const draftKey = `${WEBSITE_IMPORT_DRAFT_PREFIX}:${user?.id || 'guest'}`;
   const [urlInput, setUrlInput] = useState('');
   const [mode, setMode] = useState<WebsiteImportMode>('auto');
   const [categories, setCategories] = useState<CategoryOption[]>([]);
@@ -57,8 +61,76 @@ export default function WebsiteImportPanel() {
   const [items, setItems] = useState<EditableWebsiteItem[]>([]);
   const [isCommitting, setIsCommitting] = useState(false);
   const [commitResult, setCommitResult] = useState<WhatsAppCommitResult | null>(null);
+  const [draftHydrated, setDraftHydrated] = useState(false);
 
   const itemFileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  // Restore saved website import state across refreshes / back navigation
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = localStorage.getItem(draftKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (typeof parsed.urlInput === 'string') setUrlInput(parsed.urlInput);
+        if (parsed.mode === 'auto' || parsed.mode === 'single' || parsed.mode === 'catalog') {
+          setMode(parsed.mode);
+        }
+        if (typeof parsed.detectedSource === 'string' || parsed.detectedSource === null) {
+          setDetectedSource(parsed.detectedSource);
+        }
+        if (Array.isArray(parsed.warnings)) {
+          setWarnings(parsed.warnings.filter((w: unknown): w is string => typeof w === 'string'));
+        }
+        if (Array.isArray(parsed.items) && parsed.items.length > 0) {
+          setItems(
+            parsed.items.map((it: Omit<EditableWebsiteItem, 'localFiles' | 'localPreviews'>) => ({
+              ...it,
+              localFiles: [],
+              localPreviews: [],
+            })),
+          );
+        }
+      }
+    } catch {
+      // ignore corrupted draft
+    } finally {
+      setDraftHydrated(true);
+    }
+  }, [draftKey]);
+
+  // Persist website import URL & scanned items to localStorage
+  useEffect(() => {
+    if (!draftHydrated || typeof window === 'undefined') return;
+    const timer = setTimeout(() => {
+      if (!urlInput.trim() && items.length === 0) {
+        try {
+          localStorage.removeItem(draftKey);
+        } catch {
+          // ignore
+        }
+        return;
+      }
+      try {
+        const serializableItems = items.map(
+          ({ localFiles: _lf, localPreviews: _lp, ...rest }) => rest,
+        );
+        localStorage.setItem(
+          draftKey,
+          JSON.stringify({
+            urlInput,
+            mode,
+            detectedSource,
+            warnings,
+            items: serializableItems,
+          }),
+        );
+      } catch {
+        // ignore quota errors
+      }
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [urlInput, mode, detectedSource, warnings, items, draftHydrated, draftKey]);
 
   useEffect(() => {
     productApi
@@ -256,10 +328,12 @@ export default function WebsiteImportPanel() {
             original_price: item.original_price,
             currency: item.currency || 'GHS',
             category: item.category || categories[0]?.name || 'General',
+            subcategory: item.subcategory || item.attributes?.subcategory || undefined,
             condition: item.condition,
             quantity_available: parseInt(item.stockText || '1', 10) || 1,
             brand: item.brand.trim() || undefined,
             tags: item.tags,
+            attributes: item.attributes,
             image_urls: item.image_urls,
             status: item.status,
           })),
@@ -327,6 +401,10 @@ export default function WebsiteImportPanel() {
               category: item.category || categories[0]?.name || 'General',
               brand: item.brand.trim() || undefined,
               tags: item.tags,
+              attributes: {
+                ...(item.attributes || {}),
+                ...(item.subcategory ? { subcategory: item.subcategory } : {}),
+              },
             },
             compressedFiles,
           );
@@ -775,6 +853,14 @@ export default function WebsiteImportPanel() {
                           </div>
                         </div>
                       </div>
+
+                      <ImportItemSpecsEditor
+                        category={item.category}
+                        subcategory={item.subcategory}
+                        tags={item.tags}
+                        attributes={item.attributes}
+                        onChange={(patch) => updateItem(item.tempId, patch)}
+                      />
                     </div>
                   </div>
                 </div>

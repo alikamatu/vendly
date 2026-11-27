@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { Tag } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowRight, Tag } from 'lucide-react';
 import ProductGridSection from './ProductGridSection';
 import { filterByMinDiscount, getDiscountPercent } from '@/lib/home/discount';
 import { filterRailProducts } from '@/lib/product-visibility';
@@ -36,6 +37,15 @@ export default function TopDeals({ products, minDiscount = 20, limit = 20 }: Top
       }
       title={`Top Deals · ${minDiscount}% off or more`}
       description="Limited-time markdowns from verified sellers."
+      action={
+        <Link
+          href="/products?has_discount=1"
+          className="bg-surface text-foreground hover:bg-foreground hover:text-background inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold transition-colors"
+        >
+          <span>Browse Shop</span>
+          <ArrowRight className="h-3.5 w-3.5" />
+        </Link>
+      }
     />
   );
 }

@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaymentsService } from '../payments/payments.service';
@@ -158,35 +159,119 @@ export class OnboardingService {
       throw new NotFoundException('Store not found');
     }
 
-    if (!dto.bank_code || !dto.account_number) {
-      throw new BadRequestException(
-        'Payout setup requires valid bank_code and account_number.',
+    if (dto.skip_payout) {
+      if (store.is_seller_verified) {
+        throw new BadRequestException(
+          'Verified stores must complete payout details to receive orders.',
+        );
+      }
+
+      await this.prisma.sellerProfile.update({
+        where: { user_id: userId },
+        data: {
+          ...(dto.accepted_payment_methods &&
+          dto.accepted_payment_methods.length > 0
+            ? { accepted_payment_methods: dto.accepted_payment_methods }
+            : {}),
+          ...(dto.payment_timing ? { payment_timing: dto.payment_timing } : {}),
+          payment_setup_completed: true,
+        },
+      });
+
+      await this.checkAndCompleteOnboarding(userId);
+
+      return {
+        message:
+          'Payout setup skipped for now. You can add your payout details anytime in Settings.',
+        payment_setup_completed: true,
+        payout_ready: false,
+      };
+    }
+
+    // Security guard: once onboarding is completed and payout details already exist,
+    // any modification must go through the verified payout-change OTP/2FA flow.
+    if (store.onboarding_completed && store.bank_code && store.account_number) {
+      throw new ForbiddenException(
+        'Payout details are already configured. To change your bank or Mobile Money account, please use the verified payout update flow in Store Settings.',
       );
     }
+
+    const cleanBankCode = (dto.bank_code || '').trim();
+    const cleanAccountNumber = (dto.account_number || '')
+      .replace(/[\s-]/g, '')
+      .trim();
+
+    if (!cleanBankCode || !cleanAccountNumber) {
+      throw new BadRequestException(
+        'Payout setup requires a valid bank/provider code and account or Mobile Money number.',
+      );
+    }
+
+    if (!/^\d{9,16}$/.test(cleanAccountNumber)) {
+      throw new BadRequestException(
+        'Account or Mobile Money number must contain 9 to 16 digits.',
+      );
+    }
+
+    const prevBank = {
+      bank_name: store.bank_name,
+      bank_code: store.bank_code,
+      account_number: store.account_number,
+    };
 
     await this.prisma.sellerProfile.update({
       where: { user_id: userId },
       data: {
-        accepted_payment_methods: dto.accepted_payment_methods,
+        accepted_payment_methods: dto.accepted_payment_methods ?? [],
         payment_timing: dto.payment_timing,
-        bank_name: dto.bank_name,
-        bank_code: dto.bank_code,
-        account_number: dto.account_number,
-        payment_setup_completed: true,
+        bank_name: (dto.bank_name || '').trim() || cleanBankCode,
+        bank_code: cleanBankCode,
+        account_number: cleanAccountNumber,
       },
+    });
+
+    // Hard-coded synchronous Paystack Subaccount provisioning during onboarding
+    // with strict validation error handling and retry fallback for transient outages.
+    let subaccountResult: {
+      ok: boolean;
+      subaccount_code: string | null;
+      action: string;
+      error?: string;
+    };
+    try {
+      subaccountResult = await this.paymentsService.createSubaccount(store.id, {
+        forceUpdate: true,
+        throwOnError: true,
+      });
+    } catch (err) {
+      // Revert invalid payout details so the store is never left with broken bank info
+      await this.prisma.sellerProfile.update({
+        where: { user_id: userId },
+        data: prevBank,
+      });
+      throw err;
+    }
+
+    await this.prisma.sellerProfile.update({
+      where: { user_id: userId },
+      data: { payment_setup_completed: true },
     });
 
     await this.checkAndCompleteOnboarding(userId);
 
-    // Trigger Paystack Subaccount Creation in the background
-    this.paymentsService.createSubaccount(store.id).catch((err) => {
-      console.error('Failed to create subaccount during onboarding:', err);
-    });
-
     return {
-      message: 'Payment setup step completed',
+      message: subaccountResult.ok
+        ? 'Payment setup completed and Paystack subaccount activated.'
+        : 'Payment details saved. Paystack subaccount creation is queued for automatic retry.',
       payment_setup_completed: true,
-      payout_ready: Boolean(dto.bank_code && dto.account_number),
+      payout_ready: Boolean(
+        subaccountResult.ok && subaccountResult.subaccount_code,
+      ),
+      subaccount_code: subaccountResult.subaccount_code,
+      subaccount_status: subaccountResult.ok ? 'ACTIVE' : 'PENDING_RETRY',
+      subaccount_warning: subaccountResult.ok
+        ? null
+        : subaccountResult.error || null,
     };
   }
 

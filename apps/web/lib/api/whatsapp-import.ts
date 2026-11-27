@@ -1,4 +1,5 @@
 import { api } from './index';
+import type { StructuredProductAttributes } from '../catalog-subcategories';
 
 export interface WhatsAppPreviewItem {
   tempId: string;
@@ -9,10 +10,12 @@ export interface WhatsAppPreviewItem {
   original_price: number | null;
   currency: string;
   category: string;
+  subcategory?: string;
   condition: 'new' | 'used' | 'refurbished';
   quantity_available: number;
   brand: string;
   tags: string[];
+  attributes?: StructuredProductAttributes;
   image_urls: string[];
   status: 'active' | 'draft';
   source_url?: string;
@@ -34,10 +37,12 @@ export interface WhatsAppCommitItemInput {
   original_price?: number | string | null;
   currency?: string;
   category: string;
+  subcategory?: string;
   condition?: 'new' | 'used' | 'refurbished';
   quantity_available?: number | string;
   brand?: string;
   tags?: string[];
+  attributes?: StructuredProductAttributes;
   image_urls?: string[];
   status?: 'active' | 'draft';
 }

@@ -2,16 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  X,
-  Share2,
-  Copy,
-  Check,
-  Download,
-  MessageCircle,
-  Send,
-  Sparkles,
-} from 'lucide-react';
+import { X, Share2, Copy, Check, Download, MessageCircle, Send, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 
 const MotionDiv = motion.div as any;
@@ -31,16 +22,13 @@ interface ShareProductModalProps {
   };
 }
 
-export default function ShareProductModal({
-  isOpen,
-  onClose,
-  product,
-}: ShareProductModalProps) {
+export default function ShareProductModal({ isOpen, onClose, product }: ShareProductModalProps) {
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
 
   const productUrl = typeof window !== 'undefined' ? window.location.href : '';
   const imageUrl = product.image_urls?.[0] || '/placeholder-product.png';
+  const studioCardUrl = `/api/cards/product/${encodeURIComponent(String(product.id))}?theme=light&format=portrait`;
   const shareText = `Check out ${product.title} on Verndly! GH₵ ${parseFloat(String(product.price)).toLocaleString()}`;
 
   const handleCopyLink = async () => {
@@ -54,23 +42,23 @@ export default function ShareProductModal({
     }
   };
 
-  const handleDownloadImage = async () => {
-    if (!imageUrl) return;
+  const handleDownloadCard = async () => {
     setDownloading(true);
     try {
-      const res = await fetch(imageUrl);
+      const res = await fetch(studioCardUrl);
+      if (!res.ok) throw new Error('Card render failed');
       const blob = await res.blob();
       const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = blobUrl;
-      a.download = `${product.title?.replace(/[^a-zA-Z0-9]/g, '_') || 'product'}.jpg`;
+      a.download = `${product.title?.replace(/[^a-zA-Z0-9]/g, '_') || 'product'}-verndly-card.png`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(blobUrl);
-      toast.success('Product image saved!');
+      toast.success('Studio product card saved!');
     } catch {
-      window.open(imageUrl, '_blank');
+      window.open(studioCardUrl, '_blank');
     } finally {
       setDownloading(false);
     }
@@ -84,31 +72,30 @@ export default function ShareProductModal({
   const handleTwitterShare = () => {
     window.open(
       `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(productUrl)}`,
-      '_blank'
+      '_blank',
     );
   };
 
   const handleTelegramShare = () => {
     window.open(
       `https://t.me/share/url?url=${encodeURIComponent(productUrl)}&text=${encodeURIComponent(shareText)}`,
-      '_blank'
+      '_blank',
     );
   };
 
   const handleNativeShare = async () => {
     if (typeof navigator === 'undefined' || !navigator.share) return;
     try {
-      // Try sharing with file if image is accessible
-      if (imageUrl && (navigator as any).canShare) {
+      // Try sharing with studio product card PNG first
+      if ((navigator as any).canShare) {
         try {
-          const res = await fetch(imageUrl);
+          const res = await fetch(studioCardUrl);
           if (res.ok) {
             const blob = await res.blob();
-            const ext = blob.type.split('/')[1] || 'jpg';
             const file = new File(
               [blob],
-              `${product.title?.replace(/[^a-zA-Z0-9]/g, '_') || 'product'}.${ext}`,
-              { type: blob.type }
+              `${product.title?.replace(/[^a-zA-Z0-9]/g, '_') || 'product'}-verndly-card.png`,
+              { type: 'image/png' },
             );
             if ((navigator as any).canShare({ files: [file] })) {
               await (navigator as any).share({
@@ -140,7 +127,7 @@ export default function ShareProductModal({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div className="fixed inset-0 z-[100] flex items-end justify-center p-0 sm:items-center sm:p-4">
           {/* Strictly solid backdrop (borderless, shadowless, NO blur) */}
           <MotionDiv
             initial={{ opacity: 0 }}
@@ -161,20 +148,20 @@ export default function ShareProductModal({
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}
             transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-            className="relative z-10 w-full sm:max-w-md bg-background rounded-t-[2.5rem] sm:rounded-[2.5rem] border-0 shadow-none overflow-hidden text-foreground"
+            className="bg-background text-foreground relative z-10 w-full overflow-hidden rounded-t-[2.5rem] border-0 shadow-none sm:max-w-md sm:rounded-[2.5rem]"
           >
             {/* Mobile drag bar */}
-            <div className="pt-3 pb-1 sm:hidden flex justify-center">
-              <div className="w-10 h-1 rounded-full bg-muted/40" />
+            <div className="flex justify-center pb-1 pt-3 sm:hidden">
+              <div className="bg-muted/40 h-1 w-10 rounded-full" />
             </div>
 
             {/* Header */}
-            <div className="flex items-center justify-between px-6 pt-3 sm:pt-6 pb-2 border-0">
+            <div className="flex items-center justify-between border-0 px-6 pb-2 pt-3 sm:pt-6">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-full bg-foreground/5 flex items-center justify-center text-foreground">
-                  <Share2 className="w-3.5 h-3.5" />
+                <div className="bg-foreground/5 text-foreground flex h-7 w-7 items-center justify-center rounded-full">
+                  <Share2 className="h-3.5 w-3.5" />
                 </div>
-                <h2 className="text-sm font-semibold uppercase tracking-wider text-foreground">
+                <h2 className="text-foreground text-sm font-semibold uppercase tracking-wider">
                   Share Product
                 </h2>
               </div>
@@ -182,50 +169,50 @@ export default function ShareProductModal({
                 type="button"
                 onClick={onClose}
                 aria-label="Close"
-                className="p-2 rounded-full bg-surface hover:bg-surface/80 text-foreground border-0 shadow-none transition-colors"
+                className="bg-surface hover:bg-surface/80 text-foreground rounded-full border-0 p-2 shadow-none transition-colors"
               >
-                <X className="w-4 h-4" />
+                <X className="h-4 w-4" />
               </button>
             </div>
 
             {/* Content */}
-            <div className="p-6 space-y-4">
+            <div className="space-y-4 p-6">
               {/* Product Preview Card with High-Res Image */}
-              <div className="bg-surface rounded-2xl p-3.5 flex items-center gap-3.5 border-0 shadow-none">
+              <div className="bg-surface flex items-center gap-3.5 rounded-2xl border-0 p-3.5 shadow-none">
                 <img
                   src={imageUrl}
                   alt={product.title}
-                  className="w-16 h-16 rounded-xl object-cover bg-background shrink-0 border-0"
+                  className="bg-background h-16 w-16 shrink-0 rounded-xl border-0 object-cover"
                 />
                 <div className="min-w-0 flex-1 space-y-1">
-                  <h3 className="text-xs font-medium text-foreground line-clamp-1 uppercase tracking-tight">
+                  <h3 className="text-foreground line-clamp-1 text-xs font-medium uppercase tracking-tight">
                     {product.title}
                   </h3>
-                  <p className="text-xs font-semibold text-primary">
+                  <p className="text-primary text-xs font-semibold">
                     GH₵ {parseFloat(String(product.price)).toLocaleString()}
                   </p>
                   {product.seller?.store_link && (
-                    <p className="text-[10px] text-muted">@{product.seller.store_link}</p>
+                    <p className="text-muted text-[10px]">@{product.seller.store_link}</p>
                   )}
                 </div>
               </div>
 
               {/* One-Click Copy Link Box */}
-              <div className="bg-surface rounded-2xl p-3 flex items-center justify-between gap-2 border-0 shadow-none">
-                <p className="text-xs text-muted truncate flex-1 font-mono">{productUrl}</p>
+              <div className="bg-surface flex items-center justify-between gap-2 rounded-2xl border-0 p-3 shadow-none">
+                <p className="text-muted flex-1 truncate font-mono text-xs">{productUrl}</p>
                 <button
                   type="button"
                   onClick={handleCopyLink}
-                  className="px-3 py-1.5 rounded-xl bg-foreground text-background text-xs font-semibold uppercase tracking-wider shrink-0 flex items-center gap-1.5 border-0 shadow-none hover:opacity-90 transition-opacity"
+                  className="bg-foreground text-background flex shrink-0 items-center gap-1.5 rounded-xl border-0 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider shadow-none transition-opacity hover:opacity-90"
                 >
                   {copied ? (
                     <>
-                      <Check className="w-3.5 h-3.5" />
+                      <Check className="h-3.5 w-3.5" />
                       <span>Copied</span>
                     </>
                   ) : (
                     <>
-                      <Copy className="w-3.5 h-3.5" />
+                      <Copy className="h-3.5 w-3.5" />
                       <span>Copy</span>
                     </>
                   )}
@@ -237,10 +224,10 @@ export default function ShareProductModal({
                 <button
                   type="button"
                   onClick={handleWhatsAppShare}
-                  className="p-3 rounded-2xl bg-surface hover:bg-surface/80 flex flex-col items-center gap-1.5 text-foreground border-0 shadow-none transition-colors"
+                  className="bg-surface hover:bg-surface/80 text-foreground flex flex-col items-center gap-1.5 rounded-2xl border-0 p-3 shadow-none transition-colors"
                 >
-                  <div className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
-                    <MessageCircle className="w-4 h-4" />
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600">
+                    <MessageCircle className="h-4 w-4" />
                   </div>
                   <span className="text-[11px] font-medium">WhatsApp</span>
                 </button>
@@ -248,10 +235,10 @@ export default function ShareProductModal({
                 <button
                   type="button"
                   onClick={handleTwitterShare}
-                  className="p-3 rounded-2xl bg-surface hover:bg-surface/80 flex flex-col items-center gap-1.5 text-foreground border-0 shadow-none transition-colors"
+                  className="bg-surface hover:bg-surface/80 text-foreground flex flex-col items-center gap-1.5 rounded-2xl border-0 p-3 shadow-none transition-colors"
                 >
-                  <div className="w-8 h-8 rounded-full bg-sky-500/10 text-sky-600 flex items-center justify-center">
-                    <Send className="w-4 h-4" />
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sky-500/10 text-sky-600">
+                    <Send className="h-4 w-4" />
                   </div>
                   <span className="text-[11px] font-medium">X / Twitter</span>
                 </button>
@@ -259,34 +246,34 @@ export default function ShareProductModal({
                 <button
                   type="button"
                   onClick={handleTelegramShare}
-                  className="p-3 rounded-2xl bg-surface hover:bg-surface/80 flex flex-col items-center gap-1.5 text-foreground border-0 shadow-none transition-colors"
+                  className="bg-surface hover:bg-surface/80 text-foreground flex flex-col items-center gap-1.5 rounded-2xl border-0 p-3 shadow-none transition-colors"
                 >
-                  <div className="w-8 h-8 rounded-full bg-blue-500/10 text-blue-600 flex items-center justify-center">
-                    <Send className="w-4 h-4" />
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/10 text-blue-600">
+                    <Send className="h-4 w-4" />
                   </div>
                   <span className="text-[11px] font-medium">Telegram</span>
                 </button>
               </div>
 
-              {/* Actions: Save Image / Native Share */}
+              {/* Actions: Save Studio Card / Native Share */}
               <div className="grid grid-cols-2 gap-2 pt-1">
                 <button
                   type="button"
-                  onClick={handleDownloadImage}
+                  onClick={handleDownloadCard}
                   disabled={downloading}
-                  className="w-full h-11 rounded-xl bg-surface hover:bg-surface/80 text-foreground text-xs font-medium flex items-center justify-center gap-2 border-0 shadow-none transition-colors"
+                  className="bg-surface hover:bg-surface/80 text-foreground flex h-11 w-full items-center justify-center gap-2 rounded-xl border-0 text-xs font-medium shadow-none transition-colors"
                 >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>{downloading ? 'Saving...' : 'Save Photo'}</span>
+                  <Download className="h-3.5 w-3.5" />
+                  <span>{downloading ? 'Saving...' : 'Save Studio Card'}</span>
                 </button>
 
                 {typeof navigator !== 'undefined' && (navigator as any).share && (
                   <button
                     type="button"
                     onClick={handleNativeShare}
-                    className="w-full h-11 rounded-xl bg-foreground text-background text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 border-0 shadow-none hover:opacity-90 transition-opacity"
+                    className="bg-foreground text-background flex h-11 w-full items-center justify-center gap-2 rounded-xl border-0 text-xs font-semibold uppercase tracking-wider shadow-none transition-opacity hover:opacity-90"
                   >
-                    <Share2 className="w-3.5 h-3.5" />
+                    <Share2 className="h-3.5 w-3.5" />
                     <span>More Apps</span>
                   </button>
                 )}

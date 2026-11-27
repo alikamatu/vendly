@@ -25,6 +25,12 @@ import {
   Banknote,
   MessageCircle,
   Youtube,
+  ShieldCheck,
+  Lock,
+  Mail,
+  KeyRound,
+  AlertTriangle,
+  RefreshCw,
 } from 'lucide-react';
 import Link from 'next/link';
 import Card from '@/components/ui/Card';
@@ -203,6 +209,137 @@ export default function StoreSettingsPage() {
   const [isDraftingStore, setIsDraftingStore] = useState(false);
   const [storeDraft, setStoreDraft] = useState<AiDraftStorefrontResult | null>(null);
 
+  // Verified Payout Change Flow state
+  const hasExistingPayout = Boolean(seller?.bank_code && seller?.account_number);
+  const [payoutModalOpen, setPayoutModalOpen] = useState(false);
+  const [payoutStep, setPayoutStep] = useState<'form' | 'verify'>('form');
+  const [newBankCode, setNewBankCode] = useState('');
+  const [newBankName, setNewBankName] = useState('');
+  const [newAccountNumber, setNewAccountNumber] = useState('');
+  const [resolvedName, setResolvedName] = useState<string | null>(null);
+  const [resolvingAccount, setResolvingAccount] = useState(false);
+  const [verifyMethod, setVerifyMethod] = useState<'EMAIL_OTP' | 'TOTP'>('EMAIL_OTP');
+  const [totpAvailable, setTotpAvailable] = useState(false);
+  const [maskedEmail, setMaskedEmail] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [payoutSubmitting, setPayoutSubmitting] = useState(false);
+  const [payoutError, setPayoutError] = useState<string | null>(null);
+  const [initialResolvedName, setInitialResolvedName] = useState<string | null>(null);
+
+  const maskAccount = (acct?: string | null) => {
+    const clean = (acct || '').trim();
+    if (!clean) return 'Not set';
+    if (clean.length <= 4) return '••••';
+    return `${'•'.repeat(Math.max(4, clean.length - 4))}${clean.slice(-4)}`;
+  };
+
+  const openPayoutChangeFlow = () => {
+    setNewBankCode(seller?.bank_code || '');
+    setNewBankName(seller?.bank_name || '');
+    setNewAccountNumber('');
+    setResolvedName(null);
+    setOtpCode('');
+    setPayoutError(null);
+    setVerifyMethod('EMAIL_OTP');
+    setPayoutStep('form');
+    setPayoutModalOpen(true);
+  };
+
+  const handleResolveAccount = async (
+    code: string,
+    acct: string,
+    mode: 'change' | 'initial' = 'change',
+  ) => {
+    if (!token || !code || !acct.trim()) {
+      toast.info('Select a provider and enter an account number first');
+      return;
+    }
+    setResolvingAccount(true);
+    setPayoutError(null);
+    try {
+      const res = await storeApi.resolvePayoutAccount(token, code, acct.trim());
+      if (res.account_name) {
+        if (mode === 'change') setResolvedName(res.account_name);
+        else setInitialResolvedName(res.account_name);
+        toast.success(`Verified account holder: ${res.account_name}`);
+      } else {
+        toast.info(res.warning || 'Account format looks valid (name lookup unavailable for MoMo)');
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Could not verify account number';
+      if (mode === 'change') setPayoutError(msg);
+      toast.error(msg);
+    } finally {
+      setResolvingAccount(false);
+    }
+  };
+
+  const handleRequestPayoutOtp = async () => {
+    if (!token) return;
+    if (!newBankCode || !newAccountNumber.trim()) {
+      setPayoutError('Please select your bank/MoMo provider and enter the new account number.');
+      return;
+    }
+    setPayoutSubmitting(true);
+    setPayoutError(null);
+    try {
+      const res = await storeApi.requestPayoutChangeVerification(token, {
+        bank_code: newBankCode,
+        bank_name: newBankName || newBankCode,
+        account_number: newAccountNumber.trim(),
+      });
+      setMaskedEmail(res.masked_email);
+      setTotpAvailable(Boolean(res.totp_available));
+      if (res.resolved_account_name) setResolvedName(res.resolved_account_name);
+      setVerifyMethod('EMAIL_OTP');
+      setPayoutStep('verify');
+      toast.success(res.message || `Verification code sent to ${res.masked_email}`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to send verification code';
+      setPayoutError(msg);
+      toast.error(msg);
+    } finally {
+      setPayoutSubmitting(false);
+    }
+  };
+
+  const handleConfirmPayoutChange = async () => {
+    if (!token) return;
+    const cleanCode = otpCode.replace(/\s+/g, '');
+    if (!/^\d{6}$/.test(cleanCode)) {
+      setPayoutError('Please enter the 6-digit verification code.');
+      return;
+    }
+    setPayoutSubmitting(true);
+    setPayoutError(null);
+    try {
+      const res = await storeApi.confirmPayoutChange(token, {
+        code: cleanCode,
+        method: verifyMethod,
+        bank_code: newBankCode,
+        bank_name: newBankName || newBankCode,
+        account_number: newAccountNumber.trim(),
+      });
+      await refreshUser();
+      setPayoutModalOpen(false);
+      setOtpCode('');
+      if (res.subaccount_status === 'ACTIVE') {
+        toast.success('Payout account verified & Paystack subaccount synced!');
+      } else {
+        toast.success(res.message || 'Payout account updated and verified.');
+      }
+      if (res.subaccount_warning) {
+        toast.info(res.subaccount_warning);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Verification failed';
+      setPayoutError(msg);
+      toast.error(msg);
+    } finally {
+      setPayoutSubmitting(false);
+    }
+  };
+
   const handleDraftStorefrontWithAi = async () => {
     if (!token) {
       toast.error('Please sign in to use Verndly AI');
@@ -345,7 +482,15 @@ export default function StoreSettingsPage() {
     setMessage(null);
 
     try {
-      await storeApi.updateStore(token, formData, logoFile || undefined);
+      // Once payout details exist, strip bank fields from generic PATCH /stores —
+      // payout destination edits MUST go through the verified OTP / 2FA flow.
+      const payload = hasExistingPayout
+        ? (() => {
+            const { bank_name: _bn, bank_code: _bc, account_number: _an, ...rest } = formData;
+            return rest;
+          })()
+        : formData;
+      await storeApi.updateStore(token, payload, logoFile || undefined);
       await refreshUser();
       setMessage({ type: 'success', text: 'Store updated successfully!' });
       toast.success('Store settings saved');
@@ -968,71 +1113,411 @@ export default function StoreSettingsPage() {
               </div>
             </div>
 
-            {/* Payout Destination */}
+            {/* Payout Destination (Protected with Verified OTP / 2FA Flow) */}
             <div className="space-y-3">
-              <label className={labelCls} style={{ color: 'var(--color-muted)' }}>
-                Payout Destination
-              </label>
-              <div
-                className="space-y-4 rounded-2xl border p-5"
-                style={{
-                  backgroundColor: 'color-mix(in srgb, var(--color-surface) 60%, transparent)',
-                  borderColor: 'color-mix(in srgb, var(--color-border) 10%, transparent)',
-                }}
-              >
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <label
-                      className="text-[9px] font-normal uppercase tracking-wider"
-                      style={{ color: 'var(--color-muted)' }}
-                    >
-                      Bank / Provider
-                    </label>
-                    <Select
-                      value={formData.bank_code}
-                      onChange={(val) =>
-                        setFormData({
-                          ...formData,
-                          bank_code: val,
-                          bank_name:
-                            GHANA_BANKS.find((b) => b.code === val)?.name ||
-                            MOMO_PROVIDERS.find((p) => p.code === val)?.name ||
-                            '',
-                        })
-                      }
-                      options={[
-                        { value: '', label: 'Select Provider' },
-                        ...GHANA_BANKS.map((b) => ({
-                          value: b.code,
-                          label: b.name,
-                          badge: 'Bank',
-                        })),
-                        ...MOMO_PROVIDERS.map((p) => ({
-                          value: p.code,
-                          label: p.name,
-                          badge: 'MoMo',
-                        })),
-                      ]}
-                      size="sm"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label
-                      className="text-[9px] font-normal uppercase tracking-wider"
-                      style={{ color: 'var(--color-muted)' }}
-                    >
-                      Account / Phone Number
-                    </label>
-                    <Input
-                      value={formData.account_number}
-                      onChange={(e) => setFormData({ ...formData, account_number: e.target.value })}
-                      placeholder="Enter details"
-                      className="h-11 rounded-xl text-[11px] font-normal"
-                      style={{ backgroundColor: 'var(--color-background)' }}
-                    />
-                  </div>
-                </div>
+              <div className="flex items-center justify-between gap-2">
+                <label className={labelCls} style={{ color: 'var(--color-muted)' }}>
+                  Payout Destination
+                </label>
+                {seller?.paystack_subaccount_code ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                    <ShieldCheck className="h-3 w-3" />
+                    Paystack Subaccount Active
+                  </span>
+                ) : hasExistingPayout ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                    <AlertTriangle className="h-3 w-3" />
+                    Subaccount Pending Sync
+                  </span>
+                ) : null}
               </div>
+
+              {hasExistingPayout ? (
+                <div
+                  className="space-y-4 rounded-2xl border p-5"
+                  style={{
+                    backgroundColor: 'color-mix(in srgb, var(--color-surface) 60%, transparent)',
+                    borderColor: 'color-mix(in srgb, var(--color-border) 25%, transparent)',
+                  }}
+                >
+                  <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600">
+                        <Lock className="h-4 w-4" />
+                      </div>
+                      <div className="space-y-0.5">
+                        <p
+                          className="text-xs font-semibold"
+                          style={{ color: 'var(--color-foreground)' }}
+                        >
+                          {seller?.bank_name || seller?.bank_code}
+                        </p>
+                        <p className="font-mono text-xs" style={{ color: 'var(--color-muted)' }}>
+                          {maskAccount(seller?.account_number)}
+                        </p>
+                        {seller?.paystack_subaccount_code && (
+                          <p
+                            className="font-mono text-[10px]"
+                            style={{ color: 'var(--color-muted)' }}
+                          >
+                            Subaccount: {seller.paystack_subaccount_code}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        payoutModalOpen ? setPayoutModalOpen(false) : openPayoutChangeFlow()
+                      }
+                      className="bg-foreground text-background inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-xl px-4 text-[11px] font-semibold transition-opacity hover:opacity-90"
+                    >
+                      <ShieldCheck className="h-3.5 w-3.5" />
+                      {payoutModalOpen ? 'Cancel Change' : 'Change Payout Account'}
+                    </button>
+                  </div>
+
+                  <p
+                    className="text-[10px] leading-relaxed"
+                    style={{ color: 'var(--color-muted)' }}
+                  >
+                    For your financial security, payout accounts are locked after setup. Any change
+                    requires a 6-digit email verification code (or your 2FA authenticator) and
+                    immediately re-syncs your Paystack settlement subaccount.
+                  </p>
+
+                  {/* Inline 2-Step Verified Payout Change Panel */}
+                  <AnimatePresence>
+                    {payoutModalOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div
+                          className="mt-2 space-y-4 rounded-2xl border p-4"
+                          style={{
+                            backgroundColor: 'var(--color-background)',
+                            borderColor: 'color-mix(in srgb, var(--color-accent) 30%, transparent)',
+                          }}
+                        >
+                          <div className="flex items-center justify-between">
+                            <p
+                              className="text-xs font-semibold"
+                              style={{ color: 'var(--color-foreground)' }}
+                            >
+                              {payoutStep === 'form'
+                                ? 'Step 1 of 2 — Enter New Payout Destination'
+                                : 'Step 2 of 2 — Verify Identity'}
+                            </p>
+                            <span
+                              className="text-[10px] font-medium uppercase tracking-wider"
+                              style={{ color: 'var(--color-muted)' }}
+                            >
+                              Protected
+                            </span>
+                          </div>
+
+                          {payoutError && (
+                            <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-[11px] text-rose-600 dark:text-rose-400">
+                              {payoutError}
+                            </div>
+                          )}
+
+                          {payoutStep === 'form' ? (
+                            <div className="space-y-4">
+                              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                <div className="space-y-2">
+                                  <label
+                                    className="text-[9px] font-normal uppercase tracking-wider"
+                                    style={{ color: 'var(--color-muted)' }}
+                                  >
+                                    New Bank / MoMo Provider
+                                  </label>
+                                  <Select
+                                    value={newBankCode}
+                                    onChange={(val) => {
+                                      setNewBankCode(val);
+                                      setNewBankName(
+                                        GHANA_BANKS.find((b) => b.code === val)?.name ||
+                                          MOMO_PROVIDERS.find((p) => p.code === val)?.name ||
+                                          '',
+                                      );
+                                      setResolvedName(null);
+                                    }}
+                                    options={[
+                                      { value: '', label: 'Select Provider' },
+                                      ...GHANA_BANKS.map((b) => ({
+                                        value: b.code,
+                                        label: b.name,
+                                        badge: 'Bank',
+                                      })),
+                                      ...MOMO_PROVIDERS.map((p) => ({
+                                        value: p.code,
+                                        label: p.name,
+                                        badge: 'MoMo',
+                                      })),
+                                    ]}
+                                    size="sm"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <label
+                                    className="text-[9px] font-normal uppercase tracking-wider"
+                                    style={{ color: 'var(--color-muted)' }}
+                                  >
+                                    New Account / Phone Number
+                                  </label>
+                                  <Input
+                                    value={newAccountNumber}
+                                    onChange={(e) => {
+                                      setNewAccountNumber(e.target.value);
+                                      setResolvedName(null);
+                                    }}
+                                    placeholder="e.g. 0244123456 or bank acct"
+                                    className="h-11 rounded-xl text-[11px] font-normal"
+                                    style={{ backgroundColor: 'var(--color-surface)' }}
+                                  />
+                                </div>
+                              </div>
+
+                              {resolvedName && (
+                                <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 px-3 py-2 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                                  <Check className="h-3.5 w-3.5 shrink-0" />
+                                  Paystack Account Name: <strong>{resolvedName}</strong>
+                                </div>
+                              )}
+
+                              <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                                <button
+                                  type="button"
+                                  disabled={resolvingAccount || !newBankCode || !newAccountNumber}
+                                  onClick={() =>
+                                    void handleResolveAccount(
+                                      newBankCode,
+                                      newAccountNumber,
+                                      'change',
+                                    )
+                                  }
+                                  className="bg-surface text-foreground inline-flex h-9 items-center gap-1.5 rounded-xl px-3 text-[11px] font-medium transition-opacity hover:opacity-85 disabled:opacity-40"
+                                >
+                                  <RefreshCw
+                                    className={`h-3 w-3 ${resolvingAccount ? 'animate-spin' : ''}`}
+                                  />
+                                  Verify Account Name
+                                </button>
+
+                                <button
+                                  type="button"
+                                  disabled={
+                                    payoutSubmitting || !newBankCode || !newAccountNumber.trim()
+                                  }
+                                  onClick={() => void handleRequestPayoutOtp()}
+                                  className="bg-foreground text-background inline-flex h-10 items-center gap-1.5 rounded-xl px-4 text-[11px] font-semibold transition-opacity hover:opacity-90 disabled:opacity-40"
+                                >
+                                  <Mail className="h-3.5 w-3.5" />
+                                  {payoutSubmitting
+                                    ? 'Sending Code…'
+                                    : 'Send Verification Code to Email'}
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="space-y-4">
+                              <div className="bg-surface rounded-xl p-3 text-[11px]">
+                                <p style={{ color: 'var(--color-foreground)' }}>
+                                  Updating to:{' '}
+                                  <strong>
+                                    {newBankName || newBankCode} · {maskAccount(newAccountNumber)}
+                                  </strong>
+                                </p>
+                                {resolvedName && (
+                                  <p className="mt-0.5 text-emerald-600 dark:text-emerald-400">
+                                    Account Name: {resolvedName}
+                                  </p>
+                                )}
+                                <p className="mt-1" style={{ color: 'var(--color-muted)' }}>
+                                  {verifyMethod === 'TOTP'
+                                    ? 'Enter the 6-digit code from your 2FA Authenticator app.'
+                                    : `Enter the 6-digit code sent to ${maskedEmail} (expires in 10 minutes).`}
+                                </p>
+                              </div>
+
+                              {totpAvailable && (
+                                <div className="flex gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => setVerifyMethod('EMAIL_OTP')}
+                                    className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl border py-2 text-[11px] font-medium transition-colors ${
+                                      verifyMethod === 'EMAIL_OTP'
+                                        ? 'border-foreground bg-foreground text-background'
+                                        : 'border-border text-muted'
+                                    }`}
+                                  >
+                                    <Mail className="h-3 w-3" /> Email Code
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setVerifyMethod('TOTP')}
+                                    className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl border py-2 text-[11px] font-medium transition-colors ${
+                                      verifyMethod === 'TOTP'
+                                        ? 'border-foreground bg-foreground text-background'
+                                        : 'border-border text-muted'
+                                    }`}
+                                  >
+                                    <KeyRound className="h-3 w-3" /> 2FA Authenticator
+                                  </button>
+                                </div>
+                              )}
+
+                              <div className="space-y-1.5">
+                                <label
+                                  className="text-[9px] font-normal uppercase tracking-wider"
+                                  style={{ color: 'var(--color-muted)' }}
+                                >
+                                  6-Digit Verification Code
+                                </label>
+                                <Input
+                                  value={otpCode}
+                                  inputMode="numeric"
+                                  maxLength={6}
+                                  onChange={(e) =>
+                                    setOtpCode(e.target.value.replace(/[^\d]/g, '').slice(0, 6))
+                                  }
+                                  placeholder="000000"
+                                  className="h-12 rounded-xl text-center font-mono text-lg tracking-[0.4em]"
+                                  style={{ backgroundColor: 'var(--color-surface)' }}
+                                />
+                              </div>
+
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setPayoutStep('form');
+                                    setOtpCode('');
+                                    setPayoutError(null);
+                                  }}
+                                  className="text-[11px] font-medium underline"
+                                  style={{ color: 'var(--color-muted)' }}
+                                >
+                                  Edit account details
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={payoutSubmitting || otpCode.length !== 6}
+                                  onClick={() => void handleConfirmPayoutChange()}
+                                  className="bg-foreground text-background inline-flex h-10 items-center gap-1.5 rounded-xl px-5 text-[11px] font-semibold transition-opacity hover:opacity-90 disabled:opacity-40"
+                                >
+                                  <ShieldCheck className="h-3.5 w-3.5" />
+                                  {payoutSubmitting
+                                    ? 'Verifying & Syncing…'
+                                    : 'Verify & Update Payout Account'}
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ) : (
+                <div
+                  className="space-y-4 rounded-2xl border p-5"
+                  style={{
+                    backgroundColor: 'color-mix(in srgb, var(--color-surface) 60%, transparent)',
+                    borderColor: 'color-mix(in srgb, var(--color-border) 10%, transparent)',
+                  }}
+                >
+                  <p className="text-[11px]" style={{ color: 'var(--color-muted)' }}>
+                    Add your bank or Mobile Money account below. Saving automatically provisions
+                    your Paystack settlement subaccount and locks these details against unauthorized
+                    edits.
+                  </p>
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <label
+                        className="text-[9px] font-normal uppercase tracking-wider"
+                        style={{ color: 'var(--color-muted)' }}
+                      >
+                        Bank / Provider
+                      </label>
+                      <Select
+                        value={formData.bank_code}
+                        onChange={(val) => {
+                          setInitialResolvedName(null);
+                          setFormData({
+                            ...formData,
+                            bank_code: val,
+                            bank_name:
+                              GHANA_BANKS.find((b) => b.code === val)?.name ||
+                              MOMO_PROVIDERS.find((p) => p.code === val)?.name ||
+                              '',
+                          });
+                        }}
+                        options={[
+                          { value: '', label: 'Select Provider' },
+                          ...GHANA_BANKS.map((b) => ({
+                            value: b.code,
+                            label: b.name,
+                            badge: 'Bank',
+                          })),
+                          ...MOMO_PROVIDERS.map((p) => ({
+                            value: p.code,
+                            label: p.name,
+                            badge: 'MoMo',
+                          })),
+                        ]}
+                        size="sm"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label
+                        className="text-[9px] font-normal uppercase tracking-wider"
+                        style={{ color: 'var(--color-muted)' }}
+                      >
+                        Account / Phone Number
+                      </label>
+                      <Input
+                        value={formData.account_number}
+                        onChange={(e) => {
+                          setInitialResolvedName(null);
+                          setFormData({ ...formData, account_number: e.target.value });
+                        }}
+                        placeholder="Enter 9–16 digit number"
+                        className="h-11 rounded-xl text-[11px] font-normal"
+                        style={{ backgroundColor: 'var(--color-background)' }}
+                      />
+                    </div>
+                  </div>
+                  {initialResolvedName && (
+                    <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 px-3 py-2 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                      <Check className="h-3.5 w-3.5 shrink-0" />
+                      Paystack Account Name: <strong>{initialResolvedName}</strong>
+                    </div>
+                  )}
+                  {formData.bank_code && formData.account_number && (
+                    <button
+                      type="button"
+                      disabled={resolvingAccount}
+                      onClick={() =>
+                        void handleResolveAccount(
+                          formData.bank_code,
+                          formData.account_number,
+                          'initial',
+                        )
+                      }
+                      className="bg-background text-foreground inline-flex h-9 items-center gap-1.5 rounded-xl px-3 text-[11px] font-medium transition-opacity hover:opacity-85 disabled:opacity-40"
+                    >
+                      <RefreshCw className={`h-3 w-3 ${resolvingAccount ? 'animate-spin' : ''}`} />
+                      Verify Account Name
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Payment Timing — radio-style cards */}

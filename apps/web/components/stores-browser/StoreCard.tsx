@@ -58,8 +58,12 @@ export default function StoreCard({ store, index }: StoreCardProps) {
                     PRO
                   </span>
                 )}
-                {store.is_verified && (
+                {store.is_verified ? (
                   <CheckCircle2 className="h-4 w-4 fill-blue-500/10 text-blue-500" />
+                ) : (
+                  <span className="bg-amber-500/12 rounded-full px-2 py-0.5 text-[9px] font-semibold text-amber-600 dark:text-amber-400">
+                    Pending verification
+                  </span>
                 )}
               </div>
             </div>

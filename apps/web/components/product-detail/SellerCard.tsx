@@ -23,6 +23,8 @@ interface SellerCardProps {
     location?: string | null;
     is_pro?: boolean;
     is_verified?: boolean;
+    is_seller_verified?: boolean;
+    can_receive_orders?: boolean;
     service_area?: string | null;
     avg_delivery_time?: string | null;
   };
@@ -70,9 +72,13 @@ export default function SellerCard({ seller }: SellerCardProps) {
               <h4 className="text-foreground truncate text-sm font-medium uppercase tracking-tight">
                 {seller.store_name}
               </h4>
-              {seller.is_verified && (
+              {seller.is_verified ? (
                 <span className="inline-flex items-center gap-0.5 rounded-full bg-blue-500/10 px-1.5 py-0.5 text-[9px] font-normal text-blue-500">
                   <BadgeCheck className="h-2.5 w-2.5" /> Verified
+                </span>
+              ) : (
+                <span className="bg-amber-500/12 inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-semibold text-amber-600 dark:text-amber-400">
+                  Orders disabled · Pending verification
                 </span>
               )}
             </div>

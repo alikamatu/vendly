@@ -60,7 +60,7 @@ function CartLine({
   isStockLoading,
 }: {
   item: CartItem;
-  onUpdateQty: (key: string, qty: number) => void;
+  onUpdateQty: (key: string, qty: number, maxStockOverride?: number | null) => void;
   onRemove: (key: string) => void;
   onSaveForLater: (item: CartItem) => void;
   available: number | null | undefined;
@@ -154,11 +154,20 @@ function CartLine({
                   Out of stock
                 </span>
               )}
-              {isPartialStock && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">
-                  <AlertTriangle size={10} />
-                  Only {available} remaining in stock
-                </span>
+              {isPartialStock && typeof available === 'number' && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">
+                    <AlertTriangle size={10} />
+                    Only {available} remaining in stock
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => onUpdateQty(itemKey, available, available)}
+                    className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-semibold text-amber-700 transition-colors hover:bg-amber-500/30 dark:text-amber-300"
+                  >
+                    Set to {available}
+                  </button>
+                </div>
               )}
               {!blocked && typeof available === 'number' && available > 0 && (
                 <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
@@ -187,7 +196,13 @@ function CartLine({
           </span>
           <button
             type="button"
-            onClick={() => onUpdateQty(itemKey, item.quantity + 1)}
+            onClick={() =>
+              onUpdateQty(
+                itemKey,
+                item.quantity + 1,
+                typeof available === 'number' ? available : null,
+              )
+            }
             disabled={typeof available === 'number' && item.quantity >= available}
             className="text-muted-foreground hover:text-foreground hover:bg-surface rounded-lg p-1.5 transition-colors disabled:cursor-not-allowed disabled:opacity-30"
             aria-label="Increase quantity"

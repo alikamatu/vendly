@@ -14,12 +14,24 @@ import {
 const DEFAULT_LIMIT = 24;
 const SEARCH_DEBOUNCE_MS = 320;
 
+const VALID_SORTS: readonly BrowseSort[] = [
+  'featured',
+  'newest',
+  'oldest',
+  'price_asc',
+  'price_desc',
+  'popular',
+  'discount_desc',
+];
+
 export interface ProductsBrowserState {
   // Filters / query
   search: string;
   setSearch: (v: string) => void;
   category: string | null;
   setCategory: (v: string | null) => void;
+  subcategory: string | null;
+  setSubcategory: (v: string | null) => void;
   brand: string | null;
   setBrand: (v: string | null) => void;
   minPrice: number | null;
@@ -50,12 +62,17 @@ export interface ProductsBrowserState {
   activeChips: ActiveChip[];
   clearAll: () => void;
 
-  // Data
+  // Data & Endless Scroll
   data: BrowseProductsResponse['data'];
   meta: BrowseProductsResponse['meta'];
   isLoading: boolean;
   isRefreshing: boolean;
+  isLoadingMore: boolean;
+  hasMore: boolean;
   error: string | null;
+  loadMoreError: string | null;
+  loadMore: () => void;
+  retryLoadMore: () => void;
   reload: () => void;
 }
 
@@ -79,11 +96,13 @@ export function useProductsBrowser(
 
   // Initialize from URL
   const searchParamsKey = searchParams.toString();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const initial = useMemo(() => readParams(searchParams), []);
   const lastPushedQuery = useRef<string | null>(null);
 
   const [search, setSearchValue] = useState(initial.search);
   const [category, setCategory] = useState<string | null>(initial.category);
+  const [subcategory, setSubcategory] = useState<string | null>(initial.subcategory);
   const [brand, setBrand] = useState<string | null>(initial.brand);
   const [minPrice, setMinPrice] = useState<number | null>(initial.minPrice);
   const [maxPrice, setMaxPrice] = useState<number | null>(initial.maxPrice);
@@ -96,12 +115,19 @@ export function useProductsBrowser(
   const [serviceArea, setServiceArea] = useState<ServiceAreaFilter | null>(initial.serviceArea);
   const [deliveryTime, setDeliveryTime] = useState<DeliveryTimeFilter | null>(initial.deliveryTime);
   const [sort, setSort] = useState<BrowseSort>(initial.sort);
-  const [page, setPageValue] = useState(initial.page);
+  const [page, setPageValue] = useState(1);
 
-  // Debounced search → committed value (drives the fetch)
+  // Debounced search → committed value (drives the fetch and resets page once committed)
   const [committedSearch, setCommittedSearch] = useState(initial.search);
   useEffect(() => {
-    const t = setTimeout(() => setCommittedSearch(search), SEARCH_DEBOUNCE_MS);
+    const t = setTimeout(() => {
+      setCommittedSearch((prev) => {
+        if (prev !== search) {
+          setPageValue(1);
+        }
+        return search;
+      });
+    }, SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(t);
   }, [search]);
 
@@ -116,6 +142,7 @@ export function useProductsBrowser(
     setSearchValue(next.search);
     setCommittedSearch(next.search);
     setCategory(next.category);
+    setSubcategory(next.subcategory);
     setBrand(next.brand);
     setMinPrice(next.minPrice);
     setMaxPrice(next.maxPrice);
@@ -128,7 +155,7 @@ export function useProductsBrowser(
     setServiceArea(next.serviceArea);
     setDeliveryTime(next.deliveryTime);
     setSort(next.sort);
-    setPageValue(next.page);
+    setPageValue(1);
     lastPushedQuery.current = searchParamsKey;
   }, [searchParamsKey]);
 
@@ -138,17 +165,12 @@ export function useProductsBrowser(
     setPageValue(1);
   }, []);
 
-  // Reset to page 1 whenever a filter (other than page itself) changes
   const resetPage = useCallback(() => setPageValue(1), []);
-  const setSearch = useCallback(
-    (v: string) => {
-      setSearchValue(v);
-      resetPage();
-    },
-    [resetPage],
-  );
+  const setSearch = useCallback((v: string) => {
+    setSearchValue(v);
+  }, []);
 
-  // Wrap setters to also reset page
+  // Wrap setters to also reset page to 1
   const wrap =
     <T>(setter: (v: T) => void) =>
     (v: T) => {
@@ -156,11 +178,13 @@ export function useProductsBrowser(
       resetPage();
     };
 
-  // Sync state -> URL (shallow, replace so back-button still works between sessions)
+  // Sync filter state -> URL (shallow, replace; omit `page` so endless scrolling
+  // never mutates browser history or query params).
   useEffect(() => {
     const qs = new URLSearchParams();
     if (committedSearch) qs.set('q', committedSearch);
     if (category) qs.set('category', category);
+    if (subcategory) qs.set('subcategory', subcategory);
     if (brand) qs.set('brand', brand);
     if (minPrice != null) qs.set('min_price', String(minPrice));
     if (maxPrice != null) qs.set('max_price', String(maxPrice));
@@ -172,8 +196,7 @@ export function useProductsBrowser(
     if (cityId) qs.set('city_id', cityId);
     if (serviceArea) qs.set('service_area', serviceArea);
     if (deliveryTime) qs.set('avg_delivery_time', deliveryTime);
-    if (sort !== 'newest') qs.set('sort', sort);
-    if (page > 1) qs.set('page', String(page));
+    if (sort !== 'featured') qs.set('sort', sort);
     const s = qs.toString();
     if (s === searchParamsKey) {
       lastPushedQuery.current = s;
@@ -184,6 +207,7 @@ export function useProductsBrowser(
   }, [
     committedSearch,
     category,
+    subcategory,
     brand,
     minPrice,
     maxPrice,
@@ -196,13 +220,12 @@ export function useProductsBrowser(
     serviceArea,
     deliveryTime,
     sort,
-    page,
     pathname,
     router,
     searchParamsKey,
   ]);
 
-  // Fetch
+  // Fetch & Endless Scroll Accumulation
   const hasServerInitial = Boolean(initialServer?.data && initialServer.data.length > 0);
   const [data, setData] = useState<BrowseProductsResponse['data']>(initialServer?.data ?? []);
   const [meta, setMeta] = useState<BrowseProductsResponse['meta']>(
@@ -213,18 +236,76 @@ export function useProductsBrowser(
       totalPages: 1,
     },
   );
+  const [reachedEnd, setReachedEnd] = useState<boolean>(() => {
+    if (!initialServer?.meta) return false;
+    return initialServer.meta.page >= initialServer.meta.totalPages;
+  });
   const [isLoading, setIsLoading] = useState(!hasServerInitial);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const [reloadTick, setReloadTick] = useState(0);
+  const [retryMoreTick, setRetryMoreTick] = useState(0);
   const firstFetch = useRef(!hasServerInitial);
+
+  const filterKey = useMemo(
+    () =>
+      JSON.stringify([
+        committedSearch,
+        category,
+        brand,
+        minPrice,
+        maxPrice,
+        condition,
+        inStock,
+        hasVideo,
+        hasDiscount,
+        region,
+        cityId,
+        serviceArea,
+        deliveryTime,
+        sort,
+        reloadTick,
+      ]),
+    [
+      committedSearch,
+      category,
+      brand,
+      minPrice,
+      maxPrice,
+      condition,
+      inStock,
+      hasVideo,
+      hasDiscount,
+      region,
+      cityId,
+      serviceArea,
+      deliveryTime,
+      sort,
+      reloadTick,
+    ],
+  );
+
+  const prevFilterKeyRef = useRef(filterKey);
 
   useEffect(() => {
     let cancelled = false;
 
+    const filterChanged = prevFilterKeyRef.current !== filterKey;
+    prevFilterKeyRef.current = filterKey;
+
+    const targetPage = filterChanged ? 1 : page;
+    if (filterChanged && page !== 1) {
+      setPageValue(1);
+    }
+
+    const isAppending = targetPage > 1 && !filterChanged;
+
     const params: BrowseProductsParams = {
       search: committedSearch || undefined,
       category: category || undefined,
+      subcategory: subcategory || undefined,
       brand: brand || undefined,
       min_price: minPrice ?? undefined,
       max_price: maxPrice ?? undefined,
@@ -237,29 +318,51 @@ export function useProductsBrowser(
       service_area: serviceArea || undefined,
       avg_delivery_time: deliveryTime || undefined,
       sort,
-      page,
+      page: targetPage,
       limit: DEFAULT_LIMIT,
     };
 
-    if (firstFetch.current) setIsLoading(true);
-    else setIsRefreshing(true);
-    setError(null);
+    if (isAppending) {
+      setIsLoadingMore(true);
+      setLoadMoreError(null);
+    } else {
+      if (firstFetch.current) setIsLoading(true);
+      else setIsRefreshing(true);
+      setError(null);
+      setLoadMoreError(null);
+      setReachedEnd(false);
+    }
 
     productApi
       .browseProducts(params)
       .then((res) => {
         if (cancelled) return;
-        setData(res.data);
+        if (isAppending) {
+          setData((prev) => {
+            const seen = new Set(prev.map((item) => String(item.id)));
+            const incoming = res.data.filter((item) => !seen.has(String(item.id)));
+            return incoming.length > 0 ? [...prev, ...incoming] : prev;
+          });
+        } else {
+          setData(res.data);
+        }
         setMeta(res.meta);
+        setReachedEnd(res.data.length === 0 || res.meta.page >= res.meta.totalPages);
       })
       .catch((err) => {
         if (cancelled) return;
-        setError(err?.message || 'Failed to load products');
+        const message = err?.message || 'Failed to load products';
+        if (isAppending) {
+          setLoadMoreError(message);
+        } else {
+          setError(message);
+        }
       })
       .finally(() => {
         if (cancelled) return;
         setIsLoading(false);
         setIsRefreshing(false);
+        setIsLoadingMore(false);
         firstFetch.current = false;
       });
 
@@ -267,8 +370,10 @@ export function useProductsBrowser(
       cancelled = true;
     };
   }, [
+    filterKey,
     committedSearch,
     category,
+    subcategory,
     brand,
     minPrice,
     maxPrice,
@@ -282,8 +387,24 @@ export function useProductsBrowser(
     deliveryTime,
     sort,
     page,
-    reloadTick,
+    retryMoreTick,
   ]);
+
+  const hasMore =
+    !isLoading && !reachedEnd && meta.page < meta.totalPages && data.length < meta.total;
+
+  const loadMore = useCallback(() => {
+    if (isLoading || isRefreshing || isLoadingMore || loadMoreError || !hasMore) {
+      return;
+    }
+    setPageValue((prev) => prev + 1);
+  }, [isLoading, isRefreshing, isLoadingMore, loadMoreError, hasMore]);
+
+  const retryLoadMore = useCallback(() => {
+    if (isLoadingMore) return;
+    setLoadMoreError(null);
+    setRetryMoreTick((t) => t + 1);
+  }, [isLoadingMore]);
 
   const activeChips: ActiveChip[] = useMemo(() => {
     const chips: ActiveChip[] = [];
@@ -291,10 +412,24 @@ export function useProductsBrowser(
       chips.push({
         key: 'search',
         label: `"${committedSearch}"`,
-        onClear: () => setSearch(''),
+        onClear: () => setSearchValue(''),
       });
     if (category)
-      chips.push({ key: 'category', label: category, onClear: () => wrap(setCategory)(null) });
+      chips.push({
+        key: 'category',
+        label: category,
+        onClear: () => {
+          setCategory(null);
+          setSubcategory(null);
+          resetPage();
+        },
+      });
+    if (subcategory)
+      chips.push({
+        key: 'subcategory',
+        label: subcategory,
+        onClear: () => wrap(setSubcategory)(null),
+      });
     if (brand) chips.push({ key: 'brand', label: brand, onClear: () => wrap(setBrand)(null) });
     if (condition)
       chips.push({
@@ -337,6 +472,7 @@ export function useProductsBrowser(
   }, [
     committedSearch,
     category,
+    subcategory,
     brand,
     condition,
     minPrice,
@@ -354,6 +490,7 @@ export function useProductsBrowser(
     setSearchValue('');
     setCommittedSearch('');
     setCategory(null);
+    setSubcategory(null);
     setBrand(null);
     setMinPrice(null);
     setMaxPrice(null);
@@ -365,7 +502,7 @@ export function useProductsBrowser(
     setCityId(null);
     setServiceArea(null);
     setDeliveryTime(null);
-    setSort('newest');
+    setSort('featured');
     setPageValue(1);
   }, []);
 
@@ -373,7 +510,12 @@ export function useProductsBrowser(
     search,
     setSearch,
     category,
-    setCategory: wrap(setCategory),
+    setCategory: wrap((v: string | null) => {
+      setCategory(v);
+      setSubcategory(null);
+    }),
+    subcategory,
+    setSubcategory: wrap(setSubcategory),
     brand,
     setBrand: wrap(setBrand),
     minPrice,
@@ -409,8 +551,16 @@ export function useProductsBrowser(
     meta,
     isLoading,
     isRefreshing,
+    isLoadingMore,
+    hasMore,
     error,
-    reload: () => setReloadTick((t) => t + 1),
+    loadMoreError,
+    loadMore,
+    retryLoadMore,
+    reload: () => {
+      setPageValue(1);
+      setReloadTick((t) => t + 1);
+    },
   };
 }
 
@@ -422,9 +572,16 @@ function readParams(sp: URLSearchParams) {
   };
   const sa = sp.get('service_area');
   const dt = sp.get('avg_delivery_time');
+  const rawSort = sp.get('sort');
+  const sort: BrowseSort =
+    rawSort && (VALID_SORTS as readonly string[]).includes(rawSort)
+      ? (rawSort as BrowseSort)
+      : 'featured';
+
   return {
     search: sp.get('q') ?? '',
     category: sp.get('category'),
+    subcategory: sp.get('subcategory'),
     brand: sp.get('brand'),
     minPrice: num(sp.get('min_price')),
     maxPrice: num(sp.get('max_price')),
@@ -451,8 +608,7 @@ function readParams(sp: URLSearchParams) {
       ).includes(dt as any)
         ? (dt as DeliveryTimeFilter)
         : null,
-    sort: (sp.get('sort') as BrowseSort) || 'newest',
-    page: Math.max(1, Number(sp.get('page')) || 1),
+    sort,
   };
 }
 

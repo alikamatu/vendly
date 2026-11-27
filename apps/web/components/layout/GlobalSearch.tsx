@@ -420,7 +420,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                           onClick={() => handleBrowseUrl('/products')}
                           className="bg-foreground text-background inline-flex h-9 items-center rounded-xl px-4 text-xs font-semibold"
                         >
-                          Browse all products
+                          Browse Shop
                         </button>
                       </div>
                     )}

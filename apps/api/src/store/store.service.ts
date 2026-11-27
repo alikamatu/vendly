@@ -1,21 +1,73 @@
 import {
   Injectable,
+  Inject,
   ConflictException,
   BadRequestException,
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
-import { Role, ApprovalStatus } from '@prisma/client';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
+import * as crypto from 'crypto';
+import { NotificationType, Role, ApprovalStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateStoreDto } from './dto/create-store.dto';
 import { CloudinaryService } from '../common/cloudinary.service';
 import { attachProductSlugs } from '../product/product-slug';
+import { PaymentsService } from '../payments/payments.service';
+import { EmailService } from '../email/email.service';
+import { NotificationService } from '../notification/notification.service';
+import { Actor, AuditLogService } from '../audit/audit-log.service';
+import { verifyCode } from '../auth/totp.util';
+
+interface PendingPayoutChangeChallenge {
+  otpHash: string;
+  bank_name: string;
+  bank_code: string;
+  account_number: string;
+  attempts: number;
+  expiresAt: number;
+}
+
+const PAYOUT_OTP_TTL_MS = 10 * 60 * 1000;
+const PAYOUT_OTP_COOLDOWN_MS = 60 * 1000;
+const PAYOUT_OTP_MAX_ATTEMPTS = 5;
+
+function hashOtp(code: string): string {
+  return crypto.createHash('sha256').update(code.trim()).digest('hex');
+}
+
+function safeHashEqual(a: string, b: string): boolean {
+  const bufA = Buffer.from(a, 'utf8');
+  const bufB = Buffer.from(b, 'utf8');
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
+function maskAccountNumber(acct: string | null | undefined): string {
+  const clean = (acct || '').trim();
+  if (!clean) return 'Not set';
+  if (clean.length <= 4) return '****';
+  return `${'*'.repeat(Math.max(4, clean.length - 4))}${clean.slice(-4)}`;
+}
+
+function maskEmailAddress(email: string): string {
+  const [local, domain] = (email || '').split('@');
+  if (!domain) return email;
+  if (local.length <= 2) return `${local[0] || '*'}***@${domain}`;
+  return `${local.slice(0, 2)}***@${domain}`;
+}
 
 @Injectable()
 export class StoreService {
   constructor(
     private prisma: PrismaService,
     private cloudinaryService: CloudinaryService,
+    private paymentsService: PaymentsService,
+    private emailService: EmailService,
+    private notifications: NotificationService,
+    private auditLogs: AuditLogService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   async createStore(
@@ -38,16 +90,15 @@ export class StoreService {
       throw new NotFoundException('User not found');
     }
 
-    const isVerifiedSeller =
-      user.role === Role.SELLER ||
-      user.role === Role.ADMIN ||
-      user.admin_approvals[0]?.status === ApprovalStatus.APPROVED;
-
-    if (!isVerifiedSeller) {
+    if (user.is_suspended || user.disabled_at || user.deletion_scheduled_for) {
       throw new ForbiddenException(
-        'You must complete seller verification before creating a store. Visit /seller-verification to submit your verification.',
+        'Your account is not eligible to create a store right now.',
       );
     }
+
+    const isVerifiedSeller =
+      user.role === Role.ADMIN ||
+      user.admin_approvals[0]?.status === ApprovalStatus.APPROVED;
 
     // 2. Check if user already has a store
     const existingStore = await this.prisma.sellerProfile.findUnique({
@@ -76,6 +127,13 @@ export class StoreService {
       logo_url = uploadResult.secure_url;
     }
 
+    if (user.role === Role.USER) {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { role: Role.SELLER },
+      });
+    }
+
     const store = await this.prisma.sellerProfile.create({
       data: {
         user_id: userId,
@@ -89,16 +147,21 @@ export class StoreService {
         social_links: dto.social_links || {},
         logo_url: logo_url,
         store_profile_completed: true,
+        is_seller_verified: isVerifiedSeller,
       },
     });
 
     return {
-      message: 'Store created successfully',
+      message: isVerifiedSeller
+        ? 'Store created successfully'
+        : 'Store created. Complete seller verification to start receiving orders.',
       store: {
         id: store.id.toString(),
         store_name: store.store_name,
         store_link: store.store_link,
         logo_url: store.logo_url,
+        is_seller_verified: store.is_seller_verified,
+        can_receive_orders: store.is_seller_verified,
       },
     };
   }
@@ -112,9 +175,48 @@ export class StoreService {
       throw new ConflictException('Store not found');
     }
 
+    // Hard-coded security lock: once payout details exist, they CANNOT be altered via
+    // generic PATCH /stores — the seller MUST go through the verified OTP / 2FA flow.
+    const hasExistingPayout = Boolean(store.bank_code && store.account_number);
+    const incomingBankCode =
+      typeof dto.bank_code === 'string' ? dto.bank_code.trim() : '';
+    const incomingAccount =
+      typeof dto.account_number === 'string'
+        ? dto.account_number.replace(/[\s-]/g, '').trim()
+        : '';
+    const incomingBankName =
+      typeof dto.bank_name === 'string' ? dto.bank_name.trim() : '';
+
+    const isChangingBankCode =
+      Boolean(incomingBankCode) && incomingBankCode !== (store.bank_code || '');
+    const isChangingAccount =
+      Boolean(incomingAccount) &&
+      incomingAccount !==
+        (store.account_number || '').replace(/[\s-]/g, '').trim();
+    const isChangingBankName =
+      Boolean(incomingBankName) && incomingBankName !== (store.bank_name || '');
+
+    if (
+      hasExistingPayout &&
+      (isChangingBankCode || isChangingAccount || isChangingBankName)
+    ) {
+      throw new ForbiddenException(
+        'Changing payout details requires verification. Please verify via email code or 2FA in the Payout Destination section.',
+      );
+    }
+
+    const isSettingInitialPayout =
+      !hasExistingPayout && Boolean(incomingBankCode && incomingAccount);
+
+    if (isSettingInitialPayout && !/^\d{9,16}$/.test(incomingAccount)) {
+      throw new BadRequestException(
+        'Account or Mobile Money number must contain 9 to 16 digits.',
+      );
+    }
+
     const data: any = {};
 
-    // Copy simple string fields
+    // Copy simple string fields (bank fields only allowed on initial setup when unset)
     const stringFields = [
       'store_name',
       'store_link',
@@ -124,9 +226,6 @@ export class StoreService {
       'area',
       'delivery_policies',
       'business_hours',
-      'bank_name',
-      'bank_code',
-      'account_number',
       'payment_timing',
       'service_area',
       'avg_delivery_time',
@@ -135,6 +234,12 @@ export class StoreService {
       if (dto[key] !== undefined && dto[key] !== '') {
         data[key] = dto[key];
       }
+    }
+    if (isSettingInitialPayout) {
+      data.bank_name = incomingBankName || incomingBankCode;
+      data.bank_code = incomingBankCode;
+      data.account_number = incomingAccount;
+      data.payment_setup_completed = true;
     }
 
     // Parse location_id (comes as string from FormData)
@@ -180,8 +285,34 @@ export class StoreService {
       data,
     });
 
+    // If the seller just added initial payout details (after skipping during onboarding),
+    // immediately create their Paystack subaccount with validation error handling.
+    let subaccountStatus: string | undefined;
+    if (isSettingInitialPayout) {
+      try {
+        const subRes = await this.paymentsService.createSubaccount(updated.id, {
+          forceUpdate: true,
+          throwOnError: true,
+        });
+        subaccountStatus = subRes.ok ? 'ACTIVE' : 'PENDING_RETRY';
+      } catch (err) {
+        await this.prisma.sellerProfile.update({
+          where: { user_id: userId },
+          data: {
+            bank_name: null,
+            bank_code: null,
+            account_number: null,
+          },
+        });
+        throw err;
+      }
+    }
+
     return {
-      message: 'Store updated successfully',
+      message: isSettingInitialPayout
+        ? 'Store and payout details saved.'
+        : 'Store updated successfully',
+      ...(subaccountStatus ? { subaccount_status: subaccountStatus } : {}),
       store: {
         id: updated.id.toString(),
         store_name: updated.store_name,
@@ -202,7 +333,305 @@ export class StoreService {
         bank_name: updated.bank_name,
         bank_code: updated.bank_code,
         account_number: updated.account_number,
+        paystack_subaccount_code: updated.paystack_subaccount_code,
       },
+    };
+  }
+
+  private payoutOtpKey(userId: string) {
+    return `payout_change_otp:${userId}`;
+  }
+
+  private payoutCooldownKey(userId: string) {
+    return `payout_change_cooldown:${userId}`;
+  }
+
+  /**
+   * Step 1 of verified payout details update:
+   * Validates new bank/MoMo details, optionally resolves account holder name via Paystack,
+   * binds a single-use SHA-256 hashed 6-digit OTP to the exact target payload, and emails it.
+   */
+  async requestPayoutChangeVerification(
+    userId: string,
+    dto: { bank_name?: string; bank_code: string; account_number: string },
+  ) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { seller_profile: true },
+    });
+    if (!user || !user.seller_profile) {
+      throw new NotFoundException('Seller store not found.');
+    }
+
+    const cleanBankCode = (dto.bank_code || '').trim();
+    const cleanAccount = (dto.account_number || '')
+      .replace(/[\s-]/g, '')
+      .trim();
+    const cleanBankName = (dto.bank_name || '').trim() || cleanBankCode;
+
+    if (!cleanBankCode || !cleanAccount) {
+      throw new BadRequestException(
+        'Bank/provider code and account/MoMo number are required.',
+      );
+    }
+    if (!/^\d{9,16}$/.test(cleanAccount)) {
+      throw new BadRequestException(
+        'Account or Mobile Money number must contain 9 to 16 digits.',
+      );
+    }
+
+    const cooldown = await this.cacheManager.get<number>(
+      this.payoutCooldownKey(userId),
+    );
+    if (cooldown && Date.now() < cooldown) {
+      const waitSec = Math.ceil((cooldown - Date.now()) / 1000);
+      throw new BadRequestException(
+        `Please wait ${waitSec}s before requesting another verification code.`,
+      );
+    }
+
+    // Best-effort account holder name check with Paystack (throws on 4xx invalid bank account)
+    let resolvedAccountName: string | null = null;
+    try {
+      const resolved = await this.paymentsService.resolveBankAccount(
+        cleanBankCode,
+        cleanAccount,
+      );
+      resolvedAccountName = resolved?.account_name || null;
+    } catch (err) {
+      if (err instanceof BadRequestException) {
+        // Only surface clear bank-account validation errors for commercial banks;
+        // MoMo codes (MTN/VOD/ATL) may not support /bank/resolve on all Paystack accounts.
+        if (
+          !['MTN', 'VOD', 'ATL', 'TGO', 'MOMO'].includes(
+            cleanBankCode.toUpperCase(),
+          )
+        ) {
+          throw err;
+        }
+      }
+    }
+
+    const code = String(crypto.randomInt(100000, 1000000));
+    const challenge: PendingPayoutChangeChallenge = {
+      otpHash: hashOtp(code),
+      bank_name: cleanBankName,
+      bank_code: cleanBankCode,
+      account_number: cleanAccount,
+      attempts: 0,
+      expiresAt: Date.now() + PAYOUT_OTP_TTL_MS,
+    };
+
+    await this.cacheManager.set(
+      this.payoutOtpKey(userId),
+      challenge,
+      PAYOUT_OTP_TTL_MS,
+    );
+    await this.cacheManager.set(
+      this.payoutCooldownKey(userId),
+      Date.now() + PAYOUT_OTP_COOLDOWN_MS,
+      PAYOUT_OTP_COOLDOWN_MS,
+    );
+
+    await this.emailService.sendPayoutChangeOtpEmail({
+      to: user.email,
+      fullName: user.full_name,
+      storeName: user.seller_profile.store_name,
+      code,
+      bankName: cleanBankName,
+      maskedAccount: maskAccountNumber(cleanAccount),
+      expiresMinutes: 10,
+    });
+
+    return {
+      sent: true,
+      masked_email: maskEmailAddress(user.email),
+      expires_in_seconds: 600,
+      totp_available: Boolean(user.totp_enabled && user.totp_secret),
+      resolved_account_name: resolvedAccountName,
+      message: `Verification code sent to ${maskEmailAddress(user.email)}.`,
+    };
+  }
+
+  /**
+   * Step 2 of verified payout details update:
+   * Verifies either the single-use Email OTP (bound to exact new bank/account)
+   * OR the user's TOTP 2FA authenticator code, updates the store, immediately syncs
+   * Paystack's subaccount, writes an audit log, and sends a security alert email.
+   */
+  async confirmPayoutDetailsChange(
+    userId: string,
+    dto: {
+      code: string;
+      method?: 'EMAIL_OTP' | 'TOTP';
+      bank_name?: string;
+      bank_code?: string;
+      account_number?: string;
+    },
+    actor?: Actor,
+  ) {
+    const cleanCode = (dto.code || '').replace(/\s+/g, '').trim();
+    if (!/^\d{6}$/.test(cleanCode)) {
+      throw new BadRequestException(
+        'Please enter the 6-digit verification code.',
+      );
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { seller_profile: true },
+    });
+    if (!user || !user.seller_profile) {
+      throw new NotFoundException('Seller store not found.');
+    }
+
+    const store = user.seller_profile;
+    let targetBankName = '';
+    let targetBankCode = '';
+    let targetAccount = '';
+    const method = dto.method === 'TOTP' ? 'TOTP' : 'EMAIL_OTP';
+
+    if (method === 'TOTP') {
+      if (!user.totp_enabled || !user.totp_secret) {
+        throw new BadRequestException(
+          'Authenticator 2FA is not enabled on this account. Please verify with your email code.',
+        );
+      }
+      if (!verifyCode(user.totp_secret, cleanCode)) {
+        throw new ForbiddenException('Invalid 2FA authenticator code.');
+      }
+      targetBankCode = (dto.bank_code || '').trim();
+      targetAccount = (dto.account_number || '').replace(/[\s-]/g, '').trim();
+      targetBankName = (dto.bank_name || '').trim() || targetBankCode;
+      if (!targetBankCode || !/^\d{9,16}$/.test(targetAccount)) {
+        throw new BadRequestException(
+          'Valid bank/provider code and 9–16 digit account/MoMo number are required.',
+        );
+      }
+    } else {
+      const challenge =
+        await this.cacheManager.get<PendingPayoutChangeChallenge>(
+          this.payoutOtpKey(userId),
+        );
+      if (!challenge || Date.now() > challenge.expiresAt) {
+        await this.cacheManager.del(this.payoutOtpKey(userId));
+        throw new BadRequestException(
+          'Verification code expired or not found. Please request a new code.',
+        );
+      }
+
+      if (!safeHashEqual(hashOtp(cleanCode), challenge.otpHash)) {
+        const nextAttempts = challenge.attempts + 1;
+        if (nextAttempts >= PAYOUT_OTP_MAX_ATTEMPTS) {
+          await this.cacheManager.del(this.payoutOtpKey(userId));
+          throw new ForbiddenException(
+            'Too many incorrect attempts. Please request a fresh verification code.',
+          );
+        }
+        await this.cacheManager.set(
+          this.payoutOtpKey(userId),
+          { ...challenge, attempts: nextAttempts },
+          Math.max(1000, challenge.expiresAt - Date.now()),
+        );
+        throw new ForbiddenException(
+          `Incorrect verification code (${PAYOUT_OTP_MAX_ATTEMPTS - nextAttempts} attempts remaining).`,
+        );
+      }
+
+      // Single-use: burn OTP immediately upon match
+      await this.cacheManager.del(this.payoutOtpKey(userId));
+      targetBankName = challenge.bank_name;
+      targetBankCode = challenge.bank_code;
+      targetAccount = challenge.account_number;
+    }
+
+    const previous = {
+      bank_name: store.bank_name,
+      bank_code: store.bank_code,
+      account_number: store.account_number,
+    };
+
+    await this.prisma.sellerProfile.update({
+      where: { user_id: userId },
+      data: {
+        bank_name: targetBankName,
+        bank_code: targetBankCode,
+        account_number: targetAccount,
+        payment_setup_completed: true,
+      },
+    });
+
+    // Immediately sync Paystack subaccount (updates in-place or creates fresh)
+    let subRes: {
+      ok: boolean;
+      subaccount_code: string | null;
+      action: string;
+      error?: string;
+    };
+    try {
+      subRes = await this.paymentsService.createSubaccount(store.id, {
+        forceUpdate: true,
+        throwOnError: true,
+        actor,
+      });
+    } catch (err) {
+      // Revert to previous known-good bank account if Paystack rejects the new one
+      await this.prisma.sellerProfile.update({
+        where: { user_id: userId },
+        data: previous,
+      });
+      throw err;
+    }
+
+    this.auditLogs.record({
+      actorId: actor?.id ?? userId,
+      actorRole: actor?.role ?? user.role,
+      action: 'store.payout_details_changed',
+      entityType: 'seller_profile',
+      entityId: store.id,
+      before: {
+        bank_name: previous.bank_name,
+        bank_code: previous.bank_code,
+        account_masked: maskAccountNumber(previous.account_number),
+      },
+      after: {
+        bank_name: targetBankName,
+        bank_code: targetBankCode,
+        account_masked: maskAccountNumber(targetAccount),
+        paystack_subaccount_code: subRes.subaccount_code,
+        verification_method: method,
+      },
+      ip: actor?.ip,
+      userAgent: actor?.userAgent,
+    });
+
+    void this.notifications.create({
+      userId,
+      type: NotificationType.SYSTEM,
+      title: 'Payout account updated',
+      body: `Your payout destination is now ${targetBankName} (${maskAccountNumber(targetAccount)}).`,
+      link: '/dashboard/settings/store',
+    });
+
+    void this.emailService.sendPayoutDetailsChangedAlertEmail({
+      to: user.email,
+      fullName: user.full_name,
+      storeName: store.store_name,
+      bankName: targetBankName,
+      maskedAccount: maskAccountNumber(targetAccount),
+      subaccountSynced: subRes.ok,
+    });
+
+    return {
+      message: subRes.ok
+        ? 'Payout details verified, updated, and synced with Paystack.'
+        : 'Payout details verified and saved. Paystack subaccount sync is queued for automatic retry.',
+      bank_name: targetBankName,
+      bank_code: targetBankCode,
+      account_number: targetAccount,
+      paystack_subaccount_code: subRes.subaccount_code,
+      subaccount_status: subRes.ok ? 'ACTIVE' : 'PENDING_RETRY',
+      subaccount_warning: subRes.ok ? null : subRes.error || null,
     };
   }
 
@@ -482,7 +911,9 @@ export class StoreService {
         area: s.area,
         products_count: s._count.products,
         is_pro: proActive,
-        is_verified: s.user?.is_verified ?? false,
+        is_verified: Boolean(s.is_seller_verified),
+        is_seller_verified: Boolean(s.is_seller_verified),
+        can_receive_orders: Boolean(s.is_seller_verified),
         products: attachProductSlugs(
           s.products.map((p) => ({
             id: p.id.toString(),
@@ -539,6 +970,8 @@ export class StoreService {
       !!store.user?.is_pro &&
       (!store.user.pro_expires_at || store.user.pro_expires_at > now);
 
+    const sellerVerified = Boolean(store.is_seller_verified);
+
     return {
       id: store.id.toString(),
       user_id: store.user_id,
@@ -546,19 +979,22 @@ export class StoreService {
       store_link: store.store_link,
       logo_url: store.logo_url,
       bio: store.bio,
-      whatsapp_number: store.whatsapp_number,
+      // Hide direct WhatsApp & social contact on unverified stores to prevent off-platform orders
+      whatsapp_number: sellerVerified ? store.whatsapp_number : null,
       location: store.location,
       area: store.area,
       delivery_policies: store.delivery_policies,
       business_hours: store.business_hours,
-      social_links: store.social_links,
+      social_links: sellerVerified ? store.social_links : {},
       payment_timing: store.payment_timing,
       accepted_payment_methods: store.accepted_payment_methods,
       service_area: store.service_area,
       avg_delivery_time: store.avg_delivery_time,
       is_pro: proActive,
       pro_expires_at: store.user?.pro_expires_at ?? null,
-      is_verified: store.user?.is_verified ?? false,
+      is_verified: sellerVerified,
+      is_seller_verified: sellerVerified,
+      can_receive_orders: sellerVerified,
       member_since: store.user?.created_at ?? store.created_at,
       products_count: store._count.products,
     };

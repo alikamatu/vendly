@@ -80,18 +80,22 @@ export const onboardingApi = {
   async completePayment(
     token: string,
     data: {
-      accepted_payment_methods: string[];
-      payment_timing: string;
-      bank_name: string;
-      bank_code: string;
-      account_number: string;
+      skip_payout?: boolean;
+      accepted_payment_methods?: string[];
+      payment_timing?: string;
+      bank_name?: string;
+      bank_code?: string;
+      account_number?: string;
     },
   ) {
-    const res = await api.patch<{ message: string; payment_setup_completed: boolean }>(
-      '/onboarding/payment',
-      data,
-      { token },
-    );
+    const res = await api.patch<{
+      message: string;
+      payment_setup_completed: boolean;
+      payout_ready?: boolean;
+      subaccount_code?: string | null;
+      subaccount_status?: 'ACTIVE' | 'PENDING_RETRY';
+      subaccount_warning?: string | null;
+    }>('/onboarding/payment', data, { token });
     return res.data;
   },
 

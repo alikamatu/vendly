@@ -115,6 +115,7 @@ model SellerProfile {
   store_profile_completed  Boolean                   @default(false)
   location_set             Boolean                   @default(false)
   payment_setup_completed  Boolean                   @default(false)
+  is_seller_verified       Boolean                   @default(false)
   accepted_payment_methods String[]                  @default([])
   payment_timing           PaymentTiming?
   service_area             ServiceArea?
