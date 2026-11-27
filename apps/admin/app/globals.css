@@ -20,9 +20,12 @@
   --border-strong: rgba(0, 0, 0, 0.15);
   --ring: rgba(0, 0, 0, 0.12);
 
-  /* Primary */
+  /* Primary & Brand */
   --primary: #0f0f0f;
   --primary-foreground: #fafafa;
+  --brand: #dc2626;
+  --brand-hover: #b91c1c;
+  --brand-foreground: #ffffff;
 
   /* Semantic */
   --destructive: #ef4444;
@@ -63,6 +66,9 @@
 
   --primary: #fafafa;
   --primary-foreground: #0f0f0f;
+  --brand: #ef4444;
+  --brand-hover: #dc2626;
+  --brand-foreground: #ffffff;
 
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
@@ -94,6 +100,9 @@
   --color-ring: var(--ring);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-foreground: var(--brand-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-success: var(--success);

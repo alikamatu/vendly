@@ -502,4 +502,86 @@ describe('OrderService', () => {
       );
     });
   });
+
+  describe('all-seller SMS order alerts', () => {
+    it('sends SMS and in-app notification to non-Pro sellers on new order', async () => {
+      const sendSms = jest.fn().mockResolvedValue({ sent: true, id: 'msg-1' });
+      const createNotification = jest.fn().mockResolvedValue(undefined);
+      const prismaMock = {
+        user: {
+          findUnique: jest.fn().mockResolvedValue({
+            phone_e164: '+233244123456',
+            full_name: 'Ama Seller',
+            seller_profile: { whatsapp_number: null },
+          }),
+        },
+      };
+
+      const service = new OrderService(
+        prismaMock as never,
+        {} as never,
+        { create: createNotification } as never,
+        { sendSms } as never,
+        {} as never,
+        {} as never,
+      );
+
+      await (service as any).notifySellerOfNewOrder({
+        sellerUserId: 'seller-free-1',
+        orderId: 'order-abc123',
+        orderNumber: 'ORD-ABC123',
+        buyerName: 'Kwame Mensah',
+        buyerId: 'buyer-1',
+        totalAmount: '250',
+      });
+
+      expect(createNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 'seller-free-1',
+          type: 'ORDER_PLACED',
+        }),
+      );
+      expect(sendSms).toHaveBeenCalledWith(
+        '+233244123456',
+        expect.stringContaining('ORD-ABC123'),
+      );
+      expect(sendSms.mock.calls[0][1]).toContain('GHS 250');
+      expect(sendSms.mock.calls[0][1]).toContain('Kwame');
+    });
+
+    it('falls back to storefront whatsapp_number when user.phone_e164 is missing', async () => {
+      const sendSms = jest.fn().mockResolvedValue({ sent: true, id: 'msg-2' });
+      const prismaMock = {
+        user: {
+          findUnique: jest.fn().mockResolvedValue({
+            phone_e164: null,
+            full_name: 'Legacy Seller',
+            seller_profile: { whatsapp_number: '0244999888' },
+          }),
+        },
+      };
+
+      const service = new OrderService(
+        prismaMock as never,
+        {} as never,
+        { create: jest.fn().mockResolvedValue(undefined) } as never,
+        { sendSms } as never,
+        {} as never,
+        {} as never,
+      );
+
+      await (service as any).notifySellerOfNewOrder({
+        sellerUserId: 'seller-legacy-1',
+        orderId: 'order-def456',
+        orderNumber: 'ORD-DEF456',
+        buyerName: 'Efua',
+        buyerId: 'buyer-2',
+      });
+
+      expect(sendSms).toHaveBeenCalledWith(
+        '0244999888',
+        expect.stringContaining('ORD-DEF456'),
+      );
+    });
+  });
 });

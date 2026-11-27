@@ -17,7 +17,12 @@ export class RegisterDto {
   @MaxLength(100, { message: 'Full name is too long (max 100 characters).' })
   full_name: string;
 
-  @IsEmail({}, { message: 'That email address doesn’t look right. Please double-check it.' })
+  @IsEmail(
+    {},
+    {
+      message: 'That email address doesn’t look right. Please double-check it.',
+    },
+  )
   email: string;
 
   @IsString({ message: 'Please choose a password.' })
@@ -49,22 +54,28 @@ export class RegisterDto {
   @ValidateIf((o: RegisterDto) => o.account_type === 'SELLER')
   @IsString({ message: 'Please tell us your business name.' })
   @MinLength(2, { message: 'Business name needs at least 2 characters.' })
-  @MaxLength(100, { message: 'Business name is too long (max 100 characters).' })
+  @MaxLength(100, {
+    message: 'Business name is too long (max 100 characters).',
+  })
   school?: string;
 
   /**
    * Must be `true` for a registration to go through. The frontend renders
    * this as a Terms & Privacy checkbox.
    */
-  @IsBoolean({ message: 'You must agree to the Terms of Service and Privacy Policy to create an account.' })
+  @IsBoolean({
+    message:
+      'You must agree to the Terms of Service and Privacy Policy to create an account.',
+  })
   @Equals(true, {
-    message: 'You must agree to the Terms of Service and Privacy Policy to create an account.',
+    message:
+      'You must agree to the Terms of Service and Privacy Policy to create an account.',
   })
   accept_terms: boolean;
 
   /**
-   * Ghana phone number. Required at signup so that order alerts (Pro
-   * sellers) and 2FA SMS work without forcing a follow-up profile step.
+   * Ghana phone number. Required at signup so that SMS order alerts (for
+   * all sellers) and 2FA SMS work without forcing a follow-up profile step.
    * The frontend strips the leading "0" before submission, but the
    * server normalises again via parseGhanaPhone() because we cannot
    * trust client-side stripping (API clients, bulk imports, etc.).

@@ -16,7 +16,6 @@ import {
   Star,
   Phone,
   Sparkles,
-  MessageSquare,
   BarChart3,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -112,13 +111,12 @@ function TextInput({
 // ─── Pro features card ──────────────────────────────────────────────────────
 // Shown to sellers in their profile so they can see what they unlock with
 // Pro (active sellers get a "what you have" view; non-Pro get an upsell).
-// The SMS-on-order perk is the one most sellers ask about, so it leads.
 function ProFeaturesCard({ isPro }: { isPro: boolean }) {
   const features = [
     {
-      icon: MessageSquare,
-      title: 'SMS order alerts',
-      desc: "Get a text the moment a buyer pays — no missed sales while you're off-app.",
+      icon: Star,
+      title: 'Featured marketplace placement',
+      desc: 'Get bumped to the top of category listings and into Featured Marketplace rotation.',
     },
     {
       icon: BarChart3,
@@ -380,12 +378,12 @@ export default function ProfileSettingsPage() {
 
           {/* Phone — Ghana +233 prefix is fixed; we strip the leading
               "0" as the user types so the editable portion is always
-              the subscriber number. Sellers need this to receive SMS
-              order alerts (Pro perk) and 2FA codes. */}
+              the subscriber number. All sellers receive SMS order alerts
+              and 2FA codes on this number. */}
           <Field
             label="Phone Number"
             icon={Phone}
-            hint="Used for order alerts (Pro sellers) and security codes."
+            hint="Used for instant SMS order alerts and security codes."
           >
             <div className="flex items-center gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2.5">
               <span className="select-none text-xs font-medium text-[var(--color-muted)]">

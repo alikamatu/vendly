@@ -37,7 +37,7 @@ export const registerSchema = z
       .min(8, 'Your password needs at least 8 characters.')
       .regex(
         /((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/,
-        'Make your password stronger: include an uppercase letter, a lowercase letter, and a number or symbol.'
+        'Make your password stronger: include an uppercase letter, a lowercase letter, and a number or symbol.',
       ),
     confirmPassword: z.string().min(1, 'Please confirm your password.'),
     // BUYER signs up to shop. SELLER additionally provides a business name
@@ -49,7 +49,7 @@ export const registerSchema = z
     // Always a string in the form (defaultValues sets ''); we only require
     // non-empty when account_type is SELLER, via the superRefine below.
     school: z.string(),
-    // Phone is required at signup so Pro sellers can receive SMS order
+    // Phone is required at signup so all sellers can receive SMS order
     // alerts and so 2FA can fall back to SMS. The string here can be in
     // any human format ("0244...", "+233...", "024 412 3456"); we
     // validate via libphonenumber inside the superRefine below.
@@ -58,8 +58,7 @@ export const registerSchema = z
       .min(7, 'Please enter your phone number.')
       .max(20, 'Phone number is too long.'),
     accept_terms: z.literal(true, {
-      message:
-        'Please agree to the Terms of Service and Privacy Policy to create an account.',
+      message: 'Please agree to the Terms of Service and Privacy Policy to create an account.',
     }),
     marketing_opt_in: z.boolean().optional(),
   })
@@ -82,8 +81,7 @@ export const registerSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['phone'],
-        message:
-          "That number doesn't look right. Use a Ghana number — e.g. 024 412 3456.",
+        message: "That number doesn't look right. Use a Ghana number — e.g. 024 412 3456.",
       });
     }
   });
@@ -99,7 +97,7 @@ export const resetPasswordSchema = z
       .min(8, 'Password must be at least 8 characters')
       .regex(
         /((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/,
-        'Password must contain uppercase, lowercase, and a number or special character'
+        'Password must contain uppercase, lowercase, and a number or special character',
       ),
     confirmPassword: z.string().min(1, 'Please confirm your password'),
   })
@@ -111,7 +109,10 @@ export const resetPasswordSchema = z
 export const verificationSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('URL'),
-    verification_doc: z.string().url('Please provide a valid URL').min(1, 'Document URL is required'),
+    verification_doc: z
+      .string()
+      .url('Please provide a valid URL')
+      .min(1, 'Document URL is required'),
   }),
   z.object({
     type: z.literal('FILES'),

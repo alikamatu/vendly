@@ -14,6 +14,7 @@ import {
   Settings,
   Mail,
   Flag,
+  Smartphone,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -106,6 +107,11 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
         title: 'Users & Sellers',
         href: '/users',
         icon: Users,
+      },
+      {
+        title: 'SMS Center',
+        href: '/sms',
+        icon: Smartphone,
       },
       {
         title: 'Newsletter',

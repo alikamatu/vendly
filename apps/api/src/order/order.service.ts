@@ -373,13 +373,15 @@ export class OrderService {
       data: { orderId: order.id, total: order.total_amount.toString() },
     });
     if (!requiresPaystack && seller.user_id) {
-      // Pro-only: in-app new-order alerts are a Pro perk for sellers.
+      // All sellers receive instant in-app + SMS order alerts.
       await this.notifySellerOfNewOrder({
         sellerUserId: seller.user_id,
         orderId: order.id,
         orderNumber,
-        buyerName: buyer.full_name,
+        buyerName: dto.customerName || buyer.full_name,
         buyerId: userId,
+        totalAmount: order.total_amount?.toString(),
+        fallbackPhone: seller.whatsapp_number,
       });
     }
 
@@ -1329,6 +1331,12 @@ export class OrderService {
       throw new BadRequestException('You are not authorized for this order');
     }
 
+    const existingTransaction = await this.prisma.transaction.findUnique({
+      where: { reference },
+      select: { status: true },
+    });
+    const wasAlreadySuccess = existingTransaction?.status === 'SUCCESS';
+
     await this.paymentsService.verifyTransaction(reference);
 
     const transaction = await this.prisma.transaction.findUnique({
@@ -1341,9 +1349,17 @@ export class OrderService {
       select: { status: true },
     });
 
-    // Fire the seller "new paid order" notification once payment succeeds.
-    // (For COD orders, this fires at creation time in createOrder above.)
-    if (transaction?.status === 'SUCCESS' && freshOrder?.status === 'PAID') {
+    // PaymentsService.verifyTransaction settles `ORD_*` references via
+    // settlePaidOrder (which already sends emails, in-app alerts, and SMS
+    // alerts to every seller). Only fall back here for non-ORD_ references
+    // transitioning to SUCCESS so we never duplicate alerts on page refresh.
+    const settledByPaymentsService = reference.startsWith('ORD_');
+    if (
+      !wasAlreadySuccess &&
+      !settledByPaymentsService &&
+      transaction?.status === 'SUCCESS' &&
+      freshOrder?.status === 'PAID'
+    ) {
       await this.notifyAllSellersForPaidOrder(orderId);
       this.sendOrderPlacedEmails(orderId).catch((err) =>
         console.error(
@@ -1381,9 +1397,9 @@ export class OrderService {
   }
 
   /**
-   * Per-product seller notification gate. Pro-only feature — non-Pro sellers
-   * still get email/order-list updates, but the in-app bell is reserved for
-   * Pro subscribers as a perk.
+   * Sends in-app and SMS new-order alerts to ALL sellers (Free & Pro).
+   * Falls back to the storefront's WhatsApp/contact phone when a legacy
+   * seller account has not saved `user.phone_e164`.
    */
   private async notifySellerOfNewOrder(args: {
     sellerUserId: string;
@@ -1391,24 +1407,21 @@ export class OrderService {
     orderNumber: string;
     buyerName: string | null | undefined;
     buyerId: string;
+    totalAmount?: string | number | null;
+    fallbackPhone?: string | null;
   }) {
     const sellerUser = await this.prisma.user.findUnique({
       where: { id: args.sellerUserId },
       select: {
-        is_pro: true,
-        pro_expires_at: true,
         phone_e164: true,
         full_name: true,
+        seller_profile: {
+          select: { whatsapp_number: true },
+        },
       },
     });
-    if (!sellerUser?.is_pro) return;
-    // Honor expiry if set.
-    if (
-      sellerUser.pro_expires_at &&
-      sellerUser.pro_expires_at.getTime() < Date.now()
-    ) {
-      return;
-    }
+    if (!sellerUser) return;
+
     await this.notifications.create({
       userId: args.sellerUserId,
       type: 'ORDER_PLACED',
@@ -1418,18 +1431,28 @@ export class OrderService {
       data: { orderId: args.orderId, buyerId: args.buyerId },
     });
 
-    // Pro-only SMS alert. Fire-and-forget — failures shouldn't roll back
-    // order processing. Skipped silently when the seller hasn't saved a
-    // phone number yet (legacy accounts pre-dating the required-phone
-    // signup flow).
-    if (sellerUser.phone_e164) {
+    // SMS alert for ALL sellers. Fire-and-forget — failures never roll back
+    // order processing. Uses verified signup phone first, then store WhatsApp
+    // number as a fallback for legacy accounts.
+    const recipientPhone =
+      sellerUser.phone_e164?.trim() ||
+      sellerUser.seller_profile?.whatsapp_number?.trim() ||
+      args.fallbackPhone?.trim() ||
+      null;
+
+    if (recipientPhone) {
       const firstName =
-        (args.buyerName || 'A customer').split(' ')[0] || 'A customer';
+        (args.buyerName || 'A customer').trim().split(/\s+/)[0] || 'A customer';
+      const numericTotal = Number(args.totalAmount);
+      const amountSuffix =
+        Number.isFinite(numericTotal) && numericTotal > 0
+          ? ` (GHS ${numericTotal.toLocaleString('en-GH', { maximumFractionDigits: 2 })})`
+          : '';
       const message =
-        `Verndly: new order ${args.orderNumber} from ${firstName}. ` +
+        `Verndly: New order ${args.orderNumber}${amountSuffix} from ${firstName}. ` +
         `Open your dashboard to fulfil it.`;
       this.sms
-        .sendSms(sellerUser.phone_e164, message)
+        .sendSms(recipientPhone, message)
         .catch((err) =>
           console.error('Failed to send order SMS to seller', err),
         );
@@ -1445,27 +1468,31 @@ export class OrderService {
         items: {
           include: {
             product: {
-              select: { seller: { select: { user_id: true } } },
+              select: {
+                seller: { select: { user_id: true, whatsapp_number: true } },
+              },
             },
           },
         },
       },
     });
     if (!order) return;
-    const sellerUserIds = Array.from(
-      new Set(
-        order.items
-          .map((i: any) => i.product?.seller?.user_id)
-          .filter((x: any): x is string => Boolean(x)),
-      ),
-    );
-    for (const sellerUserId of sellerUserIds) {
+    const sellersByUserId = new Map<string, string | null>();
+    for (const item of order.items as any[]) {
+      const uid = item.product?.seller?.user_id;
+      if (uid && !sellersByUserId.has(uid)) {
+        sellersByUserId.set(uid, item.product?.seller?.whatsapp_number ?? null);
+      }
+    }
+    for (const [sellerUserId, fallbackPhone] of sellersByUserId.entries()) {
       await this.notifySellerOfNewOrder({
         sellerUserId,
         orderId,
         orderNumber,
-        buyerName: order.buyer?.full_name ?? null,
+        buyerName: order.customer_name || order.buyer?.full_name || null,
         buyerId: order.buyer_id,
+        totalAmount: order.total_amount?.toString(),
+        fallbackPhone,
       });
     }
   }

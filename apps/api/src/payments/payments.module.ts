@@ -10,6 +10,7 @@ import paystackConfig from './config/paystack.config';
 
 import { EmailModule } from '../email/email.module';
 import { NotificationModule } from '../notification/notification.module';
+import { SmsClient } from '../auth/arkesel.client';
 
 @Module({
   imports: [
@@ -30,7 +31,7 @@ import { NotificationModule } from '../notification/notification.module';
     }),
   ],
   controllers: [PaymentsController, PaystackWebhookController],
-  providers: [PaymentsService, PaymentsRepository],
+  providers: [PaymentsService, PaymentsRepository, SmsClient],
   exports: [PaymentsService],
 })
 export class PaymentsModule {}

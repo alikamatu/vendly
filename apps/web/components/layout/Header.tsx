@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -12,34 +12,25 @@ import {
   Moon,
   Menu,
   X,
-  Sparkles,
-  LayoutGrid,
-  Store,
-  BookOpen,
+  ChevronDown,
+  ShieldCheck,
   BadgePercent,
 } from 'lucide-react';
 import Container from '../common/Container';
 import GlobalSearch from './GlobalSearch';
 import UserMenu from './UserMenu';
 import NotificationBell from './NotificationBell';
+import NavbarMegaMenu, { type MegaMenuTab } from './NavbarMegaMenu';
+import NavbarMobileDrawer from './NavbarMobileDrawer';
+import { useNavbarCatalog } from './useNavbarCatalog';
 import VerndlyAiIcon from '@/components/ai/VerndlyAiIcon';
 import { openVerndlyAi } from '@/lib/ai/open-verndly-ai';
 import { useTheme } from '../../lib/contexts/theme';
 import { useAuth } from '../../lib/contexts/auth-context';
 import { useCart } from '@/lib/contexts/cart-context';
 import { useFavorites } from '@/lib/contexts/favorite-context';
+import { recordShoppingHabit } from '@/lib/cookies/shopping-habits';
 import clsx from '@/utils/clsx';
-
-const NAV_LINKS = [
-  { label: 'Shop', href: '/products', icon: LayoutGrid },
-  { label: 'Stores', href: '/stores', icon: Store },
-  { label: 'Categories', href: '/categories', icon: Sparkles },
-  { label: 'Sell', href: '/sell', icon: BadgePercent },
-  { label: 'Guides', href: '/blog', icon: BookOpen },
-] as const;
-
-const SPRING_PILL = { type: 'spring' as const, stiffness: 420, damping: 34 };
-const EASE_SMOOTH = [0.22, 1, 0.36, 1] as const;
 
 function ThemeToggle() {
   const { theme, setTheme } = useTheme();
@@ -70,40 +61,108 @@ function ThemeToggle() {
 export default function Header() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [menuOpenPath, setMenuOpenPath] = useState<string | null>(null);
+  const [activeMegaTab, setActiveMegaTab] = useState<MegaMenuTab>(null);
   const pathname = usePathname();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const { itemCount } = useCart();
   const { favorites } = useFavorites();
   const favCount = favorites?.length || 0;
 
-  // Auto-closes mobile menu on route change without calling setState inside an effect
+  const headerRef = useRef<HTMLElement | null>(null);
+  const closeTimerRef = useRef<number | null>(null);
+
+  // Auto-closes mobile menu on route change without setState inside an effect
   const isMobileMenuOpen = menuOpenPath === pathname;
+
+  const { categories, recommendedProducts, recommendationHeadline, isPersonalized } =
+    useNavbarCatalog(Boolean(activeMegaTab) || isMobileMenuOpen);
+
+  // Keep `--navbar-bottom` CSS variable synced so mega-menu aligns flush below sticky header
+  const syncNavbarBottom = useCallback(() => {
+    if (!headerRef.current) return;
+    const rect = headerRef.current.getBoundingClientRect();
+    document.documentElement.style.setProperty('--navbar-bottom', `${Math.round(rect.bottom)}px`);
+  }, []);
+
+  useEffect(() => {
+    syncNavbarBottom();
+    window.addEventListener('resize', syncNavbarBottom);
+    return () => window.removeEventListener('resize', syncNavbarBottom);
+  }, [syncNavbarBottom, activeMegaTab]);
+
+  // Close desktop mega-menu when navigating to a new route
+  const [megaTabPath, setMegaTabPath] = useState<string | null>(null);
+  const effectiveMegaTab: MegaMenuTab = megaTabPath === pathname ? activeMegaTab : null;
+
+  const cancelScheduledClose = useCallback(() => {
+    if (closeTimerRef.current !== null) {
+      window.clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+  }, []);
+
+  const openMegaTab = useCallback(
+    (tab: MegaMenuTab) => {
+      cancelScheduledClose();
+      syncNavbarBottom();
+      setMegaTabPath(pathname);
+      setActiveMegaTab(tab);
+    },
+    [cancelScheduledClose, pathname, syncNavbarBottom],
+  );
+
+  const scheduleMegaClose = useCallback(() => {
+    cancelScheduledClose();
+    closeTimerRef.current = window.setTimeout(() => {
+      setActiveMegaTab(null);
+    }, 170);
+  }, [cancelScheduledClose]);
+
+  const closeMegaNow = useCallback(() => {
+    cancelScheduledClose();
+    setActiveMegaTab(null);
+  }, [cancelScheduledClose]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
+        closeMegaNow();
         setIsSearchOpen((prev) => !prev);
       } else if (e.key === 'Escape') {
         setMenuOpenPath(null);
+        closeMegaNow();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [closeMegaNow]);
+
+  useEffect(() => {
+    return () => cancelScheduledClose();
+  }, [cancelScheduledClose]);
 
   const toggleMobileMenu = () => {
+    closeMegaNow();
     setMenuOpenPath((prev) => (prev === pathname ? null : pathname));
   };
 
+  // Top 4 departments surfaced directly on the desktop Amazon/Best Buy sub-bar
+  const quickCategories = categories.slice(0, 4);
+
   return (
     <>
-      <header className="bg-background sticky top-0 z-40 transition-colors">
+      <header
+        ref={headerRef}
+        className="bg-background border-border/50 sticky top-0 z-40 border-b transition-colors"
+      >
+        {/* ── TIER 1: Primary Commerce Bar (Amazon × Best Buy clarity) ── */}
         <Container className="py-2.5 sm:py-3">
           <div className="flex h-11 items-center justify-between gap-3">
             {/* Left: Brand */}
             <Link
               href="/"
+              onClick={closeMegaNow}
               className="text-foreground group flex shrink-0 items-center gap-2.5 text-[17px] font-semibold tracking-tight transition-opacity hover:opacity-85 sm:text-lg"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -115,69 +174,71 @@ export default function Header() {
               <span>Verndly</span>
             </Link>
 
-            {/* Center: Calm Desktop Navigation with gliding active pill */}
-            <nav aria-label="Primary navigation" className="hidden items-center gap-1 lg:flex">
-              {NAV_LINKS.map((item) => {
-                const isActive =
-                  item.href === '/products'
-                    ? pathname === '/products'
-                    : Boolean(pathname?.startsWith(item.href));
+            {/* Center: Prominent Amazon/Best Buy Search Bar + Integrated Ask Verndly AI */}
+            <div className="hidden min-w-0 flex-1 items-center justify-center gap-2 md:flex lg:max-w-2xl">
+              <div className="bg-surface border-border/50 hover:border-border flex h-10 w-full items-center gap-2 rounded-full border pl-4 pr-1.5 transition-colors">
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeMegaNow();
+                    setIsSearchOpen(true);
+                  }}
+                  aria-label="Search marketplace"
+                  className="text-muted hover:text-foreground flex min-w-0 flex-1 items-center justify-between gap-2 text-left transition-colors"
+                >
+                  <span className="flex min-w-0 items-center gap-2.5">
+                    <Search className="h-4 w-4 shrink-0" />
+                    <span className="truncate text-xs sm:text-[13px]">
+                      Search laptops, sneakers, verified stores…
+                    </span>
+                  </span>
+                  <kbd className="bg-background text-muted hidden rounded-md px-1.5 py-0.5 font-mono text-[10px] font-medium xl:inline-flex">
+                    ⌘K
+                  </kbd>
+                </button>
 
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={clsx(
-                      'relative rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors',
-                      isActive ? 'text-foreground' : 'text-muted hover:text-foreground',
-                    )}
-                  >
-                    {isActive && (
-                      <motion.span
-                        layoutId="header-nav-pill"
-                        transition={SPRING_PILL}
-                        className="bg-surface absolute inset-0 rounded-full"
-                      />
-                    )}
-                    <span className="relative z-10">{item.label}</span>
-                  </Link>
-                );
-              })}
-            </nav>
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeMegaNow();
+                    openVerndlyAi();
+                  }}
+                  aria-label="Ask Verndly AI"
+                  className="bg-foreground text-background inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full px-3 text-[11px] font-semibold transition-opacity hover:opacity-90"
+                >
+                  <VerndlyAiIcon size={15} />
+                  <span>Ask AI</span>
+                </button>
+              </div>
+            </div>
 
-            {/* Right: Uncluttered Utilities & Auth */}
+            {/* Right: Utilities & Account */}
             <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
-              {/* Ask Verndly AI Entry */}
+              {/* Mobile Ask AI & Search Icon Shortcuts */}
               <button
                 type="button"
                 onClick={() => openVerndlyAi()}
                 aria-label="Ask Verndly AI"
-                className="bg-surface text-foreground hover:bg-foreground/[0.08] inline-flex h-9 items-center gap-1.5 rounded-xl px-2.5 text-xs font-semibold transition-colors sm:rounded-full sm:px-3"
+                className="bg-surface text-foreground hover:bg-foreground/[0.08] inline-flex h-9 items-center gap-1.5 rounded-xl px-2.5 text-xs font-semibold transition-colors md:hidden"
               >
                 <VerndlyAiIcon size={18} />
-                <span className="hidden md:inline">Ask Verndly</span>
+                <span className="xs:inline hidden">Ask AI</span>
               </button>
 
-              {/* Search: Pill on xl+, clean icon button on mobile/tablet/lg so bar never cramps */}
               <button
                 type="button"
                 onClick={() => setIsSearchOpen(true)}
                 aria-label="Search marketplace"
-                className="bg-surface text-muted hover:bg-foreground/[0.06] hover:text-foreground flex h-9 w-9 items-center justify-center rounded-xl transition-colors xl:w-52 xl:justify-between xl:rounded-full xl:px-3.5"
+                className="bg-surface text-muted hover:bg-foreground/[0.06] hover:text-foreground flex h-9 w-9 items-center justify-center rounded-xl transition-colors md:hidden"
               >
-                <span className="flex items-center gap-2 truncate">
-                  <Search className="h-4 w-4 shrink-0" />
-                  <span className="hidden truncate text-xs xl:inline">Search Verndly…</span>
-                </span>
-                <kbd className="bg-background text-muted hidden rounded-md px-1.5 py-0.5 font-mono text-[10px] font-medium xl:inline-flex">
-                  ⌘K
-                </kbd>
+                <Search className="h-4 w-4" />
               </button>
 
-              {/* Favorites (desktop/tablet — lives cleanly inside menu on phones) */}
+              {/* Favorites */}
               <Link
                 href="/favorites"
                 aria-label="Saved favorites"
+                onClick={closeMegaNow}
                 className="text-muted hover:bg-surface hover:text-foreground relative hidden h-9 w-9 items-center justify-center rounded-xl transition-colors sm:flex"
               >
                 <Heart className="h-[17px] w-[17px]" />
@@ -192,17 +253,21 @@ export default function Header() {
               <Link
                 href="/cart"
                 aria-label="Shopping cart"
-                className="text-muted hover:bg-surface hover:text-foreground relative flex h-9 w-9 items-center justify-center rounded-xl transition-colors"
+                onClick={closeMegaNow}
+                className="text-muted hover:bg-surface hover:text-foreground relative flex h-9 items-center justify-center gap-1.5 rounded-xl px-2.5 transition-colors"
               >
-                <ShoppingBag className="h-[17px] w-[17px]" />
-                {itemCount > 0 && (
-                  <span className="bg-foreground text-background absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold">
-                    {itemCount > 99 ? '99+' : itemCount}
-                  </span>
-                )}
+                <span className="relative flex items-center justify-center">
+                  <ShoppingBag className="h-[17px] w-[17px]" />
+                  {itemCount > 0 && (
+                    <span className="bg-foreground text-background absolute -right-2 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold">
+                      {itemCount > 99 ? '99+' : itemCount}
+                    </span>
+                  )}
+                </span>
+                <span className="text-foreground hidden text-xs font-semibold xl:inline">Cart</span>
               </Link>
 
-              {/* Theme Toggle (md+ — lives inside menu on mobile) */}
+              {/* Theme Toggle (desktop) */}
               <div className="hidden md:block">
                 <ThemeToggle />
               </div>
@@ -220,12 +285,14 @@ export default function Header() {
                   <div className="ml-1 hidden items-center gap-1.5 sm:flex">
                     <Link
                       href="/login"
+                      onClick={closeMegaNow}
                       className="text-muted hover:bg-surface hover:text-foreground inline-flex h-9 items-center rounded-full px-3.5 text-xs font-medium transition-colors"
                     >
                       Sign in
                     </Link>
                     <Link
                       href="/register"
+                      onClick={closeMegaNow}
                       className="bg-foreground text-background inline-flex h-9 items-center rounded-full px-4 text-xs font-semibold transition-opacity hover:opacity-90"
                     >
                       Get started
@@ -233,7 +300,7 @@ export default function Header() {
                   </div>
                 ))}
 
-              {/* Mobile Menu Trigger */}
+              {/* Mobile Full-Screen Menu Trigger */}
               <button
                 type="button"
                 onClick={toggleMobileMenu}
@@ -247,134 +314,180 @@ export default function Header() {
           </div>
         </Container>
 
-        {/* Smooth Mobile Drawer Panel — flat tonal, zero borders, zero shadows */}
-        <AnimatePresence>
-          {isMobileMenuOpen && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.22, ease: EASE_SMOOTH }}
-              className="bg-background overflow-hidden lg:hidden"
+        {/* ── TIER 2: Desktop Amazon × Best Buy Category, Deals & Trust Bar ── */}
+        <div className="border-border/40 bg-surface/40 hidden border-t lg:block">
+          <Container>
+            <nav
+              aria-label="Marketplace departments and tools"
+              className="flex h-10 items-center justify-between gap-4"
             >
-              <Container className="space-y-4 pb-5 pt-2">
-                {/* Mobile Search & Verndly AI Shortcuts */}
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMenuOpenPath(null);
-                      openVerndlyAi();
-                    }}
-                    className="bg-foreground text-background flex w-full items-center justify-between gap-2.5 rounded-2xl px-4 py-3 text-left text-xs font-semibold transition-opacity hover:opacity-90"
-                  >
-                    <span className="flex items-center gap-2.5">
-                      <VerndlyAiIcon size={18} />
-                      <span>Ask Verndly AI</span>
-                    </span>
-                    <span className="text-[10px] opacity-75">Shop with AI</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMenuOpenPath(null);
-                      setIsSearchOpen(true);
-                    }}
-                    className="bg-surface text-muted hover:text-foreground flex w-full items-center gap-2.5 rounded-2xl px-4 py-3 text-left text-xs transition-colors"
-                  >
-                    <Search className="h-4 w-4 shrink-0" />
-                    <span>Search products, stores, brands…</span>
-                  </button>
-                </div>
-
-                {/* Mobile Navigation Grid */}
-                <nav aria-label="Mobile navigation" className="grid grid-cols-2 gap-2">
-                  {NAV_LINKS.map((item) => {
-                    const Icon = item.icon;
-                    const isActive =
-                      item.href === '/products'
-                        ? pathname === '/products'
-                        : Boolean(pathname?.startsWith(item.href));
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        onClick={() => setMenuOpenPath(null)}
-                        className={clsx(
-                          'flex items-center gap-2.5 rounded-2xl px-3.5 py-3 text-xs font-semibold transition-colors',
-                          isActive
-                            ? 'bg-foreground text-background'
-                            : 'bg-surface text-foreground hover:bg-foreground/[0.06]',
-                        )}
-                      >
-                        <Icon
-                          className={clsx(
-                            'h-4 w-4 shrink-0',
-                            isActive ? 'text-background' : 'text-muted',
-                          )}
-                        />
-                        <span>{item.label}</span>
-                      </Link>
-                    );
-                  })}
-
-                  <Link
-                    href="/favorites"
-                    onClick={() => setMenuOpenPath(null)}
+              <div className="flex min-w-0 items-center gap-1">
+                {/* Best Buy / Amazon "All Categories" Mega-Menu Trigger */}
+                <button
+                  type="button"
+                  onMouseEnter={() => openMegaTab('categories')}
+                  onMouseLeave={scheduleMegaClose}
+                  onClick={() =>
+                    effectiveMegaTab === 'categories' ? closeMegaNow() : openMegaTab('categories')
+                  }
+                  aria-expanded={effectiveMegaTab === 'categories'}
+                  className={clsx(
+                    'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition-colors',
+                    effectiveMegaTab === 'categories'
+                      ? 'bg-foreground text-background'
+                      : 'text-foreground hover:bg-surface',
+                  )}
+                >
+                  <Menu className="h-3.5 w-3.5" />
+                  <span>All Categories</span>
+                  <ChevronDown
                     className={clsx(
-                      'flex items-center justify-between gap-2 rounded-2xl px-3.5 py-3 text-xs font-semibold transition-colors',
-                      pathname === '/favorites'
-                        ? 'bg-foreground text-background'
-                        : 'bg-surface text-foreground hover:bg-foreground/[0.06]',
+                      'h-3.5 w-3.5 transition-transform duration-150',
+                      effectiveMegaTab === 'categories' && 'rotate-180',
                     )}
+                  />
+                </button>
+
+                {/* Deals & Personalized Picks Dropdown Trigger */}
+                <button
+                  type="button"
+                  onMouseEnter={() => openMegaTab('deals')}
+                  onMouseLeave={scheduleMegaClose}
+                  onClick={() =>
+                    effectiveMegaTab === 'deals' ? closeMegaNow() : openMegaTab('deals')
+                  }
+                  aria-expanded={effectiveMegaTab === 'deals'}
+                  className={clsx(
+                    'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition-colors',
+                    effectiveMegaTab === 'deals'
+                      ? 'bg-foreground text-background'
+                      : 'text-foreground/85 hover:bg-surface hover:text-foreground',
+                  )}
+                >
+                  <BadgePercent
+                    className={clsx(
+                      'h-3.5 w-3.5',
+                      effectiveMegaTab === 'deals' ? 'text-background' : 'text-red-500',
+                    )}
+                  />
+                  <span>Deals &amp; Picks</span>
+                  <ChevronDown
+                    className={clsx(
+                      'h-3.5 w-3.5 transition-transform duration-150',
+                      effectiveMegaTab === 'deals' && 'rotate-180',
+                    )}
+                  />
+                </button>
+
+                <span className="bg-border/70 mx-1 h-4 w-px shrink-0" aria-hidden="true" />
+
+                {/* Top Department Quick Links */}
+                {quickCategories.map((cat) => (
+                  <Link
+                    key={cat.id}
+                    href={`/products?category=${encodeURIComponent(cat.name)}`}
+                    onClick={() => {
+                      recordShoppingHabit('browse_category', { category: cat.name });
+                      closeMegaNow();
+                    }}
+                    className="text-muted hover:text-foreground hidden truncate rounded-full px-2.5 py-1 text-xs font-medium transition-colors xl:inline-flex"
                   >
-                    <span className="flex items-center gap-2.5">
-                      <Heart
-                        className={clsx(
-                          'h-4 w-4 shrink-0',
-                          pathname === '/favorites' ? 'text-background' : 'text-muted',
-                        )}
-                      />
-                      <span>Favorites</span>
-                    </span>
-                    {favCount > 0 && (
-                      <span className="rounded-full bg-[var(--color-accent)] px-1.5 py-0.5 text-[10px] font-bold text-white">
-                        {favCount}
-                      </span>
-                    )}
+                    {cat.name}
                   </Link>
-                </nav>
+                ))}
 
-                {/* Guest Auth CTAs on Mobile */}
-                {!isLoading && !isAuthenticated && (
-                  <div className="grid grid-cols-2 gap-2 sm:hidden">
-                    <Link
-                      href="/login"
-                      onClick={() => setMenuOpenPath(null)}
-                      className="bg-surface text-foreground hover:bg-foreground/[0.06] flex h-11 items-center justify-center rounded-2xl text-xs font-semibold transition-colors"
-                    >
-                      Sign in
-                    </Link>
-                    <Link
-                      href="/register"
-                      onClick={() => setMenuOpenPath(null)}
-                      className="bg-foreground text-background flex h-11 items-center justify-center rounded-2xl text-xs font-semibold transition-opacity hover:opacity-90"
-                    >
-                      Get started
-                    </Link>
-                  </div>
-                )}
+                <Link
+                  href="/stores"
+                  onClick={closeMegaNow}
+                  className={clsx(
+                    'shrink-0 rounded-full px-2.5 py-1 text-xs font-medium transition-colors',
+                    pathname?.startsWith('/stores')
+                      ? 'text-foreground font-semibold'
+                      : 'text-muted hover:text-foreground',
+                  )}
+                >
+                  Verified Stores
+                </Link>
 
-                {/* Appearance Row */}
-                <div className="bg-surface flex items-center justify-between rounded-2xl px-4 py-2 text-xs">
-                  <span className="text-muted font-medium">Appearance</span>
-                  <ThemeToggle />
-                </div>
-              </Container>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                <Link
+                  href="/sell"
+                  onClick={closeMegaNow}
+                  className={clsx(
+                    'shrink-0 rounded-full px-2.5 py-1 text-xs font-medium transition-colors',
+                    pathname?.startsWith('/sell')
+                      ? 'text-foreground font-semibold'
+                      : 'text-muted hover:text-foreground',
+                  )}
+                >
+                  Sell on Verndly
+                </Link>
+
+                {/* Help, Trust & Footer Details Dropdown */}
+                <button
+                  type="button"
+                  onMouseEnter={() => openMegaTab('more')}
+                  onMouseLeave={scheduleMegaClose}
+                  onClick={() =>
+                    effectiveMegaTab === 'more' ? closeMegaNow() : openMegaTab('more')
+                  }
+                  aria-expanded={effectiveMegaTab === 'more'}
+                  className={clsx(
+                    'inline-flex h-8 shrink-0 items-center gap-1 rounded-full px-2.5 text-xs font-medium transition-colors',
+                    effectiveMegaTab === 'more'
+                      ? 'bg-foreground text-background font-semibold'
+                      : 'text-muted hover:bg-surface hover:text-foreground',
+                  )}
+                >
+                  <span>Support &amp; More</span>
+                  <ChevronDown
+                    className={clsx(
+                      'h-3.5 w-3.5 transition-transform duration-150',
+                      effectiveMegaTab === 'more' && 'rotate-180',
+                    )}
+                  />
+                </button>
+              </div>
+
+              {/* Right Trust Pill (Buyer Protection / Support Quick Entry) */}
+              <Link
+                href="/buyer-protection"
+                onClick={closeMegaNow}
+                className="text-muted hover:text-foreground inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium transition-colors"
+              >
+                <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>3-Day Paystack Escrow</span>
+              </Link>
+            </nav>
+          </Container>
+        </div>
+
+        {/* Desktop Mega-Dropdown Panels */}
+        <NavbarMegaMenu
+          activeTab={effectiveMegaTab}
+          categories={categories}
+          recommendedProducts={recommendedProducts}
+          recommendationHeadline={recommendationHeadline}
+          isPersonalized={isPersonalized}
+          onClose={closeMegaNow}
+          onMouseEnter={cancelScheduledClose}
+          onMouseLeave={scheduleMegaClose}
+        />
+
+        {/* Mobile Full-Screen Drawer */}
+        <NavbarMobileDrawer
+          isOpen={isMobileMenuOpen}
+          onClose={() => setMenuOpenPath(null)}
+          onOpenSearch={() => setIsSearchOpen(true)}
+          categories={categories}
+          recommendedProducts={recommendedProducts}
+          recommendationHeadline={recommendationHeadline}
+          isPersonalized={isPersonalized}
+          isAuthenticated={isAuthenticated}
+          isLoadingAuth={isLoading}
+          userName={user?.full_name}
+          favCount={favCount}
+          itemCount={itemCount}
+        />
 
         <GlobalSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
       </header>

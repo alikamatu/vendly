@@ -103,7 +103,7 @@ export default function NotificationsPage() {
             <Button
               size="sm"
               onClick={() => setBroadcastOpen(true)}
-              className="bg-brand hover:bg-brand-hover text-xs"
+              className="bg-brand hover:bg-brand-hover text-xs text-white"
             >
               <Send className="mr-1 h-3.5 w-3.5" />
               Compose Broadcast

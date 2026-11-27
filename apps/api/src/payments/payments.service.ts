@@ -1,6 +1,7 @@
 import {
   Injectable,
   Inject,
+  Optional,
   Logger,
   BadRequestException,
   NotFoundException,
@@ -18,6 +19,7 @@ import { buildOrderEmailPayloads } from '../email/order-email-payload';
 import { Actor, AuditLogService } from '../audit/audit-log.service';
 import { OrderEventsService } from '../events/order-events.service';
 import { NotificationService } from '../notification/notification.service';
+import { SmsClient } from '../auth/arkesel.client';
 
 interface PaymentProvider {
   initializeTransaction(dto: InitializePaymentDto): Promise<any>;
@@ -40,6 +42,7 @@ export class PaymentsService {
     private readonly notifications: NotificationService,
     @Inject(paystackConfig.KEY)
     private readonly paystackCfg: ConfigType<typeof paystackConfig>,
+    @Optional() private readonly sms?: SmsClient,
   ) {}
 
   private getProvider(provider = 'PAYSTACK'): PaymentProvider {
@@ -352,16 +355,32 @@ export class PaymentsService {
     if (!order) return;
 
     const orderNumber = `ORD-${order.id.slice(-6).toUpperCase()}`;
-    const sellerUserIds = Array.from(
-      new Set(
-        order.items
-          .map((i: any) => i.product?.seller?.user_id)
-          .filter((x): x is string => Boolean(x)),
-      ),
-    );
+    const sellersByUserId = new Map<string, { phone: string | null }>();
+    for (const item of order.items as any[]) {
+      const seller = item.product?.seller;
+      const uid = seller?.user_id;
+      if (uid && !sellersByUserId.has(uid)) {
+        const phone =
+          seller?.user?.phone_e164?.trim() ||
+          seller?.whatsapp_number?.trim() ||
+          null;
+        sellersByUserId.set(uid, { phone });
+      }
+    }
+    const sellerUserIds = Array.from(sellersByUserId.keys());
 
-    // In-app notifications for sellers
-    for (const sellerUserId of sellerUserIds) {
+    const buyerFirstName =
+      (order.customer_name || order.buyer?.full_name || 'A customer')
+        .trim()
+        .split(/\s+/)[0] || 'A customer';
+    const numericTotal = Number(order.total_amount);
+    const amountSuffix =
+      Number.isFinite(numericTotal) && numericTotal > 0
+        ? ` (GHS ${numericTotal.toLocaleString('en-GH', { maximumFractionDigits: 2 })})`
+        : '';
+
+    // In-app + SMS notifications for ALL sellers (Free & Pro)
+    for (const [sellerUserId, { phone }] of sellersByUserId.entries()) {
       await this.notifications.create({
         userId: sellerUserId,
         type: 'ORDER_STATUS_CHANGED',
@@ -370,6 +389,19 @@ export class PaymentsService {
         link: '/dashboard/orders',
         data: { orderId, reference },
       });
+
+      if (phone && this.sms) {
+        const smsMessage =
+          `Verndly: New paid order ${orderNumber}${amountSuffix} from ${buyerFirstName}. ` +
+          `Open your dashboard to fulfil it.`;
+        this.sms
+          .sendSms(phone, smsMessage)
+          .catch((err) =>
+            this.logger.error(
+              `Failed to send paid order SMS to seller ${sellerUserId}: ${err}`,
+            ),
+          );
+      }
     }
 
     // In-app notification for buyer

@@ -69,6 +69,9 @@ describe('PaymentsService Super Admin Financial Controls', () => {
     const notifications: any = { create: jest.fn(async () => {}) };
     const auditLogs: any = { record: jest.fn(async () => {}) };
     const configService: any = { get: jest.fn(() => '4') };
+    const smsClient: any = {
+      sendSms: jest.fn(async () => ({ sent: true, id: 'sms-1' })),
+    };
 
     const service = new PaymentsService(
       httpService,
@@ -78,6 +81,7 @@ describe('PaymentsService Super Admin Financial Controls', () => {
       orderEvents,
       notifications,
       configService,
+      smsClient,
     );
 
     return {
@@ -87,6 +91,7 @@ describe('PaymentsService Super Admin Financial Controls', () => {
       emailService,
       notifications,
       auditLogs,
+      smsClient,
     };
   }
 
@@ -209,6 +214,52 @@ describe('PaymentsService Super Admin Financial Controls', () => {
     );
     expect(auditLogs.record).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'promotion.admin_reconcile' }),
+    );
+  });
+
+  it('sends paid-order SMS alerts to all sellers regardless of Pro status', async () => {
+    const { service, paymentsRepository, smsClient } = createHarness();
+    paymentsRepository.findOrderWithDetails = jest.fn(async () => ({
+      id: 'order-paid-999',
+      buyer_id: 'buyer-1',
+      total_amount: '320',
+      customer_name: 'Akosua Boateng',
+      buyer: { full_name: 'Akosua Boateng' },
+      items: [
+        {
+          product: {
+            seller: {
+              user_id: 'seller-free-1',
+              whatsapp_number: null,
+              user: { is_pro: false, phone_e164: '+233201112233' },
+            },
+          },
+        },
+        {
+          product: {
+            seller: {
+              user_id: 'seller-legacy-2',
+              whatsapp_number: '0551234567',
+              user: { is_pro: false, phone_e164: null },
+            },
+          },
+        },
+      ],
+    }));
+
+    await (service as any).triggerOrderRealtimeAndNotifications(
+      'order-paid-999',
+      'ORD_ref_123',
+    );
+
+    expect(smsClient.sendSms).toHaveBeenCalledTimes(2);
+    expect(smsClient.sendSms).toHaveBeenCalledWith(
+      '+233201112233',
+      expect.stringContaining('GHS 320'),
+    );
+    expect(smsClient.sendSms).toHaveBeenCalledWith(
+      '0551234567',
+      expect.stringContaining('Akosua'),
     );
   });
 });
