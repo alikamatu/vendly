@@ -185,9 +185,13 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
 
   // Build readable filter pills from Verndly AI's parsed plan
   const aiFilterPills: string[] = [];
-  if (aiResult) {
+  if (aiResult && aiResult.intent !== 'chat') {
     const f = aiResult.filters;
     if (f.category) aiFilterPills.push(f.category);
+    if (f.subcategory && f.subcategory.toLowerCase() !== (f.category || '').toLowerCase()) {
+      aiFilterPills.push(f.subcategory);
+    }
+    if (f.brand) aiFilterPills.push(f.brand);
     if (f.min_price !== null && f.max_price !== null) {
       aiFilterPills.push(`GH₵ ${f.min_price} – ${f.max_price}`);
     } else if (f.max_price !== null) {
@@ -355,19 +359,36 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between pt-1">
-                        <span className="text-muted text-xs font-medium">
-                          {aiResult.total} {aiResult.total === 1 ? 'listing' : 'listings'} found
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleBrowseUrl(aiResult.browseUrl)}
-                          className="text-foreground inline-flex items-center gap-1 text-xs font-semibold hover:underline"
-                        >
-                          <span>View all in catalog</span>
-                          <ArrowRight className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
+                      {Array.isArray(aiResult.follow_ups) && aiResult.follow_ups.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {aiResult.follow_ups.slice(0, 3).map((chip) => (
+                            <button
+                              key={chip}
+                              type="button"
+                              onClick={() => void runAiSearch(chip)}
+                              className="bg-background text-foreground hover:bg-foreground hover:text-background rounded-full px-3 py-1 text-[11px] font-medium transition-colors"
+                            >
+                              {chip}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {aiResult.intent !== 'chat' && (
+                        <div className="flex items-center justify-between pt-1">
+                          <span className="text-muted text-xs font-medium">
+                            {aiResult.total} {aiResult.total === 1 ? 'listing' : 'listings'} found
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleBrowseUrl(aiResult.browseUrl)}
+                            className="text-foreground inline-flex items-center gap-1 text-xs font-semibold hover:underline"
+                          >
+                            <span>View all in catalog</span>
+                            <ArrowRight className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      )}
                     </div>
 
                     {displayedProducts.length > 0 ? (
@@ -404,7 +425,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                           </button>
                         ))}
                       </div>
-                    ) : (
+                    ) : aiResult.intent !== 'chat' ? (
                       <div className="bg-surface space-y-3 rounded-2xl py-10 text-center">
                         <ShoppingBag className="text-muted mx-auto h-8 w-8 opacity-40" />
                         <div className="space-y-1">
@@ -423,7 +444,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                           Browse Shop
                         </button>
                       </div>
-                    )}
+                    ) : null}
                   </div>
                 ) : query.trim().length > 0 ? (
                   <div className="space-y-4">

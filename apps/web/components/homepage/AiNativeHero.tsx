@@ -200,7 +200,7 @@ export default function AiNativeHero({ compactBottom = false }: AiNativeHeroProp
                 type="text"
                 value={promptInput}
                 onChange={(e) => setPromptInput(e.target.value)}
-                placeholder="Ask Verndly AI anything — e.g. perfume under GH₵ 250 in Accra…"
+                placeholder="Chat or ask Verndly AI — e.g. laptops under GH₵ 5,000 or say hi…"
                 aria-label="Ask Verndly AI to shop"
                 className="text-foreground placeholder:text-muted/70 min-w-0 flex-1 bg-transparent py-2 text-sm outline-none sm:text-base"
               />
@@ -244,7 +244,11 @@ export default function AiNativeHero({ compactBottom = false }: AiNativeHeroProp
                           {searchError}
                         </motion.p>
                       ) : searchResult ? (
-                        <HeroSearchAnswer key="answer" result={searchResult} />
+                        <HeroSearchAnswer
+                          key="answer"
+                          result={searchResult}
+                          onFollowUp={(chip) => void runSearch(chip)}
+                        />
                       ) : null}
                     </AnimatePresence>
                   </div>
@@ -347,8 +351,15 @@ function HeroSearchSkeleton() {
   );
 }
 
-function HeroSearchAnswer({ result }: { result: AiBuyerSearchResponse }) {
+function HeroSearchAnswer({
+  result,
+  onFollowUp,
+}: {
+  result: AiBuyerSearchResponse;
+  onFollowUp: (prompt: string) => void;
+}) {
   const products = result.products.slice(0, 4);
+  const isChatOnly = result.intent === 'chat' && products.length === 0;
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -393,16 +404,44 @@ function HeroSearchAnswer({ result }: { result: AiBuyerSearchResponse }) {
             );
           })}
         </div>
-      ) : (
+      ) : !isChatOnly ? (
         <p className="text-muted px-1.5 text-sm">Nothing matched that yet. Try a wider budget.</p>
+      ) : null}
+
+      {Array.isArray(result.follow_ups) && result.follow_ups.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 px-1">
+          {result.follow_ups.slice(0, 3).map((chip) => (
+            <button
+              key={chip}
+              type="button"
+              onClick={() => onFollowUp(chip)}
+              className="bg-background text-foreground hover:bg-foreground hover:text-background rounded-full px-3 py-1 text-[11px] font-medium transition-colors"
+            >
+              {chip}
+            </button>
+          ))}
+        </div>
       )}
-      <Link
-        href={result.browseUrl || '/products'}
-        className="text-foreground inline-flex items-center gap-1 px-1.5 text-xs font-medium"
-      >
-        {result.total > products.length ? `See all ${result.total}` : 'Browse marketplace'}
-        <ArrowRight className="h-3.5 w-3.5" />
-      </Link>
+
+      <div className="flex flex-wrap items-center gap-4 px-1.5">
+        {!isChatOnly && (
+          <Link
+            href={result.browseUrl || '/products'}
+            className="text-foreground inline-flex items-center gap-1 text-xs font-medium"
+          >
+            {result.total > products.length ? `See all ${result.total}` : 'Browse marketplace'}
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        )}
+        <button
+          type="button"
+          onClick={() => openVerndlyAi()}
+          className="text-muted hover:text-foreground inline-flex items-center gap-1 text-xs font-medium transition-colors"
+        >
+          Continue in full chat
+          <ArrowRight className="h-3 w-3" />
+        </button>
+      </div>
     </motion.div>
   );
 }

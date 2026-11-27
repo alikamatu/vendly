@@ -161,13 +161,102 @@ export const CATEGORY_SUBCATEGORIES: CategoryTaxonomyEntry[] = [
           'cable',
           'adapter',
           'phone case',
-          'router',
-          'flash drive',
           'keyboard',
           'mouse',
         ],
         patterns: [
-          /\b(power\s*banks?|powerbanks?|chargers?|adapters?|usb-?c|hdmi|lightning\s*cables?|phone\s*cases?|screen\s*protectors?|routers?|wi-?fi|starlink|flash\s*drives?|ssds?|hard\s*drives?|keyboards?|mice|mouse|webcams?)\b/i,
+          /\b(power\s*banks?|powerbanks?|chargers?|adapters?|usb-?c|hdmi|lightning\s*cables?|phone\s*cases?|screen\s*protectors?|keyboards?|mice|mouse|webcams?)\b/i,
+        ],
+      },
+      {
+        name: 'Desktops & PCs',
+        keywords: [
+          'desktop',
+          'imac',
+          'mac mini',
+          'pc',
+          'gaming pc',
+          'all-in-one',
+          'cpu',
+          'gpu',
+        ],
+        patterns: [
+          /\b(desktops?|imacs?|mac\s*mini|gaming\s*pcs?|workstations?|all-?in-?one\s*pc|motherboards?|graphics\s*cards?|gpus?)\b/i,
+        ],
+      },
+      {
+        name: 'Networking & Wi-Fi',
+        keywords: [
+          'router',
+          'starlink',
+          'mifi',
+          'wifi',
+          'modem',
+          'extender',
+          'switch',
+          'ethernet',
+        ],
+        patterns: [
+          /\b(routers?|starlink|mifi|wi-?fi\s*extenders?|modems?|mesh\s*wi-?fi|network\s*switch|ethernet)\b/i,
+        ],
+      },
+      {
+        name: 'Solar & Power Solutions',
+        keywords: [
+          'solar',
+          'inverter',
+          'power station',
+          'ecoflow',
+          'bluetti',
+          'ups',
+          'stabilizer',
+          'extension board',
+        ],
+        patterns: [
+          /\b(solar\s*panels?|inverters?|power\s*stations?|ecoflow|bluetti|ups|voltage\s*stabilizers?|surge\s*protectors?|extension\s*boards?)\b/i,
+        ],
+      },
+      {
+        name: 'Smart Home & Security',
+        keywords: [
+          'cctv',
+          'security camera',
+          'smart bulb',
+          'doorbell',
+          'smart lock',
+          'alexa',
+        ],
+        patterns: [
+          /\b(cctv|security\s*cameras?|smart\s*bulbs?|smart\s*plugs?|smart\s*locks?|video\s*doorbells?|alexa|google\s*nest)\b/i,
+        ],
+      },
+      {
+        name: 'Storage & Memory',
+        keywords: [
+          'ssd',
+          'hard drive',
+          'flash drive',
+          'sd card',
+          'memory card',
+          'ram',
+          'usb',
+        ],
+        patterns: [
+          /\b(ssds?|external\s*hard\s*drives?|hard\s*drives?|hdd|flash\s*drives?|pen\s*drives?|sd\s*cards?|memory\s*cards?|nvme)\b/i,
+        ],
+      },
+      {
+        name: 'Printers & Scanners',
+        keywords: [
+          'printer',
+          'scanner',
+          'inkjet',
+          'laserjet',
+          'photocopier',
+          'toner',
+        ],
+        patterns: [
+          /\b(printers?|scanners?|inkjet|laserjet|all-?in-?one\s*printers?|photo\s*printers?)\b/i,
         ],
       },
     ],
@@ -225,21 +314,54 @@ export const CATEGORY_SUBCATEGORIES: CategoryTaxonomyEntry[] = [
         ],
       },
       {
-        name: 'Shoes',
+        name: 'Sneakers',
         keywords: [
-          'shoe',
           'sneaker',
-          'boot',
-          'sandal',
-          'heel',
-          'loafer',
-          'slipper',
-          'slide',
-          'footwear',
+          'trainer',
+          'air force',
+          'jordan',
+          'yeezy',
+          'new balance',
+          'dunk',
+          'running shoe',
         ],
         patterns: [
-          /\b(sneakers?|trainers?|shoes?|boots?|sandals?|slippers?|slides?|flip-?flops?|loafers?|moccasins?|oxfords?|brogues?|heels?|stilettos?|wedges?|flats?|clogs?|crocs|footwear)\b/i,
+          /\b(sneakers?|trainers?|air\s*force|jordans?|air\s*jordan|yeezy|new\s*balance|nike\s*dunk|air\s*max|samba|gazelle|vans|converse|running\s*shoes?)\b/i,
         ],
+      },
+      {
+        name: 'Sandals & Slippers',
+        keywords: [
+          'sandal',
+          'slipper',
+          'slide',
+          'crocs',
+          'birkenstock',
+          'flip flop',
+        ],
+        patterns: [
+          /\b(sandals?|slippers?|slides?|flip-?flops?|crocs|birkenstocks?|palm\s*sandals?|leather\s*sandals?)\b/i,
+        ],
+      },
+      {
+        name: 'Heels & Formal Shoes',
+        keywords: [
+          'heel',
+          'stiletto',
+          'wedge',
+          'loafer',
+          'oxford',
+          'brogue',
+          'dress shoe',
+        ],
+        patterns: [
+          /\b(heels?|stilettos?|wedges?|pumps?|loafers?|moccasins?|oxfords?|brogues?|dress\s*shoes?|formal\s*shoes?)\b/i,
+        ],
+      },
+      {
+        name: 'Shoes',
+        keywords: ['shoe', 'boot', 'flat', 'clog', 'footwear'],
+        patterns: [/\b(shoes?|boots?|flats?|clogs?|footwear)\b/i],
       },
       {
         name: 'Bags & Handbags',
@@ -307,6 +429,62 @@ export const CATEGORY_SUBCATEGORIES: CategoryTaxonomyEntry[] = [
           /\b(tracksuits?|jerseys?|activewear|sportswear|gym\s*wear|sweatpants)\b/i,
         ],
       },
+      {
+        name: 'Hoodies & Streetwear',
+        keywords: [
+          'hoodie',
+          'sweatshirt',
+          'streetwear',
+          'cargo pants',
+          'oversized tee',
+          'varsity',
+        ],
+        patterns: [
+          /\b(hoodies?|sweatshirts?|streetwear|cargo\s*pants?|oversized\s*t-?shirts?|varsity\s*jackets?)\b/i,
+        ],
+      },
+      {
+        name: 'Jeans & Denim',
+        keywords: [
+          'jeans',
+          'denim',
+          'denim jacket',
+          'ripped jeans',
+          'mom jeans',
+        ],
+        patterns: [
+          /\b(jeans|denim\s*jackets?|denim\s*shorts?|denim\s*skirts?|denim)\b/i,
+        ],
+      },
+      {
+        name: 'Lingerie & Sleepwear',
+        keywords: [
+          'lingerie',
+          'pajamas',
+          'pyjamas',
+          'nightwear',
+          'robe',
+          'shapewear',
+          'bra',
+        ],
+        patterns: [
+          /\b(lingerie|pajamas?|pyjamas?|nightwear|sleepwear|robes?|shapewear|bras?|panties)\b/i,
+        ],
+      },
+      {
+        name: 'Workwear & Suits',
+        keywords: [
+          'suit',
+          'blazer',
+          'office wear',
+          'formal shirt',
+          'pencil skirt',
+          'chinos',
+        ],
+        patterns: [
+          /\b(suits?|blazers?|tuxedos?|office\s*wear|corporate\s*wear|formal\s*shirts?|pencil\s*skirts?)\b/i,
+        ],
+      },
     ],
   },
   {
@@ -360,6 +538,46 @@ export const CATEGORY_SUBCATEGORIES: CategoryTaxonomyEntry[] = [
         ],
         patterns: [
           /\b(jewelry\s*sets?|bridal\s*sets?|diamonds?|pearls?|gemstones?|brooches?|tiaras?)\b/i,
+        ],
+      },
+      {
+        name: 'Smart & Luxury Bands',
+        keywords: [
+          'watch strap',
+          'watch band',
+          'apple watch band',
+          'leather strap',
+          'milanese loop',
+        ],
+        patterns: [
+          /\b(watch\s*straps?|watch\s*bands?|apple\s*watch\s*bands?|milanese\s*loop)\b/i,
+        ],
+      },
+      {
+        name: "Men's Jewelry",
+        keywords: [
+          'cuban link',
+          'men chain',
+          'cufflinks',
+          'tie clip',
+          'signet ring',
+          'men bracelet',
+        ],
+        patterns: [
+          /\b(cuban\s*links?|cufflinks?|tie\s*clips?|men'?s\s*jewelry|men'?s\s*chains?)\b/i,
+        ],
+      },
+      {
+        name: 'Anklets & Body Jewelry',
+        keywords: [
+          'anklet',
+          'waist beads',
+          'nose ring',
+          'belly ring',
+          'toe ring',
+        ],
+        patterns: [
+          /\b(anklets?|waist\s*beads?|nose\s*rings?|belly\s*rings?|body\s*jewelry)\b/i,
         ],
       },
     ],
@@ -448,6 +666,60 @@ export const CATEGORY_SUBCATEGORIES: CategoryTaxonomyEntry[] = [
         keywords: ['clipper', 'trimmer', 'shaver', 'razor', 'beard oil'],
         patterns: [
           /\b(clippers?|trimmers?|shavers?|razors?|beard\s*oils?|grooming)\b/i,
+        ],
+      },
+      {
+        name: 'Nails & Manicure',
+        keywords: [
+          'nail',
+          'press on',
+          'gel polish',
+          'uv lamp',
+          'acrylic nails',
+          'manicure',
+        ],
+        patterns: [
+          /\b(press-?on\s*nails?|acrylic\s*nails?|gel\s*polish|nail\s*polish|manicure|pedicure|nail\s*lamps?)\b/i,
+        ],
+      },
+      {
+        name: 'Beauty Tools & Brushes',
+        keywords: [
+          'makeup brush',
+          'beauty blender',
+          'jade roller',
+          'lash curler',
+          'mirror',
+        ],
+        patterns: [
+          /\b(makeup\s*brush(?:es)?|beauty\s*blenders?|sponges?|jade\s*rollers?|gua\s*sha|eyelash\s*curlers?|vanity\s*mirrors?)\b/i,
+        ],
+      },
+      {
+        name: 'Bath & Spa',
+        keywords: [
+          'bath bomb',
+          'bath salt',
+          'candle',
+          'spa set',
+          'loofah',
+          'bath oil',
+        ],
+        patterns: [
+          /\b(bath\s*bombs?|bath\s*salts?|scented\s*candles?|spa\s*sets?|bath\s*oils?|loofahs?)\b/i,
+        ],
+      },
+      {
+        name: 'Oral Care',
+        keywords: [
+          'toothbrush',
+          'electric toothbrush',
+          'teeth whitening',
+          'water flosser',
+          'mouthwash',
+        ],
+        patterns: [
+          /\b(electric\s*toothbrushes?|toothbrushes?|teeth\s*whitening|water\s*flossers?|mouthwash)\b/i,
         ],
       },
     ],
@@ -551,6 +823,55 @@ export const CATEGORY_SUBCATEGORIES: CategoryTaxonomyEntry[] = [
           /\b(washing\s*machines?|vacuum\s*cleaners?|irons?|ironing\s*boards?|laundry\s*baskets?|mops?|brooms?|dustbins?|trash\s*cans?)\b/i,
         ],
       },
+      {
+        name: 'Lighting & Lamps',
+        keywords: [
+          'lamp',
+          'led strip',
+          'chandelier',
+          'solar light',
+          'ceiling light',
+          'desk lamp',
+        ],
+        patterns: [
+          /\b(desk\s*lamps?|floor\s*lamps?|bedside\s*lamps?|led\s*strips?|chandeliers?|solar\s*lights?|pendant\s*lights?|wall\s*sconces?)\b/i,
+        ],
+      },
+      {
+        name: 'Bathroom Essentials',
+        keywords: [
+          'towel',
+          'bath mat',
+          'shower curtain',
+          'soap dispenser',
+          'bathroom rack',
+        ],
+        patterns: [
+          /\b(bath\s*towels?|towels?|bath\s*mats?|shower\s*curtains?|soap\s*dispensers?|bathroom\s*organizers?)\b/i,
+        ],
+      },
+      {
+        name: 'Garden & Outdoor Living',
+        keywords: [
+          'planter',
+          'flower pot',
+          'garden',
+          'patio',
+          'grill',
+          'barbecue',
+          'hose',
+        ],
+        patterns: [
+          /\b(planters?|flower\s*pots?|garden\s*tools?|patio\s*furniture|bbq|barbecue|grills?|outdoor\s*chairs?)\b/i,
+        ],
+      },
+      {
+        name: 'Generators & Backup Power',
+        keywords: ['generator', 'inverter', 'stabilizer', 'backup battery'],
+        patterns: [
+          /\b(generators?|fuel\s*generators?|backup\s*power|power\s*inverters?)\b/i,
+        ],
+      },
     ],
   },
   {
@@ -604,6 +925,48 @@ export const CATEGORY_SUBCATEGORIES: CategoryTaxonomyEntry[] = [
         keywords: ['essential oil', 'diffuser', 'aromatherapy'],
         patterns: [/\b(essential\s*oils?|aromatherapy|diffusers?)\b/i],
       },
+      {
+        name: 'Herbal & Natural Remedies',
+        keywords: [
+          'herbal',
+          'bitters',
+          'seamoss',
+          'black seed oil',
+          'neem',
+          'hibiscus',
+          'baobab',
+        ],
+        patterns: [
+          /\b(herbal\s*tea|herbal|sea\s*moss|black\s*seed\s*oil|bitters|baobab|neem)\b/i,
+        ],
+      },
+      {
+        name: 'Personal Hygiene',
+        keywords: [
+          'sanitizer',
+          'feminine care',
+          'pads',
+          'wipes',
+          'antiseptic',
+          'hygiene',
+        ],
+        patterns: [
+          /\b(hand\s*sanitizers?|sanitary\s*pads?|feminine\s*care|wet\s*wipes?|antiseptic)\b/i,
+        ],
+      },
+      {
+        name: 'Weight Management',
+        keywords: [
+          'slimming tea',
+          'fat burner',
+          'meal replacement',
+          'scale',
+          'detox tea',
+        ],
+        patterns: [
+          /\b(slimming\s*tea|detox\s*tea|fat\s*burners?|meal\s*replacement|body\s*scales?)\b/i,
+        ],
+      },
     ],
   },
   {
@@ -648,6 +1011,34 @@ export const CATEGORY_SUBCATEGORIES: CategoryTaxonomyEntry[] = [
         keywords: ['bicycle', 'bike', 'scooter', 'skateboard'],
         patterns: [
           /\b(bicycles?|mountain\s*bikes?|scooters?|skateboards?|rollerblades?)\b/i,
+        ],
+      },
+      {
+        name: 'Running & Training',
+        keywords: [
+          'running',
+          'training',
+          'hydration vest',
+          'gym bag',
+          'lifting belt',
+          'gloves',
+        ],
+        patterns: [
+          /\b(running\s*gear|gym\s*bags?|lifting\s*belts?|gym\s*gloves?|training\s*cones?)\b/i,
+        ],
+      },
+      {
+        name: 'Swimming & Water Sports',
+        keywords: [
+          'goggles',
+          'swim cap',
+          'swimsuit',
+          'floatie',
+          'life jacket',
+          'snorkel',
+        ],
+        patterns: [
+          /\b(swim\s*goggles?|swim\s*caps?|life\s*jackets?|snorkels?|pool\s*floats?)\b/i,
         ],
       },
     ],
@@ -713,6 +1104,51 @@ export const CATEGORY_SUBCATEGORIES: CategoryTaxonomyEntry[] = [
           /\b(olive\s*oil|palm\s*oil|coconut\s*oil|peanut\s*butter|pasta|spaghetti|noodles|jams?|ketchup|mayonnaise)\b/i,
         ],
       },
+      {
+        name: 'Fresh Produce & Groceries',
+        keywords: [
+          'plantain',
+          'yam',
+          'tomato',
+          'onion',
+          'fruits',
+          'vegetables',
+          'groceries',
+        ],
+        patterns: [
+          /\b(fresh\s*produce|vegetables?|groceries|plantains?|yams?|fresh\s*fruits?)\b/i,
+        ],
+      },
+      {
+        name: 'Baked Goods & Cakes',
+        keywords: [
+          'cake',
+          'cupcake',
+          'bread',
+          'pastry',
+          'meat pie',
+          'brownie',
+          'doughnut',
+        ],
+        patterns: [
+          /\b(birthday\s*cakes?|cakes?|cupcakes?|pastries|meat\s*pies?|brownies?|doughnuts?|bakery)\b/i,
+        ],
+      },
+      {
+        name: 'Organic & Health Foods',
+        keywords: [
+          'organic',
+          'chia',
+          'oats',
+          'flaxseed',
+          'quinoa',
+          'moringa powder',
+          'raw honey',
+        ],
+        patterns: [
+          /\b(organic|chia\s*seeds?|rolled\s*oats?|flaxseeds?|quinoa|raw\s*honey|superfoods?)\b/i,
+        ],
+      },
     ],
   },
   {
@@ -758,6 +1194,31 @@ export const CATEGORY_SUBCATEGORIES: CategoryTaxonomyEntry[] = [
           /\b(onesies?|baby\s*clothes|kids?\s*clothing|newborns?|toddlers?|maternity)\b/i,
         ],
       },
+      {
+        name: 'Kids Shoes',
+        keywords: [
+          'kids shoes',
+          'baby shoes',
+          'school shoes',
+          'toddler sneakers',
+        ],
+        patterns: [
+          /\b(kids?\s*shoes?|baby\s*shoes?|school\s*shoes?|toddler\s*sneakers?)\b/i,
+        ],
+      },
+      {
+        name: 'School Bags & Supplies',
+        keywords: [
+          'school bag',
+          'lunch box',
+          'kids backpack',
+          'water bottle',
+          'pencil case',
+        ],
+        patterns: [
+          /\b(school\s*bags?|lunch\s*box(?:es)?|kids?\s*backpacks?|pencil\s*cases?)\b/i,
+        ],
+      },
     ],
   },
   {
@@ -798,6 +1259,39 @@ export const CATEGORY_SUBCATEGORIES: CategoryTaxonomyEntry[] = [
         ],
         patterns: [
           /\b(notebooks?|journals?|diaries?|planners?|sketchbooks?|pens?|pencils?|markers?|highlighters?|stationery)\b/i,
+        ],
+      },
+      {
+        name: 'Business & Self-Help',
+        keywords: [
+          'self help',
+          'finance book',
+          'entrepreneurship',
+          'leadership',
+          'atomic habits',
+        ],
+        patterns: [
+          /\b(self-?help|business\s*books?|finance\s*books?|entrepreneurship|leadership\s*books?)\b/i,
+        ],
+      },
+      {
+        name: "Children's Books",
+        keywords: ['storybook', 'coloring book', 'picture book', 'kids book'],
+        patterns: [
+          /\b(storybooks?|coloring\s*books?|picture\s*books?|children'?s\s*books?)\b/i,
+        ],
+      },
+      {
+        name: 'Religious & Inspirational',
+        keywords: [
+          'bible',
+          'quran',
+          'devotional',
+          'christian book',
+          'prayer journal',
+        ],
+        patterns: [
+          /\b(bibles?|qurans?|devotionals?|prayer\s*journals?|inspirational\s*books?)\b/i,
         ],
       },
     ],
@@ -842,6 +1336,33 @@ export const CATEGORY_SUBCATEGORIES: CategoryTaxonomyEntry[] = [
           /\b(a4\s*paper|paper\s*reams?|binders?|folders?|staplers?|whiteboards?|envelopes?|organizers?)\b/i,
         ],
       },
+      {
+        name: 'POS & Retail Equipment',
+        keywords: [
+          'thermal printer',
+          'receipt printer',
+          'barcode scanner',
+          'cash drawer',
+          'pos',
+        ],
+        patterns: [
+          /\b(thermal\s*printers?|receipt\s*printers?|barcode\s*scanners?|cash\s*drawers?|pos\s*machines?)\b/i,
+        ],
+      },
+      {
+        name: 'Packaging & Shipping',
+        keywords: [
+          'mailer',
+          'shipping box',
+          'bubble wrap',
+          'packing tape',
+          'label',
+          'polymailer',
+        ],
+        patterns: [
+          /\b(polymailers?|shipping\s*boxes?|bubble\s*wrap|packing\s*tape|thermal\s*labels?|gift\s*boxes?)\b/i,
+        ],
+      },
     ],
   },
   {
@@ -871,9 +1392,36 @@ export const CATEGORY_SUBCATEGORIES: CategoryTaxonomyEntry[] = [
       },
       {
         name: 'Plush & Dolls',
-        keywords: ['doll', 'barbie', 'teddy bear', 'plush', 'rc car', 'nerf'],
+        keywords: ['doll', 'barbie', 'teddy bear', 'plush', 'nerf'],
         patterns: [
-          /\b(dolls?|barbies?|teddy\s*bears?|plush|action\s*figures?|rc\s*cars?|nerf|playsets?)\b/i,
+          /\b(dolls?|barbies?|teddy\s*bears?|plush|action\s*figures?|nerf|playsets?)\b/i,
+        ],
+      },
+      {
+        name: 'Remote Control & Drones',
+        keywords: [
+          'rc car',
+          'remote control',
+          'toy drone',
+          'rc helicopter',
+          'rc truck',
+        ],
+        patterns: [
+          /\b(rc\s*cars?|remote\s*control|toy\s*drones?|rc\s*helicopters?|rc\s*trucks?)\b/i,
+        ],
+      },
+      {
+        name: 'Outdoor Play',
+        keywords: [
+          'trampoline',
+          'slide',
+          'swing',
+          'ride on car',
+          'water gun',
+          'playhouse',
+        ],
+        patterns: [
+          /\b(trampolines?|ride-?on\s*cars?|water\s*guns?|playhouses?|kids?\s*swings?)\b/i,
         ],
       },
     ],
@@ -910,15 +1458,36 @@ export const CATEGORY_SUBCATEGORIES: CategoryTaxonomyEntry[] = [
       },
       {
         name: 'Oils & Care',
+        keywords: ['engine oil', 'motor oil', 'coolant'],
+        patterns: [
+          /\b(engine\s*oil|motor\s*oil|coolants?|brake\s*fluid|transmission\s*fluid)\b/i,
+        ],
+      },
+      {
+        name: 'Car Care & Detailing',
         keywords: [
-          'engine oil',
-          'motor oil',
-          'coolant',
-          'seat cover',
-          'floor mat',
+          'car wash',
+          'wax',
+          'polish',
+          'microfiber',
+          'tire shine',
+          'air freshener',
         ],
         patterns: [
-          /\b(engine\s*oil|motor\s*oil|coolants?|seat\s*covers?|floor\s*mats?)\b/i,
+          /\b(car\s*wash|car\s*wax|car\s*polish|tire\s*shine|car\s*fresheners?|car\s*vacuums?)\b/i,
+        ],
+      },
+      {
+        name: 'Interior Accessories',
+        keywords: [
+          'seat cover',
+          'floor mat',
+          'steering cover',
+          'phone holder',
+          'sunshade',
+        ],
+        patterns: [
+          /\b(seat\s*covers?|floor\s*mats?|steering\s*wheel\s*covers?|car\s*phone\s*holders?|sunshades?)\b/i,
         ],
       },
     ],
@@ -956,6 +1525,33 @@ export const CATEGORY_SUBCATEGORIES: CategoryTaxonomyEntry[] = [
           /\b(carvings?|sculptures?|pottery|ceramic\s*vases?|handmade)\b/i,
         ],
       },
+      {
+        name: 'Kente & Woven Fabrics',
+        keywords: [
+          'kente cloth',
+          'woven fabric',
+          'ankara fabric',
+          'lace fabric',
+          'batik',
+          'tie dye',
+        ],
+        patterns: [
+          /\b(kente\s*cloth|woven\s*fabrics?|ankara\s*fabrics?|lace\s*fabrics?|batik|tie-?dye)\b/i,
+        ],
+      },
+      {
+        name: 'Beadwork & Jewelry Making',
+        keywords: [
+          'krobo beads',
+          'glass beads',
+          'beadwork',
+          'jewelry wire',
+          'clasps',
+        ],
+        patterns: [
+          /\b(krobo\s*beads?|glass\s*beads?|beadwork|jewelry\s*making|beading\s*kits?)\b/i,
+        ],
+      },
     ],
   },
   {
@@ -976,6 +1572,269 @@ export const CATEGORY_SUBCATEGORIES: CategoryTaxonomyEntry[] = [
         name: 'Home Services',
         keywords: ['cleaning', 'tailoring', 'tutoring', 'consultation'],
         patterns: [/\b(cleaning|tailoring|tutoring|consultation|coaching)\b/i],
+      },
+      {
+        name: 'Beauty & Salon Services',
+        keywords: [
+          'braiding',
+          'makeup artist',
+          'barber',
+          'nail tech',
+          'wig installation',
+          'massage',
+        ],
+        patterns: [
+          /\b(braiding|makeup\s*artist|barber|nail\s*tech|wig\s*install|home\s*massage)\b/i,
+        ],
+      },
+      {
+        name: 'Delivery & Logistics',
+        keywords: ['dispatch', 'courier', 'delivery', 'moving', 'errand'],
+        patterns: [
+          /\b(dispatch\s*rider|courier|delivery\s*service|moving\s*service)\b/i,
+        ],
+      },
+      {
+        name: 'Digital & Creative Services',
+        keywords: [
+          'graphic design',
+          'logo design',
+          'social media',
+          'video editing',
+          'branding',
+        ],
+        patterns: [
+          /\b(graphic\s*design|logo\s*design|social\s*media\s*management|video\s*editing|branding)\b/i,
+        ],
+      },
+    ],
+  },
+  {
+    bucket: 'pets & animals',
+    categoryTokens: ['pet', 'dog', 'cat', 'animal'],
+    subcategories: [
+      {
+        name: 'Dog Food & Treats',
+        keywords: [
+          'dog food',
+          'puppy food',
+          'dog treats',
+          'kibble',
+          'chew bones',
+        ],
+        patterns: [
+          /\b(dog\s*food|puppy\s*food|dog\s*treats?|kibble|dog\s*chews?)\b/i,
+        ],
+      },
+      {
+        name: 'Cat Supplies',
+        keywords: [
+          'cat food',
+          'cat litter',
+          'litter box',
+          'scratching post',
+          'catnip',
+        ],
+        patterns: [
+          /\b(cat\s*food|cat\s*litter|litter\s*box|scratching\s*post|catnip)\b/i,
+        ],
+      },
+      {
+        name: 'Pet Accessories & Beds',
+        keywords: [
+          'leash',
+          'collar',
+          'pet bed',
+          'dog cage',
+          'pet carrier',
+          'feeding bowl',
+        ],
+        patterns: [
+          /\b(dog\s*leash|pet\s*collar|pet\s*beds?|dog\s*crates?|pet\s*carriers?|pet\s*bowls?)\b/i,
+        ],
+      },
+      {
+        name: 'Pet Grooming & Health',
+        keywords: ['dog shampoo', 'tick collar', 'flea spray', 'pet brush'],
+        patterns: [
+          /\b(dog\s*shampoo|pet\s*shampoo|tick\s*collar|flea\s*treatment|pet\s*grooming)\b/i,
+        ],
+      },
+    ],
+  },
+  {
+    bucket: 'tools & hardware',
+    categoryTokens: ['tool', 'hardware', 'industrial', 'construction', 'diy'],
+    subcategories: [
+      {
+        name: 'Power Tools',
+        keywords: [
+          'drill',
+          'angle grinder',
+          'saw',
+          'pressure washer',
+          'welding',
+          'bosch',
+          'makita',
+        ],
+        patterns: [
+          /\b(cordless\s*drills?|power\s*drills?|angle\s*grinders?|jigsaws?|circular\s*saws?|pressure\s*washers?|makita|dewalt|bosch)\b/i,
+        ],
+      },
+      {
+        name: 'Hand Tools',
+        keywords: [
+          'toolbox',
+          'screwdriver',
+          'wrench',
+          'hammer',
+          'pliers',
+          'tape measure',
+        ],
+        patterns: [
+          /\b(tool\s*kits?|toolboxes?|screwdrivers?|wrenches?|spanners?|hammers?|pliers|tape\s*measures?)\b/i,
+        ],
+      },
+      {
+        name: 'Electrical & Plumbing',
+        keywords: [
+          'socket',
+          'switch',
+          'wire',
+          'faucet',
+          'tap',
+          'shower head',
+          'circuit breaker',
+        ],
+        patterns: [
+          /\b(wall\s*sockets?|light\s*switches?|faucets?|shower\s*heads?|plumbing|circuit\s*breakers?)\b/i,
+        ],
+      },
+      {
+        name: 'Safety & Work Gear',
+        keywords: [
+          'safety boots',
+          'reflective vest',
+          'helmet',
+          'work gloves',
+          'padlock',
+        ],
+        patterns: [
+          /\b(safety\s*boots?|reflective\s*vests?|hard\s*hats?|work\s*gloves?|padlocks?)\b/i,
+        ],
+      },
+    ],
+  },
+  {
+    bucket: 'musical instruments',
+    categoryTokens: ['music', 'instrument', 'audio gear', 'studio'],
+    subcategories: [
+      {
+        name: 'Guitars & Strings',
+        keywords: [
+          'guitar',
+          'acoustic guitar',
+          'electric guitar',
+          'bass guitar',
+          'violin',
+          'ukulele',
+        ],
+        patterns: [
+          /\b(acoustic\s*guitars?|electric\s*guitars?|bass\s*guitars?|guitars?|violins?|ukuleles?)\b/i,
+        ],
+      },
+      {
+        name: 'Keyboards & Pianos',
+        keywords: [
+          'keyboard',
+          'piano',
+          'midi controller',
+          'yamaha psr',
+          'synthesizer',
+        ],
+        patterns: [
+          /\b(digital\s*pianos?|pianos?|midi\s*keyboards?|midi\s*controllers?|yamaha\s*psr|synthesizers?)\b/i,
+        ],
+      },
+      {
+        name: 'Drums & Percussion',
+        keywords: [
+          'drum',
+          'drum kit',
+          'cajon',
+          'djembe',
+          'talking drum',
+          'cymbal',
+        ],
+        patterns: [
+          /\b(drum\s*kits?|drums?|cajons?|djembes?|talking\s*drums?|cymbals?|percussion)\b/i,
+        ],
+      },
+      {
+        name: 'Studio & DJ Gear',
+        keywords: [
+          'audio interface',
+          'condenser mic',
+          'studio monitor',
+          'dj controller',
+          'mixer',
+        ],
+        patterns: [
+          /\b(audio\s*interfaces?|condenser\s*mics?|studio\s*monitors?|dj\s*controllers?|sound\s*mixers?|focusrite)\b/i,
+        ],
+      },
+    ],
+  },
+  {
+    bucket: 'gifts & hampers',
+    categoryTokens: ['gift', 'hamper', 'flower', 'party', 'event'],
+    subcategories: [
+      {
+        name: 'Gift Boxes & Hampers',
+        keywords: [
+          'gift box',
+          'hamper',
+          'curated gift',
+          'birthday box',
+          'valentine box',
+          'care package',
+        ],
+        patterns: [
+          /\b(gift\s*box(?:es)?|gift\s*hampers?|hampers?|care\s*packages?|birthday\s*box(?:es)?|valentine\s*gifts?)\b/i,
+        ],
+      },
+      {
+        name: 'Flowers & Bouquets',
+        keywords: [
+          'flower',
+          'bouquet',
+          'roses',
+          'money bouquet',
+          'preserved roses',
+        ],
+        patterns: [
+          /\b(bouquets?|money\s*bouquets?|fresh\s*flowers?|roses|flower\s*arrangements?)\b/i,
+        ],
+      },
+      {
+        name: 'Personalized Gifts',
+        keywords: [
+          'custom mug',
+          'engraved',
+          'photo frame',
+          'personalized',
+          'custom keychain',
+        ],
+        patterns: [
+          /\b(personalized\s*gifts?|custom\s*mugs?|engraved\s*gifts?|custom\s*frames?|monogram)\b/i,
+        ],
+      },
+      {
+        name: 'Party & Event Decor',
+        keywords: ['balloon', 'party decor', 'banner', 'candle', 'cake topper'],
+        patterns: [
+          /\b(balloons?|party\s*decor|birthday\s*banners?|cake\s*toppers?|confetti)\b/i,
+        ],
       },
     ],
   },

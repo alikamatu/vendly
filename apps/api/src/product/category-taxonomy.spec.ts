@@ -52,7 +52,25 @@ describe('Category subcategory taxonomy & structured attributes', () => {
       matchSubcategoryName(undefined, 'Fashion', {
         title: 'Classic White Leather Sneakers EU 42',
       }),
+    ).toBe('Sneakers');
+
+    expect(
+      matchSubcategoryName(undefined, 'Fashion', {
+        title: 'Brown Leather Chelsea Boots EU 43',
+      }),
     ).toBe('Shoes');
+
+    expect(
+      matchSubcategoryName(undefined, 'Electronics', {
+        title: 'EcoFlow River 2 Portable Power Station 300W Solar',
+      }),
+    ).toBe('Solar & Power Solutions');
+
+    expect(
+      matchSubcategoryName(undefined, 'Gifts & Hampers', {
+        title: 'Luxury Birthday Gift Box Hamper with Chocolate',
+      }),
+    ).toBe('Gift Boxes & Hampers');
 
     expect(
       matchSubcategoryName(undefined, 'Jewelry & Watches', {

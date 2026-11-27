@@ -47,9 +47,20 @@ export class AiController {
    */
   @Post('buyer-search')
   @UseGuards(ThrottlerGuard)
-  @Throttle({ default: { limit: 20, ttl: 60000 } })
-  async buyerSearch(@Body() body: { query?: string; limit?: number }) {
-    return this.buyerSearchService.search(body?.query || '', body?.limit);
+  @Throttle({ default: { limit: 25, ttl: 60000 } })
+  async buyerSearch(
+    @Body()
+    body: {
+      query?: string;
+      limit?: number;
+      history?: Array<{ role: 'user' | 'assistant'; text: string }>;
+    },
+  ) {
+    return this.buyerSearchService.search(
+      body?.query || '',
+      body?.limit,
+      body?.history,
+    );
   }
 
   @Get('status')

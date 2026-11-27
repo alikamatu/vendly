@@ -8,17 +8,19 @@ import { ArrowRight, ArrowUp, RotateCcw, ShoppingBag, X } from 'lucide-react';
 import Portal from '@/components/common/Portal';
 import VerndlyAiIcon from '@/components/ai/VerndlyAiIcon';
 import Alert from '@/components/ui/Alert';
-import { aiApi, type AiBuyerSearchResponse } from '@/lib/api/ai';
+import { aiApi, type AiBuyerSearchResponse, type AiConversationTurn } from '@/lib/api/ai';
 import { getProductPath } from '@/lib/product-slug';
 import { OPEN_VERNDLY_AI_EVENT, type OpenVerndlyAiDetail } from '@/lib/ai/open-verndly-ai';
+import { recordShoppingHabit } from '@/lib/cookies/shopping-habits';
 
 const EASE_OUT_EXPO = [0.22, 1, 0.36, 1] as const;
 
 const STARTER_PROMPTS = [
+  'Hey! What can you help me find?',
+  'Laptops for work or school',
   'Gift ideas under GH₵ 200',
-  'Headphones under GH₵ 350',
-  'Best deals right now',
   'Affordable sneakers in stock',
+  'How does 3-day escrow work?',
 ];
 
 const HIDDEN_LAUNCHER_PREFIXES = [
@@ -51,9 +53,14 @@ function formatGhs(value: number | string | undefined | null): string {
 }
 
 function buildFilterPills(res: AiBuyerSearchResponse): string[] {
+  if (res.intent === 'chat') return [];
   const pills: string[] = [];
   const f = res.filters;
   if (f.category) pills.push(f.category);
+  if (f.subcategory && f.subcategory.toLowerCase() !== (f.category || '').toLowerCase()) {
+    pills.push(f.subcategory);
+  }
+  if (f.brand) pills.push(f.brand);
   if (f.min_price !== null && f.max_price !== null) {
     pills.push(`GH₵ ${f.min_price} – ${f.max_price}`);
   } else if (f.max_price !== null) {
@@ -82,6 +89,11 @@ export default function VerndlyAiAssistant() {
 
   const inputRef = useRef<HTMLInputElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const turnsRef = useRef<AssistantTurn[]>([]);
+
+  useEffect(() => {
+    turnsRef.current = turns;
+  }, [turns]);
 
   const isLoading = turns.some((t) => t.status === 'loading');
 
@@ -108,20 +120,37 @@ export default function VerndlyAiAssistant() {
     const clean = rawPrompt.trim();
     if (clean.length < 2) return;
 
+    const history: AiConversationTurn[] = turnsRef.current
+      .filter((t) => t.status === 'done' && t.result)
+      .slice(-4)
+      .flatMap((t) => [
+        { role: 'user' as const, text: t.prompt },
+        { role: 'assistant' as const, text: t.result!.summary },
+      ]);
+
     const turnId = `ai_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     setInput('');
     setTurns((prev) => [...prev, { id: turnId, prompt: clean, status: 'loading' }]);
 
     try {
-      const res = await aiApi.buyerSearch(clean, 8);
+      const res = await aiApi.buyerSearch(clean, 8, history);
       setTurns((prev) =>
         prev.map((t) => (t.id === turnId ? { ...t, status: 'done', result: res } : t)),
       );
+      if (res.intent !== 'chat') {
+        recordShoppingHabit('search', {
+          category: res.filters.category,
+          subcategory: res.filters.subcategory,
+          brand: res.filters.brand,
+          tags: res.filters.keywords,
+          query: clean,
+        });
+      }
     } catch (err: unknown) {
       const message =
         err instanceof Error
           ? err.message
-          : 'Verndly AI could not search right now. Please try again.';
+          : 'Verndly AI could not reply right now. Please try again.';
       setTurns((prev) =>
         prev.map((t) => (t.id === turnId ? { ...t, status: 'error', error: message } : t)),
       );
@@ -269,11 +298,11 @@ export default function VerndlyAiAssistant() {
 
                     <div className="max-w-md space-y-2">
                       <h3 className="text-foreground text-2xl font-semibold tracking-tight sm:text-3xl">
-                        What can I find for you?
+                        Hey! What are we looking for?
                       </h3>
                       <p className="text-muted text-xs leading-relaxed sm:text-sm">
-                        Describe an item, gift idea, or GH₵ budget in plain English — Verndly AI
-                        searches verified Ghanaian stores instantly.
+                        Chat with me or tell me what you need — an item, a gift idea, a GH₵ budget,
+                        or any question about shopping safely on Verndly.
                       </p>
                     </div>
 
@@ -311,7 +340,7 @@ export default function VerndlyAiAssistant() {
                         <div className="flex items-center gap-2.5">
                           <VerndlyAiIcon size={22} mood="working" />
                           <div className="inline-flex items-center rounded-full bg-white px-3.5 py-2 text-xs font-medium text-neutral-950">
-                            <span>Searching verified stores…</span>
+                            <span>Thinking…</span>
                             <span
                               aria-hidden="true"
                               className="verndly-caret ml-1 inline-block h-[13px] w-[2px] rounded-full bg-red-700"
@@ -364,7 +393,14 @@ export default function VerndlyAiAssistant() {
                                     <Link
                                       key={p.id}
                                       href={getProductPath(p)}
-                                      onClick={closeModal}
+                                      onClick={() => {
+                                        recordShoppingHabit('view_product', {
+                                          productId: p.id,
+                                          category: p.category,
+                                          price: p.price,
+                                        });
+                                        closeModal();
+                                      }}
                                       className="bg-surface hover:bg-foreground/[0.06] group flex items-center gap-3 rounded-2xl p-2.5 transition-colors"
                                     >
                                       <div className="bg-background relative h-14 w-14 shrink-0 overflow-hidden rounded-xl">
@@ -420,12 +456,29 @@ export default function VerndlyAiAssistant() {
                                 <ArrowRight className="h-3.5 w-3.5" />
                               </Link>
                             </div>
-                          ) : (
+                          ) : turn.result.intent !== 'chat' ? (
                             <div className="bg-surface text-muted rounded-2xl p-3.5 text-xs sm:ml-7">
-                              No exact matches found right now — try broadening your budget or
-                              keywords.
+                              No exact matches in stock right now — tell me if you want to widen
+                              your budget or try another style!
                             </div>
-                          )}
+                          ) : null}
+
+                          {Array.isArray(turn.result.follow_ups) &&
+                            turn.result.follow_ups.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5 sm:pl-7">
+                                {turn.result.follow_ups.slice(0, 3).map((chip) => (
+                                  <button
+                                    key={chip}
+                                    type="button"
+                                    disabled={isLoading}
+                                    onClick={() => void submitPrompt(chip)}
+                                    className="bg-surface text-foreground hover:bg-foreground hover:text-background rounded-full px-3 py-1.5 text-[11px] font-medium transition-colors disabled:opacity-40"
+                                  >
+                                    {chip}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                         </div>
                       )}
                     </motion.div>
@@ -444,7 +497,7 @@ export default function VerndlyAiAssistant() {
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder="Ask Verndly AI anything to shop…"
+                    placeholder="Chat or ask Verndly AI to find anything…"
                     disabled={isLoading}
                     className="text-foreground placeholder:text-muted/65 min-w-0 flex-1 bg-transparent text-xs outline-none sm:text-sm"
                   />

@@ -32,6 +32,7 @@ import {
 } from './gemini.types';
 import {
   ALL_SUBCATEGORY_NAMES,
+  findSubcategoryDefinition,
   normalizeProductAttributes,
 } from '../product/category-taxonomy';
 
@@ -133,8 +134,21 @@ export function normalizeBuyerSearchPlan(
   const obj =
     raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
 
+  const rawIntent =
+    typeof obj.intent === 'string' ? obj.intent.trim().toLowerCase() : '';
+  const intent: 'shop' | 'chat' | 'hybrid' =
+    rawIntent === 'chat' || rawIntent === 'hybrid' || rawIntent === 'shop'
+      ? rawIntent
+      : 'shop';
+
   const keywords = normalizeTags(obj.keywords);
   const category = resolveOptionalCategory(obj.category, availableCategories);
+  const rawSub = cleanText(obj.subcategory, 60);
+  const matchedSub = rawSub
+    ? findSubcategoryDefinition(rawSub, category)?.name || null
+    : null;
+  const brand = cleanText(obj.brand, 60) || null;
+
   let min_price = normalizePrice(obj.min_price);
   let max_price = normalizePrice(obj.max_price);
   if (min_price !== null && max_price !== null && min_price > max_price) {
@@ -142,14 +156,31 @@ export function normalizeBuyerSearchPlan(
   }
 
   const summary =
-    cleanText(obj.summary, 180) ||
-    'Showing Verndly listings matching your search.';
+    cleanText(obj.summary, 480) ||
+    (intent === 'chat'
+      ? "Hey! I'm Verndly AI — happy to chat or help you hunt down great finds across verified Ghanaian stores."
+      : 'Here are the best Verndly picks matching what you asked for!');
+
+  const follow_ups = Array.isArray(obj.follow_ups)
+    ? Array.from(
+        new Set(
+          obj.follow_ups
+            .filter((x): x is string => typeof x === 'string')
+            .map((x) => cleanText(x, 60))
+            .filter(Boolean),
+        ),
+      ).slice(0, 3)
+    : [];
 
   return {
+    intent,
     summary,
+    follow_ups,
     filters: {
       keywords,
       category,
+      subcategory: matchedSub,
+      brand,
       min_price,
       max_price,
       condition: normalizeOptionalCondition(obj.condition),
@@ -1228,34 +1259,65 @@ export class GeminiService {
   async parseBuyerSearchQuery(
     query: string,
     availableCategories: string[],
+    history: Array<{ role: 'user' | 'assistant'; text: string }> = [],
   ): Promise<AiBuyerSearchPlan> {
-    const cleanQuery = cleanText(query, 240);
+    const cleanQuery = cleanText(query, 320);
     if (!cleanQuery) {
-      throw new BadRequestException('Please enter what you are looking for.');
+      throw new BadRequestException('Please enter a message for Verndly AI.');
     }
 
     const categories =
       availableCategories.length > 0 ? availableCategories : ['General'];
 
     const systemInstruction = [
-      'You are Verndly AI, the shopping search assistant for Verndly, Ghana’s escrow-protected online marketplace.',
-      'Convert the buyer’s natural-language shopping request into structured catalog search filters.',
-      'Strict rules:',
-      '1. Extract 1 to 6 concise, high-signal product keywords (singular nouns, colors, styles, or close shopping synonyms — e.g. for "gift for my girlfriend under 200 cedis", use keywords like ["bag", "perfume", "jewelry", "watch", "gift"]).',
-      `2. Set category ONLY if the request clearly maps to one of these exact Verndly categories: ${categories.join(', ')}. If the request could span multiple categories (e.g. a gift), set category to null.`,
-      '3. Extract min_price and max_price in Ghana Cedis (GHS) when mentioned (e.g. "under 200 cedis" -> max_price: 200; "between 100 and 300" -> min_price: 100, max_price: 300). Otherwise null.',
-      '4. Set condition to "new", "used", or "refurbished" ONLY if the buyer explicitly mentions condition; otherwise null.',
-      '5. Choose sort: "price_asc" for cheap/affordable/budget queries, "price_desc" for premium/luxury, "discount_desc" for deals/sales/discounts, "popular" for trending/best-selling, otherwise "newest".',
-      '6. Write a friendly, concise 1-sentence summary (under 140 chars) describing what you are searching for, using GH₵ for prices.',
+      'You are Verndly AI — a warm, sharp, friendly personal shopping companion for Verndly, Ghana’s escrow-protected online marketplace.',
+      'You can BOTH have natural casual chats (greetings, jokes, advice, platform questions) AND help shoppers discover the exact right products.',
+      '',
+      'About Verndly (use accurately when asked):',
+      '- Every online order (MTN MoMo, Telecel Cash, AirtelTigo Money, or card) is protected by 3-day Paystack escrow until delivery & inspection.',
+      '- Independent Ghanaian merchants are verified before receiving orders, with zero monthly store rent.',
+      '- Prices are in Ghana Cedis (GH₵).',
+      '',
+      'Intent classification:',
+      '1. Set intent="chat" when the user is casually chatting, greeting ("hi", "hey", "how are you", "thanks", "chale"), asking general advice without wanting product listings yet, or asking about how Verndly works. For intent="chat", leave keywords=[], category=null, subcategory=null, brand=null, and write a genuinely warm, human, conversational 1–3 sentence reply in `summary`.',
+      '2. Set intent="hybrid" when the user asks an open-ended shopping/gift/advice question (e.g. "what should I gift my mom?", "help me set up my room", "best student laptop advice") — give thoughtful, friendly advice in `summary` AND also populate filters so we show helpful product picks right beneath!',
+      '3. Set intent="shop" when the user is looking to buy/browse/filter products (including follow-ups like "cheaper ones", "in black", "under 500 cedis", "show me iPhones instead" — use the conversation history to carry over relevant topic/subcategory/category!).',
+      '',
+      'Shopping filter rules (for "shop" and "hybrid"):',
+      '- Extract 1 to 6 high-signal product keywords (include practical synonyms and singular forms; e.g. for "gift for girlfriend under 200" use ["perfume", "handbag", "watch", "jewelry", "gift box"]).',
+      `- Set category ONLY if clearly matching one of: ${categories.join(', ')}. Otherwise null.`,
+      `- Set subcategory ONLY if clearly matching one of: ${ALL_SUBCATEGORY_NAMES.join(', ')}. Mapping subcategory accurately dramatically improves results (e.g. "macbook" or "student computer" -> "Laptops"; "air force" or "trainers" -> "Sneakers"; "inverter" or "light off power" -> "Solar & Power Solutions"; "wig" -> "Hair & Wigs"; "hamper" -> "Gift Boxes & Hampers").`,
+      '- Set brand if a specific brand is requested (e.g. "Apple", "Samsung", "Nike", "HP", "Dell", "Tecno", "JBL"); otherwise null.',
+      '- Extract min_price and max_price in GHS when mentioned (e.g. "under 300 cedis" -> max_price: 300; "around 500" -> min_price: 300, max_price: 650).',
+      '- Set condition ("new", "used", "refurbished") ONLY when mentioned; otherwise null.',
+      '- Choose sort: "price_asc" for cheap/affordable/budget, "price_desc" for luxury/premium, "discount_desc" for deals/sales, "popular" for trending/best, otherwise "newest".',
+      '',
+      'Tone & follow-ups:',
+      '- Never sound robotic or repeat "Searching Verndly for...". Talk like a friendly, knowledgeable Accra shopping buddy (natural, crisp, helpful, 1–3 sentences max in `summary`, using GH₵ for prices).',
+      '- Always include 2–3 short, clickable `follow_ups` (under 42 chars each) that help the user continue effortlessly (e.g. "Under GH₵ 300", "Brand new only", "Show me sneakers", "Gift ideas under GH₵ 250").',
     ].join('\n');
 
     const responseSchema = {
       type: 'OBJECT',
-      required: ['summary', 'keywords', 'sort', 'in_stock_only'],
+      required: [
+        'intent',
+        'summary',
+        'keywords',
+        'sort',
+        'in_stock_only',
+        'follow_ups',
+      ],
       properties: {
+        intent: {
+          type: 'STRING',
+          enum: ['shop', 'chat', 'hybrid'],
+        },
         summary: { type: 'STRING' },
+        follow_ups: { type: 'ARRAY', items: { type: 'STRING' } },
         keywords: { type: 'ARRAY', items: { type: 'STRING' } },
         category: { type: 'STRING', nullable: true },
+        subcategory: { type: 'STRING', nullable: true },
+        brand: { type: 'STRING', nullable: true },
         min_price: { type: 'NUMBER', nullable: true },
         max_price: { type: 'NUMBER', nullable: true },
         condition: {
@@ -1277,14 +1339,26 @@ export class GeminiService {
       },
     };
 
+    const trimmedHistory = (history || [])
+      .slice(-6)
+      .filter((t) => t && typeof t.text === 'string' && t.text.trim())
+      .map(
+        (t) =>
+          `${t.role === 'assistant' ? 'Verndly AI' : 'Shopper'}: ${cleanText(t.text, 220)}`,
+      );
+
+    const promptText = trimmedHistory.length
+      ? `Recent conversation:\n${trimmedHistory.join('\n')}\n\nLatest message from Shopper: "${cleanQuery}"`
+      : `Shopper message: "${cleanQuery}"`;
+
     const raw = await this.generateStructuredJson<unknown>({
       systemInstruction,
-      parts: [{ text: `Buyer request: "${cleanQuery}"` }],
+      parts: [{ text: promptText }],
       responseSchema,
-      temperature: 0.1,
+      temperature: 0.55,
       fast: true,
-      timeoutMs: 4_500,
-      maxOutputTokens: 240,
+      timeoutMs: 6_000,
+      maxOutputTokens: 480,
     });
 
     return normalizeBuyerSearchPlan(raw, categories);

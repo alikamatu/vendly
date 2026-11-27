@@ -49,10 +49,18 @@ export interface AiStatusResult {
 }
 
 export type AiBuyerSearchSort = 'newest' | 'price_asc' | 'price_desc' | 'popular' | 'discount_desc';
+export type AiBuyerIntent = 'shop' | 'chat' | 'hybrid';
+
+export interface AiConversationTurn {
+  role: 'user' | 'assistant';
+  text: string;
+}
 
 export interface AiBuyerSearchFilters {
   keywords: string[];
   category: string | null;
+  subcategory?: string | null;
+  brand?: string | null;
   min_price: number | null;
   max_price: number | null;
   condition: AiProductCondition | null;
@@ -80,7 +88,9 @@ export interface AiBuyerSearchProduct {
 
 export interface AiBuyerSearchResponse {
   query: string;
+  intent?: AiBuyerIntent;
   summary: string;
+  follow_ups?: string[];
   filters: AiBuyerSearchFilters;
   browseUrl: string;
   products: AiBuyerSearchProduct[];
@@ -191,10 +201,15 @@ export interface AiCardCopyResult {
 }
 
 export const aiApi = {
-  async buyerSearch(query: string, limit = 12): Promise<AiBuyerSearchResponse> {
+  async buyerSearch(
+    query: string,
+    limit = 12,
+    history?: AiConversationTurn[],
+  ): Promise<AiBuyerSearchResponse> {
     const res = await api.post<AiBuyerSearchResponse>('/ai/buyer-search', {
       query,
       limit,
+      ...(history && history.length > 0 ? { history } : {}),
     });
     return res.data;
   },

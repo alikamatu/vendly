@@ -50,7 +50,6 @@ import ShareProductModal from '@/components/product-detail/ShareProductModal';
 import ReportModal from '@/components/report/ReportModal';
 import { isProductTrending } from '@/lib/product-badges';
 import { getProductPath } from '@/lib/product-slug';
-import { shareProduct } from '@/lib/share/product-share';
 import { toast } from 'sonner';
 
 type MediaItem = { type: 'image'; url: string } | { type: 'video'; url: string };
@@ -314,10 +313,8 @@ export default function ProductDetailClient({
     toast.success(wasFavorited ? 'Removed from favorites' : 'Saved to favorites');
   };
 
-  const handleShare = async () => {
+  const handleShare = () => {
     if (!product) return;
-    const result = await shareProduct(product);
-    if (result === 'shared' || result === 'cancelled') return;
     setIsShareModalOpen(true);
   };
 

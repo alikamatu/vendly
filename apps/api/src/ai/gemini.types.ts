@@ -78,9 +78,18 @@ export type AiBuyerSearchSort =
   | 'popular'
   | 'discount_desc';
 
+export type AiBuyerIntent = 'shop' | 'chat' | 'hybrid';
+
+export interface AiConversationTurn {
+  role: 'user' | 'assistant';
+  text: string;
+}
+
 export interface AiBuyerSearchFilters {
   keywords: string[];
   category: string | null;
+  subcategory?: string | null;
+  brand?: string | null;
   min_price: number | null;
   max_price: number | null;
   condition: AiProductCondition | null;
@@ -89,7 +98,9 @@ export interface AiBuyerSearchFilters {
 }
 
 export interface AiBuyerSearchPlan {
+  intent?: AiBuyerIntent;
   summary: string;
+  follow_ups?: string[];
   filters: AiBuyerSearchFilters;
 }
 
