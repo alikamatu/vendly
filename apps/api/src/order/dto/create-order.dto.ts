@@ -10,8 +10,6 @@ import {
   IsOptional,
   IsNumber,
   IsUUID,
-  Min,
-  Max,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
