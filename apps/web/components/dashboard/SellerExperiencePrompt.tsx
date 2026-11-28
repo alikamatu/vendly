@@ -8,6 +8,8 @@ import { RatingInput } from '@/components/reviews/rating-input';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/contexts/auth-context';
 
+const MotionDiv = motion.div as any;
+
 const DONE_KEY = 'vendly_seller_experience_done';
 
 function markDoneLocally() {
@@ -88,14 +90,14 @@ export default function SellerExperiencePrompt() {
     <AnimatePresence>
       {open && (
         <div className="fixed inset-0 z-50 flex items-end justify-center p-3 sm:items-center sm:p-4">
-          <motion.div
+          <MotionDiv
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onTap={dismiss}
             className="absolute inset-0 bg-black/60"
           />
-          <motion.div
+          <MotionDiv
             role="dialog"
             aria-labelledby="seller-experience-title"
             initial={{ opacity: 0, y: 40, scale: 0.95 }}
@@ -156,7 +158,7 @@ export default function SellerExperiencePrompt() {
                 {saving ? 'Saving...' : 'Submit review'}
               </button>
             </div>
-          </motion.div>
+          </MotionDiv>
         </div>
       )}
     </AnimatePresence>
