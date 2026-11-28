@@ -49,6 +49,7 @@ interface QuickCheckoutModalProps {
       payment_timing?: string | null;
       is_seller_verified?: boolean;
       can_receive_orders?: boolean;
+      service_area?: string | null;
     };
   };
   selectedVariant?: {
