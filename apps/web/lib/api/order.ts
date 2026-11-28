@@ -12,6 +12,9 @@ export const orderApi = {
       deliveryLocation: string;
       deliveryNotes?: string;
       paymentMethod?: string;
+      addressId?: string;
+      buyerLatitude?: number;
+      buyerLongitude?: number;
     },
   ) {
     const res = await api.post<any>('/orders', { storeLink, items, ...checkoutDetails }, { token });

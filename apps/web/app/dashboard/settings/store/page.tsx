@@ -43,6 +43,8 @@ import { useAuth } from '@/lib/contexts/auth-context';
 import { storeApi } from '@/lib/api/store';
 import { aiApi, AiDraftStorefrontResult } from '@/lib/api/ai';
 import { onboardingApi, LocationCity } from '@/lib/api/onboarding';
+import UseCurrentLocation from '@/components/location/UseCurrentLocation';
+import { storeDeliversNearby, type DevicePoint } from '@/lib/location/device-location';
 import { toast } from 'sonner';
 import { guardPhoneKeyDown, sanitizePhoneNumber } from '@/lib/utils/phone';
 import VerndlyAiIcon from '@/components/ai/VerndlyAiIcon';
@@ -164,6 +166,7 @@ const MOMO_PROVIDERS = [
 export default function StoreSettingsPage() {
   const { user, token, refreshUser } = useAuth();
   const seller = user?.seller_profile;
+  const [sellerPoint, setSellerPoint] = useState<DevicePoint | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -481,6 +484,12 @@ export default function StoreSettingsPage() {
     setIsLoading(true);
     setMessage(null);
 
+    if (storeDeliversNearby(formData.service_area) && !seller?.has_location && !sellerPoint) {
+      toast.error('Share your current location. Nearby delivery is matched by distance.');
+      setIsLoading(false);
+      return;
+    }
+
     try {
       // Once payout details exist, strip bank fields from generic PATCH /stores —
       // payout destination edits MUST go through the verified OTP / 2FA flow.
@@ -490,7 +499,11 @@ export default function StoreSettingsPage() {
             return rest;
           })()
         : formData;
-      await storeApi.updateStore(token, payload, logoFile || undefined);
+      await storeApi.updateStore(
+        token,
+        sellerPoint ? { ...payload, ...sellerPoint } : payload,
+        logoFile || undefined,
+      );
       await refreshUser();
       setMessage({ type: 'success', text: 'Store updated successfully!' });
       toast.success('Store settings saved');
@@ -905,6 +918,11 @@ export default function StoreSettingsPage() {
                 />
               </div>
             </div>
+
+            <UseCurrentLocation
+              saved={Boolean(seller?.has_location) || sellerPoint != null}
+              onPoint={setSellerPoint}
+            />
 
             {/* Service Area */}
             <div className="space-y-3">

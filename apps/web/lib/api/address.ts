@@ -9,6 +9,7 @@ export interface Address {
   city: string;
   region: string | null;
   is_default: boolean;
+  has_location?: boolean;
 }
 
 export const addressApi = {

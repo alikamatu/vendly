@@ -26,6 +26,8 @@ import { guardPhoneKeyDown, sanitizePhoneNumber, validatePhoneNumber } from '@/l
 import { toast } from 'sonner';
 import Alert from '@/components/ui/Alert';
 import { isOwnStore } from '@/lib/utils/ownership';
+import UseCurrentLocation from '@/components/location/UseCurrentLocation';
+import { storeDeliversNearby, type DevicePoint } from '@/lib/location/device-location';
 
 const MotionDiv = motion.div as any;
 
@@ -81,6 +83,7 @@ export default function QuickCheckoutModal({
   const [deliveryNotes, setDeliveryNotes] = useState('');
 
   const [savedAddresses, setSavedAddresses] = useState<Address[]>([]);
+  const [buyerPoint, setBuyerPoint] = useState<DevicePoint | null>(null);
   const [selectedAddressId, setSelectedAddressId] = useState<string>('new');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -240,6 +243,16 @@ export default function QuickCheckoutModal({
       setError('Please enter your delivery location or address.');
       return;
     }
+    const selectedAddress = savedAddresses.find((addr) => addr.id === selectedAddressId);
+    if (
+      deliveryMethod === 'DELIVERY' &&
+      storeDeliversNearby(product.seller?.service_area) &&
+      !buyerPoint &&
+      !selectedAddress?.has_location
+    ) {
+      setError('Share your current location. This store only delivers nearby.');
+      return;
+    }
 
     setIsSubmitting(true);
 
@@ -251,6 +264,9 @@ export default function QuickCheckoutModal({
         deliveryLocation: deliveryMethod === 'PICKUP' ? 'Store Pickup' : deliveryLocation.trim(),
         deliveryNotes: deliveryNotes.trim() ? deliveryNotes.trim() : undefined,
         paymentMethod: paymentMethod === 'PAYSTACK' ? 'PAYSTACK' : 'CASH_ON_DELIVERY',
+        addressId: selectedAddressId !== 'new' ? selectedAddressId : undefined,
+        buyerLatitude: buyerPoint?.latitude,
+        buyerLongitude: buyerPoint?.longitude,
       };
 
       const itemsPayload = [
@@ -561,6 +577,18 @@ export default function QuickCheckoutModal({
 
                 {deliveryMethod === 'DELIVERY' && (
                   <div className="space-y-2.5 pt-1">
+                    {storeDeliversNearby(product.seller?.service_area) && (
+                      <UseCurrentLocation
+                        saved={
+                          buyerPoint != null ||
+                          Boolean(
+                            savedAddresses.find((addr) => addr.id === selectedAddressId)
+                              ?.has_location,
+                          )
+                        }
+                        onPoint={setBuyerPoint}
+                      />
+                    )}
                     {savedAddresses.length > 0 && (
                       <Select
                         label="Saved Address"

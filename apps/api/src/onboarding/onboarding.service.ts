@@ -128,14 +128,22 @@ export class OnboardingService {
       throw new BadRequestException('Invalid location selected');
     }
 
+    const needsPoint =
+      dto.service_area === 'SAME_CITY' || dto.service_area === 'NEARBY_STATES';
+    if (needsPoint && (dto.latitude == null || dto.longitude == null)) {
+      throw new BadRequestException(
+        'Share your current location. Nearby delivery is matched by distance.',
+      );
+    }
+
     await this.prisma.sellerProfile.update({
       where: { user_id: userId },
       data: {
         location_id: dto.location_id,
         location: `${location.city}, ${location.region}`, // also update legacy field
         area: dto.area || null,
-        latitude: dto.latitude || null,
-        longitude: dto.longitude || null,
+        latitude: dto.latitude ?? null,
+        longitude: dto.longitude ?? null,
         service_area: dto.service_area,
         avg_delivery_time: dto.avg_delivery_time,
         location_set: true,

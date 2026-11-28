@@ -83,7 +83,6 @@ export default function CookieConsentBanner() {
             }}
             className="bg-foreground text-background inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-[11px] font-semibold transition-opacity hover:opacity-90"
           >
-            <Sparkles className="h-3 w-3" />
             Accept personalization
           </button>
         </div>

@@ -8,6 +8,10 @@ import {
   Min,
   Max,
   IsOptional,
+  IsNumber,
+  IsUUID,
+  Min,
+  Max,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -63,4 +67,22 @@ export class CreateOrderDto {
   @IsOptional()
   @IsString()
   paymentMethod?: string;
+
+  @IsOptional()
+  @IsUUID()
+  addressId?: string;
+
+  @Type(() => Number)
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  @IsOptional()
+  buyerLatitude?: number;
+
+  @Type(() => Number)
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  @IsOptional()
+  buyerLongitude?: number;
 }

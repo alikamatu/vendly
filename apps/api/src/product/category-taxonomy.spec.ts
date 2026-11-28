@@ -1,4 +1,5 @@
 import {
+  findSubcategoryDefinition,
   getSubcategoriesForCategory,
   matchSubcategoryName,
   normalizeProductAttributes,
@@ -50,6 +51,18 @@ describe('Category subcategory taxonomy & structured attributes', () => {
 
     expect(
       matchSubcategoryName(undefined, 'Fashion', {
+        title: "Women's Cotton Shirt",
+      }),
+    ).toBe("Women's Clothing");
+
+    expect(
+      matchSubcategoryName(undefined, 'Fashion', {
+        title: "Men's Oxford Shirt",
+      }),
+    ).toBe("Men's Clothing");
+
+    expect(
+      matchSubcategoryName(undefined, 'Fashion', {
         title: 'Classic White Leather Sneakers EU 42',
       }),
     ).toBe('Sneakers');
@@ -77,6 +90,12 @@ describe('Category subcategory taxonomy & structured attributes', () => {
         title: 'Casio Edifice Stainless Steel Chronograph Watch',
       }),
     ).toBe('Watches');
+
+    expect(findSubcategoryDefinition('men')?.name).toBe("Men's Clothing");
+    expect(findSubcategoryDefinition('women clothing')?.name).toBe(
+      "Women's Clothing",
+    );
+    expect(findSubcategoryDefinition("men's")?.name).not.toMatch(/women/i);
   });
 
   it('normalizes dimensions, weight, specs, and auto-fills subcategory cleanly', () => {

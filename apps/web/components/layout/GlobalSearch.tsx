@@ -9,6 +9,7 @@ import { aiApi, AiBuyerSearchResponse } from '@/lib/api/ai';
 import { getProductPath } from '@/lib/product-slug';
 import Portal from '../common/Portal';
 import VerndlyAiIcon from '@/components/ai/VerndlyAiIcon';
+import AiReplySkeleton from '@/components/ai/AiReplySkeleton';
 
 interface GlobalSearchProps {
   isOpen: boolean;
@@ -304,24 +305,8 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
               <div className="flex-1 overflow-y-auto px-4 pb-6 pt-2 sm:px-6">
                 {/* Verndly AI Centered Working State inside sheet */}
                 {aiLoading ? (
-                  <div className="flex flex-col items-center justify-center gap-4 py-14 text-center">
-                    <motion.div
-                      animate={{ y: [0, -6, 0] }}
-                      transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
-                    >
-                      <VerndlyAiIcon size={64} mood="working" />
-                    </motion.div>
-                    <div className="space-y-1">
-                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-red-700 dark:text-red-400">
-                        Verndly AI
-                      </p>
-                      <p className="text-foreground text-sm font-semibold">
-                        Understanding what you&apos;re looking for…
-                      </p>
-                      <p className="text-muted text-xs">
-                        Matching your budget, preferences, and verified Ghana stores.
-                      </p>
-                    </div>
+                  <div className="bg-surface rounded-2xl px-4 py-4">
+                    <AiReplySkeleton cards={4} />
                   </div>
                 ) : aiError ? (
                   <div className="bg-surface space-y-3 rounded-2xl p-5 text-center">

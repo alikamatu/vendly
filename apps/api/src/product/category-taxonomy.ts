@@ -309,9 +309,7 @@ export const CATEGORY_SUBCATEGORIES: CategoryTaxonomyEntry[] = [
           'jacket',
           'mens',
         ],
-        patterns: [
-          /\b(t-?shirts?|shirts?|polos?|hoodies?|sweatshirts?|sweaters?|jackets?|coats?|blazers?|suits?|jeans|denim|trousers?|pants|chinos|shorts|joggers?|menswear|men'?s|boxers)\b/i,
-        ],
+        patterns: [/\b(menswear|men'?s|gentlemen'?s|male|boxers?|briefs)\b/i],
       },
       {
         name: 'Sneakers',
@@ -1862,6 +1860,35 @@ export function getSubcategoriesForCategory(
   return partial ? partial.subcategories : [];
 }
 
+function nameTokens(value: string): string[] {
+  return value
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean);
+}
+
+/** True when two name tokens refer to the same word, without treating "men" as "women". */
+function tokensAlign(candidate: string, query: string): boolean {
+  if (candidate === query) return true;
+  if (candidate.length < 4 || query.length < 4) return false;
+  const shorter = candidate.length <= query.length ? candidate : query;
+  const longer = shorter === candidate ? query : candidate;
+  if (shorter === 'men' && longer.startsWith('women')) return false;
+  return longer.startsWith(shorter);
+}
+
+function subcategoryNamesAlign(
+  candidateName: string,
+  queryName: string,
+): boolean {
+  const candidate = nameTokens(candidateName);
+  const query = nameTokens(queryName);
+  if (candidate.length === 0 || query.length === 0) return false;
+  return query.every((token) =>
+    candidate.some((candidateToken) => tokensAlign(candidateToken, token)),
+  );
+}
+
 export function findSubcategoryDefinition(
   subcategoryName: string | undefined | null,
   categoryName?: string | null,
@@ -1876,12 +1903,7 @@ export function findSubcategoryDefinition(
   const exact = searchPool.find((s) => s.name.toLowerCase() === clean);
   if (exact) return exact;
 
-  const partial = searchPool.find(
-    (s) =>
-      s.name.toLowerCase().includes(clean) ||
-      clean.includes(s.name.toLowerCase()),
-  );
-  return partial || null;
+  return searchPool.find((s) => subcategoryNamesAlign(s.name, clean)) || null;
 }
 
 export function matchSubcategoryName(
@@ -1918,6 +1940,12 @@ export function matchSubcategoryName(
   let bestName: string | undefined;
   let bestScore = 0;
 
+  const asksForWomen =
+    /\b(women(?:'s|s)?|womenswear|lad(?:y|ies)|female)\b/i.test(combinedText);
+  const asksForMen = /\b(men(?:'s|s)?|menswear|gentlemen(?:'s)?|male)\b/i.test(
+    combinedText,
+  );
+
   for (const sub of candidates) {
     let score = 0;
     for (const pat of sub.patterns) {
@@ -1927,6 +1955,12 @@ export function matchSubcategoryName(
       if (pat.test((context?.breadcrumbs || []).join(' '))) score += 4;
       if (pat.test((context?.description || '').slice(0, 300))) score += 1;
     }
+    const subIsWomens = /women/i.test(sub.name);
+    const subIsMens = /men'?s|menswear/i.test(sub.name) && !subIsWomens;
+    if (asksForWomen && subIsMens) score -= 30;
+    if (asksForMen && subIsWomens) score -= 30;
+    if (asksForWomen && subIsWomens) score += 8;
+    if (asksForMen && subIsMens) score += 8;
     if (score > bestScore) {
       bestScore = score;
       bestName = sub.name;

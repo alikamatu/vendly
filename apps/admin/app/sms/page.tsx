@@ -59,6 +59,7 @@ import {
 } from '@/services/sms.service';
 import { useToast } from '@/contexts/ToastContext';
 import { useConfirm } from '@/contexts/ConfirmContext';
+import { AdminEmailSection } from '@/components/sms/AdminEmailSection';
 
 const SEGMENTS: Array<{ id: SmsRecipientSegment; label: string }> = [
   { id: 'all', label: 'All Users' },
@@ -251,8 +252,8 @@ export default function AdminSmsPage() {
   }, [templateFilter]);
 
   const toggleUserSelection = (user: AdminSmsRecipient) => {
-    if (!user.phone_valid) {
-      toastError(`${user.full_name} does not have a valid Ghanaian phone number.`);
+    if (!user.phone_valid && !user.email) {
+      toastError(`${user.full_name} has no phone number or email.`);
       return;
     }
     setSelectedUsers((prev) => {
@@ -264,7 +265,7 @@ export default function AdminSmsPage() {
   };
 
   const validVisibleUsers = useMemo(
-    () => recipients.filter((u) => u.phone_valid && u.formatted_phone),
+    () => recipients.filter((u) => u.phone_valid || Boolean(u.email)),
     [recipients],
   );
 
@@ -393,12 +394,12 @@ export default function AdminSmsPage() {
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div>
             <h2 className="text-foreground text-xl font-bold tracking-tight sm:text-2xl">
-              SMS Center
+              SMS &amp; Email
             </h2>
             <p className="text-muted-foreground mt-0.5 text-xs sm:text-sm">
-              Send targeted SMS alerts directly to Ghanaian users and sellers in strict{' '}
-              <span className="text-foreground font-mono font-semibold">233XXXXXXXXX</span> format
-              via Arkesel.
+              Send SMS in{' '}
+              <span className="text-foreground font-mono font-semibold">233XXXXXXXXX</span> format,
+              or reminder emails in the same Verndly layout as approval messages.
             </p>
           </div>
 
@@ -697,10 +698,10 @@ export default function AdminSmsPage() {
                           return (
                             <tr
                               key={u.id}
-                              onClick={() => u.phone_valid && toggleUserSelection(u)}
+                              onClick={() => (u.phone_valid || u.email) && toggleUserSelection(u)}
                               className={cn(
                                 'transition-colors',
-                                u.phone_valid
+                                u.phone_valid || u.email
                                   ? 'hover:bg-muted/40 cursor-pointer'
                                   : 'cursor-not-allowed opacity-55',
                                 isChecked && 'bg-brand/5',
@@ -710,7 +711,7 @@ export default function AdminSmsPage() {
                                 <input
                                   type="checkbox"
                                   checked={isChecked}
-                                  disabled={!u.phone_valid}
+                                  disabled={!u.phone_valid && !u.email}
                                   onChange={() => toggleUserSelection(u)}
                                   aria-label={`Select ${u.full_name}`}
                                   className="accent-brand h-3.5 w-3.5 cursor-pointer rounded"
@@ -1080,6 +1081,10 @@ export default function AdminSmsPage() {
                   </span>
                 </div>
               </div>
+            </div>
+
+            <div className="min-w-0 xl:col-span-12">
+              <AdminEmailSection selectedUsers={selectedUsers} />
             </div>
           </div>
         )}

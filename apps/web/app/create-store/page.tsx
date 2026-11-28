@@ -41,6 +41,8 @@ import VerndlyAiOverlay from '@/components/ai/VerndlyAiOverlay';
 import VerndlyAiOnboardingBar from '@/components/onboarding/VerndlyAiOnboardingBar';
 import RegionCityPicker from '@/components/onboarding/RegionCityPicker';
 import ServiceAreaSelect from '@/components/onboarding/ServiceAreaSelect';
+import UseCurrentLocation from '@/components/location/UseCurrentLocation';
+import { storeDeliversNearby, type DevicePoint } from '@/lib/location/device-location';
 import DeliveryTimeSelect from '@/components/onboarding/DeliveryTimeSelect';
 import { toast } from 'sonner';
 import { guardPhoneKeyDown, sanitizePhoneNumber } from '@/lib/utils/phone';
@@ -392,6 +394,7 @@ export default function CreateStorePage() {
   const [region, setRegion] = useState('');
   const [area, setArea] = useState('');
   const [serviceArea, setServiceArea] = useState<ServiceArea | null>('SAME_CITY');
+  const [sellerPoint, setSellerPoint] = useState<DevicePoint | null>(null);
   const [deliveryTime, setDeliveryTime] = useState<DeliveryTime | null>('SAME_DAY');
 
   // ───────── Step 3 Form State ─────────
@@ -710,6 +713,10 @@ export default function CreateStorePage() {
       toast.error('Please select an average delivery speed');
       return;
     }
+    if (storeDeliversNearby(serviceArea) && !sellerPoint) {
+      toast.error('Share your current location. Nearby delivery is matched by distance.');
+      return;
+    }
 
     setIsSaving(true);
     try {
@@ -718,6 +725,8 @@ export default function CreateStorePage() {
         area: area.trim() || undefined,
         service_area: serviceArea,
         avg_delivery_time: deliveryTime,
+        latitude: sellerPoint?.latitude,
+        longitude: sellerPoint?.longitude,
       });
 
       toast.success('Location & shipping reach saved!');
@@ -1192,6 +1201,8 @@ export default function CreateStorePage() {
                           hint="Helps nearby buyers easily recognize your base."
                         />
                       </div>
+
+                      <UseCurrentLocation saved={sellerPoint != null} onPoint={setSellerPoint} />
 
                       {/* Service Area */}
                       <ServiceAreaSelect

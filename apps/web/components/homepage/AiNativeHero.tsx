@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, ArrowUp, Camera, Globe, MessageCircle } from 'lucide-react';
 import VerndlyAiIcon from '@/components/ai/VerndlyAiIcon';
+import AiReplySkeleton from '@/components/ai/AiReplySkeleton';
 import { openVerndlyAi } from '@/lib/ai/open-verndly-ai';
 import { aiApi, type AiBuyerSearchResponse } from '@/lib/api/ai';
 import { getProductPath } from '@/lib/product-slug';
@@ -231,7 +232,15 @@ export default function AiNativeHero({ compactBottom = false }: AiNativeHeroProp
                   >
                     <AnimatePresence mode="wait" initial={false}>
                       {searchStatus === 'loading' ? (
-                        <HeroSearchSkeleton key="skeleton" />
+                        <motion.div
+                          key="skeleton"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.25, ease: EASE_OUT_EXPO }}
+                        >
+                          <AiReplySkeleton cards={4} />
+                        </motion.div>
                       ) : searchStatus === 'error' ? (
                         <motion.p
                           key="error"
@@ -321,33 +330,6 @@ export default function AiNativeHero({ compactBottom = false }: AiNativeHeroProp
         )}
       </motion.div>
     </section>
-  );
-}
-
-function HeroSearchSkeleton() {
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.25, ease: EASE_OUT_EXPO }}
-      className="space-y-3 px-1 py-1"
-      aria-hidden="true"
-    >
-      <div className="verndly-skel h-3 w-2/3 max-w-sm rounded-full" />
-      <div className="verndly-skel h-3 w-1/3 max-w-[10rem] rounded-full" />
-      <div className="grid grid-cols-1 gap-2 pt-1 sm:grid-cols-2">
-        {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="flex items-center gap-3 rounded-2xl p-1.5">
-            <div className="verndly-skel h-12 w-12 shrink-0 rounded-xl" />
-            <div className="min-w-0 flex-1 space-y-2">
-              <div className="verndly-skel h-2.5 w-4/5 rounded-full" />
-              <div className="verndly-skel h-2.5 w-1/3 rounded-full" />
-            </div>
-          </div>
-        ))}
-      </div>
-    </motion.div>
   );
 }
 

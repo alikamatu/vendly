@@ -160,6 +160,35 @@ export async function fetchStoreBySlugServer(slug: string): Promise<any | null> 
   return safeFetch<any | null>(`/stores/link/${encodeURIComponent(slug)}`, null);
 }
 
+export interface PublicSellerExperienceReview {
+  id: string;
+  rating: number;
+  body: string;
+  created_at: string;
+  store_name: string;
+  store_link: string;
+  logo_url: string | null;
+}
+
+export interface PublicSellerExperience {
+  reviews: PublicSellerExperienceReview[];
+  average: number;
+  count: number;
+}
+
+export async function fetchSellerExperienceReviewsServer(): Promise<PublicSellerExperience> {
+  const data = await safeFetch<PublicSellerExperience>('/seller-experience/public', {
+    reviews: [],
+    average: 0,
+    count: 0,
+  });
+  return {
+    reviews: Array.isArray(data?.reviews) ? data.reviews : [],
+    average: Number(data?.average) || 0,
+    count: Number(data?.count) || 0,
+  };
+}
+
 export async function fetchStoreProductsServer(slug: string): Promise<any[]> {
   const data = await safeFetch<any>(`/products/store/${encodeURIComponent(slug)}`, []);
   return Array.isArray(data) ? data : [];

@@ -28,6 +28,8 @@ import { launchPaystackInline } from '@/lib/paystack';
 import PaymentProcessingModal from '@/components/orders/PaymentProcessingModal';
 import { guardPhoneKeyDown, sanitizePhoneNumber, validatePhoneNumber } from '@/lib/utils/phone';
 import clsx from '@/utils/clsx';
+import UseCurrentLocation from '@/components/location/UseCurrentLocation';
+import { storeDeliversNearby, type DevicePoint } from '@/lib/location/device-location';
 
 // ─── Input sanitizers ────────────────────────────────────────────────────────
 
@@ -70,6 +72,8 @@ export default function CheckoutPage() {
 
   const [savedAddresses, setSavedAddresses] = useState<Address[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string | 'new'>('new');
+  const [serviceArea, setServiceArea] = useState<string | null>(null);
+  const [buyerPoint, setBuyerPoint] = useState<DevicePoint | null>(null);
 
   const [paymentModalState, setPaymentModalState] = useState<
     'verifying' | 'success' | 'failed' | null
@@ -168,6 +172,7 @@ export default function CheckoutPage() {
       setIsLoadingStore(true);
       try {
         const store = await storeApi.getStoreBySlug(storeLink);
+        setServiceArea(store.service_area ?? null);
         const acceptsOrders =
           store.can_receive_orders !== false &&
           store.is_seller_verified !== false &&
@@ -302,6 +307,13 @@ export default function CheckoutPage() {
       );
       return;
     }
+    const nearbyDelivery =
+      formData.deliveryMethod === 'DELIVERY' && storeDeliversNearby(serviceArea);
+    const selectedAddress = savedAddresses.find((addr) => addr.id === selectedAddressId);
+    if (nearbyDelivery && !buyerPoint && !selectedAddress?.has_location) {
+      setError('Share your current location. This store only delivers nearby.');
+      return;
+    }
     if (!formValid) {
       setError(
         fieldErrors.customerName ||
@@ -322,6 +334,9 @@ export default function CheckoutPage() {
         deliveryLocation: formData.deliveryLocation.trim(),
         deliveryNotes: formData.deliveryNotes.trim() ? formData.deliveryNotes.trim() : undefined,
         paymentMethod: formData.paymentMethod,
+        addressId: selectedAddressId !== 'new' ? selectedAddressId : undefined,
+        buyerLatitude: buyerPoint?.latitude,
+        buyerLongitude: buyerPoint?.longitude,
       };
 
       const result = await orderApi.createOrder(
@@ -672,6 +687,23 @@ export default function CheckoutPage() {
                 required
               />
             </div>
+
+            {formData.deliveryMethod === 'DELIVERY' && storeDeliversNearby(serviceArea) && (
+              <div className="space-y-1.5">
+                <UseCurrentLocation
+                  saved={
+                    buyerPoint != null ||
+                    Boolean(
+                      savedAddresses.find((addr) => addr.id === selectedAddressId)?.has_location,
+                    )
+                  }
+                  onPoint={setBuyerPoint}
+                />
+                <p className="text-muted-foreground text-[11px]">
+                  Nearby stores are matched by distance. Pickup does not need this.
+                </p>
+              </div>
+            )}
 
             {formData.deliveryMethod === 'DELIVERY' && selectedAddressId === 'new' && (
               <Input

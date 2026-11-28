@@ -17,6 +17,7 @@ import Sidebar from '@/components/dashboard/Sidebar';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { useAuth } from '@/lib/contexts/auth-context';
+import SellerExperiencePrompt from '@/components/dashboard/SellerExperiencePrompt';
 
 const EASE_SMOOTH = [0.22, 1, 0.36, 1] as const;
 
@@ -206,6 +207,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </nav>
         )}
+        <SellerExperiencePrompt />
       </div>
     </ProtectedRoute>
   );

@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight, ArrowUp, RotateCcw, ShoppingBag, X } from 'lucide-react';
 import Portal from '@/components/common/Portal';
 import VerndlyAiIcon from '@/components/ai/VerndlyAiIcon';
+import AiReplySkeleton from '@/components/ai/AiReplySkeleton';
 import Alert from '@/components/ui/Alert';
 import { aiApi, type AiBuyerSearchResponse, type AiConversationTurn } from '@/lib/api/ai';
 import { getProductPath } from '@/lib/product-slug';
@@ -335,19 +336,7 @@ export default function VerndlyAiAssistant() {
                         </div>
                       </div>
 
-                      {/* Verndly AI Loading State */}
-                      {turn.status === 'loading' && (
-                        <div className="flex items-center gap-2.5">
-                          <VerndlyAiIcon size={22} mood="working" />
-                          <div className="inline-flex items-center rounded-full bg-white px-3.5 py-2 text-xs font-medium text-neutral-950">
-                            <span>Thinking…</span>
-                            <span
-                              aria-hidden="true"
-                              className="verndly-caret ml-1 inline-block h-[13px] w-[2px] rounded-full bg-red-700"
-                            />
-                          </div>
-                        </div>
-                      )}
+                      {turn.status === 'loading' && <AiReplySkeleton cards={4} />}
 
                       {/* Error State */}
                       {turn.status === 'error' && (

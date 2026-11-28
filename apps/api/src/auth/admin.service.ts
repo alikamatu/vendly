@@ -1304,6 +1304,52 @@ export class AdminService {
     };
   }
 
+  /**
+   * Seller verification includes 30 days of Pro. An active membership is
+   * extended from its current end date; an expired one starts from today.
+   */
+  private async grantVerificationPro(userId: string) {
+    const VERIFICATION_PRO_DAYS = 30;
+    const existing = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        email: true,
+        full_name: true,
+        is_pro: true,
+        pro_expires_at: true,
+      },
+    });
+    const now = new Date();
+    const stillActive =
+      !!existing?.is_pro &&
+      !!existing.pro_expires_at &&
+      existing.pro_expires_at.getTime() > now.getTime();
+    const base =
+      stillActive && existing?.pro_expires_at ? existing.pro_expires_at : now;
+    const proExpiresAt = new Date(
+      base.getTime() + VERIFICATION_PRO_DAYS * 24 * 60 * 60 * 1000,
+    );
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { is_pro: true, pro_expires_at: proExpiresAt },
+    });
+
+    if (existing?.email) {
+      this.emailService
+        .sendProActivatedEmail(existing.email, {
+          name: existing.full_name || 'there',
+          proExpiresAt,
+          amountPaid: 0,
+          isExtension: stillActive,
+          complimentary: true,
+        })
+        .catch((err) =>
+          console.error('Failed to send complimentary Pro email:', err),
+        );
+    }
+  }
+
   async approveOrReject(
     approvalId: string,
     adminId: string,
@@ -1361,6 +1407,7 @@ export class AdminService {
     });
 
     if (dto.status === 'APPROVED') {
+      await this.grantVerificationPro(approval.user_id);
       const seller = await this.prisma.sellerProfile.findUnique({
         where: { user_id: approval.user_id },
       });
@@ -1398,7 +1445,11 @@ export class AdminService {
       reason: dto.reason,
       before: { status: approval.status },
       after: { status: dto.status, reviewed_by: adminId },
-      metadata: { user_id: approval.user_id, type: approval.type },
+      metadata: {
+        user_id: approval.user_id,
+        type: approval.type,
+        ...(dto.status === 'APPROVED' ? { complimentary_pro_days: 30 } : {}),
+      },
       ip: actor?.ip,
       userAgent: actor?.userAgent,
     });

@@ -9,6 +9,7 @@ import {
   CreditCard,
   RotateCcw,
   MessageSquare,
+  Store,
   Activity,
   Bell,
   Settings,
@@ -98,6 +99,11 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
         icon: MessageSquare,
         badgeKey: 'flaggedReviews',
       },
+      {
+        title: 'Seller reviews',
+        href: '/seller-reviews',
+        icon: Store,
+      },
     ],
   },
   {
@@ -109,7 +115,7 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
         icon: Users,
       },
       {
-        title: 'SMS Center',
+        title: 'SMS & Email',
         href: '/sms',
         icon: Smartphone,
       },

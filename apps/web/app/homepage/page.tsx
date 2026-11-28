@@ -7,15 +7,17 @@ import JsonLd from '@/components/seo/JsonLd';
 import {
   fetchCategoriesServer,
   fetchHomeProductsServer,
+  fetchSellerExperienceReviewsServer,
   fetchTopProVendorsServer,
 } from '@/lib/server-api';
+import SellerExperienceJsonLd from '@/components/seo/SellerExperienceJsonLd';
 import { filterRailProducts } from '@/lib/product-visibility';
 import { getProductPath } from '@/lib/product-slug';
 
 export const metadata = buildMetadata({
   title: 'Verndly — Ghana’s AI-Native Marketplace for Verified Stores',
   description:
-    'Shop verified independent stores in Ghana with Verndly AI, or launch your online storefront in seconds from product photos, a website URL, or WhatsApp screenshots. Protected by 3-day Paystack escrow.',
+    'Shop verified independent stores in Ghana with Verndly AI, read checked reviews from stores that sell here, or launch your online storefront in seconds from product photos, a website URL, or WhatsApp screenshots. Protected by 3-day Paystack escrow.',
   path: '/homepage',
   keywords: [
     'Verndly',
@@ -25,6 +27,7 @@ export const metadata = buildMetadata({
     'verified stores Accra',
     'Paystack escrow marketplace',
     'import WhatsApp catalog Ghana',
+    'verified seller reviews Ghana',
     'sell online Ghana free storefront',
     'Mobile Money online shopping Ghana',
   ],
@@ -82,10 +85,11 @@ interface RawVendorRecord {
 }
 
 export default async function AiHomepageRoute() {
-  const [rawProducts, rawCategories, rawTopVendors] = await Promise.all([
+  const [rawProducts, rawCategories, rawTopVendors, sellerExperience] = await Promise.all([
     fetchHomeProductsServer(24),
     fetchCategoriesServer(),
     fetchTopProVendorsServer(8),
+    fetchSellerExperienceReviewsServer(),
   ]);
 
   const inStockProducts = filterRailProducts(rawProducts) as RawProductRecord[];
@@ -176,11 +180,13 @@ export default async function AiHomepageRoute() {
         />
       )}
 
+      <SellerExperienceJsonLd experience={sellerExperience} />
       <AiNativeHomepage
         featuredProducts={featuredProducts}
         categories={categories}
         topVendors={topVendors}
         faqs={HOMEPAGE_FAQS}
+        sellerExperience={sellerExperience}
       />
     </>
   );

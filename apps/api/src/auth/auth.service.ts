@@ -532,6 +532,9 @@ export class AuthService {
               user.seller_profile.accepted_payment_methods,
             payment_timing: user.seller_profile.payment_timing,
             service_area: user.seller_profile.service_area,
+            has_location:
+              user.seller_profile.latitude != null &&
+              user.seller_profile.longitude != null,
             avg_delivery_time: user.seller_profile.avg_delivery_time,
             bank_name: user.seller_profile.bank_name,
             bank_code: user.seller_profile.bank_code,

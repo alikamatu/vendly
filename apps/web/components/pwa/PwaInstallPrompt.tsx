@@ -20,8 +20,17 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
 }
 
-const DISMISS_KEY = 'vendly_pwa_dismissed_until';
-const DISMISS_COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 hours cooldown
+const DISMISS_KEY = 'vendly_pwa_install_dismissed';
+
+function isInstallDismissed() {
+  try {
+    if (localStorage.getItem(DISMISS_KEY) === '1') return true;
+    // Earlier builds only snoozed for 24 hours, so the sheet kept returning.
+    return localStorage.getItem('vendly_pwa_dismissed_until') != null;
+  } catch {
+    return false;
+  }
+}
 
 export default function PwaInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
@@ -72,11 +81,7 @@ export default function PwaInstallPrompt() {
       const promptEvent = e as BeforeInstallPromptEvent;
       setDeferredPrompt(promptEvent);
 
-      // Check if dismissed recently
-      const dismissedUntil = localStorage.getItem(DISMISS_KEY);
-      const isCooldownActive = dismissedUntil && Date.now() < Number(dismissedUntil);
-
-      if (!isCooldownActive && !standaloneMode) {
+      if (!isInstallDismissed() && !standaloneMode) {
         // Auto-show prompt after 2 seconds on new browser open
         const timer = setTimeout(() => {
           setIsOpen(true);
@@ -99,9 +104,7 @@ export default function PwaInstallPrompt() {
 
     // Auto-prompt on iOS Safari if not standalone and not dismissed
     if (isIosDevice && !standaloneMode) {
-      const dismissedUntil = localStorage.getItem(DISMISS_KEY);
-      const isCooldownActive = dismissedUntil && Date.now() < Number(dismissedUntil);
-      if (!isCooldownActive) {
+      if (!isInstallDismissed()) {
         const timer = setTimeout(() => {
           setIsOpen(true);
         }, 2500);
@@ -158,8 +161,11 @@ export default function PwaInstallPrompt() {
 
   const handleDismiss = useCallback(() => {
     setIsOpen(false);
-    // Set 24h snooze
-    localStorage.setItem(DISMISS_KEY, String(Date.now() + DISMISS_COOLDOWN_MS));
+    try {
+      localStorage.setItem(DISMISS_KEY, '1');
+    } catch {
+      // Closing still hides it for this page view.
+    }
   }, []);
 
   if (isStandalone || isInstalled) {

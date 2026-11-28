@@ -77,11 +77,123 @@ const STOP_WORDS = new Set([
   'very',
 ]);
 
-const CASUAL_GREETING_RE =
-  /^(hi+|hey+|hello+|yo+|sup|wassup|what'?s\s+up|good\s+(morning|afternoon|evening)|how\s+are\s+you|how\s+you\s+doing|how\s+far|chale|charlie|boss|charley|thanks|thank\s+you|thx|cheers|cool|awesome|great|okay|ok|nice|bye|goodbye|see\s+ya|who\s+are\s+you|what\s+can\s+you\s+do)[!?. ,\w]{0,20}$/i;
-
 const PLATFORM_HELP_RE =
   /\b(escrow|paystack|momo|mobile\s*money|telecel|airteltigo|how\s+do(es)?\s+(verndly|payment|delivery|return|refund|shipping)|sell\s+on\s+verndly|open\s+a\s+store|is\s+verndly\s+safe|buyer\s+protection|return\s+policy)\b/i;
+
+const CORRECTION_RE =
+  /\b(not what i|didn'?t ask|don'?t understand|do not understand|you don'?t understand|wrong|those are|these are|that(?:'s| is) not|you (?:gave|showed|recommended)|i said|i asked|i meant|stop (?:showing|recommending))\b/i;
+
+const GARMENT_OR_PRODUCT_RE =
+  /\b(shirts?|t-?shirts?|polos?|hoodies?|jeans|trousers?|pants|dresses?|gowns?|blouses?|skirts?|sneakers?|heels?|shoes?|bags?|handbags?|watches?|phones?|laptops?|perfumes?|wigs?|tvs?|fans?|jackets?|suits?|shorts|joggers?)\b/i;
+
+const SHOP_SIGNAL_RE =
+  /\b(buy|looking\s+for|find\s+me|shop\s+for|deal|deals|gift|present|outfit|budget|cedis|ghs|gh₵)\b/i;
+
+export type ApparelAudience = 'men' | 'women';
+
+export function detectApparelAudience(text: string): ApparelAudience | null {
+  const women =
+    /\b(women(?:'s|s)?|womenswear|lad(?:y|ies)|female|for\s+her)\b/i.test(text);
+  const men =
+    /\b(men(?:'s|s)?|menswear|gentlemen(?:'s)?|male|for\s+him)\b/i.test(text);
+  if (women && !men) return 'women';
+  if (men && !women) return 'men';
+  return null;
+}
+
+export function looksLikeWomensProduct(text: string): boolean {
+  if (
+    /\b(women(?:'s|s)?|womenswear|lad(?:y|ies)|female|blouse|crop\s*tops?|skirts?|bodysuits?|lingerie|bikinis?|maxi\s*dress|midi\s*dress|mini\s*dress|evening\s*dress|sundress|bodycon)\b/i.test(
+      text,
+    )
+  ) {
+    return true;
+  }
+  return /\bdress(?:es)?\b/i.test(text) && !/\bdress\s*shoes?\b/i.test(text);
+}
+
+export function looksLikeMensProduct(text: string): boolean {
+  return /\b(men(?:'s|s)?|menswear|gentlemen(?:'s)?|male|boxers?|briefs)\b/i.test(
+    text,
+  );
+}
+
+export function productFitsAudience(
+  text: string,
+  audience: ApparelAudience,
+): boolean {
+  const womens = looksLikeWomensProduct(text);
+  const mens = looksLikeMensProduct(text);
+  if (audience === 'men') return !womens || mens;
+  return !mens || womens;
+}
+
+export function messageWantsProducts(
+  rawQuery: string,
+  availableCategories: string[] = [],
+): boolean {
+  const clean = rawQuery.trim();
+  const lower = clean.toLowerCase();
+  if (!clean) return false;
+
+  const correction = CORRECTION_RE.test(clean);
+  const hasGarment = GARMENT_OR_PRODUCT_RE.test(clean);
+  const hasPrice =
+    /(?:under|below|less than|above|over|more than|between)\s+(?:gh[s₵¢]?\s*)?\d/i.test(
+      lower,
+    ) || /\b\d+\s*(?:cedis|ghs|gh₵)\b/i.test(lower);
+  const hasCategory = availableCategories.some((cat) =>
+    lower.includes(cat.toLowerCase()),
+  );
+  const hasSubcategory = Boolean(
+    matchSubcategoryName(null, null, { title: clean }),
+  );
+
+  if (correction && !hasGarment && !hasPrice) return false;
+  if (hasPrice || hasCategory || hasSubcategory || hasGarment) return true;
+  return SHOP_SIGNAL_RE.test(clean);
+}
+
+function conversationalPlan(clean: string): AiBuyerSearchPlan {
+  const lower = clean.toLowerCase();
+  let summary: string;
+
+  if (/\b(thanks|thank\s+you|thx|cheers)\b/i.test(lower)) {
+    summary =
+      "You're welcome. Whenever you want to keep talking or actually shop, just say it plainly.";
+  } else if (/\b(who\s+are\s+you|what\s+can\s+you\s+do)\b/i.test(lower)) {
+    summary =
+      "I'm Verndly AI. I can chat with you, and I can find in-stock products from verified Ghanaian stores when you tell me what you want, who it's for, and a GH₵ budget.";
+  } else if (/\b(bye|goodbye|see\s+ya)\b/i.test(lower)) {
+    summary = 'Catch you later. Come back when you want to talk or shop.';
+  } else if (
+    /\b(how\s+are\s+you|how're\s+you|how\s+you\s+doing|how\s+far|what'?s\s+up|whats\s+up)\b/i.test(
+      lower,
+    )
+  ) {
+    summary =
+      "I'm doing well, thanks for asking. We can just talk, or I can help you shop — tell me the item and whether it's for men or women if it's clothing.";
+  } else if (CORRECTION_RE.test(clean) || /\bwomen/i.test(lower)) {
+    summary =
+      "You're right to correct that. I won't pass women's wear off as men's, or the other way around. Say the audience and the item again, like men's shirts or women's dresses, and I'll stick to it.";
+  } else if (/\b(joke|funny|bored|chat|talk)\b/i.test(lower)) {
+    summary =
+      "We can talk. I won't turn that into a product search. Ask me something direct, or name a product when you want listings.";
+  } else {
+    summary = `I hear you. That isn't a request to browse products, so I won't show a random catalog. If you want to keep talking, go ahead — if you want to shop, tell me the item, who it's for, and a budget.`;
+  }
+
+  return {
+    intent: 'chat',
+    summary,
+    follow_ups: [
+      "Men's shirts in stock",
+      "Women's dresses",
+      'How does escrow work?',
+    ],
+    filters: EMPTY_FILTERS(),
+  };
+}
 
 const EMPTY_FILTERS = (): AiBuyerSearchFilters => ({
   keywords: [],
@@ -107,61 +219,7 @@ export function extractFallbackSearchPlan(
   const clean = rawQuery.trim();
   const lower = clean.toLowerCase();
 
-  // 1. Friendly casual chat handling (never returns awkward "0 products found" for "hey!")
-  if (
-    CASUAL_GREETING_RE.test(clean) &&
-    !/\b(phone|laptop|shoe|dress|watch|bag|deal|gift|perfume|wig|tv|fan)\b/i.test(
-      lower,
-    )
-  ) {
-    if (/\b(thanks|thank\s+you|thx|cheers)\b/i.test(lower)) {
-      return {
-        intent: 'chat',
-        summary:
-          "You're always welcome! Anytime you want to hunt for a deal, compare options, or find a gift, just drop me a line.",
-        follow_ups: [
-          'Best deals right now',
-          'Trending phones',
-          'Gift ideas under GH₵ 250',
-        ],
-        filters: EMPTY_FILTERS(),
-      };
-    }
-    if (/\b(who\s+are\s+you|what\s+can\s+you\s+do)\b/i.test(lower)) {
-      return {
-        intent: 'chat',
-        summary:
-          "I'm Verndly AI — your personal shopping buddy across verified Ghanaian stores! Tell me what you're looking for, your GH₵ budget, or an occasion, and I'll track down the best in-stock picks.",
-        follow_ups: [
-          'Laptops under GH₵ 5,000',
-          'Sneakers in stock',
-          'How does escrow work?',
-        ],
-        filters: EMPTY_FILTERS(),
-      };
-    }
-    if (/\b(bye|goodbye|see\s+ya)\b/i.test(lower)) {
-      return {
-        intent: 'chat',
-        summary: 'Catch you later! Happy shopping whenever you swing back.',
-        follow_ups: ['Best deals right now', 'Browse trending finds'],
-        filters: EMPTY_FILTERS(),
-      };
-    }
-    return {
-      intent: 'chat',
-      summary:
-        'Hey there! Doing great — ready to help you shop or just bounce around ideas. Looking for tech, fashion, a gift, or something specific today?',
-      follow_ups: [
-        'Laptops for work or school',
-        'Affordable sneakers',
-        'Gift ideas under GH₵ 200',
-      ],
-      filters: EMPTY_FILTERS(),
-    };
-  }
-
-  // 2. Verndly platform / escrow / payment questions
+  // 1. Verndly platform / escrow / payment questions
   if (
     PLATFORM_HELP_RE.test(lower) &&
     !/\b(buy|find|show|under\s*\d+)\b/i.test(lower)
@@ -186,6 +244,11 @@ export function extractFallbackSearchPlan(
       ],
       filters: EMPTY_FILTERS(),
     };
+  }
+
+  // 2. Casual conversation, corrections, and anything that is not a product request
+  if (!messageWantsProducts(clean, availableCategories)) {
+    return conversationalPlan(clean);
   }
 
   // 3. Shopping search extraction
@@ -382,6 +445,7 @@ export class BuyerSearchService {
       includeSubcategory: boolean;
       includeKeywords: boolean;
       includeBrand: boolean;
+      audience?: ApparelAudience | null;
     },
   ): Prisma.ProductWhereInput {
     const base: Prisma.ProductWhereInput = filters.in_stock_only
@@ -447,6 +511,33 @@ export class BuyerSearchService {
         }
       }
       andConditions.push({ OR: subOr });
+    }
+
+    if (opts.audience === 'men') {
+      andConditions.push({
+        NOT: {
+          OR: [
+            'women',
+            'ladies',
+            'blouse',
+            'skirt',
+            'lingerie',
+            'bikini',
+          ].flatMap((needle) => [
+            { title: { contains: needle, mode: 'insensitive' as const } },
+            { tags: { has: needle } },
+          ]),
+        },
+      });
+    } else if (opts.audience === 'women') {
+      andConditions.push({
+        NOT: {
+          OR: ["men's", 'menswear', 'boxers'].flatMap((needle) => [
+            { title: { contains: needle, mode: 'insensitive' as const } },
+            { tags: { has: needle } },
+          ]),
+        },
+      });
     }
 
     if (opts.includeKeywords && filters.keywords.length > 0) {
@@ -634,6 +725,56 @@ export class BuyerSearchService {
       plan = extractFallbackSearchPlan(query, categories);
     }
 
+    const genericCatalogReply =
+      !plan.summary ||
+      /pulling the best|here are the best verndly picks|searching verndly/i.test(
+        plan.summary,
+      );
+    if (!messageWantsProducts(query, categories)) {
+      const conversational = conversationalPlan(query);
+      const modelAnswered =
+        usedAi && Boolean(plan.summary) && !genericCatalogReply;
+      if (!(modelAnswered && plan.intent === 'hybrid')) {
+        plan = modelAnswered
+          ? {
+              ...plan,
+              intent: 'chat',
+              filters: EMPTY_FILTERS(),
+              follow_ups: plan.follow_ups?.length
+                ? plan.follow_ups
+                : conversational.follow_ups,
+            }
+          : conversational;
+      }
+    } else {
+      const audience = detectApparelAudience(query);
+      if (audience === 'men' && /women/i.test(plan.filters.subcategory || '')) {
+        plan.filters.subcategory = "Men's Clothing";
+      } else if (
+        audience === 'women' &&
+        plan.filters.subcategory &&
+        /men'?s/i.test(plan.filters.subcategory) &&
+        !/women/i.test(plan.filters.subcategory)
+      ) {
+        plan.filters.subcategory = "Women's Clothing";
+      }
+      if (
+        audience === 'men' &&
+        /\bwomen/i.test(plan.summary) &&
+        !/\bwomen/i.test(query)
+      ) {
+        plan.summary =
+          "These are men's picks only. I left women's wear out of the results.";
+      } else if (
+        audience === 'women' &&
+        /\bmen'?s\b/i.test(plan.summary) &&
+        !/\bmen\b/i.test(query)
+      ) {
+        plan.summary =
+          "These are women's picks only. I left men's wear out of the results.";
+      }
+    }
+
     const intent: AiBuyerIntent = plan.intent || 'shop';
 
     // Pure casual chat / platform help — return warm response without bogus product search
@@ -664,16 +805,23 @@ export class BuyerSearchService {
 
     const orderBy = this.buildOrderBy(plan.filters.sort);
     const candidateLimit = Math.min(48, Math.max(limit * 3, 24));
+    const audience = detectApparelAudience(
+      `${query} ${plan.filters.subcategory || ''}`,
+    );
+    const clauseOpts = {
+      includeBrand: Boolean(plan.filters.brand),
+      audience,
+    };
 
     // 1. Strict pass (subcategory + category + brand + keywords + price + condition)
     let relaxed = false;
     let products = await this.runProductQuery(
       this.buildWhereClause(plan.filters, {
+        ...clauseOpts,
         includeCategory: true,
         includeSubcategory: Boolean(plan.filters.subcategory),
         includeKeywords:
           !plan.filters.subcategory && plan.filters.keywords.length > 0,
-        includeBrand: Boolean(plan.filters.brand),
       }),
       orderBy,
       candidateLimit,
@@ -687,10 +835,10 @@ export class BuyerSearchService {
     ) {
       products = await this.runProductQuery(
         this.buildWhereClause(plan.filters, {
+          ...clauseOpts,
           includeCategory: false,
           includeSubcategory: Boolean(plan.filters.subcategory),
           includeKeywords: plan.filters.keywords.length > 0,
-          includeBrand: Boolean(plan.filters.brand),
         }),
         orderBy,
         candidateLimit,
@@ -706,6 +854,7 @@ export class BuyerSearchService {
           includeSubcategory: false,
           includeKeywords: true,
           includeBrand: false,
+          audience,
         }),
         orderBy,
         candidateLimit,
@@ -726,6 +875,7 @@ export class BuyerSearchService {
           includeSubcategory: false,
           includeKeywords: false,
           includeBrand: false,
+          audience,
         }),
         orderBy,
         candidateLimit,
@@ -733,7 +883,42 @@ export class BuyerSearchService {
       if (products.length > 0) relaxed = true;
     }
 
-    const ranked = this.rankByRelevance(products, plan.filters).slice(0, limit);
+    let ranked = this.rankByRelevance(products, plan.filters);
+    if (audience) {
+      const fitting = ranked.filter((product) => {
+        const tags = Array.isArray(product.tags) ? product.tags.join(' ') : '';
+        const sub =
+          typeof product.attributes?.subcategory === 'string'
+            ? product.attributes.subcategory
+            : '';
+        return productFitsAudience(
+          `${product.title || ''} ${product.description || ''} ${tags} ${sub}`,
+          audience,
+        );
+      });
+      if (fitting.length === 0 && ranked.length > 0) {
+        return {
+          query,
+          intent,
+          summary:
+            audience === 'men'
+              ? "I found listings, but they are women's wear, so I won't show them as men's. Name a men's style or brand and I'll search that."
+              : "I found listings, but they are men's wear, so I won't show them as women's. Name a women's style or brand and I'll search that.",
+          follow_ups:
+            audience === 'men'
+              ? ["Men's polos", "Men's jeans", "Men's sneakers"]
+              : ["Women's dresses", "Women's blouses", "Women's heels"],
+          filters: plan.filters,
+          browseUrl: buildBrowseUrl(plan.filters),
+          products: [],
+          total: 0,
+          relaxed,
+          usedAi,
+        };
+      }
+      ranked = fitting;
+    }
+    ranked = ranked.slice(0, limit);
     const withSlugs = attachProductSlugs(
       ranked as unknown as Array<{ id: string; title?: string | null }>,
     );

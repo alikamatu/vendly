@@ -8,6 +8,8 @@ import { useAuth } from '@/lib/contexts/auth-context';
 import { addressApi, Address } from '@/lib/api/address';
 import { guardPhoneKeyDown, sanitizePhoneNumber, validatePhoneNumber } from '@/lib/utils/phone';
 import { toast } from 'sonner';
+import UseCurrentLocation from '@/components/location/UseCurrentLocation';
+import type { DevicePoint } from '@/lib/location/device-location';
 
 export default function AddressesPage() {
   const { token, user } = useAuth();
@@ -28,6 +30,8 @@ export default function AddressesPage() {
   });
 
   const [isSaving, setIsSaving] = useState(false);
+  const [point, setPoint] = useState<DevicePoint | null>(null);
+  const [hadLocation, setHadLocation] = useState(false);
 
   const loadAddresses = React.useCallback(async () => {
     try {
@@ -51,6 +55,8 @@ export default function AddressesPage() {
   const handleOpenForm = (address?: Address) => {
     if (address) {
       setEditingId(address.id);
+      setPoint(null);
+      setHadLocation(Boolean(address.has_location));
       setFormData({
         label: address.label || '',
         name: address.name,
@@ -61,6 +67,8 @@ export default function AddressesPage() {
         is_default: address.is_default,
       });
     } else {
+      setPoint(null);
+      setHadLocation(false);
       setEditingId(null);
       setFormData({
         label: '',
@@ -90,10 +98,11 @@ export default function AddressesPage() {
     }
     setIsSaving(true);
     try {
+      const payload = point ? { ...formData, ...point } : formData;
       if (editingId) {
-        await addressApi.updateAddress(token, editingId, formData);
+        await addressApi.updateAddress(token, editingId, payload);
       } else {
-        await addressApi.createAddress(token, formData);
+        await addressApi.createAddress(token, payload);
       }
       await loadAddresses();
       handleCloseForm();
@@ -252,6 +261,14 @@ export default function AddressesPage() {
                   </label>
                 </div>
               </div>
+
+              <UseCurrentLocation
+                saved={hadLocation || point != null}
+                onPoint={(next) => {
+                  setPoint(next);
+                  setHadLocation(true);
+                }}
+              />
 
               <div className="flex gap-3 pt-4">
                 <button

@@ -56,6 +56,8 @@ model User {
   deletion_scheduled_for     DateTime?
   /// Set once the 3-day pre-deletion reminder email (Day 11) has been dispatched.
   deletion_reminder_sent_at  DateTime?
+  /// Set when a seller submits or dismisses the experience review, so the prompt does not return.
+  seller_experience_prompted_at DateTime?
   reviewed_approvals         AdminApproval[] @relation("ReviewedBy")
   admin_approvals            AdminApproval[]
   favorites                  Favorite[]
@@ -68,6 +70,8 @@ model User {
   notifications              Notification[]
   reports_filed              Report[]        @relation("ReportsFiled")
   reports_reviewed           Report[]        @relation("ReportsReviewed")
+  seller_experience_review   SellerExperienceReview? @relation("SellerExperienceAuthor")
+  experience_reviews_moderated SellerExperienceReview[] @relation("SellerExperienceModerator")
 
   @@unique([oauth_provider, oauth_provider_id])
   @@map("users")
@@ -82,6 +86,9 @@ model Address {
   street     String
   city       String   @db.VarChar(100)
   region     String?  @db.VarChar(100)
+  /// Exact point from the device. Used for delivery distance, never shown publicly.
+  latitude   Decimal? @db.Decimal(10, 7)
+  longitude  Decimal? @db.Decimal(10, 7)
   is_default Boolean  @default(false)
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -131,6 +138,7 @@ model SellerProfile {
   structured_location      Location?                 @relation(fields: [location_id], references: [id])
   reviews                  Review[]                  @relation("SellerReviews")
   reports                  Report[]                  @relation("SellerReports")
+  experience_review        SellerExperienceReview?
 
   /// Denormalized ratings — recalculated on review write/delete.
   rating_avg   Float @default(0)
@@ -497,6 +505,32 @@ enum ReviewFlagReason {
   IRRELEVANT
   FAKE
   OTHER
+}
+
+/// A seller's review of selling on Verndly. Shown publicly only after admin approval.
+model SellerExperienceReview {
+  id          String                   @id @default(uuid()) @db.Uuid
+  user_id     String                   @unique @db.Uuid
+  seller_id   String                   @unique @db.Uuid
+  rating      Int
+  body        String                   @db.Text
+  status      SellerExperienceStatus   @default(PENDING)
+  reviewed_by String?                  @db.Uuid
+  reviewed_at DateTime?
+  created_at  DateTime                 @default(now())
+  updated_at  DateTime                 @updatedAt
+  user        User                     @relation("SellerExperienceAuthor", fields: [user_id], references: [id], onDelete: Cascade)
+  seller      SellerProfile            @relation(fields: [seller_id], references: [id], onDelete: Cascade)
+  reviewer    User?                    @relation("SellerExperienceModerator", fields: [reviewed_by], references: [id])
+
+  @@index([status, created_at(sort: Desc)])
+  @@map("seller_experience_reviews")
+}
+
+enum SellerExperienceStatus {
+  PENDING
+  PUBLISHED
+  REJECTED
 }
 
 model Location {

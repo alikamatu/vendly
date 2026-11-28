@@ -15,6 +15,11 @@ import { SmsClient } from '../auth/arkesel.client';
 import { EmailService } from '../email/email.service';
 import { buildOrderEmailPayloads } from '../email/order-email-payload';
 import { OrderEventsService } from '../events/order-events.service';
+import {
+  deliveryLimitKm,
+  haversineKm,
+  toCoord,
+} from '../common/delivery-distance';
 
 export const DEFAULT_ESCROW_RELEASE_DAYS = 3;
 
@@ -46,6 +51,86 @@ export class OrderService {
     return DEFAULT_ESCROW_RELEASE_DAYS;
   }
 
+  private async assertDeliveryReach(
+    userId: string,
+    seller: {
+      id: string;
+      service_area: string | null;
+      latitude: unknown;
+      longitude: unknown;
+      structured_location?: { city: string; region: string } | null;
+    },
+    dto: CreateOrderDto,
+  ) {
+    if ((dto.deliveryMethod || '').toUpperCase() === 'PICKUP') return;
+    const limitKm = deliveryLimitKm(seller.service_area);
+    if (limitKm == null) return;
+
+    let buyerLat = toCoord(dto.buyerLatitude);
+    let buyerLng = toCoord(dto.buyerLongitude);
+    let buyerCity: string | null = null;
+    let buyerRegion: string | null = null;
+
+    if (dto.addressId) {
+      const address = await this.prisma.address.findFirst({
+        where: { id: dto.addressId, user_id: userId },
+      });
+      if (!address) {
+        throw new BadRequestException('That delivery address was not found.');
+      }
+      buyerCity = address.city;
+      buyerRegion = address.region;
+      if (buyerLat == null || buyerLng == null) {
+        buyerLat = toCoord(address.latitude);
+        buyerLng = toCoord(address.longitude);
+      } else if (address.latitude == null || address.longitude == null) {
+        await this.prisma.address.update({
+          where: { id: address.id },
+          data: { latitude: buyerLat, longitude: buyerLng },
+        });
+      }
+    }
+
+    const sellerLat = toCoord(seller.latitude);
+    const sellerLng = toCoord(seller.longitude);
+
+    if (sellerLat != null && sellerLng != null) {
+      if (buyerLat == null || buyerLng == null) {
+        throw new BadRequestException(
+          'Share your current location to order delivery from this store. It only delivers nearby.',
+        );
+      }
+      const km = haversineKm(sellerLat, sellerLng, buyerLat, buyerLng);
+      if (km > limitKm) {
+        throw new BadRequestException(
+          `This store only delivers within ${limitKm} km. This address is about ${Math.round(km)} km away. Pickup is still available.`,
+        );
+      }
+      return;
+    }
+
+    const sellerCity = seller.structured_location?.city?.trim().toLowerCase();
+    const sellerRegion = seller.structured_location?.region
+      ?.trim()
+      .toLowerCase();
+    const sameCity =
+      Boolean(buyerCity) &&
+      Boolean(sellerCity) &&
+      buyerCity!.trim().toLowerCase() === sellerCity;
+    const sameRegion =
+      Boolean(buyerRegion) &&
+      Boolean(sellerRegion) &&
+      buyerRegion!.trim().toLowerCase() === sellerRegion;
+
+    if (seller.service_area === 'SAME_CITY' && sameCity) return;
+    if (seller.service_area === 'NEARBY_STATES' && (sameCity || sameRegion))
+      return;
+
+    throw new BadRequestException(
+      'This store only delivers nearby. Share your current location so the distance can be checked, or choose pickup.',
+    );
+  }
+
   async createOrder(userId: string, dto: CreateOrderDto) {
     // 1. Get seller/store
     const seller = await this.prisma.sellerProfile.findUnique({
@@ -58,6 +143,7 @@ export class OrderService {
             deletion_scheduled_for: true,
           },
         },
+        structured_location: true,
       },
     });
 
@@ -85,6 +171,8 @@ export class OrderService {
     if (seller.user_id === userId) {
       throw new ForbiddenException('You cannot purchase your own products.');
     }
+
+    await this.assertDeliveryReach(userId, seller, dto);
 
     const buyer = await this.prisma.user.findUnique({
       where: { id: userId },

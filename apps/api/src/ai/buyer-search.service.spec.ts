@@ -4,6 +4,7 @@ import {
   buildBrowseUrl,
   BuyerSearchService,
   extractFallbackSearchPlan,
+  productFitsAudience,
 } from './buyer-search.service';
 
 describe('BuyerSearchService & parsers', () => {
@@ -98,6 +99,30 @@ describe('BuyerSearchService & parsers', () => {
       expect(plan.summary.length).toBeGreaterThan(15);
       expect((plan.follow_ups ?? []).length).toBeGreaterThan(0);
       expect(plan.filters.keywords).toEqual([]);
+    });
+
+    it('answers a longer casual message instead of searching the catalog', () => {
+      const plan = extractFallbackSearchPlan(
+        'I am just saying hello, how has your day been?',
+        categories,
+      );
+
+      expect(plan.intent).toBe('chat');
+      expect(plan.filters.keywords).toEqual([]);
+      expect(plan.summary.toLowerCase()).not.toContain('pulling');
+    });
+
+    it('keeps men and women clothing on the audience the shopper asked for', () => {
+      const mens = extractFallbackSearchPlan(
+        "men's shirts under 200 cedis",
+        categories,
+      );
+      const womens = extractFallbackSearchPlan("women's blouse", categories);
+
+      expect(mens.intent).toBe('shop');
+      expect(mens.filters.subcategory).toBe("Men's Clothing");
+      expect(mens.filters.max_price).toBe(200);
+      expect(womens.filters.subcategory).toBe("Women's Clothing");
     });
 
     it('answers Verndly 3-day escrow questions as chat intent', () => {
@@ -196,6 +221,161 @@ describe('BuyerSearchService & parsers', () => {
       await expect(service.search('a')).rejects.toBeInstanceOf(
         BadRequestException,
       );
+    });
+
+    it("does not treat a women's listing as a men's result", () => {
+      expect(productFitsAudience("Women's floral shirt", 'men')).toBe(false);
+      expect(productFitsAudience("Men's oxford shirt", 'men')).toBe(true);
+      expect(productFitsAudience('Ladies blouse', 'women')).toBe(true);
+    });
+
+    it('keeps a real model reply when the message is not a product search', async () => {
+      const findManyProducts = jest.fn();
+      const mockPrisma = {
+        category: {
+          findMany: jest.fn().mockResolvedValue([{ name: 'Fashion' }]),
+        },
+        product: { findMany: findManyProducts },
+      };
+      const mockGemini = {
+        isConfigured: () => true,
+        parseBuyerSearchQuery: jest.fn().mockResolvedValue({
+          intent: 'chat',
+          summary:
+            'Rainy afternoons in Accra can drag. I can stay with that, or find you a rain jacket if you want one.',
+          follow_ups: ['Rain jackets in stock'],
+          filters: {
+            keywords: [],
+            category: null,
+            subcategory: null,
+            brand: null,
+            min_price: null,
+            max_price: null,
+            condition: null,
+            sort: 'newest',
+            in_stock_only: true,
+          },
+        }),
+      };
+      const service = new BuyerSearchService(
+        mockPrisma as never,
+        mockGemini as never,
+      );
+
+      const res = await service.search(
+        'It has been raining all afternoon, how are you holding up?',
+      );
+
+      expect(res.intent).toBe('chat');
+      expect(res.summary).toContain('Rainy afternoons');
+      expect(res.products).toEqual([]);
+      expect(findManyProducts).not.toHaveBeenCalled();
+    });
+
+    it('does not search products when the shopper is only talking', async () => {
+      const findManyProducts = jest.fn();
+      const mockPrisma = {
+        category: {
+          findMany: jest.fn().mockResolvedValue([{ name: 'Fashion' }]),
+        },
+        product: { findMany: findManyProducts },
+      };
+      const mockGemini = {
+        isConfigured: () => true,
+        parseBuyerSearchQuery: jest.fn().mockResolvedValue({
+          intent: 'shop',
+          summary: "Pulling women's dresses.",
+          follow_ups: [],
+          filters: {
+            keywords: ['dress'],
+            category: 'Fashion',
+            subcategory: "Women's Dresses",
+            brand: null,
+            min_price: null,
+            max_price: null,
+            condition: null,
+            sort: 'newest',
+            in_stock_only: true,
+          },
+        }),
+      };
+      const service = new BuyerSearchService(
+        mockPrisma as never,
+        mockGemini as never,
+      );
+
+      const res = await service.search(
+        "You don't understand me, I was just saying hello",
+      );
+
+      expect(res.intent).toBe('chat');
+      expect(res.products).toEqual([]);
+      expect(findManyProducts).not.toHaveBeenCalled();
+    });
+
+    it("drops women's wear when the shopper asked for men", async () => {
+      const findManyProducts = jest.fn().mockResolvedValue([
+        {
+          id: 'women-1',
+          title: "Women's floral shirt",
+          description: 'Ladies cotton shirt',
+          price: 120,
+          currency: 'GHS',
+          category: 'Fashion',
+          tags: ['women'],
+          attributes: { subcategory: "Women's Clothing" },
+          image_urls: [],
+          seller: { store_name: 'Accra', store_link: 'accra' },
+        },
+        {
+          id: 'men-1',
+          title: "Men's oxford shirt",
+          description: 'Cotton shirt',
+          price: 150,
+          currency: 'GHS',
+          category: 'Fashion',
+          tags: ['mens'],
+          attributes: { subcategory: "Men's Clothing" },
+          image_urls: [],
+          seller: { store_name: 'Accra', store_link: 'accra' },
+        },
+      ]);
+      const mockPrisma = {
+        category: {
+          findMany: jest.fn().mockResolvedValue([{ name: 'Fashion' }]),
+        },
+        product: { findMany: findManyProducts },
+      };
+      const mockGemini = {
+        isConfigured: () => true,
+        parseBuyerSearchQuery: jest.fn().mockResolvedValue({
+          intent: 'shop',
+          summary: "Here are women's shirts.",
+          follow_ups: [],
+          filters: {
+            keywords: ['shirt'],
+            category: 'Fashion',
+            subcategory: "Women's Clothing",
+            brand: null,
+            min_price: null,
+            max_price: null,
+            condition: null,
+            sort: 'newest',
+            in_stock_only: true,
+          },
+        }),
+      };
+      const service = new BuyerSearchService(
+        mockPrisma as never,
+        mockGemini as never,
+      );
+
+      const res = await service.search('shirts for men');
+
+      expect(res.intent).toBe('shop');
+      expect(res.filters.subcategory).toBe("Men's Clothing");
+      expect(res.products.map((p) => p.id)).toEqual(['men-1']);
+      expect(res.summary.toLowerCase()).not.toContain("women's shirts");
     });
 
     it('short-circuits casual chat without querying products DB', async () => {

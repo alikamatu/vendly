@@ -129,17 +129,17 @@ export default function ShareProductModal({ isOpen, onClose, product }: SharePro
                 </div>
 
                 <div className="space-y-2">
-                  {canNativeShare && (
-                    <button
-                      type="button"
-                      onClick={handleShare}
-                      disabled={sharing}
-                      className="bg-foreground text-background flex h-12 w-full items-center justify-center gap-2 rounded-full text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-60"
-                    >
-                      <Share2 className="h-4 w-4" />
-                      {sharing ? 'Preparing…' : 'Share'}
-                    </button>
-                  )}
+                  {/* {canNativeShare && (
+                  <button
+                    type="button"
+                    onClick={handleShare}
+                    disabled={sharing}
+                    className="bg-foreground text-background flex h-12 w-full items-center justify-center gap-2 rounded-full text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-60"
+                  >
+                    <Share2 className="h-4 w-4" />
+                    {sharing ? 'Preparing…' : 'Share'}
+                  </button>
+                )} */}
                   <button
                     type="button"
                     onClick={handleCopyLink}

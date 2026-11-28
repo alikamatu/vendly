@@ -8,7 +8,7 @@ import Header from '@/components/layout/Header';
 import ProductCard from '@/components/products/ProductCard';
 import Alert from '@/components/ui/Alert';
 import VerndlyAiIcon from '@/components/ai/VerndlyAiIcon';
-import VerndlyAiOverlay from '@/components/ai/VerndlyAiOverlay';
+import AiReplySkeleton from '@/components/ai/AiReplySkeleton';
 import { useProductsBrowser, type InitialProductsBrowserData } from '@/hooks/useProductsBrowser';
 import { productApi, type BrowseSort } from '@/lib/api/product';
 import { aiApi, type AiBuyerSearchResponse } from '@/lib/api/ai';
@@ -227,16 +227,6 @@ function ProductsBrowserInner({
   return (
     <div className="bg-background min-h-screen">
       <Header />
-
-      <VerndlyAiOverlay
-        isOpen={isAskingAi}
-        messages={[
-          'Understanding what you’re shopping for…',
-          'Checking prices, categories, and verified Ghana stores…',
-          'Curating your best Verndly matches…',
-        ]}
-        subtitle="Verndly AI Shopping Assistant"
-      />
 
       {/* Full-bleed edge-to-edge canvas so products fill the whole page */}
       <main id="products-top" className="w-full space-y-4 px-3 pb-24 pt-3 sm:px-5 lg:px-8">
@@ -457,8 +447,21 @@ function ProductsBrowserInner({
 
         {state.error && <Alert variant="error" message={state.error} />}
 
+        {isAskingAi && (
+          <div className="bg-surface rounded-2xl px-4 py-4">
+            <AiReplySkeleton
+              cards={6}
+              messages={[
+                'Understanding what you’re shopping for…',
+                'Checking prices, categories, and verified Ghana stores…',
+                'Curating your best Verndly matches…',
+              ]}
+            />
+          </div>
+        )}
+
         {/* Full-Width Product Feed */}
-        {state.isLoading && !aiResult ? (
+        {isAskingAi ? null : state.isLoading && !aiResult ? (
           <LoadingSkeleton view={view} />
         ) : showEmpty ? (
           <EmptyState onReset={handleClearAll} />

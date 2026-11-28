@@ -840,6 +840,7 @@ export const getSellerApprovedEmail = (
       ${eyebrow('Verification approved')}
       ${H1(`You're a verified seller, ${escape(name.split(' ')[0] || name)}.`)}
       ${P(`Welcome to Verndly. Your store is live at <a href="${links.baseUrl}/s/${escape(storeLink)}" style="color:${BRAND.primary};">${links.baseUrl.replace(/^https?:\/\//, '')}/s/${escape(storeLink)}</a>.`)}
+      ${P(`Verification includes 30 days of Verndly Pro at no charge. Featured placement and the rest of the Pro tools are already on your account.`)}
       ${button('Open your dashboard', `${links.baseUrl}/dashboard`)}
       ${divider()}
       <p style="margin:0 0 8px; font-size:13px; color:${BRAND.muted};">First moves:</p>
@@ -847,7 +848,7 @@ export const getSellerApprovedEmail = (
         <li><strong>Add your first product</strong> — clear photos, an honest description, a fair price</li>
         <li><strong>Polish your storefront</strong> — upload a logo, set your service area and delivery times</li>
         <li><strong>Configure payouts</strong> — link your bank or mobile money in Settings</li>
-        <li><strong>Consider Pro</strong> — GH₵57/month unlocks featured placement and stock alerts</li>
+        <li><strong>Use your 30 days of Pro</strong> — featured placement and stock alerts are already included</li>
       </ul>
       <p style="margin:0; font-size:13px; color:${BRAND.muted};">Pro tip: sellers who upload at least 3 products in week one make their first sale 4× faster.</p>
     `,
@@ -882,6 +883,8 @@ export interface ProActivatedData {
   amountPaid: number | string;
   reference?: string;
   isExtension?: boolean;
+  /** Included with seller verification, not a paid checkout. */
+  complimentary?: boolean;
 }
 
 export const getProActivatedEmail = (
@@ -889,18 +892,34 @@ export const getProActivatedEmail = (
   links: EmailLinks = { baseUrl: 'https://verndly.com' },
 ) =>
   emailShell({
-    title: d.isExtension ? 'Verndly Pro extended' : 'Welcome to Verndly Pro',
-    preheader: `Pro perks unlock right now. Your membership runs through ${formatDate(d.proExpiresAt)}.`,
+    title: d.complimentary
+      ? '30 days of Verndly Pro are included'
+      : d.isExtension
+        ? 'Verndly Pro extended'
+        : 'Welcome to Verndly Pro',
+    preheader: d.complimentary
+      ? `Seller verification includes 30 days of Pro, through ${formatDate(d.proExpiresAt)}.`
+      : `Pro perks unlock right now. Your membership runs through ${formatDate(d.proExpiresAt)}.`,
     category: BRAND.tagline,
     content: `
       <div style="margin-bottom:16px;">${statusPill('Pro active', 'success')}</div>
-      ${eyebrow(d.isExtension ? 'Membership extended' : 'Welcome to Pro')}
-      ${H1(d.isExtension ? `Pro is extended through ${formatDate(d.proExpiresAt)}.` : `Welcome to Verndly Pro, ${escape(d.name.split(' ')[0] || d.name)}.`)}
-      ${P(`Your Pro perks are live right now. Use them to ship more, sell faster, and stand out in search.`)}
+      ${eyebrow(d.complimentary ? 'Included with verification' : d.isExtension ? 'Membership extended' : 'Welcome to Pro')}
+      ${H1(
+        d.complimentary
+          ? `You have 30 days of Pro, ${d.name.split(' ')[0] || d.name}.`
+          : d.isExtension
+            ? `Pro is extended through ${formatDate(d.proExpiresAt)}.`
+            : `Welcome to Verndly Pro, ${escape(d.name.split(' ')[0] || d.name)}.`,
+      )}
+      ${P(
+        d.complimentary
+          ? `Your seller verification includes 30 days of Verndly Pro at no charge. The perks are live now.`
+          : `Your Pro perks are live right now. Use them to ship more, sell faster, and stand out in search.`,
+      )}
       ${card(`
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
           ${kvRow('Plan', 'Verndly Pro')}
-          ${kvRow('Amount', money(d.amountPaid))}
+          ${d.complimentary ? kvRow('Price', 'Included for 30 days') : kvRow('Amount', money(d.amountPaid))}
           ${d.reference ? kvRow('Reference', `<span style="font-family: ui-monospace, monospace; font-size:12px;">${escape(d.reference)}</span>`) : ''}
           ${kvRow('Active until', escape(formatDate(d.proExpiresAt)))}
         </table>
@@ -1412,3 +1431,51 @@ export const getAccountDeletedEmail = (
     `,
     footerNote: 'Thank you for being part of Verndly.',
   });
+
+export interface AdminReminderEmailInput {
+  subject: string;
+  preheader: string;
+  eyebrow: string;
+  headline: string;
+  paragraphs: string[];
+  statusLabel?: string;
+  statusVariant?: 'success' | 'pending' | 'warning' | 'error' | 'info';
+  ctaLabel?: string;
+  ctaHref?: string;
+}
+
+/** Admin-composed reminder. Uses the same shell, type, and buttons as the other Verndly emails. */
+export const getAdminReminderEmail = (
+  input: AdminReminderEmailInput,
+  links: EmailLinks = { baseUrl: 'https://verndly.com' },
+) => {
+  const href = input.ctaHref
+    ? input.ctaHref.startsWith('http')
+      ? input.ctaHref
+      : `${links.baseUrl}${input.ctaHref.startsWith('/') ? '' : '/'}${input.ctaHref}`
+    : '';
+  const paragraphs = input.paragraphs
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean)
+    .map((paragraph) => P(escape(paragraph)));
+
+  return emailShell({
+    title: input.subject,
+    preheader: input.preheader || input.subject,
+    category: 'Verndly',
+    content: `
+      ${
+        input.statusLabel
+          ? `<div style="margin-bottom:16px;">${statusPill(input.statusLabel, input.statusVariant || 'info')}</div>`
+          : ''
+      }
+      ${eyebrow(input.eyebrow || 'Verndly')}
+      ${H1(input.headline)}
+      ${paragraphs.join('')}
+      ${input.ctaLabel && href ? button(input.ctaLabel, href) : ''}
+    `,
+    links,
+    footerNote:
+      'Sent by the Verndly team in Accra. Questions? Reply to this email or WhatsApp +233 53 406 5652.',
+  });
+};

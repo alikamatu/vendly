@@ -247,6 +247,21 @@ export class StoreService {
       data.location_id = String(dto.location_id);
     }
 
+    if (dto.latitude !== undefined && dto.latitude !== '') {
+      const latitude = Number(dto.latitude);
+      if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90) {
+        throw new BadRequestException('That location is not valid.');
+      }
+      data.latitude = latitude;
+    }
+    if (dto.longitude !== undefined && dto.longitude !== '') {
+      const longitude = Number(dto.longitude);
+      if (!Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
+        throw new BadRequestException('That location is not valid.');
+      }
+      data.longitude = longitude;
+    }
+
     // Parse social_links (may arrive as JSON string from FormData)
     if (dto.social_links !== undefined) {
       data.social_links =
@@ -270,6 +285,18 @@ export class StoreService {
       } else {
         data.accepted_payment_methods = dto.accepted_payment_methods;
       }
+    }
+
+    const nextArea = data.service_area ?? store.service_area;
+    const nextLat = data.latitude ?? store.latitude;
+    const nextLng = data.longitude ?? store.longitude;
+    if (
+      (nextArea === 'SAME_CITY' || nextArea === 'NEARBY_STATES') &&
+      (nextLat == null || nextLng == null)
+    ) {
+      throw new BadRequestException(
+        'Share your current location before saving. This store delivers nearby, so buyers are matched by distance.',
+      );
     }
 
     if (logoFile) {

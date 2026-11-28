@@ -38,6 +38,7 @@ export interface User {
     accepted_payment_methods: string[];
     payment_timing: string | null;
     service_area: string | null;
+    has_location?: boolean;
     avg_delivery_time: string | null;
     bank_name: string | null;
     bank_code: string | null;

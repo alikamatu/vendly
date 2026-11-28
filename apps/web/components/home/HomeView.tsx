@@ -23,6 +23,8 @@ import TopDeals from './TopDeals';
 import TopProVendors from './TopProVendors';
 import EmptyResults from './EmptyResults';
 import { recordShoppingHabit } from '@/lib/cookies/shopping-habits';
+import SellerExperienceReviews from './SellerExperienceReviews';
+import type { PublicSellerExperience } from '@/lib/server-api';
 
 const FEATURED_LIMIT = 10;
 const PRODUCTS_PER_BRAND = 10;
@@ -80,7 +82,13 @@ const FEATURED_CATEGORIES_LINKS = [
   { label: 'Books & Stationery', href: '/categories/books-stationery' },
 ];
 
-export default function HomeView({ initialData }: { initialData?: InitialHomeData }) {
+export default function HomeView({
+  initialData,
+  sellerExperience,
+}: {
+  initialData?: InitialHomeData;
+  sellerExperience?: PublicSellerExperience;
+}) {
   const router = useRouter();
   const { products, categories, brands, topProVendors, topSellingCategories, isLoading } =
     useHomeData(initialData);
@@ -186,6 +194,8 @@ export default function HomeView({ initialData }: { initialData?: InitialHomeDat
         <RecentProducts products={railProducts} limit={RECENT_LIMIT} />
 
         <TopDeals products={railProducts} minDiscount={DEALS_MIN_DISCOUNT} limit={DEALS_LIMIT} />
+
+        {sellerExperience && <SellerExperienceReviews experience={sellerExperience} />}
 
         {/* Direct Browse Shop CTA */}
         <div className="flex justify-center pt-2">

@@ -31,6 +31,8 @@ import {
   getContactFormAdminAlertEmail,
   getNewsletterWelcomeEmail,
   getSellerVerificationAdminAlertEmail,
+  getAdminReminderEmail,
+  type AdminReminderEmailInput,
 } from './email-templates';
 
 export interface EmailDeliveryStatus {
@@ -374,11 +376,14 @@ export class EmailService {
   // ─── Pro membership ──────────────────────────────────────────────────────
 
   sendProActivatedEmail(to: string, data: ProActivatedData) {
+    const subject = data.complimentary
+      ? '30 days of Verndly Pro are included with your verification'
+      : data.isExtension
+        ? 'Your Verndly Pro membership was extended'
+        : 'Welcome to Verndly Pro';
     return this.deliver(
       to,
-      data.isExtension
-        ? 'Your Verndly Pro membership was extended'
-        : 'Welcome to Verndly Pro',
+      subject,
       getProActivatedEmail(data, this.links),
       'pro-activated',
     );
@@ -636,6 +641,26 @@ export class EmailService {
       html,
       'payout-change-otp',
     );
+  }
+
+  async sendAdminReminderEmail(to: string, input: AdminReminderEmailInput) {
+    const response = await this.deliver(
+      to,
+      input.subject,
+      getAdminReminderEmail(input, this.links),
+      'admin-reminder',
+    );
+    const id =
+      (response as { data?: { id?: string }; id?: string } | null)?.data?.id ||
+      (response as { id?: string } | null)?.id ||
+      null;
+    return {
+      sent: Boolean(response),
+      id: id || undefined,
+      error: response
+        ? undefined
+        : this.lastDelivery?.error || 'Email was not sent',
+    };
   }
 
   async sendPayoutDetailsChangedAlertEmail(args: {
